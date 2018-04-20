@@ -4,8 +4,7 @@
   extern platform_exit
   extern platform_panic
 
-section .data
-msg     db      'Hello, brave new world!', 0Ah
+  extern assemble_stdin
 
 section .bss
 input_buf:
@@ -15,6 +14,8 @@ section .text
 global  _start
 
 _start:
+  call assemble_stdin
+  call platform_exit
 
 main_loop:
   push 0
@@ -30,6 +31,15 @@ main_loop:
 
 main_loop_finish:
   call platform_exit
+
+test:
+  pop eax
+  add eax, [eax+0x100]
+  add [eax+0x200], eax
+  add ebx, eax
+  add eax, eax
+  add [eax+0x300], ecx
+  sub [eax+0x300], ecx
 
 ;; assemble_stdin:
 ;;   push ebp
