@@ -3,18 +3,14 @@
   extern platform_write_char
   extern platform_exit
   extern platform_panic
-
-  extern assemble_stdin
-
-section .bss
-input_buf:
-  resb 1024
+  extern readline
+  extern assemble_file
 
 section .text
 global  _start
 
 _start:
-  call assemble_stdin
+  call assemble_file
   call platform_exit
 
 main_loop:
@@ -32,7 +28,7 @@ main_loop:
 main_loop_finish:
   call platform_exit
 
-test:
+_test:
   pop eax
   add eax, [eax+0x100]
   add [eax+0x200], eax
@@ -40,75 +36,88 @@ test:
   add eax, eax
   add [eax+0x300], ecx
   sub [eax+0x300], ecx
+  jmp eax
+  jmp [eax]
 
-;; assemble_stdin:
-;;   push ebp
-;;   mov ebp, esp
+  jmp _test2
+  call _test2
 
-;;   push 1024
-;;   push input_buf
-;;   push 0
-;;   call readline
-;;   add esp, 12
+_test2:
+  jmp _test2
+  jmp _test
 
-;;   pop ebp
-;;   ret
+_assemble_stdin:
+  push ebp
+  mov ebp, esp
 
-;; platform_exit:
-;;   ;; Just exit, never return
-;;   mov ebx, 0
-;;   mov eax, 1
-;;   int 80h
+  push 1024
+  ;; push input_buf
+  push 0
+  call readline
+  add esp, 12
 
-;; platform_write_char:
-;;   ;; Write the char in AL to output
-;;   push ebx
-;;   sub esp, 4
-;;   mov [esp], al
+  pop ebp
+  ret
 
-;;   mov edx, 1
-;;   mov ecx, esp
-;;   mov ebx, 1
-;;   mov eax, 4
-;;   int 0x80
+_platform_exit:
+  ;; Just exit, never return
+  mov ebx, 0
+  mov eax, 1
+  int 80h
 
-;;   cmp eax, 1
-;;   jnz platform_panic
+_platform_write_char:
+  ;; Write the char in AL to output
+  push ebx
+  sub esp, 4
+  ;; mov [esp], al
 
-;;   add esp, 4
-;;   pop ebx
-;;   ret
+  mov edx, 1
+  mov ecx, esp
+  mov ebx, 1
+  mov eax, 4
+  int 0x80
+
+  cmp eax, 1
+  jnz platform_panic
+
+  add esp, 4
+  pop ebx
+  ret
 
 
-;; platform_read_char:
-;;   ;;  Read a char from input to AL; all other bits of EAX are zeroed; if the file is finished, put 0xffffffff in EAX
-;;   push ebx
-;;   sub esp, 4
-;;   mov DWORD [esp], 0
+_platform_read_char:
+  ;;  Read a char from input to AL; all other bits of EAX are zeroed; if the file is finished, put 0xffffffff in EAX
+  push ebx
+  sub esp, 4
+  ;; mov DWORD [esp], 0
 
-;;   mov edx, 1
-;;   mov ecx, esp
-;;   mov ebx, 0
-;;   mov eax, 3
-;;   int 0x80
+  mov edx, 1
+  mov ecx, esp
+  mov ebx, 0
+  mov eax, 3
+  int 0x80
 
-;;   cmp eax, 0
-;;   jz platform_read_char_file_finished
+  cmp eax, 0
+  jz _platform_read_char_file_finished
 
-;;   cmp eax, 1
-;;   jnz platform_panic
+  cmp eax, 1
+  jnz platform_panic
 
-;;   mov eax, [esp]
-;;   add esp, 4
-;;   pop ebx
-;;   ret
+  mov eax, [esp]
+  add esp, 4
+  pop ebx
+  ret
 
-;; platform_read_char_file_finished:
-;;   mov eax, 0xffffffff
-;;   add esp, 4
-;;   pop ebx
-;;   ret
+_platform_read_char_file_finished:
+  mov eax, 0xffffffff
+  add esp, 4
+  pop ebx
+  ret
 
-;; platform_panic:
-;;   ;; Forcibly abort the execution in consequence of an error
-;;   call 0
+_platform_panic:
+  ;; Forcibly abort the execution in consequence of an error
+  call 0
+
+section .bss
+input_buf:
+  resb 1024

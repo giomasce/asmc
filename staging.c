@@ -6,8 +6,13 @@ int do_syscall(int syscall_num, int arg1, int arg2, int arg3);
 #define SYS_write 0x4
 #define SYS_getpid 0x14
 #define SYS_kill 0x25
+#define SYS_open 0x5
+#define SYS_lseek 0x13
 
 #define SIGABRT 6
+
+#define O_RDONLY 0
+#define SEEK_SET 0
 
 void platform_panic() {
   int pid = do_syscall(SYS_getpid, 0, 0, 0);
@@ -16,6 +21,21 @@ void platform_panic() {
 
 void platform_exit() {
   do_syscall(SYS_exit, 0, 0, 0);
+}
+
+int platform_open_file(char *fname) {
+  int ret = do_syscall(SYS_open, (int) fname, O_RDONLY, 0);
+  if (ret < 0) {
+    platform_panic();
+  }
+  return ret;
+}
+
+int platform_reset_file(int fd) {
+  int res = do_syscall(SYS_lseek, fd, 0, SEEK_SET);
+  if (res < 0) {
+    platform_panic();
+  }
 }
 
 int platform_read_char(int fd) {
@@ -38,6 +58,13 @@ void platform_write_char(int fd, int c) {
   }
 }
 
+void platform_log(int fd, char *s) {
+  while (*s != '\0') {
+    platform_write_char(fd, *s);
+    s++;
+  }
+}
+
 #define INPUT_BUF_LEN 1024
 #define MAX_SYMBOL_NAME_LEN 128
 #define SYMBOL_TABLE_LEN 1024
@@ -50,6 +77,8 @@ int symbol_num;
 
 char current_section[MAX_SYMBOL_NAME_LEN];
 int current_loc;
+
+int stage;
 
 void assert(int cond) {
   if (!cond) {
@@ -170,11 +199,19 @@ void add_symbol(unsigned char *name, int loc) {
   int len = strlen(name);
   assert(len > 0);
   assert(len < MAX_SYMBOL_NAME_LEN);
-  assert(find_symbol(name) == SYMBOL_TABLE_LEN);
-  assert(symbol_num < SYMBOL_TABLE_LEN);
-  strcpy(symbol_names[symbol_num], name);
-  symbol_loc[symbol_num] = loc;
-  symbol_num++;
+  if (stage == 0) {
+    assert(find_symbol(name) == SYMBOL_TABLE_LEN);
+    assert(symbol_num < SYMBOL_TABLE_LEN);
+    strcpy(symbol_names[symbol_num], name);
+    symbol_loc[symbol_num] = loc;
+    symbol_num++;
+  } else if (stage == 1) {
+    int idx = find_symbol(name);
+    assert(idx < SYMBOL_TABLE_LEN);
+    assert(symbol_loc[idx] == loc);
+  } else {
+    platform_panic();
+  }
 }
 
 void process_bss_line(char *opcode, char *data) {
@@ -206,7 +243,7 @@ int decode_reg(char *reg) {
   }
 }
 
-int decode_number(char *operand, int *num) {
+int decode_number(char *operand, unsigned int *num) {
   *num = 0;
   int is_decimal = 1;
   int digit_seen = 0;
@@ -288,7 +325,9 @@ int decode_operand(char *operand, int *is_direct, int *reg, int *has_disp, int *
 }
 
 void emit(char c) {
-  platform_write_char(1, c);
+  if (stage == 1) {
+    platform_write_char(1, c);
+  }
   current_loc++;
 }
 
@@ -313,7 +352,65 @@ enum {
   OP_SUB,
   OP_MOV,
   OP_CMP,
+  OP_JMP,
+  OP_CALL,
 };
+
+void process_jmp_like(int op, char *data) {
+  int is_direct, reg, has_disp, disp;
+  int res = decode_operand(data, &is_direct, &reg, &has_disp, &disp);
+  if (res) {
+    // r/m32
+    int opcode;
+    int ext;
+    if (op == OP_JMP) {
+      opcode = 0xff;
+      ext = 4;
+    } else if (op == OP_CALL) {
+      opcode = 0xff;
+      ext = 2;
+    } else {
+      platform_panic();
+    }
+    if (is_direct) {
+      emit(opcode);
+      emit(assemble_modrm(3, ext, reg));
+    } else {
+      emit(opcode);
+      emit(assemble_modrm(has_disp ? 2 : 0, ext, reg));
+      if (has_disp) {
+        emit32(disp);
+      }
+    }
+  } else {
+    int rel;
+    int res = decode_number(data, &rel);
+    if (!res) {
+      if (stage == 0) {
+        rel = 0;
+      } else {
+        int idx = find_symbol(data);
+        if (idx < SYMBOL_TABLE_LEN) {
+          // Here 5 is the length of the instruction we are going to emit
+          rel = symbol_loc[idx] - current_loc - 5;
+        } else {
+          platform_panic();
+        }
+      }
+    }
+    // rel32
+    int opcode;
+    if (op == OP_JMP) {
+      opcode = 0xe9;
+    } else if (op == OP_CALL) {
+      opcode = 0xe8;
+    } else {
+      platform_panic();
+    }
+    emit(opcode);
+    emit32(rel);
+  }
+}
 
 void process_push_like(int op, char *data) {
   int is_direct, reg, has_disp, disp;
@@ -467,8 +564,10 @@ void process_add_like(int op, char *data) {
 
 void process_text_line(char *opcode, char *data) {
   if (strcmp(opcode, "call") == 0) {
-  } else if (strcmp(opcode, "ret") == 0) {
+    process_jmp_like(OP_CALL, data);
   } else if (strcmp(opcode, "jmp") == 0) {
+    process_jmp_like(OP_JMP, data);
+  } else if (strcmp(opcode, "ret") == 0) {
   } else if (strcmp(opcode, "push") == 0) {
     process_push_like(OP_PUSH, data);
   } else if (strcmp(opcode, "pop") == 0) {
@@ -482,6 +581,8 @@ void process_text_line(char *opcode, char *data) {
   } else if (strcmp(opcode, "cmp") == 0) {
     process_add_like(OP_CMP, data);
   } else if (strcmp(opcode, "jz") == 0) {
+  } else if (strcmp(opcode, "jnz") == 0) {
+  } else if (strcmp(opcode, "int") == 0) {
   } else {
     platform_panic();
   }
@@ -501,6 +602,7 @@ void process_line(char *line) {
     strcpy(current_section, data);
   } else if (strcmp(opcode, "global") == 0) {
   } else if (strcmp(opcode, "extern") == 0) {
+    add_symbol(data, 0);
   } else {
     if (strcmp(current_section, ".bss") == 0) {
       process_bss_line(opcode, data);
@@ -512,22 +614,30 @@ void process_line(char *line) {
   }
 }
 
-void assemble_stdin() {
-  while (1) {
-    int finished = readline(0, input_buf, INPUT_BUF_LEN);
-    trimstr(input_buf);
-    int len = strlen(input_buf);
-    if (finished && len == 0) {
-      return;
-    }
-    if (len == 0 || input_buf[0] == ';') {
-      continue;
-    }
-    if (input_buf[len-1] == ':') {
-      input_buf[len-1] = '\0';
-      add_symbol(input_buf, current_loc);
-    } else {
-      process_line(input_buf);
+void assemble_file() {
+  int fd_in = platform_open_file("asmc.asm");
+  for (stage = 0; stage < 2; stage++) {
+    platform_reset_file(fd_in);
+    current_loc = 0;
+    while (1) {
+      int finished = readline(fd_in, input_buf, INPUT_BUF_LEN);
+      platform_log(2, "Decoding line: ");
+      platform_log(2, input_buf);
+      platform_log(2, "\n");
+      trimstr(input_buf);
+      int len = strlen(input_buf);
+      if (finished && len == 0) {
+        break;
+      }
+      if (len == 0 || input_buf[0] == ';') {
+        continue;
+      }
+      if (input_buf[len-1] == ':') {
+        input_buf[len-1] = '\0';
+        add_symbol(input_buf, current_loc);
+      } else {
+        process_line(input_buf);
+      }
     }
   }
 }
