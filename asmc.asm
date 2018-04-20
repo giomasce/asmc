@@ -1,0 +1,104 @@
+
+  extern platform_read_char
+  extern platform_write_char
+  extern platform_exit
+  extern platform_panic
+
+section .data
+msg     db      'Hello, brave new world!', 0Ah
+
+section .bss
+input_buf:
+  resb 1024
+
+section .text
+global  _start
+
+_start:
+
+main_loop:
+  push 0
+  call platform_read_char
+  add esp, 4
+  cmp eax, 0xffffffff
+  jz main_loop_finish
+  push eax
+  push 1
+  call platform_write_char
+  add esp, 4
+  jmp main_loop
+
+main_loop_finish:
+  call platform_exit
+
+;; assemble_stdin:
+;;   push ebp
+;;   mov ebp, esp
+
+;;   push 1024
+;;   push input_buf
+;;   push 0
+;;   call readline
+;;   add esp, 12
+
+;;   pop ebp
+;;   ret
+
+;; platform_exit:
+;;   ;; Just exit, never return
+;;   mov ebx, 0
+;;   mov eax, 1
+;;   int 80h
+
+;; platform_write_char:
+;;   ;; Write the char in AL to output
+;;   push ebx
+;;   sub esp, 4
+;;   mov [esp], al
+
+;;   mov edx, 1
+;;   mov ecx, esp
+;;   mov ebx, 1
+;;   mov eax, 4
+;;   int 0x80
+
+;;   cmp eax, 1
+;;   jnz platform_panic
+
+;;   add esp, 4
+;;   pop ebx
+;;   ret
+
+
+;; platform_read_char:
+;;   ;;  Read a char from input to AL; all other bits of EAX are zeroed; if the file is finished, put 0xffffffff in EAX
+;;   push ebx
+;;   sub esp, 4
+;;   mov DWORD [esp], 0
+
+;;   mov edx, 1
+;;   mov ecx, esp
+;;   mov ebx, 0
+;;   mov eax, 3
+;;   int 0x80
+
+;;   cmp eax, 0
+;;   jz platform_read_char_file_finished
+
+;;   cmp eax, 1
+;;   jnz platform_panic
+
+;;   mov eax, [esp]
+;;   add esp, 4
+;;   pop ebx
+;;   ret
+
+;; platform_read_char_file_finished:
+;;   mov eax, 0xffffffff
+;;   add esp, 4
+;;   pop ebx
+;;   ret
+
+;; platform_panic:
+;;   ;; Forcibly abort the execution in consequence of an error
+;;   call 0
