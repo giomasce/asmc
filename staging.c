@@ -393,6 +393,8 @@ enum {
   OP_SUB,
   OP_MOV,
   OP_CMP,
+  OP_AND,
+  OP_OR,
   OP_JMP,
   OP_CALL,
   OP_JZ,
@@ -527,6 +529,10 @@ void process_add_like(int op, char *data) {
         opcode = 0x8b;
       } else if (op == OP_CMP) {
         opcode = 0x3b;
+      } else if (op == OP_AND) {
+        opcode = 0x23;
+      } else if (op == OP_OR) {
+        opcode = 0x0b;
       } else {
         platform_panic();
       }
@@ -550,6 +556,10 @@ void process_add_like(int op, char *data) {
           opcode = 0x89;
         } else if (op == OP_CMP) {
           opcode = 0x39;
+        } else if (op == OP_AND) {
+          opcode = 0x21;
+        } else if (op == OP_OR) {
+          opcode = 0x09;
         } else {
           platform_panic();
         }
@@ -579,6 +589,12 @@ void process_add_like(int op, char *data) {
       } else if (op == OP_CMP) {
         opcode = 0x81;
         reg = 7;
+      } else if (op == OP_AND) {
+        opcode = 0x81;
+        reg = 4;
+      } else if (op == OP_OR) {
+        opcode = 0x81;
+        reg = 1;
       } else {
         platform_panic();
       }
@@ -627,6 +643,10 @@ int process_text_line(char *opcode, char *data) {
     process_add_like(OP_ADD, data);
   } else if (strcmp(opcode, "sub") == 0) {
     process_add_like(OP_SUB, data);
+  } else if (strcmp(opcode, "and") == 0) {
+    process_add_like(OP_AND, data);
+  } else if (strcmp(opcode, "or") == 0) {
+    process_add_like(OP_OR, data);
   } else if (strcmp(opcode, "mov") == 0) {
     process_add_like(OP_MOV, data);
   } else if (strcmp(opcode, "cmp") == 0) {

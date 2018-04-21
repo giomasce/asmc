@@ -83,7 +83,7 @@ _platform_write_char:
   ;; Write the char in AL to output
   push ebx
   sub esp, 4
-  ;; and eax, 0xff
+  and eax, 0xff
   mov [esp], eax
 
   mov edx, 1
