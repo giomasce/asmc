@@ -445,3 +445,8 @@ find_char_ret:
 find_char_ret_error:
   mov eax, 0xffffffff
   ret
+
+
+;;   global find_symbol
+;; find_symbol:
+;;   mov eax, 0

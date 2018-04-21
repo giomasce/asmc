@@ -389,6 +389,8 @@ enum {
   OP_CALL,
   OP_JZ,
   OP_JNZ,
+  OP_MUL,
+  OP_IMUL,
 };
 
 void process_jmp_like(int op, char *data) {
@@ -405,6 +407,12 @@ void process_jmp_like(int op, char *data) {
     } else if (op == OP_CALL) {
       opcode = 0xff;
       ext = 2;
+    } else if (op == OP_MUL) {
+      opcode = 0xf7;
+      ext = 4;
+    } else if (op == OP_IMUL) {
+      opcode = 0xf7;
+      ext = 5;
     } else {
       platform_panic();
     }
@@ -742,6 +750,10 @@ int process_text_line(char *opcode, char *data) {
     process_jmp_like(OP_JZ, data);
   } else if (strcmp(opcode, "jnz") == 0) {
     process_jmp_like(OP_JNZ, data);
+  } else if (strcmp(opcode, "mul") == 0) {
+    process_jmp_like(OP_MUL, data);
+  } else if (strcmp(opcode, "imul") == 0) {
+    process_jmp_like(OP_IMUL, data);
   } else if (strcmp(opcode, "int") == 0) {
     process_int(data);
   } else {
