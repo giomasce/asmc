@@ -14,7 +14,7 @@ int do_syscall(int syscall_num, int arg1, int arg2, int arg3);
 #define O_RDONLY 0
 #define SEEK_SET 0
 
-void platform_panic() {
+__attribute__((noreturn)) void platform_panic() {
   int pid = do_syscall(SYS_getpid, 0, 0, 0);
   do_syscall(SYS_kill, pid, SIGABRT, 0);
 }
@@ -80,11 +80,11 @@ int current_loc;
 
 int stage;
 
-void assert(int cond) {
+void assert(int cond);/* {
   if (!cond) {
     platform_panic();
   }
-}
+}*/
 
 int readline(int fd, unsigned char *buf, int len) {
   while (len > 0) {

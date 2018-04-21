@@ -131,3 +131,11 @@ _platform_read_char_file_finished:
 _platform_panic:
   ;; Forcibly abort the execution in consequence of an error
   call 0
+
+  global assert
+assert:
+  cmp DWORD [esp+8], 0
+  jnz assert_return
+  call platform_panic
+assert_return:
+  ret
