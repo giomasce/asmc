@@ -15,16 +15,76 @@
   SPACE equ 0x20
   TAB equ 0x9
 
+  INPUT_BUF_LEN equ 1024
+  MAX_SYMBOL_NAME_LEN equ 128
+  SYMBOL_TABLE_LEN equ 1024
+  ;; SYMBOL_TABLE_SIZE = SYMBOL_TABLE_LEN * MAX_SYMBOL_NAME_LEN
+  SYMBOL_TABLE_SIZE equ 131072
+
 section .bss
+
 input_buf:
   resb 1024
 
-section .text
-global  _start
+symbol_names:
+  resb SYMBOL_TABLE_SIZE
 
+symbol_loc:
+  resd SYMBOL_TABLE_LEN
+
+symbol_num:
+  resd 1
+
+current_section:
+  resb MAX_SYMBOL_NAME_LEN
+
+current_loc:
+  resd 1
+
+stage:
+  resd 1
+
+section .text
+
+  global  _start
 _start:
   call assemble_file
   call platform_exit
+
+  global get_input_buf
+get_input_buf:
+  mov eax, input_buf
+  ret
+
+  global get_symbol_names
+get_symbol_names:
+  mov eax, symbol_names
+  ret
+
+  global get_symbol_loc
+get_symbol_loc:
+  mov eax, symbol_loc
+  ret
+
+  global get_symbol_num
+get_symbol_num:
+  mov eax, symbol_num
+  ret
+
+  global get_current_section
+get_current_section:
+  mov eax, current_section
+  ret
+
+  global get_current_loc
+get_current_loc:
+  mov eax, current_loc
+  ret
+
+  global get_stage
+get_stage:
+  mov eax, stage
+  ret
 
 main_loop:
   push 0

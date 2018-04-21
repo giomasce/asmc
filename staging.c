@@ -5,16 +5,13 @@
 #define MAX_SYMBOL_NAME_LEN 128
 #define SYMBOL_TABLE_LEN 1024
 
-unsigned char input_buf[INPUT_BUF_LEN];
-
-unsigned char symbol_names[SYMBOL_TABLE_LEN][MAX_SYMBOL_NAME_LEN];
-int symbol_loc[SYMBOL_TABLE_LEN];
-int symbol_num;
-
-char current_section[MAX_SYMBOL_NAME_LEN];
-int current_loc;
-
-int stage;
+char *get_input_buf();
+char *get_symbol_names();
+int *get_symbol_num();
+int *get_symbol_loc();
+char *get_current_section();
+int *get_current_loc();
+int *get_stage();
 
 void assert(int cond);/* {
   if (!cond) {
@@ -124,7 +121,7 @@ int find_char(char *s, char c);/* {
 int find_symbol(const char *name) {
   int i;
   for (i = 0; i < SYMBOL_TABLE_LEN; i++) {
-    if (strcmp(name, symbol_names[i]) == 0) {
+    if (strcmp(name, get_symbol_names() + i * MAX_SYMBOL_NAME_LEN) == 0) {
       break;
     }
   }
@@ -135,16 +132,18 @@ void add_symbol(const char *name, int loc) {
   int len = strlen(name);
   assert(len > 0);
   assert(len < MAX_SYMBOL_NAME_LEN);
+  int stage = *get_stage();
   if (stage == 0) {
+    int symbol_num = *get_symbol_num();
     assert(find_symbol(name) == SYMBOL_TABLE_LEN);
     assert(symbol_num < SYMBOL_TABLE_LEN);
-    strcpy(symbol_names[symbol_num], name);
-    symbol_loc[symbol_num] = loc;
-    symbol_num++;
+    strcpy(get_symbol_names() + symbol_num * MAX_SYMBOL_NAME_LEN, name);
+    get_symbol_loc()[symbol_num] = loc;
+    *get_symbol_num() = symbol_num + 1;
   } else if (stage == 1) {
     int idx = find_symbol(name);
     assert(idx < SYMBOL_TABLE_LEN);
-    assert(symbol_loc[idx] == loc);
+    assert(get_symbol_loc()[idx] == loc);
   } else {
     platform_panic();
   }
@@ -227,22 +226,23 @@ int decode_number(const char *operand, unsigned int *num) {
   }
 }
 
-int decode_number_or_symbol(const char *operand, unsigned int *num) {
+int decode_number_or_symbol(const char *operand, unsigned int *num, int force_symbol) {
   int res = decode_number(operand, num);
   if (res) {
     return 1;
   }
-  if (stage == 0) {
-    *num = 0;
-    return 1;
-  } else if (stage == 1) {
+  int stage = *get_stage();
+  if (stage == 1 || force_symbol) {
     int idx = find_symbol(operand);
     if (idx < SYMBOL_TABLE_LEN) {
-      *num = symbol_loc[idx];
+      *num = get_symbol_loc()[idx];
       return 1;
     } else {
       return 0;
     }
+  } else if (stage == 0) {
+    *num = 0;
+    return 1;
   } else {
     platform_panic();
   }
@@ -294,7 +294,7 @@ int decode_operand(char *operand, int *is_direct, int *reg, int *disp, int *is8,
             return 0;
           } else {
             operand[closed_pos] = '\0';
-            return decode_number_or_symbol(operand, disp);
+            return decode_number_or_symbol(operand, disp, 0);
           }
         }
       }
@@ -320,10 +320,11 @@ int decode_operand(char *operand, int *is_direct, int *reg, int *disp, int *is8,
 }
 
 void emit(char c) {
+  int stage = *get_stage();
   if (stage == 1) {
     platform_write_char(1, c);
   }
-  current_loc++;
+  (*get_current_loc())++;
 }
 
 void emit32(int x) {
@@ -336,12 +337,22 @@ void emit32(int x) {
 int process_bss_line(char *opcode, char *data) {
   if (strcmp(opcode, "resb") == 0) {
     int val;
-    int res = decode_number_or_symbol(data, &val);
+    int res = decode_number_or_symbol(data, &val, 1);
     if (!res) {
       platform_panic();
     }
     int i;
     for (i = 0; i < val; i++) {
+      emit(0);
+    }
+  } else if (strcmp(opcode, "resd") == 0) {
+    int val;
+    int res = decode_number_or_symbol(data, &val, 1);
+    if (!res) {
+      platform_panic();
+    }
+    int i;
+    for (i = 0; i < 4 * val; i++) {
       emit(0);
     }
   } else {
@@ -426,10 +437,11 @@ void process_jmp_like(int op, char *data) {
       platform_panic();
     }
     int rel;
-    int res = decode_number_or_symbol(data, &rel);
+    int res = decode_number_or_symbol(data, &rel, 0);
     if (!res) {
       platform_panic();
     }
+    int current_loc = *get_current_loc();
     rel = rel - current_loc - (has_opcode2 ? 6 : 5);
     emit(opcode);
     if (has_opcode2) {
@@ -473,7 +485,7 @@ void process_push_like(int op, char *data) {
   } else {
     assert(op == OP_PUSH);
     int imm;
-    int res = decode_number_or_symbol(data, &imm);
+    int res = decode_number_or_symbol(data, &imm, 0);
     if (res) {
       emit(0x68);
       emit32(imm);
@@ -610,7 +622,7 @@ void process_add_like(int op, char *data) {
   } else {
     assert(dest_is8 || dest_is32);
     int imm;
-    int res = decode_number_or_symbol(src, &imm);
+    int res = decode_number_or_symbol(src, &imm, 0);
     if (res) {
       if (dest_is8) {
         // r/m8, imm8
@@ -691,7 +703,7 @@ void process_add_like(int op, char *data) {
 
 void process_int(char *data) {
   int imm;
-  int res = decode_number_or_symbol(data, &imm);
+  int res = decode_number_or_symbol(data, &imm, 0);
   if (!res) {
     platform_panic();
   }
@@ -756,15 +768,16 @@ void process_line(char *line) {
   if (strcmp(opcode, "section") == 0) {
     assert(data_len > 0);
     assert(data_len < MAX_SYMBOL_NAME_LEN);
-    strcpy(current_section, data);
+    strcpy(get_current_section(), data);
   } else if (strcmp(opcode, "global") == 0) {
+  } else if (strcmp(opcode, "align") == 0) {
   } else if (strcmp(opcode, "extern") == 0) {
     add_symbol(data, 0);
   } else {
     int processed = 0;
-    if (strcmp(current_section, ".bss") == 0) {
+    if (strcmp(get_current_section(), ".bss") == 0) {
       processed = process_bss_line(opcode, data);
-    } else if (strcmp(current_section, ".text") == 0) {
+    } else if (strcmp(get_current_section(), ".text") == 0) {
       processed = process_text_line(opcode, data);
     }
     if (!processed) {
@@ -773,7 +786,7 @@ void process_line(char *line) {
         data[data_space_pos] = '\0';
         if (strcmp(data, "equ") == 0) {
           int val;
-          int res = decode_number_or_symbol(data + data_space_pos + 1, &val);
+          int res = decode_number_or_symbol(data + data_space_pos + 1, &val, 0);
           if (res) {
             add_symbol(opcode, val);
           } else {
@@ -791,10 +804,11 @@ void process_line(char *line) {
 
 void assemble_file() {
   int fd_in = platform_open_file("asmc.asm");
-  for (stage = 0; stage < 2; stage++) {
+  for (*get_stage() = 0; *get_stage() < 2; (*get_stage())++) {
     platform_reset_file(fd_in);
-    current_loc = 0;
+    *get_current_loc() = 0;
     while (1) {
+      char *input_buf = get_input_buf();
       int finished = readline(fd_in, input_buf, INPUT_BUF_LEN);
       /*platform_log(2, "Decoding line: ");
       platform_log(2, input_buf);
@@ -809,7 +823,7 @@ void assemble_file() {
       }
       if (input_buf[len-1] == ':') {
         input_buf[len-1] = '\0';
-        add_symbol(input_buf, current_loc);
+        add_symbol(input_buf, *get_current_loc());
       } else {
         process_line(input_buf);
       }
