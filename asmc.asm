@@ -901,3 +901,72 @@ decode_number_ret:
   pop ebx
   pop ebp
   ret
+
+
+  global decode_number_or_symbol
+decode_number_or_symbol:
+  push ebp
+  mov ebp, esp
+
+  ;; Call decode_number
+  mov eax, [ebp+8]
+  push eax
+  mov eax, [ebp+12]
+  push eax
+  call decode_number
+  add esp, 8
+
+  ;; If decode_number succeded, return 1
+  cmp eax, 1
+  jne decode_number_or_symbol_after_number
+  jmp decode_number_or_symbol_ret
+
+decode_number_or_symbol_after_number:
+  ;; Branch to appropriate stage (in particular, if third argument is
+  ;; true assume stage 1)
+  mov edx, stage
+  mov eax, [edx]
+  cmp eax, 1
+  je decode_number_or_symbol_stage1
+  cmp DWORD [ebp+16], 0
+  jne decode_number_or_symbol_stage1
+  cmp eax, 0
+  je decode_number_or_symbol_stage0
+  jmp platform_panic
+
+decode_number_or_symbol_stage0:
+  ;; Set the number to placeholder 0 and return 1
+  mov eax, [ebp+12]
+  mov DWORD [eax], 0
+  mov eax, 1
+  jmp decode_number_or_symbol_ret
+
+decode_number_or_symbol_stage1:
+  ;; Call find_symbol
+  mov eax, [ebp+8]
+  push eax
+  call find_symbol
+  add esp, 4
+
+  ;; Check if the symbol is valid
+  cmp eax, SYMBOL_TABLE_LEN
+  jae decode_number_or_symbol_invalid
+
+  ;; If it is, set the number and return 1
+  mov ecx, 4
+  imul ecx
+  add eax, symbol_loc
+  mov edx, [eax]
+  mov ecx, [ebp+12]
+  mov [ecx], edx
+  mov eax, 1
+  jmp decode_number_or_symbol_ret
+
+decode_number_or_symbol_invalid:
+  ;; If the symbol is invalid in stage 1, we have to return 0
+  mov eax, 0
+  jmp decode_number_or_symbol_ret
+
+decode_number_or_symbol_ret:
+  pop ebp
+  ret

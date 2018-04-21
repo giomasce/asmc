@@ -226,7 +226,7 @@ int decode_number(const char *operand, unsigned int *num);/* {
   }
 }*/
 
-int decode_number_or_symbol(const char *operand, unsigned int *num, int force_symbol) {
+int decode_number_or_symbol(const char *operand, unsigned int *num, int force_symbol);/* {
   int res = decode_number(operand, num);
   if (res) {
     return 1;
@@ -246,7 +246,7 @@ int decode_number_or_symbol(const char *operand, unsigned int *num, int force_sy
   } else {
     platform_panic();
   }
-}
+}*/
 
 int decode_operand(char *operand, int *is_direct, int *reg, int *disp, int *is8, int *is32) {
   remove_spaces(operand);
