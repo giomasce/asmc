@@ -490,5 +490,101 @@ find_symbol_ret:
   ret
 
 
-;;   global add_symbol
-;; add_symbol:
+  global add_symbol
+add_symbol:
+  push ebp
+  mov ebp, esp
+  push ebx
+
+  ;; Call strlen
+  mov eax, [ebp+8]
+  push eax
+  call strlen
+  add esp, 4
+
+  ;; Check input length
+  cmp eax, 0
+  jna platform_panic
+  cmp eax, MAX_SYMBOL_NAME_LEN
+  jnb platform_panic
+
+  ;; Branch to appropriate stage
+  mov edx, stage
+  mov eax, [edx]
+  cmp eax, 0
+  je add_symbol_stage0
+  cmp eax, 1
+  je add_symbol_stage1
+  jmp platform_panic
+
+add_symbol_stage0:
+  ;; Call find_symbol
+  mov eax, [ebp+8]
+  push eax
+  call find_symbol
+  add esp, 4
+
+  ;; Check that the symbol does not exist yet
+  cmp eax, SYMBOL_TABLE_LEN
+  jne platform_panic
+
+  ;; Put the current symbol number in ebx and check it is not
+  ;; overflowing
+  mov eax, symbol_num
+  mov ebx, [eax]
+  cmp ebx, SYMBOL_TABLE_LEN
+  jnb platform_panic
+
+  ;; Save the location for the new symbol
+  mov eax, ebx
+  mov ecx, 4
+  imul ecx
+  add eax, symbol_loc
+  mov ecx, [ebp+12]
+  mov [eax], ecx
+
+  ;; Save the name for the new symbol
+  mov eax, [ebp+8]
+  push eax
+  mov eax, ebx
+  mov ecx, MAX_SYMBOL_NAME_LEN
+  imul ecx
+  add eax, symbol_names
+  push eax
+  call strcpy
+  add esp, 8
+
+  ;; Increment and store the new symbol number
+  add ebx, 1
+  mov eax, symbol_num
+  mov [eax], ebx
+
+  jmp add_symbol_ret
+
+add_symbol_stage1:
+  ;; Call find_symbol
+  mov eax, [ebp+8]
+  push eax
+  call find_symbol
+  add esp, 4
+
+  ;; Check it is smaller than the symbol number
+  mov ecx, symbol_num
+  mov edx, [ecx]
+  cmp eax, edx
+  jnb platform_panic
+
+  ;; Check the location matches with the symbol table
+  mov ecx, 4
+  imul ecx
+  add eax, symbol_loc
+  mov ecx, [ebp+12]
+  cmp [eax], ecx
+  jne platform_panic
+
+  jmp add_symbol_ret
+
+add_symbol_ret:
+  pop ebx
+  pop ebp
+  ret

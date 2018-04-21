@@ -128,7 +128,7 @@ int find_symbol(const char *name);/* {
   return i;
 }*/
 
-void add_symbol(const char *name, int loc) {
+void add_symbol(const char *name, int loc);/* {
   int len = strlen(name);
   assert(len > 0);
   assert(len < MAX_SYMBOL_NAME_LEN);
@@ -137,17 +137,17 @@ void add_symbol(const char *name, int loc) {
     int symbol_num = *get_symbol_num();
     assert(find_symbol(name) == SYMBOL_TABLE_LEN);
     assert(symbol_num < SYMBOL_TABLE_LEN);
-    strcpy(get_symbol_names() + symbol_num * MAX_SYMBOL_NAME_LEN, name);
     get_symbol_loc()[symbol_num] = loc;
+    strcpy(get_symbol_names() + symbol_num * MAX_SYMBOL_NAME_LEN, name);
     *get_symbol_num() = symbol_num + 1;
   } else if (stage == 1) {
     int idx = find_symbol(name);
-    assert(idx < SYMBOL_TABLE_LEN);
+    assert(idx < *get_symbol_num());
     assert(get_symbol_loc()[idx] == loc);
   } else {
     platform_panic();
   }
-}
+}*/
 
 int decode_reg32(char *reg) {
   if (strcmp(reg, "eax") == 0) {
