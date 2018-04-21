@@ -261,7 +261,7 @@ int decode_number(char *operand, unsigned int *num) {
     if ('0' <= operand[0] && operand[0] <= '9') {
       *num += operand[0] - '0';
     } else if (!is_decimal && 'a' <= operand[0] && operand[0] <= 'f') {
-      *num += operand[0] - 'a';
+      *num += operand[0] - 'a' + 10;
     } else {
       return 0;
     }
@@ -346,11 +346,19 @@ void process_bss_line(char *opcode, char *data) {
   }
 }
 
-int assemble_modrm(int mod, int reg, int rm) {
+int emit_modrm(int mod, int reg, int rm) {
   assert(mod == mod & 0x3);
   assert(reg == reg & 0x7);
   assert(rm == rm & 0x7);
-  return (mod << 6) + (reg << 3) + rm;
+  emit((mod << 6) + (reg << 3) + rm);
+  // The only two supported mode are a direct register, or an indirect
+  // register + disp32
+  assert(mod == 2 || mod == 3);
+  // In the particular case of ESP used as indirect base, a SIB is
+  // needed
+  if (mod == 2 && rm == 4) {
+    emit(0x24);
+  }
 }
 
 enum {
@@ -384,10 +392,10 @@ void process_jmp_like(int op, char *data) {
     }
     if (is_direct) {
       emit(opcode);
-      emit(assemble_modrm(3, ext, reg));
+      emit_modrm(3, ext, reg);
     } else {
       emit(opcode);
-      emit(assemble_modrm(2, ext, reg));
+      emit_modrm(2, ext, reg);
       emit32(disp);
     }
   } else {
@@ -460,8 +468,7 @@ void process_push_like(int op, char *data) {
         platform_panic();
       }
       emit(opcode);
-      // FIXME: sometimes we need to generate a SIB
-      emit(assemble_modrm(2, reg, reg));
+      emit_modrm(2, reg, reg);
       emit32(disp);
     }
   } else {
@@ -509,10 +516,10 @@ void process_add_like(int op, char *data) {
       }
       if (src_is_direct) {
         emit(opcode);
-        emit(assemble_modrm(3, dest_reg, src_reg));
+        emit_modrm(3, dest_reg, src_reg);
       } else {
         emit(opcode);
-        emit(assemble_modrm(2, dest_reg, src_reg));
+        emit_modrm(2, dest_reg, src_reg);
         emit32(src_disp);
       }
     } else {
@@ -531,7 +538,7 @@ void process_add_like(int op, char *data) {
           platform_panic();
         }
         emit(opcode);
-        emit(assemble_modrm(2, src_reg, dest_reg));
+        emit_modrm(2, src_reg, dest_reg);
         emit32(dest_disp);
       } else {
         platform_panic();
@@ -561,11 +568,11 @@ void process_add_like(int op, char *data) {
       }
       if (dest_is_direct) {
         emit(opcode);
-        emit(assemble_modrm(3, reg, dest_reg));
+        emit_modrm(3, reg, dest_reg);
         emit32(imm);
       } else {
         emit(opcode);
-        emit(assemble_modrm(2, reg, dest_reg));
+        emit_modrm(2, reg, dest_reg);
         emit32(dest_disp);
         emit32(imm);
       }
@@ -659,9 +666,9 @@ void assemble_file() {
     current_loc = 0;
     while (1) {
       int finished = readline(fd_in, input_buf, INPUT_BUF_LEN);
-      platform_log(2, "Decoding line: ");
+      /*platform_log(2, "Decoding line: ");
       platform_log(2, input_buf);
-      platform_log(2, "\n");
+      platform_log(2, "\n");*/
       trimstr(input_buf);
       int len = strlen(input_buf);
       if (finished && len == 0) {
