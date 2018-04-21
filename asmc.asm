@@ -6,6 +6,10 @@
   extern readline
   extern assemble_file
 
+section .bss
+input_buf:
+  resb 1024
+
 section .text
 global  _start
 
@@ -63,7 +67,7 @@ _platform_exit:
   ;; Just exit, never return
   mov ebx, 0
   mov eax, 1
-  int 80h
+  int 0x80
 
 _platform_write_char:
   ;; Write the char in AL to output
@@ -117,7 +121,3 @@ _platform_read_char_file_finished:
 _platform_panic:
   ;; Forcibly abort the execution in consequence of an error
   call 0
-
-section .bss
-input_buf:
-  resb 1024

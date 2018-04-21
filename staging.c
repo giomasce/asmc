@@ -216,6 +216,15 @@ void add_symbol(unsigned char *name, int loc) {
 
 void process_bss_line(char *opcode, char *data) {
   if (strcmp(opcode, "resb") == 0) {
+    int val;
+    int res = decode_number(data, &val);
+    if (!res) {
+      platform_panic();
+    }
+    int i;
+    for (i = 0; i < val; i++) {
+      emit(0);
+    }
   } else {
     platform_panic();
   }
@@ -354,6 +363,8 @@ enum {
   OP_CMP,
   OP_JMP,
   OP_CALL,
+  OP_JZ,
+  OP_JNZ,
 };
 
 void process_jmp_like(int op, char *data) {
@@ -383,6 +394,25 @@ void process_jmp_like(int op, char *data) {
       }
     }
   } else {
+    // rel32
+    int opcode;
+    int opcode2;
+    int has_opcode2 = 0;
+    if (op == OP_JMP) {
+      opcode = 0xe9;
+    } else if (op == OP_CALL) {
+      opcode = 0xe8;
+    } else if (op == OP_JZ) {
+      opcode = 0x0f;
+      opcode2 = 0x84;
+      has_opcode2 = 1;
+    } else if (op == OP_JNZ) {
+      opcode = 0x0f;
+      opcode2 = 0x85;
+      has_opcode2 = 1;
+    } else {
+      platform_panic();
+    }
     int rel;
     int res = decode_number(data, &rel);
     if (!res) {
@@ -391,23 +421,17 @@ void process_jmp_like(int op, char *data) {
       } else {
         int idx = find_symbol(data);
         if (idx < SYMBOL_TABLE_LEN) {
-          // Here 5 is the length of the instruction we are going to emit
-          rel = symbol_loc[idx] - current_loc - 5;
+          // Here 5 or 6 is the length of the instruction we are going to emit
+          rel = symbol_loc[idx] - current_loc - (has_opcode2 ? 6 : 5);
         } else {
           platform_panic();
         }
       }
     }
-    // rel32
-    int opcode;
-    if (op == OP_JMP) {
-      opcode = 0xe9;
-    } else if (op == OP_CALL) {
-      opcode = 0xe8;
-    } else {
-      platform_panic();
-    }
     emit(opcode);
+    if (has_opcode2) {
+      emit(opcode2);
+    }
     emit32(rel);
   }
 }
@@ -562,12 +586,27 @@ void process_add_like(int op, char *data) {
   }
 }
 
+void process_int(char *data) {
+  int imm;
+  int res = decode_number(data, &imm);
+  if (!res) {
+    platform_panic();
+  }
+  if (res < 0 || res >= 0x100) {
+    platform_panic();
+  }
+  emit(0xcd);
+  emit(imm);
+}
+
 void process_text_line(char *opcode, char *data) {
   if (strcmp(opcode, "call") == 0) {
     process_jmp_like(OP_CALL, data);
   } else if (strcmp(opcode, "jmp") == 0) {
     process_jmp_like(OP_JMP, data);
   } else if (strcmp(opcode, "ret") == 0) {
+    assert(strcmp(data, "") == 0);
+    emit(0xc3);
   } else if (strcmp(opcode, "push") == 0) {
     process_push_like(OP_PUSH, data);
   } else if (strcmp(opcode, "pop") == 0) {
@@ -581,8 +620,11 @@ void process_text_line(char *opcode, char *data) {
   } else if (strcmp(opcode, "cmp") == 0) {
     process_add_like(OP_CMP, data);
   } else if (strcmp(opcode, "jz") == 0) {
+    process_jmp_like(OP_JZ, data);
   } else if (strcmp(opcode, "jnz") == 0) {
+    process_jmp_like(OP_JNZ, data);
   } else if (strcmp(opcode, "int") == 0) {
+    process_int(data);
   } else {
     platform_panic();
   }
@@ -591,10 +633,17 @@ void process_text_line(char *opcode, char *data) {
 void process_line(char *line) {
   char *opcode = line;
   int opcode_len = find_char(line, ' ');
-  opcode[opcode_len] = '\0';
-  char *data = line + opcode_len + 1;
-  trimstr(data);
-  int data_len = strlen(data);
+  char *data;
+  int data_len;
+  if (opcode_len == -1) {
+    data = line + strlen(line);
+    data_len = 0;
+  } else {
+    opcode[opcode_len] = '\0';
+    data = line + opcode_len + 1;
+    trimstr(data);
+    data_len = strlen(data);
+  }
 
   if (strcmp(opcode, "section") == 0) {
     assert(data_len > 0);
