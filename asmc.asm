@@ -7,10 +7,11 @@
   extern platform_write_char
   extern platform_log
 
-  extern readline
   extern assemble_file
 
   testequ equ 100
+
+  NEWLINE equ 0xa
 
 section .bss
 input_buf:
@@ -145,55 +146,140 @@ assert:
 assert_return:
   ret
 
+
+  global readline
+readline:
+  push ebp
+  mov ebp, esp
+readline_begin_loop:
+  ;; If len is zero, jump to panic
+  cmp DWORD [ebp+16], 0
+  jz platform_panic
+
+  ;; Call platform_read_char
+  mov ecx, [ebp+8]
+  push ecx
+  call platform_read_char
+  add esp, 4
+
+  ;; Store the buffer address in edx
+  mov edx, [ebp+12]
+
+  ;; Handle newline and eof
+  cmp eax, NEWLINE
+  jz readline_newline_found
+  cmp eax, 0xffffffff
+  jz readline_eof_found
+
+  ;; Copy a byte
+  mov [edx], al
+
+  ;; Increment the buffer and decrement the length
+  add edx, 1
+  mov [ebp+12], edx
+  mov ecx, [ebp+16]
+  sub ecx, 1
+  mov [ebp+16], ecx
+
+  jmp readline_begin_loop
+
+  ;; On newline, store the string terminator and return 0
+readline_newline_found:
+  mov BYTE [edx], 0
+  mov eax, 0
+  jmp readline_ret
+
+  ;; On eof, store the string terminator and return 1
+readline_eof_found:
+  mov BYTE [edx], 0
+  mov eax, 1
+  jmp readline_ret
+
+readline_ret:
+  pop ebp
+  ret
+
+
   global strcmp
 strcmp:
   push ebx
+
+  ;; Load registers
   mov eax, [esp+8]
   mov ecx, [esp+12]
+
 strcmp_begin_loop:
+  ;; Compare a byte
   mov bl, [eax]
   mov dl, [ecx]
   cmp bl, dl
   jz strcmp_after_cmp1
+
+  ;; Return 1 if they differ
+  ;; TODO Differentiate the less than and greater than cases
   mov eax, 1
   jmp strcmp_end
+
 strcmp_after_cmp1:
+  ;; Check for string termination
   cmp bl, 0
   jnz strcmp_after_cmp2
+
+  ;; Return 0 if we arrived at the end without finding differences
   mov eax, 0
   jmp strcmp_end
+
 strcmp_after_cmp2:
+  ;; Increment both pointers and restart
   add eax, 1
   add ecx, 1
   jmp strcmp_begin_loop
+
 strcmp_end:
   pop ebx
   ret
 
+
   global strcpy
 strcpy:
+  ;; Load registers
   mov eax, [esp+4]
   mov ecx, [esp+8]
+
 strcpy_begin_loop:
+  ;; Copy a byte
   mov dl, [ecx]
   mov [eax], dl
+
+  ;; Return if it was the terminator
   cmp dl, 0
   jz strcpy_end
+
+  ;; Increment both pointers and restart
   add eax, 1
   add ecx, 1
   jmp strcpy_begin_loop
+
 strcpy_end:
   ret
 
+
   global strlen
 strlen:
+  ;; Set up register
   mov eax, [esp+4]
+
 strlen_begin_loop:
+  ;; Check for termination
   mov cl, [eax]
   cmp cl, 0
   jz strlen_end
+
+  ;; Increment pointer
   add eax, 1
   jmp strlen_begin_loop
+
 strlen_end:
+  ;; Return the difference between the current and initial address
   sub eax, [esp+4]
   ret

@@ -22,7 +22,7 @@ void assert(int cond);/* {
   }
 }*/
 
-int readline(int fd, unsigned char *buf, int len) {
+int readline(int fd, unsigned char *buf, int len);/* {
   while (len > 0) {
     int c = platform_read_char(fd);
     if (c == '\n' || c == -1) {
@@ -35,7 +35,7 @@ int readline(int fd, unsigned char *buf, int len) {
     len--;
   }
   platform_panic();
-}
+}*/
 
 void trimstr(char *buf) {
   char *write_buf = buf;
