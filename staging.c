@@ -214,22 +214,6 @@ void add_symbol(unsigned char *name, int loc) {
   }
 }
 
-void process_bss_line(char *opcode, char *data) {
-  if (strcmp(opcode, "resb") == 0) {
-    int val;
-    int res = decode_number(data, &val);
-    if (!res) {
-      platform_panic();
-    }
-    int i;
-    for (i = 0; i < val; i++) {
-      emit(0);
-    }
-  } else {
-    platform_panic();
-  }
-}
-
 int decode_reg(char *reg) {
   if (strcmp(reg, "eax") == 0) {
     return 0;
@@ -344,6 +328,22 @@ void emit32(int x) {
   emit(x >> 8);
   emit(x >> 16);
   emit(x >> 24);
+}
+
+void process_bss_line(char *opcode, char *data) {
+  if (strcmp(opcode, "resb") == 0) {
+    int val;
+    int res = decode_number(data, &val);
+    if (!res) {
+      platform_panic();
+    }
+    int i;
+    for (i = 0; i < val; i++) {
+      emit(0);
+    }
+  } else {
+    platform_panic();
+  }
 }
 
 int assemble_modrm(int mod, int reg, int rm) {
