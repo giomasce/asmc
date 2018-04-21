@@ -83,7 +83,8 @@ _platform_write_char:
   ;; Write the char in AL to output
   push ebx
   sub esp, 4
-  ;; mov [esp], al
+  ;; and eax, 0xff
+  mov [esp], eax
 
   mov edx, 1
   mov ecx, esp
@@ -103,7 +104,7 @@ _platform_read_char:
   ;;  Read a char from input to AL; all other bits of EAX are zeroed; if the file is finished, put 0xffffffff in EAX
   push ebx
   sub esp, 4
-  ;; mov DWORD [esp], 0
+  mov DWORD [esp], 0
 
   mov edx, 1
   mov ecx, esp

@@ -292,6 +292,9 @@ int decode_number_or_symbol(const char *operand, unsigned int *num) {
 
 int decode_operand(char *operand, int *is_direct, int *reg, int *disp) {
   remove_spaces(operand);
+  if (operand[0] == 'D' && operand[1] == 'W' && operand[2] == 'O' && operand[3] == 'R' && operand[4] == 'D') {
+    operand += 5;
+  }
   if (operand[0] == '[') {
     *is_direct = 0;
     operand++;
