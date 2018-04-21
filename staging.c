@@ -137,7 +137,7 @@ void remove_spaces(char *buf) {
   }
 }
 
-int strcmp(const char *s1, const char *s2) {
+int strcmp(const char *s1, const char *s2);/* {
   while (1) {
     if (*s1 < *s2) {
       return -1;
@@ -151,7 +151,7 @@ int strcmp(const char *s1, const char *s2) {
     s1++;
     s2++;
   }
-}
+}*/
 
 void strcpy(char *d, const char *s) {
   while (1) {
@@ -164,13 +164,13 @@ void strcpy(char *d, const char *s) {
   }
 }
 
-int strlen(const char *s) {
+int strlen(const char *s);/* {
   const char *s2 = s;
   while (*s2 != '\0') {
     s2++;
   }
   return s2 - s;
-}
+}*/
 
 int find_char(char *s, char c) {
   char *s2 = s;

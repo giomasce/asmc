@@ -135,8 +135,49 @@ _platform_panic:
 
   global assert
 assert:
-  cmp DWORD [esp+8], 0
+  cmp DWORD [esp+4], 0
   jnz assert_return
   call platform_panic
 assert_return:
+  ret
+
+  global strcmp
+strcmp:
+  push ebx
+  mov eax, [esp+8]
+  mov ecx, [esp+12]
+strcmp_begin_loop:
+  mov ebx, [eax]
+  mov edx, [ecx]
+  and ebx, 0xff
+  and edx, 0xff
+  cmp ebx, edx
+  jz strcmp_after_cmp1
+  mov eax, 1
+  jmp strcmp_end
+strcmp_after_cmp1:
+  cmp ebx, 0
+  jnz strcmp_after_cmp2
+  mov eax, 0
+  jmp strcmp_end
+strcmp_after_cmp2:
+  add eax, 1
+  add ecx, 1
+  jmp strcmp_begin_loop
+strcmp_end:
+  pop ebx
+  ret
+
+  global strlen
+strlen:
+  mov eax, [esp+4]
+strlen_begin_loop:
+  mov ecx, [eax]
+  and ecx, 0xff
+  cmp ecx, 0
+  jz strlen_end
+  add eax, 1
+  jmp strlen_begin_loop
+strlen_end:
+  sub eax, [esp+4]
   ret
