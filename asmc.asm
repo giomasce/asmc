@@ -12,6 +12,8 @@
   testequ equ 100
 
   NEWLINE equ 0xa
+  SPACE equ 0x20
+  TAB equ 0x9
 
 section .bss
 input_buf:
@@ -200,6 +202,79 @@ readline_ret:
   ret
 
 
+  global trimstr
+trimstr:
+  ;; Load registers (eax for writing, ecx for reading)
+  mov eax, [esp+4]
+  mov ecx, eax
+
+  ;; Skip the initial whitespace
+trimstr_skip_initial:
+  cmp BYTE [ecx], SPACE
+  jz trimstr_initial_white
+  cmp BYTE [ecx], TAB
+  jz trimstr_initial_white
+  jmp trimstr_copy_loop
+trimstr_initial_white:
+  add ecx, 1
+  jmp trimstr_skip_initial
+
+  ;; Copy until the string terminator
+trimstr_copy_loop:
+  cmp BYTE [ecx], 0
+  mov dl, [ecx]
+  mov [eax], dl
+  jz trimstr_trim_end
+  add ecx, 1
+  add eax, 1
+  jmp trimstr_copy_loop
+
+  ;; Replace the final whitespace with terminators
+trimstr_trim_end:
+  cmp BYTE [eax], SPACE
+  jz trimstr_final_white
+  cmp BYTE [eax], TAB
+  jz trimstr_final_white
+  jmp trimstr_ret
+trimstr_final_white:
+  mov BYTE [eax], 0
+  cmp eax, [esp+4]
+  jz trimstr_ret
+  sub eax, 1
+  jmp trimstr_trim_end
+
+trimstr_ret:
+  ret
+
+
+  global remove_spaces
+remove_spaces:
+  ;; Load registers (eax for writing, ecx for reading)
+  mov eax, [esp+4]
+  mov ecx, eax
+
+  ;; Main loop
+remove_spaces_loop:
+  ;; Copy the byte and, if found terminator, stop
+  cmp BYTE [ecx], 0
+  mov dl, [ecx]
+  mov [eax], dl
+  jz remove_spaces_ret
+
+  ;; Advance the read pointer; advance the write pointer only if we
+  ;; did not found whitespace
+  add ecx, 1
+  cmp dl, SPACE
+  jz remove_spaces_loop
+  cmp dl, TAB
+  jz remove_spaces_loop
+  add eax, 1
+  jmp remove_spaces_loop
+
+remove_spaces_ret:
+  ret
+
+
   global strcmp
 strcmp:
   push ebx
@@ -266,7 +341,7 @@ strcpy_end:
 
   global strlen
 strlen:
-  ;; Set up register
+  ;; Load register
   mov eax, [esp+4]
 
 strlen_begin_loop:
@@ -282,4 +357,31 @@ strlen_begin_loop:
 strlen_end:
   ;; Return the difference between the current and initial address
   sub eax, [esp+4]
+  ret
+
+
+  global find_char
+find_char:
+  ;; Load registers
+  mov eax, [esp+4]
+  mov dl, [esp+8]
+
+  ;; Main loop
+find_char_loop:
+  cmp [eax], dl
+  jz find_char_ret
+  cmp BYTE [eax], 0
+  jz find_char_ret_error
+  add eax, 1
+  jmp find_char_loop
+
+  ;; If we found the target character, return the difference between
+  ;; the current and initial address
+find_char_ret:
+  sub eax, [esp+4]
+  ret
+
+  ;; If we found a terminator, return -1
+find_char_ret_error:
+  mov eax, 0xffffffff
   ret

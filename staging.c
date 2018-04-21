@@ -37,7 +37,7 @@ int readline(int fd, unsigned char *buf, int len);/* {
   platform_panic();
 }*/
 
-void trimstr(char *buf) {
+void trimstr(char *buf);/* {
   char *write_buf = buf;
   char *read_buf = buf;
   while (*read_buf == ' ' || *read_buf == '\t') {
@@ -54,9 +54,9 @@ void trimstr(char *buf) {
     *write_buf = '\0';
     write_buf--;
   }
-}
+}*/
 
-void remove_spaces(char *buf) {
+void remove_spaces(char *buf);/* {
   char *read_buf = buf;
   while (1) {
     if (*read_buf == '\0') {
@@ -71,7 +71,7 @@ void remove_spaces(char *buf) {
       read_buf++;
     }
   }
-}
+}*/
 
 int strcmp(const char *s1, const char *s2);/* {
   while (1) {
@@ -108,7 +108,7 @@ int strlen(const char *s);/* {
   return s2 - s;
 }*/
 
-int find_char(char *s, char c) {
+int find_char(char *s, char c);/* {
   char *s2 = s;
   while (1) {
     if (*s2 == c) {
@@ -119,7 +119,7 @@ int find_char(char *s, char c) {
     }
     s2++;
   }
-}
+}*/
 
 int find_symbol(const char *name) {
   int i;
