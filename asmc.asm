@@ -91,7 +91,7 @@ main_loop:
   call platform_read_char
   add esp, 4
   cmp eax, 0xffffffff
-  jz main_loop_finish
+  je main_loop_finish
   push eax
   push 1
   call platform_write_char
@@ -121,7 +121,7 @@ _test:
 
   testequ2 equ 2204
 
-  jnz 0x100
+  jne 0x100
 
 _test2:
   jmp _test2
@@ -160,7 +160,7 @@ _platform_write_char:
   int 0x80
 
   cmp eax, 1
-  jnz platform_panic
+  jne platform_panic
 
   add esp, 4
   pop ebx
@@ -180,10 +180,10 @@ _platform_read_char:
   int 0x80
 
   cmp eax, 0
-  jz _platform_read_char_file_finished
+  je _platform_read_char_file_finished
 
   cmp eax, 1
-  jnz platform_panic
+  jne platform_panic
 
   mov eax, [esp]
   add esp, 4
@@ -203,7 +203,7 @@ _platform_panic:
   global assert
 assert:
   cmp DWORD [esp+4], 0
-  jnz assert_return
+  jne assert_return
   call platform_panic
 assert_return:
   ret
@@ -216,7 +216,7 @@ readline:
 readline_begin_loop:
   ;; If len is zero, jump to panic
   cmp DWORD [ebp+16], 0
-  jz platform_panic
+  je platform_panic
 
   ;; Call platform_read_char
   mov ecx, [ebp+8]
@@ -229,9 +229,9 @@ readline_begin_loop:
 
   ;; Handle newline and eof
   cmp eax, NEWLINE
-  jz readline_newline_found
+  je readline_newline_found
   cmp eax, 0xffffffff
-  jz readline_eof_found
+  je readline_eof_found
 
   ;; Copy a byte
   mov [edx], al
@@ -271,9 +271,9 @@ trimstr:
   ;; Skip the initial whitespace
 trimstr_skip_initial:
   cmp BYTE [ecx], SPACE
-  jz trimstr_initial_white
+  je trimstr_initial_white
   cmp BYTE [ecx], TAB
-  jz trimstr_initial_white
+  je trimstr_initial_white
   jmp trimstr_copy_loop
 trimstr_initial_white:
   add ecx, 1
@@ -284,7 +284,7 @@ trimstr_copy_loop:
   cmp BYTE [ecx], 0
   mov dl, [ecx]
   mov [eax], dl
-  jz trimstr_trim_end
+  je trimstr_trim_end
   add ecx, 1
   add eax, 1
   jmp trimstr_copy_loop
@@ -292,14 +292,14 @@ trimstr_copy_loop:
   ;; Replace the final whitespace with terminators
 trimstr_trim_end:
   cmp BYTE [eax], SPACE
-  jz trimstr_final_white
+  je trimstr_final_white
   cmp BYTE [eax], TAB
-  jz trimstr_final_white
+  je trimstr_final_white
   jmp trimstr_ret
 trimstr_final_white:
   mov BYTE [eax], 0
   cmp eax, [esp+4]
-  jz trimstr_ret
+  je trimstr_ret
   sub eax, 1
   jmp trimstr_trim_end
 
@@ -319,15 +319,15 @@ remove_spaces_loop:
   cmp BYTE [ecx], 0
   mov dl, [ecx]
   mov [eax], dl
-  jz remove_spaces_ret
+  je remove_spaces_ret
 
   ;; Advance the read pointer; advance the write pointer only if we
   ;; did not found whitespace
   add ecx, 1
   cmp dl, SPACE
-  jz remove_spaces_loop
+  je remove_spaces_loop
   cmp dl, TAB
-  jz remove_spaces_loop
+  je remove_spaces_loop
   add eax, 1
   jmp remove_spaces_loop
 
@@ -348,7 +348,7 @@ strcmp_begin_loop:
   mov bl, [eax]
   mov dl, [ecx]
   cmp bl, dl
-  jz strcmp_after_cmp1
+  je strcmp_after_cmp1
 
   ;; Return 1 if they differ
   ;; TODO Differentiate the less than and greater than cases
@@ -358,7 +358,7 @@ strcmp_begin_loop:
 strcmp_after_cmp1:
   ;; Check for string termination
   cmp bl, 0
-  jnz strcmp_after_cmp2
+  jne strcmp_after_cmp2
 
   ;; Return 0 if we arrived at the end without finding differences
   mov eax, 0
@@ -388,7 +388,7 @@ strcpy_begin_loop:
 
   ;; Return if it was the terminator
   cmp dl, 0
-  jz strcpy_end
+  je strcpy_end
 
   ;; Increment both pointers and restart
   add eax, 1
@@ -408,7 +408,7 @@ strlen_begin_loop:
   ;; Check for termination
   mov cl, [eax]
   cmp cl, 0
-  jz strlen_end
+  je strlen_end
 
   ;; Increment pointer
   add eax, 1
@@ -429,9 +429,9 @@ find_char:
   ;; Main loop
 find_char_loop:
   cmp [eax], dl
-  jz find_char_ret
+  je find_char_ret
   cmp BYTE [eax], 0
-  jz find_char_ret_error
+  je find_char_ret_error
   add eax, 1
   jmp find_char_loop
 
@@ -476,12 +476,12 @@ find_symbol_loop:
 
   ;; If strcmp returned 0, then we return
   cmp eax, 0
-  jz find_symbol_ret
+  je find_symbol_ret
 
   ;; Increment ecx and check for termination
   add ecx, 1
   cmp ecx, SYMBOL_TABLE_LEN
-  jz find_symbol_ret
+  je find_symbol_ret
   jmp find_symbol_loop
 
 find_symbol_ret:
