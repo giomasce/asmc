@@ -214,7 +214,7 @@ void add_symbol(const char *name, int loc) {
   }
 }
 
-int decode_reg(char *reg) {
+int decode_reg32(char *reg) {
   if (strcmp(reg, "eax") == 0) {
     return 0;
   } else if (strcmp(reg, "ecx") == 0) {
@@ -230,6 +230,28 @@ int decode_reg(char *reg) {
   } else if (strcmp(reg, "esi") == 0) {
     return 6;
   } else if (strcmp(reg, "edi") == 0) {
+    return 7;
+  } else {
+    return -1;
+  }
+}
+
+int decode_reg8(char *reg) {
+  if (strcmp(reg, "al") == 0) {
+    return 0;
+  } else if (strcmp(reg, "cl") == 0) {
+    return 1;
+  } else if (strcmp(reg, "dl") == 0) {
+    return 2;
+  } else if (strcmp(reg, "bl") == 0) {
+    return 3;
+  } else if (strcmp(reg, "ah") == 0) {
+    return 4;
+  } else if (strcmp(reg, "ch") == 0) {
+    return 5;
+  } else if (strcmp(reg, "dh") == 0) {
+    return 6;
+  } else if (strcmp(reg, "bh") == 0) {
     return 7;
   } else {
     return -1;
@@ -290,11 +312,19 @@ int decode_number_or_symbol(const char *operand, unsigned int *num) {
   }
 }
 
-int decode_operand(char *operand, int *is_direct, int *reg, int *disp) {
+int decode_operand(char *operand, int *is_direct, int *reg, int *disp, int *is8, int *is32) {
   remove_spaces(operand);
+  *is8 = 0;
+  *is32 = 0;
+  if (operand[0] == 'B' && operand[1] == 'Y' && operand[2] == 'T' && operand[3] == 'E') {
+    operand += 4;
+    *is8 = 1;
+  }
   if (operand[0] == 'D' && operand[1] == 'W' && operand[2] == 'O' && operand[3] == 'R' && operand[4] == 'D') {
     operand += 5;
+    *is32 = 1;
   }
+  assert(!*is8 || !*is32);
   if (operand[0] == '[') {
     *is_direct = 0;
     operand++;
@@ -309,13 +339,13 @@ int decode_operand(char *operand, int *is_direct, int *reg, int *disp) {
           return 0;
         } else {
           operand[closed_pos] = '\0';
-          *reg = decode_reg(operand);
+          *reg = decode_reg32(operand);
           return *reg != -1;
         }
       }
     } else {
       operand[plus_pos] = '\0';
-      *reg = decode_reg(operand);
+      *reg = decode_reg32(operand);
       if (*reg == -1) {
         return 0;
       } else {
@@ -335,8 +365,21 @@ int decode_operand(char *operand, int *is_direct, int *reg, int *disp) {
     }
   } else {
     *is_direct = 1;
-    *reg = decode_reg(operand);
-    return *reg != -1;
+    *reg = decode_reg32(operand);
+    if (*reg != -1) {
+      *is32 = 1;
+      assert(!*is8);
+      return 1;
+    } else {
+      *reg = decode_reg8(operand);
+      if (*reg != -1) {
+        *is8 = 1;
+        assert(!*is32);
+        return 1;
+      } else {
+        return 0;
+      }
+    }
   }
 }
 
@@ -402,9 +445,10 @@ enum {
 };
 
 void process_jmp_like(int op, char *data) {
-  int is_direct, reg, disp;
-  int res = decode_operand(data, &is_direct, &reg, &disp);
+  int is_direct, reg, disp, is8, is32;
+  int res = decode_operand(data, &is_direct, &reg, &disp, &is8, &is32);
   if (res) {
+    assert(!is8);
     // r/m32
     int opcode;
     int ext;
@@ -460,9 +504,10 @@ void process_jmp_like(int op, char *data) {
 }
 
 void process_push_like(int op, char *data) {
-  int is_direct, reg, disp;
-  int res = decode_operand(data, &is_direct, &reg, &disp);
+  int is_direct, reg, disp, is8, is32;
+  int res = decode_operand(data, &is_direct, &reg, &disp, &is8, &is32);
   if (res) {
+    assert(!is8);
     if (is_direct) {
       int opcode;
       if (op == OP_PUSH) {
@@ -510,103 +555,197 @@ void process_add_like(int op, char *data) {
   data[comma_pos] = '\0';
   char *dest = data;
   char *src = data + comma_pos + 1;
-  int dest_is_direct, dest_reg, dest_disp;
-  int src_is_direct, src_reg, src_disp;
-  int dest_res = decode_operand(dest, &dest_is_direct, &dest_reg, &dest_disp);
+  int dest_is_direct, dest_reg, dest_disp, dest_is8, dest_is32;
+  int src_is_direct, src_reg, src_disp, src_is8, src_is32;
+  int dest_res = decode_operand(dest, &dest_is_direct, &dest_reg, &dest_disp, &dest_is8, &dest_is32);
   if (!dest_res) {
     platform_panic();
   }
-  int src_res = decode_operand(src, &src_is_direct, &src_reg, &src_disp);
+  int src_res = decode_operand(src, &src_is_direct, &src_reg, &src_disp, &src_is8, &src_is32);
   if (src_res) {
+    // First we decide whether this is an 8 or 32 bits operation
+    int is8 = dest_is8 || src_is8;
+    int is32 = dest_is32 || src_is32;
+    assert(is8 || is32);
+    assert(!is8 || !is32);
     if (dest_is_direct) {
-      // r32, r/m32
-      int opcode;
-      if (op == OP_ADD) {
-        opcode = 0x03;
-      } else if (op == OP_SUB) {
-        opcode = 0x2b;
-      } else if (op == OP_MOV) {
-        opcode = 0x8b;
-      } else if (op == OP_CMP) {
-        opcode = 0x3b;
-      } else if (op == OP_AND) {
-        opcode = 0x23;
-      } else if (op == OP_OR) {
-        opcode = 0x0b;
-      } else {
-        platform_panic();
-      }
-      if (src_is_direct) {
-        emit(opcode);
-        emit_modrm(3, dest_reg, src_reg);
-      } else {
-        emit(opcode);
-        emit_modrm(2, dest_reg, src_reg);
-        emit32(src_disp);
-      }
-    } else {
-      if (src_is_direct) {
-        // r/m32, r32
+      if (is8) {
+        // r8, r/m8
         int opcode;
         if (op == OP_ADD) {
-          opcode = 0x01;
+          opcode = 0x02;
         } else if (op == OP_SUB) {
-          opcode = 0x29;
+          opcode = 0x2a;
         } else if (op == OP_MOV) {
-          opcode = 0x89;
+          opcode = 0x8a;
         } else if (op == OP_CMP) {
-          opcode = 0x39;
+          opcode = 0x3a;
         } else if (op == OP_AND) {
-          opcode = 0x21;
+          opcode = 0x22;
         } else if (op == OP_OR) {
-          opcode = 0x09;
+          opcode = 0x0a;
         } else {
           platform_panic();
         }
-        emit(opcode);
-        emit_modrm(2, src_reg, dest_reg);
-        emit32(dest_disp);
+        if (src_is_direct) {
+          emit(opcode);
+          emit_modrm(3, dest_reg, src_reg);
+        } else {
+          emit(opcode);
+          emit_modrm(2, dest_reg, src_reg);
+          emit32(src_disp);
+        }
+      } else {
+        // r32, r/m32
+        int opcode;
+        if (op == OP_ADD) {
+          opcode = 0x03;
+        } else if (op == OP_SUB) {
+          opcode = 0x2b;
+        } else if (op == OP_MOV) {
+          opcode = 0x8b;
+        } else if (op == OP_CMP) {
+          opcode = 0x3b;
+        } else if (op == OP_AND) {
+          opcode = 0x23;
+        } else if (op == OP_OR) {
+          opcode = 0x0b;
+        } else {
+          platform_panic();
+        }
+        if (src_is_direct) {
+          emit(opcode);
+          emit_modrm(3, dest_reg, src_reg);
+        } else {
+          emit(opcode);
+          emit_modrm(2, dest_reg, src_reg);
+          emit32(src_disp);
+        }
+      }
+    } else {
+      if (src_is_direct) {
+        if (is8) {
+          // r/m8, r8
+          int opcode;
+          if (op == OP_ADD) {
+            opcode = 0x00;
+          } else if (op == OP_SUB) {
+            opcode = 0x28;
+          } else if (op == OP_MOV) {
+            opcode = 0x88;
+          } else if (op == OP_CMP) {
+            opcode = 0x38;
+          } else if (op == OP_AND) {
+            opcode = 0x20;
+          } else if (op == OP_OR) {
+            opcode = 0x08;
+          } else {
+            platform_panic();
+          }
+          emit(opcode);
+          emit_modrm(2, src_reg, dest_reg);
+          emit32(dest_disp);
+        } else {
+          // r/m32, r32
+          int opcode;
+          if (op == OP_ADD) {
+            opcode = 0x01;
+          } else if (op == OP_SUB) {
+            opcode = 0x29;
+          } else if (op == OP_MOV) {
+            opcode = 0x89;
+          } else if (op == OP_CMP) {
+            opcode = 0x39;
+          } else if (op == OP_AND) {
+            opcode = 0x21;
+          } else if (op == OP_OR) {
+            opcode = 0x09;
+          } else {
+            platform_panic();
+          }
+          emit(opcode);
+          emit_modrm(2, src_reg, dest_reg);
+          emit32(dest_disp);
+        }
       } else {
         platform_panic();
       }
     }
   } else {
+    assert(dest_is8 || dest_is32);
     int imm;
     int res = decode_number_or_symbol(src, &imm);
     if (res) {
-      // r/m32, imm32
-      int opcode;
-      int reg;
-      if (op == OP_ADD) {
-        opcode = 0x81;
-        reg = 0;
-      } else if (op == OP_SUB) {
-        opcode = 0x81;
-        reg = 5;
-      } else if (op == OP_MOV) {
-        opcode = 0xc7;
-        reg = 0;
-      } else if (op == OP_CMP) {
-        opcode = 0x81;
-        reg = 7;
-      } else if (op == OP_AND) {
-        opcode = 0x81;
-        reg = 4;
-      } else if (op == OP_OR) {
-        opcode = 0x81;
-        reg = 1;
+      if (dest_is8) {
+        // r/m8, imm8
+        int opcode;
+        int reg;
+        if (op == OP_ADD) {
+          opcode = 0x80;
+          reg = 0;
+        } else if (op == OP_SUB) {
+          opcode = 0x80;
+          reg = 5;
+        } else if (op == OP_MOV) {
+          opcode = 0xc6;
+          reg = 0;
+        } else if (op == OP_CMP) {
+          opcode = 0x80;
+          reg = 7;
+        } else if (op == OP_AND) {
+          opcode = 0x80;
+          reg = 4;
+        } else if (op == OP_OR) {
+          opcode = 0x80;
+          reg = 1;
+        } else {
+          platform_panic();
+        }
+        if (dest_is_direct) {
+          emit(opcode);
+          emit_modrm(3, reg, dest_reg);
+          emit(imm);
+        } else {
+          emit(opcode);
+          emit_modrm(2, reg, dest_reg);
+          emit32(dest_disp);
+          emit(imm);
+        }
       } else {
-        platform_panic();
-      }
-      if (dest_is_direct) {
-        emit(opcode);
-        emit_modrm(3, reg, dest_reg);
-        emit32(imm);
-      } else {
-        emit(opcode);
-        emit_modrm(2, reg, dest_reg);
-        emit32(dest_disp);
-        emit32(imm);
+        // r/m32, imm32
+        int opcode;
+        int reg;
+        if (op == OP_ADD) {
+          opcode = 0x81;
+          reg = 0;
+        } else if (op == OP_SUB) {
+          opcode = 0x81;
+          reg = 5;
+        } else if (op == OP_MOV) {
+          opcode = 0xc7;
+          reg = 0;
+        } else if (op == OP_CMP) {
+          opcode = 0x81;
+          reg = 7;
+        } else if (op == OP_AND) {
+          opcode = 0x81;
+          reg = 4;
+        } else if (op == OP_OR) {
+          opcode = 0x81;
+          reg = 1;
+        } else {
+          platform_panic();
+        }
+        if (dest_is_direct) {
+          emit(opcode);
+          emit_modrm(3, reg, dest_reg);
+          emit32(imm);
+        } else {
+          emit(opcode);
+          emit_modrm(2, reg, dest_reg);
+          emit32(dest_disp);
+          emit32(imm);
+        }
       }
     } else {
       platform_panic();

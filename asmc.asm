@@ -147,16 +147,14 @@ strcmp:
   mov eax, [esp+8]
   mov ecx, [esp+12]
 strcmp_begin_loop:
-  mov ebx, [eax]
-  mov edx, [ecx]
-  and ebx, 0xff
-  and edx, 0xff
-  cmp ebx, edx
+  mov bl, [eax]
+  mov dl, [ecx]
+  cmp bl, dl
   jz strcmp_after_cmp1
   mov eax, 1
   jmp strcmp_end
 strcmp_after_cmp1:
-  cmp ebx, 0
+  cmp bl, 0
   jnz strcmp_after_cmp2
   mov eax, 0
   jmp strcmp_end
@@ -172,9 +170,8 @@ strcmp_end:
 strlen:
   mov eax, [esp+4]
 strlen_begin_loop:
-  mov ecx, [eax]
-  and ecx, 0xff
-  cmp ecx, 0
+  mov cl, [eax]
+  cmp cl, 0
   jz strlen_end
   add eax, 1
   jmp strlen_begin_loop
