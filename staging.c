@@ -285,14 +285,14 @@ int decode_number(char *operand, unsigned int *num) {
   }
 }
 
-int decode_operand(char *operand, int *is_direct, int *reg, int *has_disp, int *disp) {
+int decode_operand(char *operand, int *is_direct, int *reg, int *disp) {
   remove_spaces(operand);
   if (operand[0] == '[') {
     *is_direct = 0;
     operand++;
     int plus_pos = find_char(operand, '+');
     if (plus_pos == -1) {
-      *has_disp = 0;
+      *disp = 0;
       int closed_pos = find_char(operand, ']');
       if (closed_pos == -1) {
         return 0;
@@ -306,7 +306,6 @@ int decode_operand(char *operand, int *is_direct, int *reg, int *has_disp, int *
         }
       }
     } else {
-      *has_disp = 1;
       operand[plus_pos] = '\0';
       *reg = decode_reg(operand);
       if (*reg == -1) {
@@ -368,8 +367,8 @@ enum {
 };
 
 void process_jmp_like(int op, char *data) {
-  int is_direct, reg, has_disp, disp;
-  int res = decode_operand(data, &is_direct, &reg, &has_disp, &disp);
+  int is_direct, reg, disp;
+  int res = decode_operand(data, &is_direct, &reg, &disp);
   if (res) {
     // r/m32
     int opcode;
@@ -388,10 +387,8 @@ void process_jmp_like(int op, char *data) {
       emit(assemble_modrm(3, ext, reg));
     } else {
       emit(opcode);
-      emit(assemble_modrm(has_disp ? 2 : 0, ext, reg));
-      if (has_disp) {
-        emit32(disp);
-      }
+      emit(assemble_modrm(2, ext, reg));
+      emit32(disp);
     }
   } else {
     // rel32
@@ -437,8 +434,8 @@ void process_jmp_like(int op, char *data) {
 }
 
 void process_push_like(int op, char *data) {
-  int is_direct, reg, has_disp, disp;
-  int res = decode_operand(data, &is_direct, &reg, &has_disp, &disp);
+  int is_direct, reg, disp;
+  int res = decode_operand(data, &is_direct, &reg, &disp);
   if (res) {
     if (is_direct) {
       int opcode;
@@ -464,10 +461,8 @@ void process_push_like(int op, char *data) {
       }
       emit(opcode);
       // FIXME: sometimes we need to generate a SIB
-      emit(assemble_modrm(has_disp ? 2 : 0, reg, reg));
-      if (has_disp) {
-        emit32(disp);
-      }
+      emit(assemble_modrm(2, reg, reg));
+      emit32(disp);
     }
   } else {
     assert(op == OP_PUSH);
@@ -490,13 +485,13 @@ void process_add_like(int op, char *data) {
   data[comma_pos] = '\0';
   char *dest = data;
   char *src = data + comma_pos + 1;
-  int dest_is_direct, dest_reg, dest_has_disp, dest_disp;
-  int src_is_direct, src_reg, src_has_disp, src_disp;
-  int dest_res = decode_operand(dest, &dest_is_direct, &dest_reg, &dest_has_disp, &dest_disp);
+  int dest_is_direct, dest_reg, dest_disp;
+  int src_is_direct, src_reg, src_disp;
+  int dest_res = decode_operand(dest, &dest_is_direct, &dest_reg, &dest_disp);
   if (!dest_res) {
     platform_panic();
   }
-  int src_res = decode_operand(src, &src_is_direct, &src_reg, &src_has_disp, &src_disp);
+  int src_res = decode_operand(src, &src_is_direct, &src_reg, &src_disp);
   if (src_res) {
     if (dest_is_direct) {
       // r32, r/m32
@@ -517,10 +512,8 @@ void process_add_like(int op, char *data) {
         emit(assemble_modrm(3, dest_reg, src_reg));
       } else {
         emit(opcode);
-        emit(assemble_modrm(src_has_disp ? 2 : 0, dest_reg, src_reg));
-        if (src_has_disp) {
-          emit32(src_disp);
-        }
+        emit(assemble_modrm(2, dest_reg, src_reg));
+        emit32(src_disp);
       }
     } else {
       if (src_is_direct) {
@@ -538,10 +531,8 @@ void process_add_like(int op, char *data) {
           platform_panic();
         }
         emit(opcode);
-        emit(assemble_modrm(dest_has_disp ? 2 : 0, src_reg, dest_reg));
-        if (dest_has_disp) {
-          emit32(dest_disp);
-        }
+        emit(assemble_modrm(2, src_reg, dest_reg));
+        emit32(dest_disp);
       } else {
         platform_panic();
       }
@@ -574,10 +565,8 @@ void process_add_like(int op, char *data) {
         emit32(imm);
       } else {
         emit(opcode);
-        emit(assemble_modrm(dest_has_disp ? 2 : 0, reg, dest_reg));
-        if (dest_has_disp) {
-          emit32(dest_disp);
-        }
+        emit(assemble_modrm(2, reg, dest_reg));
+        emit32(dest_disp);
         emit32(imm);
       }
     } else {
