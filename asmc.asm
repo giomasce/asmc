@@ -6,6 +6,8 @@
   extern readline
   extern assemble_file
 
+  testequ equ 100
+
 section .bss
 input_buf:
   resb 1024
@@ -45,6 +47,14 @@ _test:
 
   jmp _test2
   call _test2
+
+  jmp testequ2
+  mov ecx, testequ
+  mov [edx+testequ2], ebx
+
+  testequ2 equ 2204
+
+  jnz 0x100
 
 _test2:
   jmp _test2
