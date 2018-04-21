@@ -170,6 +170,21 @@ strcmp_end:
   pop ebx
   ret
 
+  global strcpy
+strcpy:
+  mov eax, [esp+4]
+  mov ecx, [esp+8]
+strcpy_begin_loop:
+  mov dl, [ecx]
+  mov [eax], dl
+  cmp dl, 0
+  jz strcpy_end
+  add eax, 1
+  add ecx, 1
+  jmp strcpy_begin_loop
+strcpy_end:
+  ret
+
   global strlen
 strlen:
   mov eax, [esp+4]

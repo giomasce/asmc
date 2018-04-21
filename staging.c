@@ -89,7 +89,7 @@ int strcmp(const char *s1, const char *s2);/* {
   }
 }*/
 
-void strcpy(char *d, const char *s) {
+void strcpy(char *d, const char *s);/* {
   while (1) {
     *d = *s;
     if (*s == '\0') {
@@ -98,7 +98,7 @@ void strcpy(char *d, const char *s) {
     d++;
     s++;
   }
-}
+}*/
 
 int strlen(const char *s);/* {
   const char *s2 = s;
