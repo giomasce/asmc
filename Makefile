@@ -4,11 +4,14 @@ all: asmc
 asmc.o: asmc.asm
 	nasm -f elf -F dwarf -g asmc.asm
 
-syscall.o: syscall.asm
-	nasm -f elf -F dwarf -g syscall.asm
-
-staging.o: staging.c
+staging.o: staging.c platform.h
 	gcc -m32 -c -Og -g -ffreestanding staging.c -o staging.o
 
-asmc: asmc.o staging.o syscall.o
-	ld -g -m elf_i386 asmc.o staging.o syscall.o -o asmc
+platform.o: platform.c platform.h
+	gcc -m32 -c -Og -g -ffreestanding platform.c -o platform.o
+
+platform_asm.o: platform_asm.asm
+	nasm -f elf -F dwarf -g platform_asm.asm
+
+asmc: asmc.o staging.o platform.o platform_asm.o
+	ld -g -m elf_i386 asmc.o staging.o platform.o platform_asm.o -o asmc
