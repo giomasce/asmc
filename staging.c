@@ -361,6 +361,29 @@ int process_bss_line(char *opcode, char *data) {
   return 1;
 }
 
+int process_data_line(char *opcode, char *data) {
+  if (strcmp(opcode, "db") == 0) {
+    int val;
+    int res = decode_number_or_symbol(data, &val, 0);
+    if (!res) {
+      platform_panic();
+    }
+    emit(val);
+  } else if (strcmp(opcode, "dd") == 0) {
+    assert(data[0] == '\'');
+    int len = strlen(data);
+    assert(data[len-1] == '\'');
+    data[len-1] = '\0';
+    data++;
+    for ( ; *data != '\0'; data++) {
+      emit(*data);
+    }
+  } else {
+    return 0;
+  }
+  return 1;
+}
+
 int emit_modrm(int mod, int reg, int rm) {
   assert(mod == mod & 0x3);
   assert(reg == reg & 0x7);
@@ -903,6 +926,8 @@ void process_line(char *line) {
       processed = process_bss_line(opcode, data);
     } else if (strcmp(get_current_section(), ".text") == 0) {
       processed = process_text_line(opcode, data);
+    } else if (strcmp(get_current_section(), ".data") == 0) {
+      processed = process_data_line(opcode, data);
     }
     if (!processed) {
       int data_space_pos = find_char(data, ' ');

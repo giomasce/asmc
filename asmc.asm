@@ -21,6 +21,15 @@
   ;; SYMBOL_TABLE_SIZE = SYMBOL_TABLE_LEN * MAX_SYMBOL_NAME_LEN
   SYMBOL_TABLE_SIZE equ 131072
 
+section .data
+
+reg_eax:
+  dd 'eax'
+  db 0
+reg_ecx:
+  dd 'ecx'
+  db 0
+
 section .bss
 
 input_buf:
