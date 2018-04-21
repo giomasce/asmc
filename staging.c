@@ -118,7 +118,7 @@ int find_char(char *s, char c);/* {
   }
 }*/
 
-int find_symbol(const char *name) {
+int find_symbol(const char *name);/* {
   int i;
   for (i = 0; i < SYMBOL_TABLE_LEN; i++) {
     if (strcmp(name, get_symbol_names() + i * MAX_SYMBOL_NAME_LEN) == 0) {
@@ -126,7 +126,7 @@ int find_symbol(const char *name) {
     }
   }
   return i;
-}
+}*/
 
 void add_symbol(const char *name, int loc) {
   int len = strlen(name);

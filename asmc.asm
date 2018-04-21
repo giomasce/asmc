@@ -447,6 +447,48 @@ find_char_ret_error:
   ret
 
 
-;;   global find_symbol
-;; find_symbol:
-;;   mov eax, 0
+  global find_symbol
+find_symbol:
+  ;; Set up registers and stack
+  push ebp
+  mov ebp, esp
+  mov ecx, 0
+
+find_symbol_loop:
+  ;; Save ecx
+  push ecx
+
+  ;; Compute and push the second argument to strcmp
+  mov edx, MAX_SYMBOL_NAME_LEN
+  mov eax, ecx
+  imul edx
+  add eax, symbol_names
+  push eax
+
+  ;; Push the first argument
+  mov eax, [ebp+8]
+  push eax
+
+  ;; Call strcmp, clean the stack and restore ecx
+  call strcmp
+  add esp, 8
+  pop ecx
+
+  ;; If strcmp returned 0, then we return
+  cmp eax, 0
+  jz find_symbol_ret
+
+  ;; Increment ecx and check for termination
+  add ecx, 1
+  cmp ecx, SYMBOL_TABLE_LEN
+  jz find_symbol_ret
+  jmp find_symbol_loop
+
+find_symbol_ret:
+  mov eax, ecx
+  pop ebp
+  ret
+
+
+;;   global add_symbol
+;; add_symbol:
