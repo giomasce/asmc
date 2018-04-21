@@ -14,6 +14,11 @@
   NEWLINE equ 0xa
   SPACE equ 0x20
   TAB equ 0x9
+  ZERO equ 0x30
+  NINE equ 0x39
+  LITTLEA equ 0x61
+  LITTLEF equ 0x66
+  LITTLEX equ 0x78
 
   INPUT_BUF_LEN equ 1024
   MAX_SYMBOL_NAME_LEN equ 128
@@ -28,6 +33,49 @@ reg_eax:
   db 0
 reg_ecx:
   dd 'ecx'
+  db 0
+reg_edx:
+  dd 'edx'
+  db 0
+reg_ebx:
+  dd 'ebx'
+  db 0
+reg_esp:
+  dd 'esp'
+  db 0
+reg_ebp:
+  dd 'ebp'
+  db 0
+reg_esi:
+  dd 'esi'
+  db 0
+reg_edi:
+  dd 'edi'
+  db 0
+
+reg_al:
+  dd 'al'
+  db 0
+reg_cl:
+  dd 'cl'
+  db 0
+reg_dl:
+  dd 'dl'
+  db 0
+reg_bl:
+  dd 'bl'
+  db 0
+reg_ah:
+  dd 'ah'
+  db 0
+reg_ch:
+  dd 'ch'
+  db 0
+reg_dh:
+  dd 'dh'
+  db 0
+reg_bh:
+  dd 'bh'
   db 0
 
 section .bss
@@ -594,6 +642,262 @@ add_symbol_stage1:
   jmp add_symbol_ret
 
 add_symbol_ret:
+  pop ebx
+  pop ebp
+  ret
+
+
+  global decode_reg32
+decode_reg32:
+  ;; Save and load registers
+  push ebx
+  mov ebx, [esp+8]
+  push esi
+
+  ;; Compare the argument with each possible register name
+  mov esi, 0
+  push reg_eax
+  push ebx
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je decode_reg32_ret
+
+  mov esi, 1
+  push reg_ecx
+  push ebx
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je decode_reg32_ret
+
+  mov esi, 2
+  push reg_edx
+  push ebx
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je decode_reg32_ret
+
+  mov esi, 3
+  push reg_ebx
+  push ebx
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je decode_reg32_ret
+
+  mov esi, 4
+  push reg_esp
+  push ebx
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je decode_reg32_ret
+
+  mov esi, 5
+  push reg_ebp
+  push ebx
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je decode_reg32_ret
+
+  mov esi, 6
+  push reg_esi
+  push ebx
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je decode_reg32_ret
+
+  mov esi, 7
+  push reg_edi
+  push ebx
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je decode_reg32_ret
+
+  ;; Return -1 if none matched
+  mov esi, 0xffffffff
+
+decode_reg32_ret:
+  mov eax, esi
+  pop esi
+  pop ebx
+  ret
+
+
+  global decode_reg8
+decode_reg8:
+  ;; Save and load registers
+  push ebx
+  mov ebx, [esp+8]
+  push esi
+
+  ;; Compare the argument with each possible register name
+  mov esi, 0
+  push reg_al
+  push ebx
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je decode_reg8_ret
+
+  mov esi, 1
+  push reg_cl
+  push ebx
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je decode_reg8_ret
+
+  mov esi, 2
+  push reg_dl
+  push ebx
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je decode_reg8_ret
+
+  mov esi, 3
+  push reg_bl
+  push ebx
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je decode_reg8_ret
+
+  mov esi, 4
+  push reg_ah
+  push ebx
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je decode_reg8_ret
+
+  mov esi, 5
+  push reg_ch
+  push ebx
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je decode_reg8_ret
+
+  mov esi, 6
+  push reg_dh
+  push ebx
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je decode_reg8_ret
+
+  mov esi, 7
+  push reg_bh
+  push ebx
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je decode_reg8_ret
+
+  ;; Return -1 if none matched
+  mov esi, 0xffffffff
+
+decode_reg8_ret:
+  mov eax, esi
+  pop esi
+  pop ebx
+  ret
+
+
+  global decode_number
+decode_number:
+  push ebp
+  mov ebp, esp
+  push ebx
+  push edi
+  push esi
+
+  ;; Use eax for storing the result
+  mov eax, 0
+
+  ;; Use ebx for storing the input string
+  mov ebx, [ebp+8]
+
+  ;; Use esi to remember if we have seen at least one digit
+  mov esi, 0
+
+  ;; Determine whether we work in base 10 (edi==1) or 16 (edi==0)
+  mov edi, 1
+  cmp BYTE [ebx], ZERO
+  jne decode_number_loop
+  cmp BYTE [ebx+1], LITTLEX
+  jne decode_number_loop
+  mov edi, 0
+  add ebx, 2
+
+decode_number_loop:
+  ;; Check if we have found the terminator
+  mov cl, [ebx]
+  cmp cl, 0
+  je decode_number_ret
+
+  ;; If not, then we have seen at least one digit
+  mov esi, 1
+
+  ;; Multiply the current result by 10 or 16 depending on edi
+  cmp edi, 1
+  jne decode_number_mult16
+  mov edx, 10
+  imul edx
+  jmp decode_number_after_mult
+decode_number_mult16:
+  mov edx, 16
+  imul edx
+
+decode_number_after_mult:
+  ;; If we have a decimal digit, add it to the number
+  cmp cl, ZERO
+  jnae decode_number_after_decimal_digit
+  cmp cl, NINE
+  jnbe decode_number_after_decimal_digit
+  mov edx, 0
+  mov dl, cl
+  add eax, edx
+  sub eax, ZERO
+  jmp decode_number_finish_loop
+
+decode_number_after_decimal_digit:
+  ;; If we have an hexadecimal digit and we are in hexadecimal mode,
+  ;; add it to the number
+  cmp edi, 0
+  jne decode_number_after_hex_digit
+  cmp cl, LITTLEA
+  jnae decode_number_after_hex_digit
+  cmp cl, LITTLEF
+  jnbe decode_number_after_hex_digit
+  mov edx, 0
+  mov dl, cl
+  add eax, edx
+  add eax, 10
+  sub eax, LITTLEA
+  jmp decode_number_finish_loop
+
+decode_number_after_hex_digit:
+  mov esi, 0
+  jmp decode_number_ret
+
+decode_number_finish_loop:
+  add ebx, 1
+  jmp decode_number_loop
+
+decode_number_ret:
+  mov edx, [ebp+12]
+  mov [edx], eax
+  mov eax, esi
+  pop esi
+  pop edi
   pop ebx
   pop ebp
   ret

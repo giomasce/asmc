@@ -149,7 +149,7 @@ void add_symbol(const char *name, int loc);/* {
   }
 }*/
 
-int decode_reg32(char *reg) {
+int decode_reg32(char *reg);/* {
   if (strcmp(reg, "eax") == 0) {
     return 0;
   } else if (strcmp(reg, "ecx") == 0) {
@@ -169,9 +169,9 @@ int decode_reg32(char *reg) {
   } else {
     return -1;
   }
-}
+}*/
 
-int decode_reg8(char *reg) {
+int decode_reg8(char *reg);/* {
   if (strcmp(reg, "al") == 0) {
     return 0;
   } else if (strcmp(reg, "cl") == 0) {
@@ -191,9 +191,9 @@ int decode_reg8(char *reg) {
   } else {
     return -1;
   }
-}
+}*/
 
-int decode_number(const char *operand, unsigned int *num) {
+int decode_number(const char *operand, unsigned int *num);/* {
   *num = 0;
   int is_decimal = 1;
   int digit_seen = 0;
@@ -224,7 +224,7 @@ int decode_number(const char *operand, unsigned int *num) {
     }
     operand++;
   }
-}
+}*/
 
 int decode_number_or_symbol(const char *operand, unsigned int *num, int force_symbol) {
   int res = decode_number(operand, num);
