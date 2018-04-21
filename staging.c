@@ -120,10 +120,13 @@ int find_char(char *s, char c);/* {
 
 int find_symbol(const char *name);/* {
   int i;
-  for (i = 0; i < SYMBOL_TABLE_LEN; i++) {
+  for (i = 0; i < *get_symbol_num(); i++) {
     if (strcmp(name, get_symbol_names() + i * MAX_SYMBOL_NAME_LEN) == 0) {
       break;
     }
+  }
+  if (i == *get_symbol_num()) {
+    i = SYMBOL_TABLE_LEN;
   }
   return i;
 }*/
@@ -952,6 +955,8 @@ void process_line(char *line) {
 }
 
 void assemble_file() {
+  *get_symbol_num() = 0;
+  *get_current_section() = 0;
   int fd_in = platform_open_file("asmc.asm");
   for (*get_stage() = 0; *get_stage() < 2; (*get_stage())++) {
     platform_reset_file(fd_in);

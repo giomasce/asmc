@@ -512,6 +512,11 @@ find_symbol:
   mov ecx, 0
 
 find_symbol_loop:
+  ;; Check for termination
+  mov eax, symbol_num
+  cmp ecx, [eax]
+  je find_symbol_not_found
+
   ;; Save ecx
   push ecx
 
@@ -533,16 +538,21 @@ find_symbol_loop:
 
   ;; If strcmp returned 0, then we return
   cmp eax, 0
-  je find_symbol_ret
+  je find_symbol_found
 
   ;; Increment ecx and check for termination
   add ecx, 1
-  cmp ecx, SYMBOL_TABLE_LEN
-  je find_symbol_ret
   jmp find_symbol_loop
 
-find_symbol_ret:
+find_symbol_found:
   mov eax, ecx
+  jmp find_symbol_ret
+
+find_symbol_not_found:
+  mov eax, SYMBOL_TABLE_LEN
+  jmp find_symbol_ret
+
+find_symbol_ret:
   pop ebp
   ret
 
@@ -909,9 +919,9 @@ decode_number_or_symbol:
   mov ebp, esp
 
   ;; Call decode_number
-  mov eax, [ebp+8]
-  push eax
   mov eax, [ebp+12]
+  push eax
+  mov eax, [ebp+8]
   push eax
   call decode_number
   add esp, 8
