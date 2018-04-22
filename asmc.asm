@@ -30,7 +30,27 @@
   ;; SYMBOL_TABLE_SIZE = SYMBOL_TABLE_LEN * MAX_SYMBOL_NAME_LEN
   SYMBOL_TABLE_SIZE equ 131072
 
+  MBMAGIC equ 0x1badb002
+  ;; Set flags for alignment, memory map and load adds
+  MBFLAGS equ 0x10003
+  ;; 0x100000000 - MBMAGIC - MBFLAGS
+  MBCHECKSUM equ 0xe4514ffb
+
+  ;; MB_ENTRY_ADDR equ _start
+
 section .data
+
+  dd MBMAGIC
+  dd MBFLAGS
+  dd MBCHECKSUM
+
+  dd 0x100000
+  dd 0x100000
+  dd 0x0
+  dd 0x0
+  dd 0x100020
+
+  jmp start_from_multiboot
 
 reg_eax:
   db 'eax'
@@ -128,15 +148,15 @@ stage:
 
 section .text
 
-debug:
-  ret
-  ret
-  mov DWORD [edx], 0
-
   global  _start
 _start:
   call assemble_file
   call platform_exit
+
+start_from_multiboot:
+  mov eax, 0xb8000
+  mov DWORD [eax], 0x41424344
+  jmp _start
 
   global get_input_buf
 get_input_buf:
