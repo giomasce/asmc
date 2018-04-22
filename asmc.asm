@@ -1,16 +1,4 @@
 
-  extern platform_panic
-  extern platform_exit
-  extern platform_open_file
-  extern platform_reset_file
-  extern platform_read_char
-  extern platform_write_char
-  extern platform_log
-
-  extern assemble_file
-
-  testequ equ 100
-
   NEWLINE equ 0xa
   SPACE equ 0x20
   TAB equ 0x9
@@ -30,27 +18,7 @@
   ;; SYMBOL_TABLE_SIZE = SYMBOL_TABLE_LEN * MAX_SYMBOL_NAME_LEN
   SYMBOL_TABLE_SIZE equ 131072
 
-  MBMAGIC equ 0x1badb002
-  ;; Set flags for alignment, memory map and load adds
-  MBFLAGS equ 0x10003
-  ;; 0x100000000 - MBMAGIC - MBFLAGS
-  MBCHECKSUM equ 0xe4514ffb
-
-  ;; MB_ENTRY_ADDR equ _start
-
 section .data
-
-  dd MBMAGIC
-  dd MBFLAGS
-  dd MBCHECKSUM
-
-  dd 0x100000
-  dd 0x100000
-  dd 0x0
-  dd 0x0
-  dd 0x100020
-
-  jmp start_from_multiboot
 
 reg_eax:
   db 'eax'
@@ -148,16 +116,6 @@ stage:
 
 section .text
 
-  global  _start
-_start:
-  call assemble_file
-  call platform_exit
-
-start_from_multiboot:
-  mov eax, 0xb8000
-  mov DWORD [eax], 0x41424344
-  jmp _start
-
   global get_input_buf
 get_input_buf:
   mov eax, input_buf
@@ -193,119 +151,12 @@ get_stage:
   mov eax, stage
   ret
 
-main_loop:
-  push 0
-  call platform_read_char
-  add esp, 4
-  cmp eax, 0xffffffff
-  je main_loop_finish
-  push eax
-  push 1
-  call platform_write_char
-  add esp, 4
-  jmp main_loop
 
-main_loop_finish:
+  global  _start
+_start:
+  call assemble_file
   call platform_exit
 
-_test:
-  pop eax
-  add eax, [eax+0x100]
-  add [eax+0x200], eax
-  add ebx, eax
-  add eax, eax
-  add [eax+0x300], ecx
-  sub [eax+0x300], ecx
-  jmp eax
-  jmp [eax]
-
-  jmp _test2
-  call _test2
-
-  jmp testequ2
-  mov ecx, testequ
-  mov [edx+testequ2], ebx
-
-  testequ2 equ 2204
-
-  jne 0x100
-
-_test2:
-  jmp _test2
-  jmp _test
-
-_assemble_stdin:
-  push ebp
-  mov ebp, esp
-
-  push 1024
-  ;; push input_buf
-  push 0
-  call readline
-  add esp, 12
-
-  pop ebp
-  ret
-
-_platform_exit:
-  ;; Just exit, never return
-  mov ebx, 0
-  mov eax, 1
-  int 0x80
-
-_platform_write_char:
-  ;; Write the char in AL to output
-  push ebx
-  sub esp, 4
-  and eax, 0xff
-  mov [esp], eax
-
-  mov edx, 1
-  mov ecx, esp
-  mov ebx, 1
-  mov eax, 4
-  int 0x80
-
-  cmp eax, 1
-  jne platform_panic
-
-  add esp, 4
-  pop ebx
-  ret
-
-
-_platform_read_char:
-  ;;  Read a char from input to AL; all other bits of EAX are zeroed; if the file is finished, put 0xffffffff in EAX
-  push ebx
-  sub esp, 4
-  mov DWORD [esp], 0
-
-  mov edx, 1
-  mov ecx, esp
-  mov ebx, 0
-  mov eax, 3
-  int 0x80
-
-  cmp eax, 0
-  je _platform_read_char_file_finished
-
-  cmp eax, 1
-  jne platform_panic
-
-  mov eax, [esp]
-  add esp, 4
-  pop ebx
-  ret
-
-_platform_read_char_file_finished:
-  mov eax, 0xffffffff
-  add esp, 4
-  pop ebx
-  ret
-
-_platform_panic:
-  ;; Forcibly abort the execution in consequence of an error
-  call 0
 
   global assert
 assert:

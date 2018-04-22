@@ -1007,7 +1007,7 @@ void process_line(char *line) {
 void assemble_file() {
   *get_symbol_num() = 0;
   *get_current_section() = 0;
-  int fd_in = platform_open_file("asmc.asm");
+  int fd_in = platform_open_file("full.asm");
   for (*get_stage() = 0; *get_stage() < 2; (*get_stage())++) {
     platform_reset_file(fd_in);
     line = 0;
