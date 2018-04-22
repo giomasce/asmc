@@ -340,22 +340,22 @@ int decode_operand(char *operand, int *is_direct, int *reg, int *disp, int *is8,
   }
 }*/
 
-void emit(char c) {
+void emit(char c);/* {
   int stage = *get_stage();
   if (stage == 1) {
     platform_write_char(1, c);
   }
   (*get_current_loc())++;
-}
+}*/
 
-void emit32(int x) {
+void emit32(int x);/* {
   emit(x);
   emit(x >> 8);
   emit(x >> 16);
   emit(x >> 24);
-}
+}*/
 
-int process_bss_line(char *opcode, char *data) {
+int process_bss_line(char *opcode, char *data);/* {
   if (strcmp(opcode, "resb") == 0) {
     int val;
     int res = decode_number_or_symbol(data, &val, 1);
@@ -373,16 +373,16 @@ int process_bss_line(char *opcode, char *data) {
       platform_panic();
     }
     int i;
-    for (i = 0; i < 4 * val; i++) {
-      emit(0);
+    for (i = 0; i < val; i++) {
+      emit32(0);
     }
   } else {
     return 0;
   }
   return 1;
-}
+}*/
 
-int process_data_line(char *opcode, char *data) {
+int process_data_line(char *opcode, char *data);/* {
   if (strcmp(opcode, "db") == 0) {
     int val;
     int res = decode_number_or_symbol(data, &val, 0);
@@ -393,6 +393,7 @@ int process_data_line(char *opcode, char *data) {
   } else if (strcmp(opcode, "dd") == 0) {
     assert(data[0] == '\'');
     int len = strlen(data);
+    assert(len >= 2);
     assert(data[len-1] == '\'');
     data[len-1] = '\0';
     data++;
@@ -403,7 +404,7 @@ int process_data_line(char *opcode, char *data) {
     return 0;
   }
   return 1;
-}
+}*/
 
 int emit_modrm(int mod, int reg, int rm) {
   assert(mod == mod & 0x3);

@@ -22,6 +22,7 @@
   SQ_OPEN equ 0x5b
   SQ_CLOSED equ 0x5d
   PLUS equ 0x2b
+  APEX equ 0x27
 
   INPUT_BUF_LEN equ 1024
   MAX_SYMBOL_NAME_LEN equ 128
@@ -86,6 +87,20 @@ str_BYTE:
   db 0
 str_DWORD:
   dd 'DWORD'
+  db 0
+
+str_resb:
+  dd 'resb'
+  db 0
+str_resd:
+  dd 'resd'
+  db 0
+
+str_dd:
+  dd 'dd'
+  db 0
+str_db:
+  dd 'db'
   db 0
 
 section .bss
@@ -1236,4 +1251,234 @@ decode_operand_ret:
   pop esi
   pop ebx
   pop ebp
+  ret
+
+
+  global emit
+emit:
+  ;; Add 1 to the current location
+  mov edx, current_loc
+  add DWORD [edx], 1
+
+  ;; If we are in stage 1, write the character
+  mov edx, stage
+  cmp DWORD [edx], 1
+  jne emit_ret
+  mov ecx, 0
+  mov cl, [esp+4]
+  push ecx
+  push 1
+  call platform_write_char
+  add esp, 8
+
+emit_ret:
+  ret
+
+
+  global emit32
+emit32:
+  ;; Emit each byte in order
+  mov eax, 0
+  mov al, [esp+4]
+  push eax
+  call emit
+  add esp, 4
+
+  mov eax, 0
+  mov al, [esp+5]
+  push eax
+  call emit
+  add esp, 4
+
+  mov eax, 0
+  mov al, [esp+6]
+  push eax
+  call emit
+  add esp, 4
+
+  mov eax, 0
+  mov al, [esp+7]
+  push eax
+  call emit
+  add esp, 4
+
+  ret
+
+
+  global process_bss_line
+process_bss_line:
+  ;; Check if the opcode is resb
+  mov edx, [esp+4]
+  push str_resb
+  push edx
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je process_bss_line_resb
+
+  ;; Check is the opcode is resd
+  mov edx, [esp+4]
+  push str_resd
+  push edx
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je process_bss_line_resd
+
+  mov eax, 0
+  ret
+
+process_bss_line_resb:
+  ;; Save the argument before we mess up with the stack
+  mov edx, [esp+8]
+
+  ;; Push 0 to allocate a local variable and take its address
+  push 0
+  mov ecx, esp
+
+  ;; Call decode_number_or_symbol
+  push 1
+  push ecx
+  push edx
+  call decode_number_or_symbol
+  add esp, 12
+
+  ;; Deallocate the temporary variable and save it in ecx
+  pop ecx
+  cmp eax, 0
+  je platform_panic
+
+process_bss_line_resb_loop:
+  ;; Loop ecx times calling emit(0) at each loop
+  cmp ecx, 0
+  je process_bss_line_ret
+  sub ecx, 1
+  push ecx
+  push 0
+  call emit
+  add esp, 4
+  pop ecx
+  jmp process_bss_line_resb_loop
+
+  ;; Everything as above, but with emit32 instead of emit
+process_bss_line_resd:
+  mov edx, [esp+8]
+  push 0
+  mov ecx, esp
+  push 1
+  push ecx
+  push edx
+  call decode_number_or_symbol
+  add esp, 12
+  pop ecx
+  cmp eax, 0
+  je platform_panic
+
+process_bss_line_resd_loop:
+  cmp ecx, 0
+  je process_bss_line_ret
+  sub ecx, 1
+  push ecx
+  push 0
+  call emit32
+  add esp, 4
+  pop ecx
+  jmp process_bss_line_resd_loop
+
+process_bss_line_ret:
+  mov eax, 1
+  ret
+
+
+  global process_data_line
+process_data_line:
+  ;; Check if the opcode is db
+  mov edx, [esp+4]
+  push str_db
+  push edx
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je process_data_line_db
+
+  ;; Check is the opcode is dd
+  mov edx, [esp+4]
+  push str_dd
+  push edx
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je process_data_line_dd
+
+  mov eax, 0
+  ret
+
+process_data_line_db:
+  ;; Like process_bss_line_resb, but with just one emit at the end
+  mov edx, [esp+8]
+
+  push 0
+  mov ecx, esp
+
+  push 1
+  push ecx
+  push edx
+  call decode_number_or_symbol
+  add esp, 12
+
+  pop ecx
+  cmp eax, 0
+  je platform_panic
+
+  ;; Call emit with the decoded value
+  push ecx
+  call emit
+  add esp, 4
+
+  jmp process_data_line_ret
+
+process_data_line_dd:
+  ;; Check that data has an apex at the beginning
+  mov edx, [esp+8]
+  cmp BYTE [edx], APEX
+  jne platform_panic
+
+  ;; Compute string length
+  push edx
+  push edx
+  call strlen
+  add esp, 4
+  pop edx
+
+  ;; Check that data has at least length 2 (the two apices)
+  cmp eax, 2
+  jnae platform_panic
+
+  ;; Check that data has an apex at the end
+  mov ecx, edx
+  add ecx, eax
+  sub ecx, 1
+  cmp BYTE [ecx], APEX
+  jne platform_panic
+
+  ;; Consume the first apex and overwrite the last with a terminator
+  mov BYTE [ecx], 0
+  add edx, 1
+
+  ;; Emit all the bytes
+process_data_line_dd_loop:
+  cmp BYTE [edx], 0
+  je process_data_line_ret
+  push edx
+  mov ecx, 0
+  mov cl, BYTE [edx]
+  push ecx
+  call emit
+  add esp, 4
+  pop edx
+  add edx, 1
+  jmp process_data_line_dd_loop
+
+process_data_line_ret:
+  mov eax, 1
   ret
