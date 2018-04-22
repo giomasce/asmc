@@ -402,24 +402,32 @@ int process_bss_line2(char *opcode, char *data) {
 }
 
 int process_data_line(char *opcode, char *data);
-int process_data_line2(char *opcode, char *data) {
+int process_data_line(char *opcode, char *data) {
   if (strcmp(opcode, "db") == 0) {
+    if (data[0] == '\'') {
+      int len = strlen(data);
+      assert(len >= 2);
+      assert(data[len-1] == '\'');
+      data[len-1] = '\0';
+      data++;
+      for ( ; *data != '\0'; data++) {
+        emit(*data);
+      }
+    } else {
+      int val;
+      int res = decode_number_or_symbol(data, &val, 0);
+      if (!res) {
+        platform_panic();
+      }
+      emit(val);
+    }
+  } else if (strcmp(opcode, "dd") == 0) {
     int val;
     int res = decode_number_or_symbol(data, &val, 0);
     if (!res) {
       platform_panic();
     }
-    emit(val);
-  } else if (strcmp(opcode, "dd") == 0) {
-    assert(data[0] == '\'');
-    int len = strlen(data);
-    assert(len >= 2);
-    assert(data[len-1] == '\'');
-    data[len-1] = '\0';
-    data++;
-    for ( ; *data != '\0'; data++) {
-      emit(*data);
-    }
+    emit32(val);
   } else {
     return 0;
   }

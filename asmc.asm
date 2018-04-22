@@ -33,74 +33,74 @@
 section .data
 
 reg_eax:
-  dd 'eax'
+  db 'eax'
   db 0
 reg_ecx:
-  dd 'ecx'
+  db 'ecx'
   db 0
 reg_edx:
-  dd 'edx'
+  db 'edx'
   db 0
 reg_ebx:
-  dd 'ebx'
+  db 'ebx'
   db 0
 reg_esp:
-  dd 'esp'
+  db 'esp'
   db 0
 reg_ebp:
-  dd 'ebp'
+  db 'ebp'
   db 0
 reg_esi:
-  dd 'esi'
+  db 'esi'
   db 0
 reg_edi:
-  dd 'edi'
+  db 'edi'
   db 0
 
 reg_al:
-  dd 'al'
+  db 'al'
   db 0
 reg_cl:
-  dd 'cl'
+  db 'cl'
   db 0
 reg_dl:
-  dd 'dl'
+  db 'dl'
   db 0
 reg_bl:
-  dd 'bl'
+  db 'bl'
   db 0
 reg_ah:
-  dd 'ah'
+  db 'ah'
   db 0
 reg_ch:
-  dd 'ch'
+  db 'ch'
   db 0
 reg_dh:
-  dd 'dh'
+  db 'dh'
   db 0
 reg_bh:
-  dd 'bh'
+  db 'bh'
   db 0
 
 str_BYTE:
-  dd 'BYTE'
+  db 'BYTE'
   db 0
 str_DWORD:
-  dd 'DWORD'
+  db 'DWORD'
   db 0
 
 str_resb:
-  dd 'resb'
+  db 'resb'
   db 0
 str_resd:
-  dd 'resd'
+  db 'resd'
   db 0
 
 str_dd:
-  dd 'dd'
+  db 'dd'
   db 0
 str_db:
-  dd 'db'
+  db 'db'
   db 0
 
 section .bss
@@ -1390,8 +1390,8 @@ process_bss_line_ret:
   ret
 
 
-  global process_data_line
-process_data_line:
+  global process_data_line2
+process_data_line2:
   ;; Check if the opcode is db
   mov edx, [esp+4]
   push str_db
