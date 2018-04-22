@@ -15,13 +15,15 @@ int *get_stage();
 
 int line;
 
-void assert(int cond);/* {
+void assert(int cond);
+void assert2(int cond) {
   if (!cond) {
     platform_panic();
   }
-}*/
+}
 
-int readline(int fd, unsigned char *buf, int len);/* {
+int readline(int fd, unsigned char *buf, int len);
+int readline2(int fd, unsigned char *buf, int len) {
   while (len > 0) {
     int c = platform_read_char(fd);
     if (c == '\n' || c == -1) {
@@ -34,9 +36,10 @@ int readline(int fd, unsigned char *buf, int len);/* {
     len--;
   }
   platform_panic();
-}*/
+}
 
-void trimstr(char *buf);/* {
+void trimstr(char *buf);
+void trimstr2(char *buf) {
   char *write_buf = buf;
   char *read_buf = buf;
   while (*read_buf == ' ' || *read_buf == '\t') {
@@ -53,9 +56,10 @@ void trimstr(char *buf);/* {
     *write_buf = '\0';
     write_buf--;
   }
-}*/
+}
 
-void remove_spaces(char *buf);/* {
+void remove_spaces(char *buf);
+void remove_spaces2(char *buf) {
   char *read_buf = buf;
   while (1) {
     if (*read_buf == '\0') {
@@ -70,9 +74,10 @@ void remove_spaces(char *buf);/* {
       read_buf++;
     }
   }
-}*/
+}
 
-int strcmp(const char *s1, const char *s2);/* {
+int strcmp(const char *s1, const char *s2);
+int strcmp2(const char *s1, const char *s2) {
   while (1) {
     if (*s1 < *s2) {
       return -1;
@@ -86,9 +91,10 @@ int strcmp(const char *s1, const char *s2);/* {
     s1++;
     s2++;
   }
-}*/
+}
 
-int isstrpref(const char *s1, const char *s2);/* {
+int isstrpref(const char *s1, const char *s2);
+int isstrpref2(const char *s1, const char *s2) {
   while (1) {
     if (*s1 == '\0') {
       return 1;
@@ -99,9 +105,10 @@ int isstrpref(const char *s1, const char *s2);/* {
     s1++;
     s2++;
   }
-}*/
+}
 
-void strcpy(char *d, const char *s);/* {
+void strcpy(char *d, const char *s);
+void strcpy2(char *d, const char *s) {
   while (1) {
     *d = *s;
     if (*s == '\0') {
@@ -110,17 +117,19 @@ void strcpy(char *d, const char *s);/* {
     d++;
     s++;
   }
-}*/
+}
 
-int strlen(const char *s);/* {
+int strlen(const char *s);
+int strlen2(const char *s) {
   const char *s2 = s;
   while (*s2 != '\0') {
     s2++;
   }
   return s2 - s;
-}*/
+}
 
-int find_char(char *s, char c);/* {
+int find_char(char *s, char c);
+int find_char2(char *s, char c) {
   char *s2 = s;
   while (1) {
     if (*s2 == c) {
@@ -131,9 +140,10 @@ int find_char(char *s, char c);/* {
     }
     s2++;
   }
-}*/
+}
 
-int find_symbol(const char *name);/* {
+int find_symbol(const char *name);
+int find_symbol2(const char *name) {
   int i;
   for (i = 0; i < *get_symbol_num(); i++) {
     if (strcmp(name, get_symbol_names() + i * MAX_SYMBOL_NAME_LEN) == 0) {
@@ -144,9 +154,10 @@ int find_symbol(const char *name);/* {
     i = SYMBOL_TABLE_LEN;
   }
   return i;
-}*/
+}
 
-void add_symbol(const char *name, int loc);/* {
+void add_symbol(const char *name, int loc);
+void add_symbol2(const char *name, int loc) {
   int len = strlen(name);
   assert(len > 0);
   assert(len < MAX_SYMBOL_NAME_LEN);
@@ -165,9 +176,10 @@ void add_symbol(const char *name, int loc);/* {
   } else {
     platform_panic();
   }
-}*/
+}
 
-int decode_reg32(char *reg);/* {
+int decode_reg32(char *reg);
+int decode_reg322(char *reg) {
   if (strcmp(reg, "eax") == 0) {
     return 0;
   } else if (strcmp(reg, "ecx") == 0) {
@@ -187,9 +199,10 @@ int decode_reg32(char *reg);/* {
   } else {
     return -1;
   }
-}*/
+}
 
-int decode_reg8(char *reg);/* {
+int decode_reg8(char *reg);
+int decode_reg82(char *reg) {
   if (strcmp(reg, "al") == 0) {
     return 0;
   } else if (strcmp(reg, "cl") == 0) {
@@ -209,9 +222,10 @@ int decode_reg8(char *reg);/* {
   } else {
     return -1;
   }
-}*/
+}
 
-int decode_number(const char *operand, unsigned int *num);/* {
+int decode_number(const char *operand, unsigned int *num);
+int decode_number2(const char *operand, unsigned int *num) {
   *num = 0;
   int is_decimal = 1;
   int digit_seen = 0;
@@ -242,9 +256,10 @@ int decode_number(const char *operand, unsigned int *num);/* {
     }
     operand++;
   }
-}*/
+}
 
-int decode_number_or_symbol(const char *operand, unsigned int *num, int force_symbol);/* {
+int decode_number_or_symbol(const char *operand, unsigned int *num, int force_symbol);
+int decode_number_or_symbol2(const char *operand, unsigned int *num, int force_symbol) {
   int res = decode_number(operand, num);
   if (res) {
     return 1;
@@ -264,9 +279,10 @@ int decode_number_or_symbol(const char *operand, unsigned int *num, int force_sy
   } else {
     platform_panic();
   }
-}*/
+}
 
-int decode_operand(char *operand, int *is_direct, int *reg, int *disp, int *is8, int *is32);/* {
+int decode_operand(char *operand, int *is_direct, int *reg, int *disp, int *is8, int *is32);
+int decode_operand2(char *operand, int *is_direct, int *reg, int *disp, int *is8, int *is32) {
   remove_spaces(operand);
   *is8 = 0;
   *is32 = 0;
@@ -338,24 +354,27 @@ int decode_operand(char *operand, int *is_direct, int *reg, int *disp, int *is8,
       }
     }
   }
-}*/
+}
 
-void emit(char c);/* {
+void emit(char c);
+void emit2(char c) {
   int stage = *get_stage();
   if (stage == 1) {
     platform_write_char(1, c);
   }
   (*get_current_loc())++;
-}*/
+}
 
-void emit32(int x);/* {
+void emit32(int x);
+void emit322(int x) {
   emit(x);
   emit(x >> 8);
   emit(x >> 16);
   emit(x >> 24);
-}*/
+}
 
-int process_bss_line(char *opcode, char *data);/* {
+int process_bss_line(char *opcode, char *data);
+int process_bss_line2(char *opcode, char *data) {
   if (strcmp(opcode, "resb") == 0) {
     int val;
     int res = decode_number_or_symbol(data, &val, 1);
@@ -380,9 +399,10 @@ int process_bss_line(char *opcode, char *data);/* {
     return 0;
   }
   return 1;
-}*/
+}
 
-int process_data_line(char *opcode, char *data);/* {
+int process_data_line(char *opcode, char *data);
+int process_data_line2(char *opcode, char *data) {
   if (strcmp(opcode, "db") == 0) {
     int val;
     int res = decode_number_or_symbol(data, &val, 0);
@@ -404,7 +424,7 @@ int process_data_line(char *opcode, char *data);/* {
     return 0;
   }
   return 1;
-}*/
+}
 
 int emit_modrm(int mod, int reg, int rm) {
   assert(mod == mod & 0x3);
