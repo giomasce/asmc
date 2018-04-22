@@ -1005,9 +1005,9 @@ void assemble_file() {
     while (1) {
       char *input_buf = get_input_buf();
       int finished = readline(fd_in, input_buf, INPUT_BUF_LEN);
-      platform_log(2, "Decoding line: ");
+      /*platform_log(2, "Decoding line: ");
       platform_log(2, input_buf);
-      platform_log(2, "\n");
+      platform_log(2, "\n");*/
       trimstr(input_buf);
       int len = strlen(input_buf);
       if (finished && len == 0) {
