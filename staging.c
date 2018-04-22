@@ -13,6 +13,8 @@ char *get_current_section();
 int *get_current_loc();
 int *get_stage();
 
+int line;
+
 void assert(int cond);/* {
   if (!cond) {
     platform_panic();
@@ -79,6 +81,19 @@ int strcmp(const char *s1, const char *s2);/* {
       return 1;
     }
     if (*s1 == '\0') {
+      return 0;
+    }
+    s1++;
+    s2++;
+  }
+}*/
+
+int isstrpref(const char *s1, const char *s2);/* {
+  while (1) {
+    if (*s1 == '\0') {
+      return 1;
+    }
+    if (*s1 != *s2) {
       return 0;
     }
     s1++;
@@ -251,15 +266,15 @@ int decode_number_or_symbol(const char *operand, unsigned int *num, int force_sy
   }
 }*/
 
-int decode_operand(char *operand, int *is_direct, int *reg, int *disp, int *is8, int *is32) {
+int decode_operand(char *operand, int *is_direct, int *reg, int *disp, int *is8, int *is32);/* {
   remove_spaces(operand);
   *is8 = 0;
   *is32 = 0;
-  if (operand[0] == 'B' && operand[1] == 'Y' && operand[2] == 'T' && operand[3] == 'E') {
+  if (isstrpref("BYTE", operand)) {
     operand += 4;
     *is8 = 1;
   }
-  if (operand[0] == 'D' && operand[1] == 'W' && operand[2] == 'O' && operand[3] == 'R' && operand[4] == 'D') {
+  if (isstrpref("DWORD", operand)) {
     operand += 5;
     *is32 = 1;
   }
@@ -304,6 +319,9 @@ int decode_operand(char *operand, int *is_direct, int *reg, int *disp, int *is8,
     }
   } else {
     *is_direct = 1;
+    if (*is32 || *is8) {
+      return 0;
+    }
     *reg = decode_reg32(operand);
     if (*reg != -1) {
       *is32 = 1;
@@ -320,7 +338,7 @@ int decode_operand(char *operand, int *is_direct, int *reg, int *disp, int *is8,
       }
     }
   }
-}
+}*/
 
 void emit(char c) {
   int stage = *get_stage();
@@ -960,19 +978,21 @@ void assemble_file() {
   int fd_in = platform_open_file("asmc.asm");
   for (*get_stage() = 0; *get_stage() < 2; (*get_stage())++) {
     platform_reset_file(fd_in);
+    line = 0;
     *get_current_loc() = 0;
     while (1) {
       char *input_buf = get_input_buf();
       int finished = readline(fd_in, input_buf, INPUT_BUF_LEN);
-      /*platform_log(2, "Decoding line: ");
+      platform_log(2, "Decoding line: ");
       platform_log(2, input_buf);
-      platform_log(2, "\n");*/
+      platform_log(2, "\n");
       trimstr(input_buf);
       int len = strlen(input_buf);
       if (finished && len == 0) {
         break;
       }
       if (len == 0 || input_buf[0] == ';') {
+        line++;
         continue;
       }
       if (input_buf[len-1] == ':') {
@@ -981,6 +1001,7 @@ void assemble_file() {
       } else {
         process_line(input_buf);
       }
+      line++;
     }
   }
 }

@@ -19,6 +19,9 @@
   LITTLEA equ 0x61
   LITTLEF equ 0x66
   LITTLEX equ 0x78
+  SQ_OPEN equ 0x5b
+  SQ_CLOSED equ 0x5d
+  PLUS equ 0x2b
 
   INPUT_BUF_LEN equ 1024
   MAX_SYMBOL_NAME_LEN equ 128
@@ -78,6 +81,13 @@ reg_bh:
   dd 'bh'
   db 0
 
+str_BYTE:
+  dd 'BYTE'
+  db 0
+str_DWORD:
+  dd 'DWORD'
+  db 0
+
 section .bss
 
 input_buf:
@@ -102,6 +112,11 @@ stage:
   resd 1
 
 section .text
+
+debug:
+  ret
+  ret
+  mov DWORD [edx], 0
 
   global  _start
 _start:
@@ -430,6 +445,34 @@ strcmp_after_cmp2:
 strcmp_end:
   pop ebx
   ret
+
+
+  global isstrpref
+isstrpref:
+  ;; Load registers
+  mov eax, [esp+4]
+  mov ecx, [esp+8]
+
+isstrpref_loop:
+  ;; If the first string is finished, then return 1
+  mov dl, [eax]
+  cmp dl, 0
+  jne isstrpref_after_cmp1
+  mov eax, 1
+  ret
+
+isstrpref_after_cmp1:
+  ;; If the characters do not match, return 0
+  cmp dl, [ecx]
+  je isstrpref_after_cmp2
+  mov eax, 0
+  ret
+
+isstrpref_after_cmp2:
+  ;; Increment both pointers and restart
+  add eax, 1
+  add ecx, 1
+  jmp isstrpref_loop
 
 
   global strcpy
@@ -978,5 +1021,219 @@ decode_number_or_symbol_invalid:
   jmp decode_number_or_symbol_ret
 
 decode_number_or_symbol_ret:
+  pop ebp
+  ret
+
+
+  global decode_operand
+decode_operand:
+  push ebp
+  mov ebp, esp
+  push ebx
+  push esi
+
+  ;; Use ebx for the input string
+  mov ebx, [ebp+8]
+
+  ;; Call remove_spaces
+  push ebx
+  call remove_spaces
+  add esp, 4
+
+  ;; Use cl and ch to remember if we found 8 or 32 bits code
+  mov ecx, 0
+
+  ;; Search for BYTE prefix
+  push ecx
+  push ebx
+  push str_BYTE
+  call isstrpref
+  add esp, 8
+  pop ecx
+  cmp eax, 0
+  je decode_operand_after_byte_search
+  add ebx, 4
+  mov cl, 1
+
+  ;; Search for DWORD prefix
+decode_operand_after_byte_search:
+  push ecx
+  push ebx
+  push str_DWORD
+  call isstrpref
+  add esp, 8
+  pop ecx
+  cmp eax, 0
+  je decode_operand_after_dword_search
+  add ebx, 5
+  mov ch, 1
+
+  ;; Check that at most one prefix was found
+decode_operand_after_dword_search:
+  mov dl, cl
+  and dl, ch
+  cmp dl, 0
+  jne platform_panic
+
+  ;; Check whether the operand is direct or indirect
+  cmp BYTE [ebx], SQ_OPEN
+  jne decode_operand_direct
+
+  ;; Indirect operand: mark as such and consume character
+  mov edx, [ebp+12]
+  mov DWORD [edx], 0
+  add ebx, 1
+
+  ;; In this branch cl and ch are not used, so we can save them in the
+  ;; caller space and then recycle the register
+  mov edx, [ebp+24]
+  mov DWORD [edx], 0
+  mov [edx], cl
+  mov edx, [ebp+28]
+  mov DWORD [edx], 0
+  mov [edx], ch
+
+  ;; Search for the plus
+  push PLUS
+  push ebx
+  call find_char
+  add esp, 8
+  cmp eax, 0xffffffff
+  jne decode_operand_have_plus
+
+  ;; There is no plus, so the displacement is zero
+  mov edx, [ebp+20]
+  mov DWORD [edx], 0
+
+  ;; Search for the closed bracket
+  push SQ_CLOSED
+  push ebx
+  call find_char
+  add esp, 8
+  cmp eax, 0xffffffff
+  je decode_operand_ret_false
+
+  ;; Check that the following character is a terminator
+  mov ecx, ebx
+  add ecx, eax
+  cmp BYTE [ecx+1], 0
+  jne decode_operand_ret_false
+
+  ;; Overwrite the closed bracket with a terminator and recognize the
+  ;; register name (which must be a 32 bits register)
+  mov BYTE [ecx], 0
+  push ebx
+  call decode_reg32
+  add esp, 4
+
+  ;; Save its value in the caller space and return appropriately
+  mov edx, [ebp+16]
+  mov [edx], eax
+  cmp eax, 0xffffffff
+  je decode_operand_ret_false
+  jmp decode_operand_ret_true
+
+decode_operand_have_plus:
+  ;; Overwrite the plus with a terminator and recognize the register
+  ;; name
+  mov esi, ebx
+  add esi, eax
+  mov BYTE [esi], 0
+  push ebx
+  call decode_reg32
+  add esp, 4
+
+  ;; Save the register in the caller space and return 0 if it failed
+  mov edx, [ebp+16]
+  mov [edx], eax
+  cmp eax, 0xffffffff
+  je decode_operand_ret_false
+
+  ;; Search for the closed bracket
+  mov ebx, esi
+  add ebx, 1
+  push SQ_CLOSED
+  push ebx
+  call find_char
+  add esp, 8
+  cmp eax, 0xffffffff
+  je decode_operand_ret_false
+
+  ;; Check that the following character is a terminator
+  mov ecx, ebx
+  add ecx, eax
+  cmp BYTE [ecx+1], 0
+  jne decode_operand_ret_false
+
+  ;; Overwrite the closed bracket with a terminator and recognized the
+  ;; displacement
+  mov BYTE [ecx], 0
+  push 0
+  mov eax, DWORD [ebp+20]
+  push eax
+  push ebx
+  call decode_number_or_symbol
+  add esp, 12
+  jmp decode_operand_ret
+
+decode_operand_direct:
+  ;; Direct operand: save this fact in the caller space
+  mov edx, [ebp+12]
+  mov DWORD [edx], 1
+
+  ;; No prefix should have been found in this case
+  cmp ecx, 0
+  jne decode_operand_ret_false
+
+  ;; Try to recognized the operand as a 32 bits register
+  push ebx
+  call decode_reg32
+  add esp, 4
+  cmp eax, 0xffffffff
+  je decode_operand_8bit
+
+  ;; Save the register in the caller space
+  mov edx, [ebp+16]
+  mov [edx], eax
+
+  ;; Save the detected size in the caller space
+  mov edx, [ebp+24]
+  mov DWORD [edx], 0
+  mov edx, [ebp+28]
+  mov DWORD [edx], 1
+
+  jmp decode_operand_ret_true
+
+decode_operand_8bit:
+  ;; Try to recognize the operand as a 8 bits register
+  push ebx
+  call decode_reg8
+  add esp, 4
+  cmp eax, 0xffffffff
+  je decode_operand_ret_false
+
+  ;; Save the register in the caller space
+  mov edx, [ebp+16]
+  mov [edx], eax
+
+  ;; Save the detected size in the caller space
+  mov edx, [ebp+24]
+  mov DWORD [edx], 1
+  mov edx, [ebp+28]
+  mov DWORD [edx], 0
+
+  jmp decode_operand_ret_true
+
+decode_operand_ret_true:
+  mov eax, 1
+  jmp decode_operand_ret
+
+decode_operand_ret_false:
+  mov eax, 0
+  jmp decode_operand_ret
+
+decode_operand_ret:
+  pop esi
+  pop ebx
   pop ebp
   ret
