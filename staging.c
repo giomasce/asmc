@@ -426,14 +426,15 @@ int process_data_line2(char *opcode, char *data) {
   return 1;
 }
 
-int emit_modrm(int mod, int reg, int rm) {
+int emit_modrm(int mod, int reg, int rm);
+int emit_modrm2(int mod, int reg, int rm) {
   assert(mod == mod & 0x3);
   assert(reg == reg & 0x7);
   assert(rm == rm & 0x7);
-  emit((mod << 6) + (reg << 3) + rm);
   // The only two supported mode are a direct register, or an indirect
   // register + disp32
   assert(mod == 2 || mod == 3);
+  emit((mod << 6) + (reg << 3) + rm);
   // In the particular case of ESP used as indirect base, a SIB is
   // needed
   if (mod == 2 && rm == 4) {

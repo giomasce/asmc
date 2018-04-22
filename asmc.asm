@@ -1482,3 +1482,56 @@ process_data_line_dd_loop:
 process_data_line_ret:
   mov eax, 1
   ret
+
+
+  global emit_modrm
+emit_modrm:
+  ;; Check that input do not overlap when being shifted in place
+  mov eax, 0x3
+  and eax, [esp+4]
+  cmp eax, [esp+4]
+  jne platform_panic
+
+  mov eax, 0x7
+  and eax, [esp+8]
+  cmp eax, [esp+8]
+  jne platform_panic
+
+  mov eax, 0x7
+  and eax, [esp+12]
+  cmp eax, [esp+12]
+  jne platform_panic
+
+  ;; Only support a direct register, or an indirect register + disp32
+  cmp BYTE [esp+4], 0
+  je platform_panic
+  cmp BYTE [esp+4], 1
+  je platform_panic
+
+  ;; Assemble the first byte
+  mov eax, 0
+  mov al, BYTE [esp+4]
+  mov edx, 8
+  imul edx
+  add al, BYTE [esp+8]
+  mov edx, 8
+  imul edx
+  add al, BYTE [esp+12]
+
+  ;; Emit the first byte
+  push eax
+  call emit
+  add esp, 4
+
+  ;; In the particular case of ESP used as indirect base, a SIB is
+  ;; needed
+  cmp BYTE [esp+4], 2
+  jne emit_modrm_ret
+  cmp BYTE [esp+12], 4
+  jne emit_modrm_ret
+  push 0x24
+  call emit
+  add esp, 4
+
+emit_modrm_ret:
+  ret
