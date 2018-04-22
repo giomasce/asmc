@@ -965,11 +965,13 @@ void process_line(char *line) {
     add_symbol(data, 0);
   } else {
     int processed = 0;
-    if (strcmp(get_current_section(), ".bss") == 0) {
+    if (!processed) {
       processed = process_bss_line(opcode, data);
-    } else if (strcmp(get_current_section(), ".text") == 0) {
+    }
+    if (!processed) {
       processed = process_text_line(opcode, data);
-    } else if (strcmp(get_current_section(), ".data") == 0) {
+    }
+    if (!processed) {
       processed = process_data_line(opcode, data);
     }
     if (!processed) {
