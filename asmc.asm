@@ -1795,3 +1795,192 @@ emit_modrm:
 
 emit_modrm_ret:
   ret
+
+
+  global process_jmp_like
+process_jmp_like:
+  push ebp
+  mov ebp, esp
+
+  ;; Allocate space for 5 variables:
+  ;; [ebp-4]: is_direct
+  ;; [ebp-8]: reg
+  ;; [ebp-12]: disp
+  ;; [ebp-16]: is8
+  ;; [ebp-20]: is32
+  sub esp, 20
+
+  ;; Call decode_operand
+  mov eax, ebp
+  sub eax, 20
+  push eax
+  mov eax, ebp
+  sub eax, 16
+  push eax
+  mov eax, ebp
+  sub eax, 12
+  push eax
+  mov eax, ebp
+  sub eax, 8
+  push eax
+  mov eax, ebp
+  sub eax, 4
+  push eax
+  mov eax, [ebp+12]
+  push eax
+  call decode_operand
+  add esp, 24
+
+  cmp eax, 0
+  jne process_jmp_like_rm32
+  jmp process_jmp_like_rel32
+
+process_jmp_like_rm32:
+  ;; Check the operand is not 8 bits
+  cmp DWORD [ebp-16], 0
+  jne platform_panic
+
+  ;; Get the opcode data
+  mov eax, [ebp+8]
+  mov edx, 4
+  imul edx
+  add eax, rm32_opcode
+  mov ecx, [eax]
+
+  ;; Check that the opcode is valid (0xf0 is the invalid flag)
+  cmp cl, 0xf0
+  je platform_panic
+
+  ;; Select direct or indirect access
+  cmp DWORD [esp-4], 0
+  jne process_jmp_like_direct
+  jmp process_jmp_like_indirect
+
+process_jmp_like_direct:
+  ;; Prepare all the arguments on the stack, so we do not have to care
+  ;; about registers
+  mov edx, [ebp-8]
+  push edx
+  mov edx, 0
+  mov dl, ch
+  push edx
+  mov dl, 3
+  push edx
+  mov dl, cl
+  push edx
+
+  ;; Call emit and emit_modrm
+  call emit
+  add esp, 4
+  call emit_modrm
+  add esp, 12
+
+  jmp process_jmp_like_end
+
+process_jmp_like_indirect:
+  ;; Prepare all the arguments on the stack, so we do not have to care
+  ;; about registers
+  mov edx, [ebp-12]
+  push edx
+  mov edx, [ebp-8]
+  push edx
+  mov edx, 0
+  mov dl, ch
+  push edx
+  mov dl, 2
+  push edx
+  mov dl, cl
+  push edx
+
+  ;; Call emit, emit_modrm and emit32
+  call emit
+  add esp, 4
+  call emit_modrm
+  add esp, 12
+  call emit32
+  add esp, 4
+
+  jmp process_jmp_like_end
+
+process_jmp_like_rel32:
+  ;; Call decode_number_or_symbol
+  push 0
+  mov edx, esp
+  push 0
+  push edx
+  mov edx, [ebp+12]
+  push edx
+  call decode_number_or_symbol
+  add esp, 12
+
+  ;; Check for success
+  cmp eax, 0
+  je platform_panic
+
+  ;; Store the value in edx and make it relative
+  pop edx
+  mov ecx, current_loc
+  sub edx, [ecx]
+  sub edx, 5
+
+  ;; Get the opcode data (store in ecx)
+  mov eax, [ebp+8]
+  push edx
+  mov edx, 4
+  imul edx
+  pop edx
+  add eax, imm32_opcode
+  mov ecx, [eax]
+
+  ;; Check that the opcode is valid (0xf0 is the invalid flag)
+  cmp cl, 0xf0
+  je platform_panic
+
+  ;; Select whether the command has one or two opcodes
+  mov eax, ecx
+  and eax, 0xff0000
+  cmp eax, 0
+  jne process_jmp_like_has_opcode2
+  jmp process_jmp_like_no_opcode2
+
+process_jmp_like_has_opcode2:
+  ;; Subtract another one from the relative displacement
+  sub edx, 1
+
+  ;; Push all arguments
+  push edx
+  mov edx, 0
+  mov dl, ch
+  push edx
+  mov dl, cl
+  push edx
+
+  ;; Call emit and emit32
+  call emit
+  add esp, 4
+  call emit
+  add esp, 4
+  call emit32
+  add esp, 4
+
+  jmp process_jmp_like_end
+
+process_jmp_like_no_opcode2:
+  ;; Push all arguments
+  push edx
+  mov edx, 0
+  mov dl, cl
+  push edx
+
+  ;; Call emit and emit32
+  call emit
+  add esp, 4
+  call emit32
+  add esp, 4
+
+  jmp process_jmp_like_end
+
+process_jmp_like_end:
+  add esp, 20
+  pop ebp
+  ret

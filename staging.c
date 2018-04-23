@@ -493,7 +493,8 @@ enum {
   OP_IMUL,
 };
 
-void process_jmp_like(int op, char *data) {
+void process_jmp_like(int op, char *data);
+void process_jmp_like2x(int op, char *data) {
   int is_direct, reg, disp, is8, is32;
   int res = decode_operand(data, &is_direct, &reg, &disp, &is8, &is32);
   if (res) {
@@ -853,7 +854,7 @@ void assemble_file() {
     while (1) {
       char *input_buf = get_input_buf();
       int finished = readline(fd_in, input_buf, INPUT_BUF_LEN);
-      if (0) {
+      if (1) {
         platform_log(2, "Decoding line: ");
         platform_log(2, input_buf);
         platform_log(2, "\n");
