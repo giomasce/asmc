@@ -4,8 +4,6 @@
   extern platform_open_file
   extern platform_reset_file
   extern platform_read_char
-  extern platform_write_char
-  extern platform_log
 
   extern assemble_file
 
@@ -44,6 +42,10 @@ term_row:
 term_col:
   resd 1
 
+helloasm:
+  db 'Hello, ASM!'
+  db NEWLINE
+  db 0
 
 start_from_multiboot:
   ;; Set up stack
@@ -51,9 +53,17 @@ start_from_multiboot:
 
   call term_setup
 
-  mov eax, 0xb8000
-  mov DWORD [eax], 0x41424344
-  jmp loop_forever
+  push helloasm
+  push 1
+  call platform_log
+  add esp, 8
+
+  push helloasm
+  push 1
+  call platform_log
+  add esp, 8
+
+  call loop_forever
 
 
 loop_forever:
@@ -98,6 +108,7 @@ term_set_char:
   add eax, [esp+8]
   mov edx, 2
   imul edx
+  add eax, TERM_BASE_ADDR
 
   ;; Store the new character
   mov dl, [esp+12]
@@ -157,15 +168,19 @@ term_shift_ret:
 
   ;; void term_put_char(int char)
 term_put_char:
-  ;; Call term_set_char with the current position
+  ;; If the character is a newline, jump to the newline code
   mov ecx, [esp+4]
-  mov edx, term_row
-  mov eax, [edx]
-  push eax
+  cmp cl, NEWLINE
+  je term_put_char_newline
+
+  ;; Call term_set_char with the current position
+  push ecx
   mov edx, term_col
   mov eax, [edx]
   push eax
-  push ecx
+  mov edx, term_row
+  mov eax, [edx]
+  push eax
   call term_set_char
   add esp, 12
 
@@ -177,9 +192,10 @@ term_put_char:
 
   ;; Check for column overflow
   cmp eax, TERM_COL_NUM
-  jne term_put_char_ret
+  jne term_put_char_finish
 
   ;; Move to the beginning of next row
+term_put_char_newline:
   mov DWORD [edx], 0
   mov edx, term_row
   mov eax, [edx]
@@ -188,12 +204,56 @@ term_put_char:
 
   ;; Check for row overflow
   cmp eax, TERM_ROW_NUM
-  jne term_put_char_ret
+  jne term_put_char_finish
 
   ;; Reset the row position and shift all lines
   sub eax, 1
   mov [edx], eax
   call term_shift
 
-term_put_char_ret:
+term_put_char_finish:
+  ret
+
+
+platform_write_char:
+  ;; Switch depending on the requested file descriptor
+  mov eax, [esp+4]
+  cmp eax, 1
+  je platform_write_char_stdout
+  ret
+
+platform_write_char_stdout:
+  ;; Send stdout to terminal
+  mov eax, [esp+8]
+  push eax
+  call term_put_char
+  add esp, 4
+  ret
+
+
+platform_log:
+  ;; Use ebx for the fd and esi for the string
+  mov eax, [esp+4]
+  mov edx, [esp+8]
+  push ebx
+  push esi
+  mov ebx, eax
+  mov esi, edx
+
+  ;; Loop over the string and call platform_write_char
+platform_log_loop:
+  mov ecx, 0
+  mov cl, [esi]
+  cmp cl, 0
+  je platform_log_loop_ret
+  push ecx
+  push ebx
+  call platform_write_char
+  add esp, 8
+  add esi, 1
+  jmp platform_log_loop
+
+platform_log_loop_ret:
+  pop esi
+  pop ebx
   ret

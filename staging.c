@@ -1011,7 +1011,7 @@ void assemble_file() {
   for (*get_stage() = 0; *get_stage() < 2; (*get_stage())++) {
     platform_reset_file(fd_in);
     line = 0;
-    *get_current_loc() = 0;
+    *get_current_loc() = 0x100000;
     while (1) {
       char *input_buf = get_input_buf();
       int finished = readline(fd_in, input_buf, INPUT_BUF_LEN);
