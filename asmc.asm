@@ -12,6 +12,37 @@
   PLUS equ 0x2b
   APEX equ 0x27
 
+  OP_PUSH equ 0
+  OP_POP equ 1
+  OP_ADD equ 2
+  OP_SUB equ 3
+  OP_MOV equ 4
+  OP_CMP equ 5
+  OP_AND equ 6
+  OP_OR equ 7
+  OP_JMP equ 8
+  OP_CALL equ 9
+  OP_JE equ 10
+  OP_JNE equ 11
+  OP_JA equ 12
+  OP_JNA equ 13
+  OP_JAE equ 14
+  OP_JNAE equ 15
+  OP_JB equ 16
+  OP_JNB equ 17
+  OP_JBE equ 18
+  OP_JNBE equ 19
+  OP_JG equ 20
+  OP_JNG equ 21
+  OP_JGE equ 22
+  OP_JNGE equ 23
+  OP_JL equ 24
+  OP_JNL equ 25
+  OP_JLE equ 26
+  OP_JNLE equ 27
+  OP_MUL equ 28
+  OP_IMUL equ 29
+
   INPUT_BUF_LEN equ 1024
   MAX_SYMBOL_NAME_LEN equ 128
   SYMBOL_TABLE_LEN equ 1024
@@ -19,6 +50,103 @@
   SYMBOL_TABLE_SIZE equ 131072
 
 section .data
+
+simp_opcode:
+  dd 0x50    ; OP_PUSH
+  dd 0x58    ; OP_POP
+  dd 0xf0    ; OP_ADD
+  dd 0xf0    ; OP_SUB
+  dd 0xf0    ; OP_MOV
+  dd 0xf0    ; OP_CMP
+  dd 0xf0    ; OP_AND
+  dd 0xf0    ; OP_OR
+  dd 0xf0    ; OP_JMP
+  dd 0xf0    ; OP_CALL
+  dd 0xf0    ; OP_JE
+  dd 0xf0    ; OP_JNE
+  dd 0xf0    ; OP_JA
+  dd 0xf0    ; OP_JNA
+  dd 0xf0    ; OP_JAE
+  dd 0xf0    ; OP_JNAE
+  dd 0xf0    ; OP_JB
+  dd 0xf0    ; OP_JNB
+  dd 0xf0    ; OP_JBE
+  dd 0xf0    ; OP_JNBE
+  dd 0xf0    ; OP_JG
+  dd 0xf0    ; OP_JNG
+  dd 0xf0    ; OP_JGE
+  dd 0xf0    ; OP_JNGE
+  dd 0xf0    ; OP_JL
+  dd 0xf0    ; OP_JNL
+  dd 0xf0    ; OP_JLE
+  dd 0xf0    ; OP_JNLE
+  dd 0xf0    ; OP_MUL
+  dd 0xf0    ; OP_IMUL
+
+rm32_opcode:
+  dd 0x06ff  ; OP_PUSH
+  dd 0x008f  ; OP_POP
+  dd 0xf0    ; OP_ADD
+  dd 0xf0    ; OP_SUB
+  dd 0xf0    ; OP_MOV
+  dd 0xf0    ; OP_CMP
+  dd 0xf0    ; OP_AND
+  dd 0xf0    ; OP_OR
+  dd 0x04ff  ; OP_JMP
+  dd 0x02ff  ; OP_CALL
+  dd 0xf0    ; OP_JE
+  dd 0xf0    ; OP_JNE
+  dd 0xf0    ; OP_JA
+  dd 0xf0    ; OP_JNA
+  dd 0xf0    ; OP_JAE
+  dd 0xf0    ; OP_JNAE
+  dd 0xf0    ; OP_JB
+  dd 0xf0    ; OP_JNB
+  dd 0xf0    ; OP_JBE
+  dd 0xf0    ; OP_JNBE
+  dd 0xf0    ; OP_JG
+  dd 0xf0    ; OP_JNG
+  dd 0xf0    ; OP_JGE
+  dd 0xf0    ; OP_JNGE
+  dd 0xf0    ; OP_JL
+  dd 0xf0    ; OP_JNL
+  dd 0xf0    ; OP_JLE
+  dd 0xf0    ; OP_JNLE
+  dd 0x04f7  ; OP_MUL
+  dd 0x05f7  ; OP_IMUL
+
+imm32_opcode:
+  dd 0xf0    ; OP_PUSH
+  dd 0xf0    ; OP_POP
+  dd 0xf0    ; OP_ADD
+  dd 0xf0    ; OP_SUB
+  dd 0xf0    ; OP_MOV
+  dd 0xf0    ; OP_CMP
+  dd 0xf0    ; OP_AND
+  dd 0xf0    ; OP_OR
+  dd 0xe9    ; OP_JMP
+  dd 0xe8    ; OP_CALL
+  dd 0x1840f ; OP_JE
+  dd 0x1850f ; OP_JNE
+  dd 0x1870f ; OP_JA
+  dd 0x1860f ; OP_JNA
+  dd 0x1830f ; OP_JAE
+  dd 0x1820f ; OP_JNAE
+  dd 0x1820f ; OP_JB
+  dd 0x1830f ; OP_JNB
+  dd 0x1860f ; OP_JBE
+  dd 0x1870f ; OP_JNBE
+  dd 0x18f0f ; OP_JG
+  dd 0x18e0f ; OP_JNG
+  dd 0x18d0f ; OP_JGE
+  dd 0x18c0f ; OP_JNGE
+  dd 0x18c0f ; OP_JL
+  dd 0x18d0f ; OP_JNL
+  dd 0x18e0f ; OP_JLE
+  dd 0x18f0f ; OP_JNLE
+  dd 0xf0    ; OP_MUL
+  dd 0xf0    ; OP_IMUL
+
 
 reg_eax:
   db 'eax'
@@ -151,6 +279,21 @@ get_stage:
   mov eax, stage
   ret
 
+  global get_rm32_opcode
+get_rm32_opcode:
+  mov eax, rm32_opcode
+  ret
+
+  global get_imm32_opcode
+get_imm32_opcode:
+  mov eax, imm32_opcode
+  ret
+
+  global get_simp_opcode
+get_simp_opcode:
+  mov eax, simp_opcode
+  ret
+
 
   global  _start
 _start:
@@ -249,6 +392,8 @@ trimstr_copy_loop:
 
   ;; Replace the final whitespace with terminators
 trimstr_trim_end:
+  sub eax, 1
+trimstr_trim_loop2:
   cmp BYTE [eax], SPACE
   je trimstr_final_white
   cmp BYTE [eax], TAB
@@ -259,7 +404,7 @@ trimstr_final_white:
   cmp eax, [esp+4]
   je trimstr_ret
   sub eax, 1
-  jmp trimstr_trim_end
+  jmp trimstr_trim_loop2
 
 trimstr_ret:
   ret

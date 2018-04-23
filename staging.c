@@ -13,6 +13,10 @@ char *get_current_section();
 int *get_current_loc();
 int *get_stage();
 
+int *get_rm32_opcode();
+int *get_imm32_opcode();
+int *get_simp_opcode();
+
 int line;
 
 void assert(int cond);
@@ -451,7 +455,7 @@ int emit_modrm2(int mod, int reg, int rm) {
 }
 
 enum {
-  OP_PUSH,
+  OP_PUSH = 0,
   OP_POP,
   OP_ADD,
   OP_SUB,
@@ -489,23 +493,12 @@ void process_jmp_like(int op, char *data) {
   if (res) {
     assert(!is8);
     // r/m32
-    int opcode;
-    int ext;
-    if (op == OP_JMP) {
-      opcode = 0xff;
-      ext = 4;
-    } else if (op == OP_CALL) {
-      opcode = 0xff;
-      ext = 2;
-    } else if (op == OP_MUL) {
-      opcode = 0xf7;
-      ext = 4;
-    } else if (op == OP_IMUL) {
-      opcode = 0xf7;
-      ext = 5;
-    } else {
+    int opcode_data = get_rm32_opcode()[op];
+    int opcode = opcode_data & 0xff;
+    if (opcode == 0xf0) {
       platform_panic();
     }
+    int ext = (opcode_data >> 8) & 0xff;
     if (is_direct) {
       emit(opcode);
       emit_modrm(3, ext, reg);
@@ -516,88 +509,13 @@ void process_jmp_like(int op, char *data) {
     }
   } else {
     // rel32
-    int opcode;
-    int opcode2;
-    int has_opcode2 = 0;
-    if (op == OP_JMP) {
-      opcode = 0xe9;
-    } else if (op == OP_CALL) {
-      opcode = 0xe8;
-    } else if (op == OP_JE) {
-      opcode = 0x0f;
-      opcode2 = 0x84;
-      has_opcode2 = 1;
-    } else if (op == OP_JNE) {
-      opcode = 0x0f;
-      opcode2 = 0x85;
-      has_opcode2 = 1;
-    } else if (op == OP_JA) {
-      opcode = 0x0f;
-      opcode2 = 0x87;
-      has_opcode2 = 1;
-    } else if (op == OP_JNA) {
-      opcode = 0x0f;
-      opcode2 = 0x86;
-      has_opcode2 = 1;
-    } else if (op == OP_JAE) {
-      opcode = 0x0f;
-      opcode2 = 0x83;
-      has_opcode2 = 1;
-    } else if (op == OP_JNAE) {
-      opcode = 0x0f;
-      opcode2 = 0x82;
-      has_opcode2 = 1;
-    } else if (op == OP_JB) {
-      opcode = 0x0f;
-      opcode2 = 0x82;
-      has_opcode2 = 1;
-    } else if (op == OP_JNB) {
-      opcode = 0x0f;
-      opcode2 = 0x83;
-      has_opcode2 = 1;
-    } else if (op == OP_JBE) {
-      opcode = 0x0f;
-      opcode2 = 0x86;
-      has_opcode2 = 1;
-    } else if (op == OP_JNBE) {
-      opcode = 0x0f;
-      opcode2 = 0x87;
-      has_opcode2 = 1;
-    } else if (op == OP_JG) {
-      opcode = 0x0f;
-      opcode2 = 0x8f;
-      has_opcode2 = 1;
-    } else if (op == OP_JNG) {
-      opcode = 0x0f;
-      opcode2 = 0x8e;
-      has_opcode2 = 1;
-    } else if (op == OP_JGE) {
-      opcode = 0x0f;
-      opcode2 = 0x8d;
-      has_opcode2 = 1;
-    } else if (op == OP_JNGE) {
-      opcode = 0x0f;
-      opcode2 = 0x8c;
-      has_opcode2 = 1;
-    } else if (op == OP_JL) {
-      opcode = 0x0f;
-      opcode2 = 0x8c;
-      has_opcode2 = 1;
-    } else if (op == OP_JNL) {
-      opcode = 0x0f;
-      opcode2 = 0x8d;
-      has_opcode2 = 1;
-    } else if (op == OP_JLE) {
-      opcode = 0x0f;
-      opcode2 = 0x8e;
-      has_opcode2 = 1;
-    } else if (op == OP_JNLE) {
-      opcode = 0x0f;
-      opcode2 = 0x8f;
-      has_opcode2 = 1;
-    } else {
+    int opcode_data = get_imm32_opcode()[op];
+    int opcode = opcode_data & 0xff;
+    if (opcode == 0xf0) {
       platform_panic();
     }
+    int opcode2 = (opcode_data >> 8) & 0xff;
+    int has_opcode2 = (opcode_data >> 16) & 0xff;
     int rel;
     int res = decode_number_or_symbol(data, &rel, 0);
     if (!res) {
@@ -619,29 +537,21 @@ void process_push_like(int op, char *data) {
   if (res) {
     assert(!is8);
     if (is_direct) {
-      int opcode;
-      if (op == OP_PUSH) {
-        opcode = 0x50;
-      } else if (op == OP_POP) {
-        opcode = 0x58;
-      } else {
+      int opcode_data = get_simp_opcode()[op];
+      int opcode = opcode_data & 0xff;
+      if (opcode == 0xf0) {
         platform_panic();
       }
       emit(opcode + reg);
     } else {
-      int opcode;
-      int reg;
-      if (op == OP_PUSH) {
-        opcode = 0xff;
-        reg = 6;
-      } else if (op == OP_POP) {
-        opcode = 0x8f;
-        reg = 0;
-      } else {
+      int opcode_data = get_rm32_opcode()[op];
+      int opcode = opcode_data & 0xff;
+      if (opcode == 0xf0) {
         platform_panic();
       }
+      int ext = (opcode_data >> 8) & 0xff;
       emit(opcode);
-      emit_modrm(2, reg, reg);
+      emit_modrm(2, ext, reg);
       emit32(disp);
     }
   } else {
@@ -1020,12 +930,16 @@ void assemble_file() {
         platform_log(2, input_buf);
         platform_log(2, "\n");
       }
+      int semicolon_pos = find_char(input_buf, ';');
+      if (semicolon_pos != -1) {
+        input_buf[semicolon_pos] = '\0';
+      }
       trimstr(input_buf);
       int len = strlen(input_buf);
       if (finished && len == 0) {
         break;
       }
-      if (len == 0 || input_buf[0] == ';') {
+      if (len == 0) {
         line++;
         continue;
       }
