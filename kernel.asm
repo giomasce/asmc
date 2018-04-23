@@ -44,7 +44,7 @@ term_col:
 
 helloasm:
   db 'Hello, ASM!'
-  db NEWLINE
+  db 0xa
   db 0
 
 start_from_multiboot:

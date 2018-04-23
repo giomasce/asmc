@@ -1261,8 +1261,8 @@ process_bss_line_ret:
   ret
 
 
-  global process_data_line2
-process_data_line2:
+  global process_data_line
+process_data_line:
   ;; Check if the opcode is db
   mov edx, [esp+4]
   push str_db
@@ -1285,9 +1285,24 @@ process_data_line2:
   ret
 
 process_data_line_db:
-  ;; Like process_bss_line_resb, but with just one emit at the end
+  ;; If data begin with an apex, treat it as a string
   mov edx, [esp+8]
+  cmp BYTE [edx], APEX
+  je process_data_line_string
 
+  ;; If not, treat it as a single 8 bits value
+  mov eax, 0
+  jmp process_data_line_value
+
+process_data_line_dd:
+  ;; Assume data is a single 32 bits value
+  mov edx, [esp+8]
+  mov eax, 1
+  jmp process_data_line_value
+
+process_data_line_value:
+  ;; Like process_bss_line_resb, but with just one emit at the end
+  push eax
   push 0
   mov ecx, esp
 
@@ -1301,19 +1316,26 @@ process_data_line_db:
   cmp eax, 0
   je platform_panic
 
-  ;; Call emit with the decoded value
+  ;; We used eax to remember if data is 8 or 32 bits; call emit or
+  ;; emit32 accordingly
+  pop eax
+  cmp eax, 0
+  jne process_data_line_emit32
+
   push ecx
   call emit
   add esp, 4
 
   jmp process_data_line_ret
 
-process_data_line_dd:
-  ;; Check that data has an apex at the beginning
-  mov edx, [esp+8]
-  cmp BYTE [edx], APEX
-  jne platform_panic
+process_data_line_emit32:
+  push ecx
+  call emit32
+  add esp, 4
 
+  jmp process_data_line_ret
+
+process_data_line_string:
   ;; Compute string length
   push edx
   push edx

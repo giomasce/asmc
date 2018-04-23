@@ -402,7 +402,7 @@ int process_bss_line2(char *opcode, char *data) {
 }
 
 int process_data_line(char *opcode, char *data);
-int process_data_line(char *opcode, char *data) {
+int process_data_line2(char *opcode, char *data) {
   if (strcmp(opcode, "db") == 0) {
     if (data[0] == '\'') {
       int len = strlen(data);
