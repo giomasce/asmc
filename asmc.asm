@@ -147,6 +147,198 @@ imm32_opcode:
   dd 0xf0    ; OP_MUL
   dd 0xf0    ; OP_IMUL
 
+r8rm8_opcode:
+  dd 0xf0    ; OP_PUSH
+  dd 0xf0    ; OP_POP
+  dd 0x02    ; OP_ADD
+  dd 0x2a    ; OP_SUB
+  dd 0x8a    ; OP_MOV
+  dd 0x3a    ; OP_CMP
+  dd 0x22    ; OP_AND
+  dd 0x0a    ; OP_OR
+  dd 0xf0    ; OP_JMP
+  dd 0xf0    ; OP_CALL
+  dd 0xf0    ; OP_JE
+  dd 0xf0    ; OP_JNE
+  dd 0xf0    ; OP_JA
+  dd 0xf0    ; OP_JNA
+  dd 0xf0    ; OP_JAE
+  dd 0xf0    ; OP_JNAE
+  dd 0xf0    ; OP_JB
+  dd 0xf0    ; OP_JNB
+  dd 0xf0    ; OP_JBE
+  dd 0xf0    ; OP_JNBE
+  dd 0xf0    ; OP_JG
+  dd 0xf0    ; OP_JNG
+  dd 0xf0    ; OP_JGE
+  dd 0xf0    ; OP_JNGE
+  dd 0xf0    ; OP_JL
+  dd 0xf0    ; OP_JNL
+  dd 0xf0    ; OP_JLE
+  dd 0xf0    ; OP_JNLE
+  dd 0xf0    ; OP_MUL
+  dd 0xf0    ; OP_IMUL
+
+r32rm32_opcode:
+  dd 0xf0    ; OP_PUSH
+  dd 0xf0    ; OP_POP
+  dd 0x03    ; OP_ADD
+  dd 0x2b    ; OP_SUB
+  dd 0x8b    ; OP_MOV
+  dd 0x3b    ; OP_CMP
+  dd 0x23    ; OP_AND
+  dd 0x0b    ; OP_OR
+  dd 0xf0    ; OP_JMP
+  dd 0xf0    ; OP_CALL
+  dd 0xf0    ; OP_JE
+  dd 0xf0    ; OP_JNE
+  dd 0xf0    ; OP_JA
+  dd 0xf0    ; OP_JNA
+  dd 0xf0    ; OP_JAE
+  dd 0xf0    ; OP_JNAE
+  dd 0xf0    ; OP_JB
+  dd 0xf0    ; OP_JNB
+  dd 0xf0    ; OP_JBE
+  dd 0xf0    ; OP_JNBE
+  dd 0xf0    ; OP_JG
+  dd 0xf0    ; OP_JNG
+  dd 0xf0    ; OP_JGE
+  dd 0xf0    ; OP_JNGE
+  dd 0xf0    ; OP_JL
+  dd 0xf0    ; OP_JNL
+  dd 0xf0    ; OP_JLE
+  dd 0xf0    ; OP_JNLE
+  dd 0xf0    ; OP_MUL
+  dd 0xf0    ; OP_IMUL
+
+rm8r8_opcode:
+  dd 0xf0    ; OP_PUSH
+  dd 0xf0    ; OP_POP
+  dd 0x00    ; OP_ADD
+  dd 0x28    ; OP_SUB
+  dd 0x88    ; OP_MOV
+  dd 0x38    ; OP_CMP
+  dd 0x20    ; OP_AND
+  dd 0x08    ; OP_OR
+  dd 0xf0    ; OP_JMP
+  dd 0xf0    ; OP_CALL
+  dd 0xf0    ; OP_JE
+  dd 0xf0    ; OP_JNE
+  dd 0xf0    ; OP_JA
+  dd 0xf0    ; OP_JNA
+  dd 0xf0    ; OP_JAE
+  dd 0xf0    ; OP_JNAE
+  dd 0xf0    ; OP_JB
+  dd 0xf0    ; OP_JNB
+  dd 0xf0    ; OP_JBE
+  dd 0xf0    ; OP_JNBE
+  dd 0xf0    ; OP_JG
+  dd 0xf0    ; OP_JNG
+  dd 0xf0    ; OP_JGE
+  dd 0xf0    ; OP_JNGE
+  dd 0xf0    ; OP_JL
+  dd 0xf0    ; OP_JNL
+  dd 0xf0    ; OP_JLE
+  dd 0xf0    ; OP_JNLE
+  dd 0xf0    ; OP_MUL
+  dd 0xf0    ; OP_IMUL
+
+rm32r32_opcode:
+  dd 0xf0    ; OP_PUSH
+  dd 0xf0    ; OP_POP
+  dd 0x01    ; OP_ADD
+  dd 0x29    ; OP_SUB
+  dd 0x89    ; OP_MOV
+  dd 0x39    ; OP_CMP
+  dd 0x21    ; OP_AND
+  dd 0x09    ; OP_OR
+  dd 0xf0    ; OP_JMP
+  dd 0xf0    ; OP_CALL
+  dd 0xf0    ; OP_JE
+  dd 0xf0    ; OP_JNE
+  dd 0xf0    ; OP_JA
+  dd 0xf0    ; OP_JNA
+  dd 0xf0    ; OP_JAE
+  dd 0xf0    ; OP_JNAE
+  dd 0xf0    ; OP_JB
+  dd 0xf0    ; OP_JNB
+  dd 0xf0    ; OP_JBE
+  dd 0xf0    ; OP_JNBE
+  dd 0xf0    ; OP_JG
+  dd 0xf0    ; OP_JNG
+  dd 0xf0    ; OP_JGE
+  dd 0xf0    ; OP_JNGE
+  dd 0xf0    ; OP_JL
+  dd 0xf0    ; OP_JNL
+  dd 0xf0    ; OP_JLE
+  dd 0xf0    ; OP_JNLE
+  dd 0xf0    ; OP_MUL
+  dd 0xf0    ; OP_IMUL
+
+rm8imm8_opcode:
+  dd 0xf0    ; OP_PUSH
+  dd 0xf0    ; OP_POP
+  dd 0x0080  ; OP_ADD
+  dd 0x0580  ; OP_SUB
+  dd 0x00c6  ; OP_MOV
+  dd 0x0780  ; OP_CMP
+  dd 0x0480  ; OP_AND
+  dd 0x0180  ; OP_OR
+  dd 0xf0    ; OP_JMP
+  dd 0xf0    ; OP_CALL
+  dd 0xf0    ; OP_JE
+  dd 0xf0    ; OP_JNE
+  dd 0xf0    ; OP_JA
+  dd 0xf0    ; OP_JNA
+  dd 0xf0    ; OP_JAE
+  dd 0xf0    ; OP_JNAE
+  dd 0xf0    ; OP_JB
+  dd 0xf0    ; OP_JNB
+  dd 0xf0    ; OP_JBE
+  dd 0xf0    ; OP_JNBE
+  dd 0xf0    ; OP_JG
+  dd 0xf0    ; OP_JNG
+  dd 0xf0    ; OP_JGE
+  dd 0xf0    ; OP_JNGE
+  dd 0xf0    ; OP_JL
+  dd 0xf0    ; OP_JNL
+  dd 0xf0    ; OP_JLE
+  dd 0xf0    ; OP_JNLE
+  dd 0xf0    ; OP_MUL
+  dd 0xf0    ; OP_IMUL
+
+rm32imm32_opcode:
+  dd 0xf0    ; OP_PUSH
+  dd 0xf0    ; OP_POP
+  dd 0x0081  ; OP_ADD
+  dd 0x0581  ; OP_SUB
+  dd 0x00c7  ; OP_MOV
+  dd 0x0781  ; OP_CMP
+  dd 0x0481  ; OP_AND
+  dd 0x0181  ; OP_OR
+  dd 0xf0    ; OP_JMP
+  dd 0xf0    ; OP_CALL
+  dd 0xf0    ; OP_JE
+  dd 0xf0    ; OP_JNE
+  dd 0xf0    ; OP_JA
+  dd 0xf0    ; OP_JNA
+  dd 0xf0    ; OP_JAE
+  dd 0xf0    ; OP_JNAE
+  dd 0xf0    ; OP_JB
+  dd 0xf0    ; OP_JNB
+  dd 0xf0    ; OP_JBE
+  dd 0xf0    ; OP_JNBE
+  dd 0xf0    ; OP_JG
+  dd 0xf0    ; OP_JNG
+  dd 0xf0    ; OP_JGE
+  dd 0xf0    ; OP_JNGE
+  dd 0xf0    ; OP_JL
+  dd 0xf0    ; OP_JNL
+  dd 0xf0    ; OP_JLE
+  dd 0xf0    ; OP_JNLE
+  dd 0xf0    ; OP_MUL
+  dd 0xf0    ; OP_IMUL
+
 
 reg_eax:
   db 'eax'
@@ -292,6 +484,36 @@ get_imm32_opcode:
   global get_simp_opcode
 get_simp_opcode:
   mov eax, simp_opcode
+  ret
+
+  global get_rm8r8_opcode
+get_rm8r8_opcode:
+  mov eax, rm8r8_opcode
+  ret
+
+  global get_rm32r32_opcode
+get_rm32r32_opcode:
+  mov eax, rm32r32_opcode
+  ret
+
+  global get_r8rm8_opcode
+get_r8rm8_opcode:
+  mov eax, r8rm8_opcode
+  ret
+
+  global get_r32rm32_opcode
+get_r32rm32_opcode:
+  mov eax, r32rm32_opcode
+  ret
+
+  global get_rm8imm8_opcode
+get_rm8imm8_opcode:
+  mov eax, rm8imm8_opcode
+  ret
+
+  global get_rm32imm32_opcode
+get_rm32imm32_opcode:
+  mov eax, rm32imm32_opcode
   ret
 
 

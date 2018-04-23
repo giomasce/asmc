@@ -16,6 +16,12 @@ int *get_stage();
 int *get_rm32_opcode();
 int *get_imm32_opcode();
 int *get_simp_opcode();
+int *get_rm8r8_opcode();
+int *get_rm32r32_opcode();
+int *get_r8rm8_opcode();
+int *get_r32rm32_opcode();
+int *get_rm8imm8_opcode();
+int *get_rm32imm32_opcode();
 
 int line;
 
@@ -591,20 +597,9 @@ void process_add_like(int op, char *data) {
     if (dest_is_direct) {
       if (is8) {
         // r8, r/m8
-        int opcode;
-        if (op == OP_ADD) {
-          opcode = 0x02;
-        } else if (op == OP_SUB) {
-          opcode = 0x2a;
-        } else if (op == OP_MOV) {
-          opcode = 0x8a;
-        } else if (op == OP_CMP) {
-          opcode = 0x3a;
-        } else if (op == OP_AND) {
-          opcode = 0x22;
-        } else if (op == OP_OR) {
-          opcode = 0x0a;
-        } else {
+        int opcode_data = get_r8rm8_opcode()[op];
+        int opcode = opcode_data & 0xff;
+        if (opcode == 0xf0) {
           platform_panic();
         }
         if (src_is_direct) {
@@ -617,20 +612,9 @@ void process_add_like(int op, char *data) {
         }
       } else {
         // r32, r/m32
-        int opcode;
-        if (op == OP_ADD) {
-          opcode = 0x03;
-        } else if (op == OP_SUB) {
-          opcode = 0x2b;
-        } else if (op == OP_MOV) {
-          opcode = 0x8b;
-        } else if (op == OP_CMP) {
-          opcode = 0x3b;
-        } else if (op == OP_AND) {
-          opcode = 0x23;
-        } else if (op == OP_OR) {
-          opcode = 0x0b;
-        } else {
+        int opcode_data = get_r32rm32_opcode()[op];
+        int opcode = opcode_data & 0xff;
+        if (opcode == 0xf0) {
           platform_panic();
         }
         if (src_is_direct) {
@@ -646,20 +630,9 @@ void process_add_like(int op, char *data) {
       if (src_is_direct) {
         if (is8) {
           // r/m8, r8
-          int opcode;
-          if (op == OP_ADD) {
-            opcode = 0x00;
-          } else if (op == OP_SUB) {
-            opcode = 0x28;
-          } else if (op == OP_MOV) {
-            opcode = 0x88;
-          } else if (op == OP_CMP) {
-            opcode = 0x38;
-          } else if (op == OP_AND) {
-            opcode = 0x20;
-          } else if (op == OP_OR) {
-            opcode = 0x08;
-          } else {
+          int opcode_data = get_rm8r8_opcode()[op];
+          int opcode = opcode_data & 0xff;
+          if (opcode == 0xf0) {
             platform_panic();
           }
           emit(opcode);
@@ -667,20 +640,9 @@ void process_add_like(int op, char *data) {
           emit32(dest_disp);
         } else {
           // r/m32, r32
-          int opcode;
-          if (op == OP_ADD) {
-            opcode = 0x01;
-          } else if (op == OP_SUB) {
-            opcode = 0x29;
-          } else if (op == OP_MOV) {
-            opcode = 0x89;
-          } else if (op == OP_CMP) {
-            opcode = 0x39;
-          } else if (op == OP_AND) {
-            opcode = 0x21;
-          } else if (op == OP_OR) {
-            opcode = 0x09;
-          } else {
+          int opcode_data = get_rm32r32_opcode()[op];
+          int opcode = opcode_data & 0xff;
+          if (opcode == 0xf0) {
             platform_panic();
           }
           emit(opcode);
@@ -698,71 +660,37 @@ void process_add_like(int op, char *data) {
     if (res) {
       if (dest_is8) {
         // r/m8, imm8
-        int opcode;
-        int reg;
-        if (op == OP_ADD) {
-          opcode = 0x80;
-          reg = 0;
-        } else if (op == OP_SUB) {
-          opcode = 0x80;
-          reg = 5;
-        } else if (op == OP_MOV) {
-          opcode = 0xc6;
-          reg = 0;
-        } else if (op == OP_CMP) {
-          opcode = 0x80;
-          reg = 7;
-        } else if (op == OP_AND) {
-          opcode = 0x80;
-          reg = 4;
-        } else if (op == OP_OR) {
-          opcode = 0x80;
-          reg = 1;
-        } else {
+        int opcode_data = get_rm8imm8_opcode()[op];
+        int opcode = opcode_data & 0xff;
+        if (opcode == 0xf0) {
           platform_panic();
         }
+        int ext = (opcode_data >> 8) & 0xff;
         if (dest_is_direct) {
           emit(opcode);
-          emit_modrm(3, reg, dest_reg);
+          emit_modrm(3, ext, dest_reg);
           emit(imm);
         } else {
           emit(opcode);
-          emit_modrm(2, reg, dest_reg);
+          emit_modrm(2, ext, dest_reg);
           emit32(dest_disp);
           emit(imm);
         }
       } else {
         // r/m32, imm32
-        int opcode;
-        int reg;
-        if (op == OP_ADD) {
-          opcode = 0x81;
-          reg = 0;
-        } else if (op == OP_SUB) {
-          opcode = 0x81;
-          reg = 5;
-        } else if (op == OP_MOV) {
-          opcode = 0xc7;
-          reg = 0;
-        } else if (op == OP_CMP) {
-          opcode = 0x81;
-          reg = 7;
-        } else if (op == OP_AND) {
-          opcode = 0x81;
-          reg = 4;
-        } else if (op == OP_OR) {
-          opcode = 0x81;
-          reg = 1;
-        } else {
+        int opcode_data = get_rm32imm32_opcode()[op];
+        int opcode = opcode_data & 0xff;
+        if (opcode == 0xf0) {
           platform_panic();
         }
+        int ext = (opcode_data >> 8) & 0xff;
         if (dest_is_direct) {
           emit(opcode);
-          emit_modrm(3, reg, dest_reg);
+          emit_modrm(3, ext, dest_reg);
           emit32(imm);
         } else {
           emit(opcode);
-          emit_modrm(2, reg, dest_reg);
+          emit_modrm(2, ext, dest_reg);
           emit32(dest_disp);
           emit32(imm);
         }
