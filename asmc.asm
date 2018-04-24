@@ -47,6 +47,8 @@
   OP_IMUL equ 29
   OP_INT equ 30
   OP_RET equ 31
+  OP_IN equ 32
+  OP_OUT equ 33
 
   INPUT_BUF_LEN equ 1024
   MAX_SYMBOL_NAME_LEN equ 128
@@ -121,6 +123,10 @@ opcode_names:
   db 0
   db 'ret'
   db 0
+  db 'in'
+  db 0
+  db 'out'
+  db 0
   db 0
 
 opcode_funcs:
@@ -156,6 +162,8 @@ opcode_funcs:
   dd process_jmp_like    ; OP_IMUL
   dd process_int         ; OP_INT
   dd process_ret         ; OP_RET
+  dd process_in_like     ; OP_IN
+  dd process_in_like     ; OP_OUT
 
 rm32_opcode:
   dd 0x06ff  ; OP_PUSH
@@ -190,6 +198,8 @@ rm32_opcode:
   dd 0x05f7  ; OP_IMUL
   dd 0xf0    ; OP_INT
   dd 0xf0    ; OP_RET
+  dd 0xf0    ; OP_IN
+  dd 0xf0    ; OP_OUT
 
 imm32_opcode:
   dd 0xf0    ; OP_PUSH
@@ -224,6 +234,8 @@ imm32_opcode:
   dd 0xf0    ; OP_IMUL
   dd 0xf0    ; OP_INT
   dd 0xf0    ; OP_RET
+  dd 0xf0    ; OP_IN
+  dd 0xf0    ; OP_OUT
 
 r8rm8_opcode:
   dd 0xf0    ; OP_PUSH
@@ -258,6 +270,8 @@ r8rm8_opcode:
   dd 0xf0    ; OP_IMUL
   dd 0xf0    ; OP_INT
   dd 0xf0    ; OP_RET
+  dd 0xf0    ; OP_IN
+  dd 0xf0    ; OP_OUT
 
 r32rm32_opcode:
   dd 0xf0    ; OP_PUSH
@@ -292,6 +306,8 @@ r32rm32_opcode:
   dd 0xf0    ; OP_IMUL
   dd 0xf0    ; OP_INT
   dd 0xf0    ; OP_RET
+  dd 0xf0    ; OP_IN
+  dd 0xf0    ; OP_OUT
 
 rm8r8_opcode:
   dd 0xf0    ; OP_PUSH
@@ -326,6 +342,8 @@ rm8r8_opcode:
   dd 0xf0    ; OP_IMUL
   dd 0xf0    ; OP_INT
   dd 0xf0    ; OP_RET
+  dd 0xf0    ; OP_IN
+  dd 0xf0    ; OP_OUT
 
 rm32r32_opcode:
   dd 0xf0    ; OP_PUSH
@@ -360,6 +378,8 @@ rm32r32_opcode:
   dd 0xf0    ; OP_IMUL
   dd 0xf0    ; OP_INT
   dd 0xf0    ; OP_RET
+  dd 0xf0    ; OP_IN
+  dd 0xf0    ; OP_OUT
 
 rm8imm8_opcode:
   dd 0xf0    ; OP_PUSH
@@ -394,6 +414,8 @@ rm8imm8_opcode:
   dd 0xf0    ; OP_IMUL
   dd 0xf0    ; OP_INT
   dd 0xf0    ; OP_RET
+  dd 0xf0    ; OP_IN
+  dd 0xf0    ; OP_OUT
 
 rm32imm32_opcode:
   dd 0xf0    ; OP_PUSH
@@ -428,6 +450,8 @@ rm32imm32_opcode:
   dd 0xf0    ; OP_IMUL
   dd 0xf0    ; OP_INT
   dd 0xf0    ; OP_RET
+  dd 0xf0    ; OP_IN
+  dd 0xf0    ; OP_OUT
 
 
 reg_eax:
@@ -478,6 +502,13 @@ reg_dh:
   db 0
 reg_bh:
   db 'bh'
+  db 0
+
+reg_ax:
+  db 'ax'
+  db 0
+reg_dx:
+  db 'dx'
   db 0
 
 str_BYTE:
@@ -2543,6 +2574,150 @@ process_ret:
   call emit
   add esp, 4
 
+  ret
+
+
+  global process_in_like
+process_in_like:
+  ;; Check the operation is valid
+  cmp DWORD [esp+4], OP_IN
+  je process_in_like_find_comma
+  cmp DWORD [esp+4], OP_OUT
+  je process_in_like_find_comma
+  call platform_panic
+
+process_in_like_find_comma:
+  ;; Search the comma and panic if it is not there
+  mov eax, [esp+8]
+  push COMMA
+  push eax
+  call find_char
+  add esp, 8
+  cmp eax, 0xffffffff
+  je platform_panic
+
+  ;; Substitute the comma with a terminator
+  mov edx, [esp+8]
+  add edx, eax
+  mov BYTE [edx], 0
+  add edx, 1
+
+  ;; Decide which operation to use
+  cmp DWORD [esp+4], OP_IN
+  je process_in_like_in
+  jmp process_in_like_out
+
+process_in_like_in:
+  ;; Leave the port operand in edx, the register operand in eax and
+  ;; the opcode in ecx
+  mov ecx, 0xec
+
+  jmp process_in_like_trim
+
+process_in_like_out:
+  ;; Same as above
+  mov ecx, eax
+  mov eax, edx
+  mov edx, ecx
+  mov ecx, 0xee
+
+  jmp process_in_like_trim
+
+process_in_like_trim:
+  ;; Trim both operands
+  push eax
+  push ecx
+  push edx
+  push eax
+  call trimstr
+  add esp, 4
+  pop edx
+  push edx
+  push edx
+  call trimstr
+  add esp, 4
+  pop edx
+  pop ecx
+  pop eax
+
+  ;; Check that the port operand is dx
+  push eax
+  push ecx
+  push reg_dx
+  push edx
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  jne platform_panic
+  pop ecx
+  pop eax
+
+  ;; Select depending on the register operand
+  push eax
+  push ecx
+  push reg_al
+  push eax
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  pop ecx
+  pop eax
+  je process_in_like_al
+
+  push eax
+  push ecx
+  push reg_ax
+  push eax
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  pop ecx
+  pop eax
+  je process_in_like_ax
+
+  push eax
+  push ecx
+  push reg_eax
+  push eax
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  pop ecx
+  pop eax
+  je process_in_like_eax
+
+  ;; Nothing matched, panic!
+  call platform_panic
+
+process_in_like_al:
+  ;; Emit the opcode
+  push ecx
+  call emit
+  add esp, 4
+
+  jmp process_in_like_ret
+
+process_in_like_ax:
+  ;; Emit the opcode
+  add ecx, 1
+  push ecx
+  push 0x66
+  call emit
+  add esp, 4
+  call emit
+  add esp, 4
+
+  jmp process_in_like_ret
+
+process_in_like_eax:
+  add ecx, 1
+  push ecx
+  call emit
+  add esp, 4
+
+  jmp process_in_like_ret
+
+process_in_like_ret:
   ret
 
 

@@ -495,6 +495,8 @@ enum {
   OP_IMUL,
   OP_INT,
   OP_RET,
+  OP_IN,
+  OP_OUT,
 };
 
 void emit_helper(int opcode_data, int is_direct, int reg, int rm, int disp);
@@ -662,6 +664,41 @@ void process_ret2(int op, char *data) {
   assert(op == OP_RET);
   assert(data[0] == '\0');
   emit(0xc3);
+}
+
+void process_in_like(int op, char *data);
+void process_in_like2(int op, char *data) {
+  assert(op == OP_IN || op == OP_OUT);
+  int comma_pos = find_char(data, ',');
+  if (comma_pos == -1) {
+    platform_panic();
+  }
+  data[comma_pos] = '\0';
+  int opcode;
+  char *port;
+  char *reg;
+  if (op == OP_IN) {
+    opcode = 0xec;
+    port = data + comma_pos + 1;
+    reg = data;
+  } else {
+    opcode = 0xee;
+    port = data;
+    reg = data + comma_pos + 1;
+  }
+  trimstr(port);
+  trimstr(reg);
+  assert(strcmp(port, "dx") == 0);
+  if (strcmp(reg, "al") == 0) {
+    emit(opcode);
+  } else if (strcmp(reg, "ax") == 0) {
+    emit(0x66);
+    emit(opcode+1);
+  } else if (strcmp(reg, "eax") == 0) {
+    emit(opcode+1);
+  } else {
+    platform_panic();
+  }
 }
 
 int process_text_line(char *opcode, char *data);
