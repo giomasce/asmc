@@ -49,6 +49,12 @@
   OP_RET equ 31
   OP_IN equ 32
   OP_OUT equ 33
+  OP_DIV equ 34
+  OP_IDIV equ 35
+  OP_NEG equ 36
+  OP_NOT equ 37
+  OP_XOR equ 38
+  OP_TEST equ 39
 
   INPUT_BUF_LEN equ 1024
   MAX_SYMBOL_NAME_LEN equ 128
@@ -127,6 +133,18 @@ opcode_names:
   db 0
   db 'out'
   db 0
+  db 'div'
+  db 0
+  db 'idiv'
+  db 0
+  db 'neg'
+  db 0
+  db 'not'
+  db 0
+  db 'xor'
+  db 0
+  db 'test'
+  db 0
   db 0
 
 opcode_funcs:
@@ -164,6 +182,12 @@ opcode_funcs:
   dd process_ret         ; OP_RET
   dd process_in_like     ; OP_IN
   dd process_in_like     ; OP_OUT
+  dd process_jmp_like    ; OP_DIV
+  dd process_jmp_like    ; OP_IDIV
+  dd process_jmp_like    ; OP_NEG
+  dd process_jmp_like    ; OP_NOT
+  dd process_add_like    ; OP_XOR
+  dd process_add_like    ; OP_TEST
 
 rm32_opcode:
   dd 0x06ff  ; OP_PUSH
@@ -200,6 +224,12 @@ rm32_opcode:
   dd 0xf0    ; OP_RET
   dd 0xf0    ; OP_IN
   dd 0xf0    ; OP_OUT
+  dd 0x06f7  ; OP_DIV
+  dd 0x07f7  ; OP_IDIV
+  dd 0x03f7  ; OP_NEG
+  dd 0x02f7  ; OP_NOT
+  dd 0xf0    ; OP_XOR
+  dd 0xf0    ; OP_TEST
 
 imm32_opcode:
   dd 0xf0    ; OP_PUSH
@@ -236,6 +266,12 @@ imm32_opcode:
   dd 0xf0    ; OP_RET
   dd 0xf0    ; OP_IN
   dd 0xf0    ; OP_OUT
+  dd 0xf0    ; OP_DIV
+  dd 0xf0    ; OP_IDIV
+  dd 0xf0    ; OP_NEG
+  dd 0xf0    ; OP_NOT
+  dd 0xf0    ; OP_XOR
+  dd 0xf0    ; OP_TEST
 
 r8rm8_opcode:
   dd 0xf0    ; OP_PUSH
@@ -272,6 +308,12 @@ r8rm8_opcode:
   dd 0xf0    ; OP_RET
   dd 0xf0    ; OP_IN
   dd 0xf0    ; OP_OUT
+  dd 0xf0    ; OP_DIV
+  dd 0xf0    ; OP_IDIV
+  dd 0xf0    ; OP_NEG
+  dd 0xf0    ; OP_NOT
+  dd 0x32    ; OP_XOR
+  dd 0x84    ; OP_TEST
 
 r32rm32_opcode:
   dd 0xf0    ; OP_PUSH
@@ -308,6 +350,12 @@ r32rm32_opcode:
   dd 0xf0    ; OP_RET
   dd 0xf0    ; OP_IN
   dd 0xf0    ; OP_OUT
+  dd 0xf0    ; OP_DIV
+  dd 0xf0    ; OP_IDIV
+  dd 0xf0    ; OP_NEG
+  dd 0xf0    ; OP_NOT
+  dd 0x33    ; OP_XOR
+  dd 0x85    ; OP_TEST
 
 rm8r8_opcode:
   dd 0xf0    ; OP_PUSH
@@ -344,6 +392,12 @@ rm8r8_opcode:
   dd 0xf0    ; OP_RET
   dd 0xf0    ; OP_IN
   dd 0xf0    ; OP_OUT
+  dd 0xf0    ; OP_DIV
+  dd 0xf0    ; OP_IDIV
+  dd 0xf0    ; OP_NEG
+  dd 0xf0    ; OP_NOT
+  dd 0x30    ; OP_XOR
+  dd 0x84    ; OP_TEST
 
 rm32r32_opcode:
   dd 0xf0    ; OP_PUSH
@@ -380,6 +434,12 @@ rm32r32_opcode:
   dd 0xf0    ; OP_RET
   dd 0xf0    ; OP_IN
   dd 0xf0    ; OP_OUT
+  dd 0xf0    ; OP_DIV
+  dd 0xf0    ; OP_IDIV
+  dd 0xf0    ; OP_NEG
+  dd 0xf0    ; OP_NOT
+  dd 0x31    ; OP_XOR
+  dd 0x85    ; OP_TEST
 
 rm8imm8_opcode:
   dd 0xf0    ; OP_PUSH
@@ -416,6 +476,12 @@ rm8imm8_opcode:
   dd 0xf0    ; OP_RET
   dd 0xf0    ; OP_IN
   dd 0xf0    ; OP_OUT
+  dd 0xf0    ; OP_DIV
+  dd 0xf0    ; OP_IDIV
+  dd 0xf0    ; OP_NEG
+  dd 0xf0    ; OP_NOT
+  dd 0x0680  ; OP_XOR
+  dd 0x00f6  ; OP_TEST
 
 rm32imm32_opcode:
   dd 0xf0    ; OP_PUSH
@@ -452,6 +518,12 @@ rm32imm32_opcode:
   dd 0xf0    ; OP_RET
   dd 0xf0    ; OP_IN
   dd 0xf0    ; OP_OUT
+  dd 0xf0    ; OP_DIV
+  dd 0xf0    ; OP_IDIV
+  dd 0xf0    ; OP_NEG
+  dd 0xf0    ; OP_NOT
+  dd 0x0681  ; OP_XOR
+  dd 0x00f7  ; OP_TEST
 
 
 reg_eax:
