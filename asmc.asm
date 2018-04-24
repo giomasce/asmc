@@ -11,6 +11,7 @@
   SQ_CLOSED equ 0x5d
   PLUS equ 0x2b
   APEX equ 0x27
+  COMMA equ 0x2c
 
   OP_PUSH equ 0
   OP_POP equ 1
@@ -2034,5 +2035,311 @@ process_push_like_imm32:
 
 process_push_like_end:
   add esp, 20
+  pop ebp
+  ret
+
+
+  global process_add_like
+process_add_like:
+  push ebp
+  mov ebp, esp
+
+  ;; Allocate a lot of local variables
+  ;; [ebp-4], which is [ebp+0xfffffffc]: dest_is_direct
+  ;; [ebp-8], which is [ebp+0xfffffff8]: dest_reg
+  ;; [ebp-12], whch is [ebp+0xfffffff4]: dest_disp
+  ;; [ebp-16], which is [ebp+0xfffffff0]: dest_is8
+  ;; [ebp-20], which is [ebp+0xffffffec]: dest_is32
+  ;; [ebp-24], which is [ebp+0xffffffe8]: src_is_direct
+  ;; [ebp-28], which is [ebp+0xffffffe4]: src_reg
+  ;; [ebp-32], which is [ebp+0xffffffe0]: src_disp
+  ;; [ebp-36], which is [ebp+0xffffffdc]: src_is8
+  ;; [ebp-40], which is [ebo+0xffffffd8]: src_is32
+  sub esp, 40
+
+  ;; Find the comma
+  push COMMA
+  mov edx, [ebp+12]
+  push edx
+  call find_char
+  add esp, 8
+  cmp eax, 0xffffffff
+  je platform_panic
+
+  ;; Substitute the comma with a terminator
+  mov ecx, [ebp+12]
+  add ecx, eax
+  mov BYTE [ecx], 0
+
+  ;; Push following position on the stack
+  add ecx, 1
+  push ecx
+
+  ;; Call decode_operand for destination
+  mov ecx, ebp
+  sub ecx, 20
+  push ecx
+  mov ecx, ebp
+  sub ecx, 16
+  push ecx
+  mov ecx, ebp
+  sub ecx, 12
+  push ecx
+  mov ecx, ebp
+  sub ecx, 8
+  push ecx
+  mov ecx, ebp
+  sub ecx, 4
+  push ecx
+  mov ecx, [ebp+12]
+  push ecx
+  call decode_operand
+  add esp, 24
+
+  ;; Panic if decoding failed
+  cmp eax, 0
+  je platform_panic
+
+  ;; Call decode_operand for source
+  pop edx
+  push edx
+  mov ecx, ebp
+  sub ecx, 40
+  push ecx
+  mov ecx, ebp
+  sub ecx, 36
+  push ecx
+  mov ecx, ebp
+  sub ecx, 32
+  push ecx
+  mov ecx, ebp
+  sub ecx, 28
+  push ecx
+  mov ecx, ebp
+  sub ecx, 24
+  push ecx
+  push edx
+  call decode_operand
+  add esp, 24
+  pop edx
+
+  cmp eax, 0
+  je process_add_like_imm
+
+  ;; Decide whether this is an 8 or 32 bits operation
+  mov dl, [ebp+0xfffffff0]
+  or dl, [ebp+0xffffffdc]
+  mov dh, [ebp+0xffffffec]
+  or dh, [ebp+0xffffffd8]
+
+  ;; Check that the situation is consistent
+  mov al, dl
+  or al, dh
+  cmp al, 0
+  je platform_panic
+  mov al, dl
+  and al, dh
+  cmp al, 0
+  jne platform_panic
+
+  ;; Split depending on whether destination is direct or not
+  mov ecx, [ebp+0xfffffffc]
+  cmp ecx, 0
+  jne process_add_like_dest_direct
+  jmp process_add_like_dest_indirect
+
+process_add_like_dest_direct:
+  ;; Split depending on 8 or 32 bits operation
+  cmp dl, 0
+  jne process_add_like_dest_direct_8
+  jmp process_add_like_dest_direct_32
+
+process_add_like_dest_direct_8:
+  ;; Retrieve opcode_data
+  mov eax, [ebp+8]
+  mov edx, 4
+  imul edx
+  add eax, r8rm8_opcode
+  mov ecx, [eax]
+
+  ;; Call emit_helper
+  mov eax, [ebp+0xffffffe0]
+  push eax
+  mov eax, [ebp+0xffffffe4]
+  push eax
+  mov eax, [ebp+0xfffffff8]
+  push eax
+  mov eax, [ebp+0xffffffe8]
+  push eax
+  push ecx
+  call emit_helper
+  add esp, 20
+
+  jmp process_add_like_end
+
+process_add_like_dest_direct_32:
+  ;; Retrieve opcode_data
+  mov eax, [ebp+8]
+  mov edx, 4
+  imul edx
+  add eax, r32rm32_opcode
+  mov ecx, [eax]
+
+  ;; Call emit_helper
+  mov eax, [ebp+0xffffffe0]
+  push eax
+  mov eax, [ebp+0xffffffe4]
+  push eax
+  mov eax, [ebp+0xfffffff8]
+  push eax
+  mov eax, [ebp+0xffffffe8]
+  push eax
+  push ecx
+  call emit_helper
+  add esp, 20
+
+  jmp process_add_like_end
+
+process_add_like_dest_indirect:
+  ;; Check that source is direct
+  cmp DWORD [ebp+0xffffffe8], 0
+  je platform_panic
+
+  ;; Split depending on 8 or 32 bits operation
+  cmp dl, 0
+  jne process_add_like_dest_indirect_8
+  jmp process_add_like_dest_indirect_32
+
+process_add_like_dest_indirect_8:
+  ;; Retrieve opcode_data
+  mov eax, [ebp+8]
+  mov edx, 4
+  imul edx
+  add eax, rm8r8_opcode
+  mov ecx, [eax]
+
+  ;; Call emit_helper
+  mov eax, [ebp+0xfffffff4]
+  push eax
+  mov eax, [ebp+0xfffffff8]
+  push eax
+  mov eax, [ebp+0xffffffe4]
+  push eax
+  push 0
+  push ecx
+  call emit_helper
+  add esp, 20
+
+  jmp process_add_like_end
+
+process_add_like_dest_indirect_32:
+  ;; Retrieve opcode_data
+  mov eax, [ebp+8]
+  mov edx, 4
+  imul edx
+  add eax, rm32r32_opcode
+  mov ecx, [eax]
+
+  ;; Call emit_helper
+  mov eax, [ebp+0xfffffff4]
+  push eax
+  mov eax, [ebp+0xfffffff8]
+  push eax
+  mov eax, [ebp+0xffffffe4]
+  push eax
+  push 0
+  push ecx
+  call emit_helper
+  add esp, 20
+
+  jmp process_add_like_end
+
+process_add_like_imm:
+  ;; Check that we know the operation size
+  mov eax, [ebp+0xfffffff0]
+  or eax, [ebp+0xffffffec]
+  cmp eax, 0
+  je platform_panic
+
+  ;; Call decode_number_or_symbol
+  push 0
+  mov ecx, esp
+  push 0
+  push ecx
+  push edx
+  call decode_number_or_symbol
+  add esp, 12
+  pop edx
+
+  ;; Check it did work
+  cmp eax, 0
+  je platform_panic
+
+  cmp DWORD [ebp+0xfffffff0], 0
+  je process_add_like_imm_32
+  jmp process_add_like_imm_8
+
+process_add_like_imm_8:
+  push edx
+
+  ;; Retrieve opcode_data
+  mov eax, [ebp+8]
+  mov edx, 4
+  imul edx
+  add eax, rm8imm8_opcode
+  mov ecx, [eax]
+
+  ;; Call emit_helper
+  mov eax, [ebp+0xfffffff4]
+  push eax
+  mov eax, [ebp+0xfffffff8]
+  push eax
+  push 0xffffffff
+  mov eax, [ebp+0xfffffffc]
+  push eax
+  push ecx
+  call emit_helper
+  add esp, 20
+
+  ;; Call emit
+  pop edx
+  push edx
+  call emit
+  add esp, 4
+
+  jmp process_add_like_end
+
+process_add_like_imm_32:
+  push edx
+
+  ;; Retrieve opcode_data
+  mov eax, [ebp+8]
+  mov edx, 4
+  imul edx
+  add eax, rm32imm32_opcode
+  mov ecx, [eax]
+
+  ;; Call emit_helper
+  mov eax, [ebp+0xfffffff4]
+  push eax
+  mov eax, [ebp+0xfffffff8]
+  push eax
+  push 0xffffffff
+  mov eax, [ebp+0xfffffffc]
+  push eax
+  push ecx
+  call emit_helper
+  add esp, 20
+
+  ;; Call emit
+  pop edx
+  push edx
+  call emit32
+  add esp, 4
+
+  jmp process_add_like_end
+
+process_add_like_end:
+  add esp, 40
   pop ebp
   ret

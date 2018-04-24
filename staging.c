@@ -568,7 +568,8 @@ void process_push_like2(int op, char *data) {
   }
 }
 
-void process_add_like(int op, char *data) {
+void process_add_like(int op, char *data);
+void process_add_like2(int op, char *data) {
   int comma_pos = find_char(data, ',');
   if (comma_pos == -1) {
     platform_panic();
