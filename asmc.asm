@@ -43,6 +43,8 @@
   OP_JNLE equ 27
   OP_MUL equ 28
   OP_IMUL equ 29
+  OP_INT equ 30
+  OP_RET equ 31
 
   INPUT_BUF_LEN equ 1024
   MAX_SYMBOL_NAME_LEN equ 128
@@ -83,6 +85,8 @@ rm32_opcode:
   dd 0xf0    ; OP_JNLE
   dd 0x04f7  ; OP_MUL
   dd 0x05f7  ; OP_IMUL
+  dd 0xf0    ; OP_INT
+  dd 0xf0    ; OP_RET
 
 imm32_opcode:
   dd 0xf0    ; OP_PUSH
@@ -115,6 +119,8 @@ imm32_opcode:
   dd 0x18f0f ; OP_JNLE
   dd 0xf0    ; OP_MUL
   dd 0xf0    ; OP_IMUL
+  dd 0xf0    ; OP_INT
+  dd 0xf0    ; OP_RET
 
 r8rm8_opcode:
   dd 0xf0    ; OP_PUSH
@@ -147,6 +153,8 @@ r8rm8_opcode:
   dd 0xf0    ; OP_JNLE
   dd 0xf0    ; OP_MUL
   dd 0xf0    ; OP_IMUL
+  dd 0xf0    ; OP_INT
+  dd 0xf0    ; OP_RET
 
 r32rm32_opcode:
   dd 0xf0    ; OP_PUSH
@@ -179,6 +187,8 @@ r32rm32_opcode:
   dd 0xf0    ; OP_JNLE
   dd 0xf0    ; OP_MUL
   dd 0xf0    ; OP_IMUL
+  dd 0xf0    ; OP_INT
+  dd 0xf0    ; OP_RET
 
 rm8r8_opcode:
   dd 0xf0    ; OP_PUSH
@@ -211,6 +221,8 @@ rm8r8_opcode:
   dd 0xf0    ; OP_JNLE
   dd 0xf0    ; OP_MUL
   dd 0xf0    ; OP_IMUL
+  dd 0xf0    ; OP_INT
+  dd 0xf0    ; OP_RET
 
 rm32r32_opcode:
   dd 0xf0    ; OP_PUSH
@@ -243,6 +255,8 @@ rm32r32_opcode:
   dd 0xf0    ; OP_JNLE
   dd 0xf0    ; OP_MUL
   dd 0xf0    ; OP_IMUL
+  dd 0xf0    ; OP_INT
+  dd 0xf0    ; OP_RET
 
 rm8imm8_opcode:
   dd 0xf0    ; OP_PUSH
@@ -275,6 +289,8 @@ rm8imm8_opcode:
   dd 0xf0    ; OP_JNLE
   dd 0xf0    ; OP_MUL
   dd 0xf0    ; OP_IMUL
+  dd 0xf0    ; OP_INT
+  dd 0xf0    ; OP_RET
 
 rm32imm32_opcode:
   dd 0xf0    ; OP_PUSH
@@ -307,6 +323,8 @@ rm32imm32_opcode:
   dd 0xf0    ; OP_JNLE
   dd 0xf0    ; OP_MUL
   dd 0xf0    ; OP_IMUL
+  dd 0xf0    ; OP_INT
+  dd 0xf0    ; OP_RET
 
 
 reg_eax:
@@ -2342,4 +2360,59 @@ process_add_like_imm_32:
 process_add_like_end:
   add esp, 40
   pop ebp
+  ret
+
+
+  global process_int
+process_int:
+  ;; Check the operation is actually an int
+  cmp DWORD [esp+4], OP_INT
+  jne platform_panic
+
+  ;; Call decode_number_or_symbol
+  push 0
+  mov edx, esp
+  push 0
+  push edx
+  mov edx, [esp+8]
+  push edx
+  call decode_number_or_symbol
+  add esp, 12
+  pop edx
+
+  ;; Check result
+  cmp eax, 0
+  je platform_panic
+
+  ;; Check the interrupt number is smaller than 0x100
+  cmp edx, 0x100
+  jnb platform_panic
+
+  ;; Call emit twice
+  push edx
+  push 0xcd
+  call emit
+  add esp, 4
+  call emit
+  add esp, 4
+
+  ret
+
+
+  global process_ret
+process_ret:
+  ;; Check the operation is actually a ret
+  cmp DWORD [esp+4], OP_RET
+  jne platform_panic
+
+  ;; Check that data is empty
+  mov edx, [esp+8]
+  cmp BYTE [edx], 0
+  jne platform_panic
+
+  ;; Call emit
+  push 0xc3
+  call emit
+  add esp, 4
+
   ret

@@ -490,6 +490,8 @@ enum {
   OP_JNLE,
   OP_MUL,
   OP_IMUL,
+  OP_INT,
+  OP_RET,
 };
 
 void emit_helper(int opcode_data, int is_direct, int reg, int rm, int disp);
@@ -637,7 +639,9 @@ void process_add_like2(int op, char *data) {
   }
 }
 
-void process_int(char *data) {
+void process_int(int op, char *data);
+void process_int2(int op, char *data) {
+  assert(op == OP_INT);
   int imm;
   int res = decode_number_or_symbol(data, &imm, 0);
   if (!res) {
@@ -650,14 +654,20 @@ void process_int(char *data) {
   emit(imm);
 }
 
+void process_ret(int op, char *data);
+void process_ret2(int op, char *data) {
+  assert(op == OP_RET);
+  assert(data[0] == '\0');
+  emit(0xc3);
+}
+
 int process_text_line(char *opcode, char *data) {
   if (strcmp(opcode, "call") == 0) {
     process_jmp_like(OP_CALL, data);
   } else if (strcmp(opcode, "jmp") == 0) {
     process_jmp_like(OP_JMP, data);
   } else if (strcmp(opcode, "ret") == 0) {
-    assert(strcmp(data, "") == 0);
-    emit(0xc3);
+    process_ret(OP_RET, data);
   } else if (strcmp(opcode, "push") == 0) {
     process_push_like(OP_PUSH, data);
   } else if (strcmp(opcode, "pop") == 0) {
@@ -715,7 +725,7 @@ int process_text_line(char *opcode, char *data) {
   } else if (strcmp(opcode, "imul") == 0) {
     process_jmp_like(OP_IMUL, data);
   } else if (strcmp(opcode, "int") == 0) {
-    process_int(data);
+    process_int(OP_INT, data);
   } else {
     return 0;
   }
