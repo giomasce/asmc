@@ -74,7 +74,7 @@ term_setup:
   ;; Compute the size of the VGA framebuffer
   mov eax, TERM_ROW_NUM
   mov edx, TERM_COL_NUM
-  imul edx
+  mul edx
 
   ;; Fill the VGA framebuffer with spaces char, with color light grey
   ;; 	on black
@@ -103,10 +103,10 @@ term_set_char:
   ;; Computer the character address
   mov eax, [esp+4]
   mov edx, TERM_COL_NUM
-  imul edx
+  mul edx
   add eax, [esp+8]
   mov edx, 2
-  imul edx
+  mul edx
   add eax, TERM_BASE_ADDR
 
   ;; Store the new character
@@ -123,12 +123,12 @@ term_shift:
   ;; Compute the size of an entire row (stored in ecx)
   mov eax, TERM_COL_NUM
   mov edx, 2
-  imul edx
+  mul edx
   mov ecx, eax
 
   ;; Compute the size of all rows (stored in eax)
   mov edx, TERM_ROW_NUM
-  imul edx
+  mul edx
 
   ;; Store begin (ecx) and end (eax) of the buffer to copy, and the
   ;; pointer to which to copy (edx)

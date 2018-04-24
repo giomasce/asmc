@@ -959,7 +959,7 @@ find_symbol_loop:
   ;; Compute and push the second argument to strcmp
   mov edx, MAX_SYMBOL_NAME_LEN
   mov eax, ecx
-  imul edx
+  mul edx
   add eax, symbol_names
   push eax
 
@@ -1041,7 +1041,7 @@ add_symbol_stage0:
   ;; Save the location for the new symbol
   mov eax, ebx
   mov ecx, 4
-  imul ecx
+  mul ecx
   add eax, symbol_loc
   mov ecx, [ebp+12]
   mov [eax], ecx
@@ -1051,7 +1051,7 @@ add_symbol_stage0:
   push eax
   mov eax, ebx
   mov ecx, MAX_SYMBOL_NAME_LEN
-  imul ecx
+  mul ecx
   add eax, symbol_names
   push eax
   call strcpy
@@ -1079,7 +1079,7 @@ add_symbol_stage1:
 
   ;; Check the location matches with the symbol table
   mov ecx, 4
-  imul ecx
+  mul ecx
   add eax, symbol_loc
   mov ecx, [ebp+12]
   cmp [eax], ecx
@@ -1296,11 +1296,11 @@ decode_number_loop:
   cmp edi, 1
   jne decode_number_mult16
   mov edx, 10
-  imul edx
+  mul edx
   jmp decode_number_after_mult
 decode_number_mult16:
   mov edx, 16
-  imul edx
+  mul edx
 
 decode_number_after_mult:
   ;; If we have a decimal digit, add it to the number
@@ -1400,7 +1400,7 @@ decode_number_or_symbol_stage1:
 
   ;; If it is, set the number and return 1
   mov ecx, 4
-  imul ecx
+  mul ecx
   add eax, symbol_loc
   mov edx, [eax]
   mov ecx, [ebp+12]
@@ -1913,10 +1913,10 @@ emit_modrm:
   mov eax, 0
   mov al, BYTE [esp+4]
   mov edx, 8
-  imul edx
+  mul edx
   add al, BYTE [esp+8]
   mov edx, 8
-  imul edx
+  mul edx
   add al, BYTE [esp+12]
 
   ;; Emit the first byte
@@ -2048,7 +2048,7 @@ process_jmp_like_rm32:
   ;; Get the opcode data
   mov eax, [ebp+8]
   mov edx, 4
-  imul edx
+  mul edx
   add eax, rm32_opcode
   mov ecx, [eax]
 
@@ -2070,7 +2070,7 @@ process_jmp_like_rel32:
   ;; Get the opcode data
   mov eax, [ebp+8]
   mov edx, 4
-  imul edx
+  mul edx
   add eax, imm32_opcode
   mov ecx, [eax]
 
@@ -2162,7 +2162,7 @@ process_push_like_rm32:
   ;; Get the opcode data
   mov eax, [ebp+8]
   mov edx, 4
-  imul edx
+  mul edx
   add eax, rm32_opcode
   mov ecx, [eax]
 
@@ -2335,7 +2335,7 @@ process_add_like_dest_direct_8:
   ;; Retrieve opcode_data
   mov eax, [ebp+8]
   mov edx, 4
-  imul edx
+  mul edx
   add eax, r8rm8_opcode
   mov ecx, [eax]
 
@@ -2358,7 +2358,7 @@ process_add_like_dest_direct_32:
   ;; Retrieve opcode_data
   mov eax, [ebp+8]
   mov edx, 4
-  imul edx
+  mul edx
   add eax, r32rm32_opcode
   mov ecx, [eax]
 
@@ -2391,7 +2391,7 @@ process_add_like_dest_indirect_8:
   ;; Retrieve opcode_data
   mov eax, [ebp+8]
   mov edx, 4
-  imul edx
+  mul edx
   add eax, rm8r8_opcode
   mov ecx, [eax]
 
@@ -2413,7 +2413,7 @@ process_add_like_dest_indirect_32:
   ;; Retrieve opcode_data
   mov eax, [ebp+8]
   mov edx, 4
-  imul edx
+  mul edx
   add eax, rm32r32_opcode
   mov ecx, [eax]
 
@@ -2462,7 +2462,7 @@ process_add_like_imm_8:
   ;; Retrieve opcode_data
   mov eax, [ebp+8]
   mov edx, 4
-  imul edx
+  mul edx
   add eax, rm8imm8_opcode
   mov ecx, [eax]
 
@@ -2492,7 +2492,7 @@ process_add_like_imm_32:
   ;; Retrieve opcode_data
   mov eax, [ebp+8]
   mov edx, 4
-  imul edx
+  mul edx
   add eax, rm32imm32_opcode
   mov ecx, [eax]
 
@@ -2762,7 +2762,7 @@ process_text_line_loop:
 process_text_line_match:
   ;; Select the opcode function
   mov eax, 4
-  imul edi
+  mul edi
   add eax, opcode_funcs
 
   ;; Call the opcode function
