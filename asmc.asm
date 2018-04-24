@@ -2528,3 +2528,62 @@ process_ret:
   add esp, 4
 
   ret
+
+
+  global process_text_line
+process_text_line:
+  push ebp
+  mov ebp, esp
+  push esi
+  push edi
+
+  ;; Init esi for storing the current name and edi for counting
+  mov esi, opcode_names
+  mov edi, 0
+
+process_text_line_loop:
+  ;; Check for termination: we did not find any match
+  mov eax, 0
+  cmp BYTE [esi], 0
+  je process_text_line_end
+
+  ;; Check for termination: we found a match
+  mov ecx, [ebp+8]
+  push ecx
+  push esi
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je process_text_line_match
+
+  ;; Consume the string and increment the index
+  push esi
+  call strlen
+  add esp, 4
+  add esi, eax
+  add esi, 1
+  add edi, 1
+
+  jmp process_text_line_loop
+
+process_text_line_match:
+  ;; Select the opcode function
+  mov eax, 4
+  imul edi
+  add eax, opcode_funcs
+
+  ;; Call the opcode function
+  mov edx, [ebp+12]
+  push edx
+  push edi
+  call [eax]
+  add esp, 8
+
+  mov eax, 1
+  jmp process_text_line_end
+
+process_text_line_end:
+  pop edi
+  pop esi
+  pop ebp
+  ret

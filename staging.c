@@ -665,7 +665,8 @@ void process_ret2(int op, char *data) {
   emit(0xc3);
 }
 
-int process_text_line(char *opcode, char *data) {
+int process_text_line(char *opcode, char *data);
+int process_text_line2(char *opcode, char *data) {
   char *names = get_opcode_names();
   int idx = 0;
   while (1) {
