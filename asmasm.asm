@@ -632,6 +632,22 @@ str_newline:
 str_empty:
   db 0
 
+str_ass_finished1:
+  db 'Finished assembling after processing '
+  db 0
+str_ass_finished2:
+  db ' lines!'
+  db NEWLINE
+  db 0
+
+str_symb_num1:
+  db 'The program contains '
+  db 0
+str_symb_num2:
+  db ' symbols.'
+  db NEWLINE
+  db 0
+
 section .bss
 
 input_buf:
@@ -3208,6 +3224,46 @@ assemble_break_parse_loop:
   jmp assemble_stage_loop
 
 assemble_end:
+  ;; Print processed line number
+  push str_ass_finished1
+  push 2
+  call platform_log
+  add esp, 8
+
+  push esi
+  call itoa
+  add esp, 4
+  push eax
+  push 2
+  call platform_log
+  add esp, 8
+
+  push str_ass_finished2
+  push 2
+  call platform_log
+  add esp, 8
+
+  ;; Print symbol number
+  push str_symb_num1
+  push 2
+  call platform_log
+  add esp, 8
+
+  mov ecx, symbol_num
+  mov eax, [ecx]
+  push eax
+  call itoa
+  add esp, 4
+  push eax
+  push 2
+  call platform_log
+  add esp, 8
+
+  push str_symb_num2
+  push 2
+  call platform_log
+  add esp, 8
+
   pop ebx
   pop edi
   pop esi

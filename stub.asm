@@ -9,6 +9,7 @@
 
   extern assemble_file
 
+  %include 'library.asm'
   %include 'asmasm.asm'
 
   global  _start

@@ -1,7 +1,7 @@
 
 all: asmasm asmasm.x86 boot.iso
 
-asmasm.o: asmasm.asm stub.asm
+asmasm.o: asmasm.asm library.asm stub.asm
 	nasm -f elf -F dwarf -g -w-number-overflow -o asmasm.o stub.asm
 
 staging.o: staging.c platform.h
@@ -16,8 +16,8 @@ platform_asm.o: platform_asm.asm
 asmasm: asmasm.o staging.o platform.o platform_asm.o
 	ld -g -m elf_i386 asmasm.o staging.o platform.o platform_asm.o -o asmasm
 
-full.asm: kernel.asm asmasm.asm
-	cat kernel.asm asmasm.asm > full.asm
+full.asm: kernel.asm library.asm asmasm.asm
+	cat kernel.asm library.asm asmasm.asm > full.asm
 
 asmasm.x86: full.asm asmasm
 	./asmasm > asmasm.x86
