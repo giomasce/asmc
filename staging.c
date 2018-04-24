@@ -695,13 +695,16 @@ int process_directive_line2(char *opcode, char *data) {
   return 1;
 }
 
-int process_equ_line(char *opcode, char *data) {
+int process_equ_line(char *opcode, char *data);
+int process_equ_line2(char *opcode, char *data) {
   int data_space_pos = find_char(data, ' ');
   if (data_space_pos >= 0) {
     data[data_space_pos] = '\0';
     if (strcmp(data, "equ") == 0) {
+      char *val_str = data + data_space_pos + 1;
+      trimstr(val_str);
       int val;
-      int res = decode_number_or_symbol(data + data_space_pos + 1, &val, 0);
+      int res = decode_number_or_symbol(val_str, &val, 0);
       if (res) {
         add_symbol(opcode, val);
       } else {

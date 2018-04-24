@@ -512,6 +512,10 @@ str_extern:
   db 'extern'
   db 0
 
+str_equ:
+  db 'equ'
+  db 0
+
 section .bss
 
 input_buf:
@@ -2646,4 +2650,73 @@ process_directive_line_extern:
 
 process_directive_line_ret_true:
   mov eax, 1
+  ret
+
+
+  global process_equ_line
+process_equ_line:
+  ;; Find the space in data
+  mov eax, [esp+8]
+  push SPACE
+  push eax
+  call find_char
+  add esp, 8
+
+  ;; Fail if there is not one
+  cmp eax, 0xffffffff
+  je process_equ_line_ret_false
+
+  ;; Substitute it with a terminator and save the following position
+  mov edx, [esp+8]
+  add eax, edx
+  mov BYTE [eax], 0
+  mov ecx, eax
+  add eax, 1
+  push eax
+
+  ;; Check we are dealing with an equ line
+  push str_equ
+  push edx
+  call strcmp
+  add esp, 8
+  pop edx
+
+  ;; Fail if we are not
+  cmp eax, 0
+  jne process_equ_line_ret_false
+
+  ;; Call trimstr
+  push edx
+  push edx
+  call trimstr
+  add esp, 4
+  pop edx
+
+  ;; Call decode_number_or_symbol
+  push 0
+  mov ecx, esp
+  push 0
+  push ecx
+  push edx
+  call decode_number_or_symbol
+  add esp, 12
+
+  ;; Panic if it did not work
+  cmp eax, 0
+  je platform_panic
+
+  ;; Create a symbol if it did work
+  pop edx
+  mov eax, [esp+4]
+  push edx
+  push eax
+  call add_symbol
+  add esp, 8
+
+  ;; Return true
+  mov eax, 1
+  ret
+
+process_equ_line_ret_false:
+  mov eax, 0
   ret
