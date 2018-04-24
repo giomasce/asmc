@@ -3116,20 +3116,20 @@ assemble_parse_loop:
   mov ebx, eax
 
   ;; Log the line
-  push str_decoding_line
-  push 2
-  call platform_log
-  add esp, 8
+  ;; push str_decoding_line
+  ;; push 2
+  ;; call platform_log
+  ;; add esp, 8
 
-  push input_buf
-  push 2
-  call platform_log
-  add esp, 8
+  ;; push input_buf
+  ;; push 2
+  ;; call platform_log
+  ;; add esp, 8
 
-  push str_newline
-  push 2
-  call platform_log
-  add esp, 8
+  ;; push str_newline
+  ;; push 2
+  ;; call platform_log
+  ;; add esp, 8
 
   ;; Find the first semicolon
   push SEMICOLON
