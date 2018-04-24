@@ -683,21 +683,8 @@ int process_text_line2(char *opcode, char *data) {
   }
 }
 
-void process_line(char *line) {
-  char *opcode = line;
-  int opcode_len = find_char(line, ' ');
-  char *data;
-  int data_len;
-  if (opcode_len == -1) {
-    data = line + strlen(line);
-    data_len = 0;
-  } else {
-    opcode[opcode_len] = '\0';
-    data = line + opcode_len + 1;
-    trimstr(data);
-    data_len = strlen(data);
-  }
-
+int process_directive_line(char *opcode, char *data) {
+  int data_len = strlen(data);
   if (strcmp(opcode, "section") == 0) {
     assert(data_len > 0);
     assert(data_len < MAX_SYMBOL_NAME_LEN);
@@ -707,35 +694,63 @@ void process_line(char *line) {
   } else if (strcmp(opcode, "extern") == 0) {
     add_symbol(data, 0);
   } else {
-    int processed = 0;
-    if (!processed) {
-      processed = process_bss_line(opcode, data);
-    }
-    if (!processed) {
-      processed = process_text_line(opcode, data);
-    }
-    if (!processed) {
-      processed = process_data_line(opcode, data);
-    }
-    if (!processed) {
-      int data_space_pos = find_char(data, ' ');
-      if (data_space_pos >= 0) {
-        data[data_space_pos] = '\0';
-        if (strcmp(data, "equ") == 0) {
-          int val;
-          int res = decode_number_or_symbol(data + data_space_pos + 1, &val, 0);
-          if (res) {
-            add_symbol(opcode, val);
-          } else {
-            platform_panic();
-          }
-        } else {
-          platform_panic();
-        }
+    return 0;
+  }
+  return 1;
+}
+
+int process_equ_line(char *opcode, char *data) {
+  int data_space_pos = find_char(data, ' ');
+  if (data_space_pos >= 0) {
+    data[data_space_pos] = '\0';
+    if (strcmp(data, "equ") == 0) {
+      int val;
+      int res = decode_number_or_symbol(data + data_space_pos + 1, &val, 0);
+      if (res) {
+        add_symbol(opcode, val);
       } else {
         platform_panic();
       }
+    } else {
+      return 0;
     }
+  } else {
+    return 0;
+  }
+  return 1;
+}
+
+void process_line(char *line) {
+  char *opcode = line;
+  int opcode_len = find_char(line, ' ');
+  char *data;
+  int data_len;
+  if (opcode_len == -1) {
+    data = line + strlen(line);
+  } else {
+    opcode[opcode_len] = '\0';
+    data = line + opcode_len + 1;
+    trimstr(data);
+  }
+
+  int processed = 0;
+  if (!processed) {
+    processed = process_directive_line(opcode, data);
+  }
+  if (!processed) {
+    processed = process_bss_line(opcode, data);
+  }
+  if (!processed) {
+    processed = process_text_line(opcode, data);
+  }
+  if (!processed) {
+    processed = process_data_line(opcode, data);
+  }
+  if (!processed) {
+    processed = process_equ_line(opcode, data);
+  }
+  if (!processed) {
+    platform_panic();
   }
 }
 
