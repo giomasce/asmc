@@ -513,9 +513,6 @@ symbol_loc:
 symbol_num:
   resd 1
 
-current_section:
-  resb MAX_SYMBOL_NAME_LEN
-
 current_loc:
   resd 1
 
@@ -542,11 +539,6 @@ get_symbol_loc:
   global get_symbol_num
 get_symbol_num:
   mov eax, symbol_num
-  ret
-
-  global get_current_section
-get_current_section:
-  mov eax, current_section
   ret
 
   global get_current_loc

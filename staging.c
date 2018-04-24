@@ -11,7 +11,6 @@ char *get_input_buf();
 char *get_symbol_names();
 int *get_symbol_num();
 int *get_symbol_loc();
-char *get_current_section();
 int *get_current_loc();
 int *get_stage();
 
@@ -684,11 +683,7 @@ int process_text_line2(char *opcode, char *data) {
 }
 
 int process_directive_line(char *opcode, char *data) {
-  int data_len = strlen(data);
   if (strcmp(opcode, "section") == 0) {
-    assert(data_len > 0);
-    assert(data_len < MAX_SYMBOL_NAME_LEN);
-    strcpy(get_current_section(), data);
   } else if (strcmp(opcode, "global") == 0) {
   } else if (strcmp(opcode, "align") == 0) {
   } else if (strcmp(opcode, "extern") == 0) {
@@ -756,7 +751,6 @@ void process_line(char *line) {
 
 void assemble_file() {
   *get_symbol_num() = 0;
-  *get_current_section() = 0;
   int fd_in = platform_open_file("full.asm");
   for (*get_stage() = 0; *get_stage() < 2; (*get_stage())++) {
     platform_reset_file(fd_in);
