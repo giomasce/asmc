@@ -682,7 +682,8 @@ int process_text_line2(char *opcode, char *data) {
   }
 }
 
-int process_directive_line(char *opcode, char *data) {
+int process_directive_line(char *opcode, char *data);
+int process_directive_line2(char *opcode, char *data) {
   if (strcmp(opcode, "section") == 0) {
   } else if (strcmp(opcode, "global") == 0) {
   } else if (strcmp(opcode, "align") == 0) {

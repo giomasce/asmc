@@ -499,6 +499,19 @@ str_db:
   db 'db'
   db 0
 
+str_section:
+  db 'section'
+  db 0
+str_global:
+  db 'global'
+  db 0
+str_align:
+  db 'align'
+  db 0
+str_extern:
+  db 'extern'
+  db 0
+
 section .bss
 
 input_buf:
@@ -2578,4 +2591,59 @@ process_text_line_end:
   pop edi
   pop esi
   pop ebp
+  ret
+
+
+  global process_directive_line
+process_directive_line:
+  ;; Ignore section, global and align
+  mov eax, [esp+4]
+  push str_section
+  push eax
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je process_directive_line_ret_true
+
+  mov eax, [esp+4]
+  push str_global
+  push eax
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je process_directive_line_ret_true
+
+  mov eax, [esp+4]
+  push str_align
+  push eax
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je process_directive_line_ret_true
+
+  ;; Recognize extern
+  mov eax, [esp+4]
+  push str_extern
+  push eax
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je process_directive_line_extern
+
+  ;; Return false for everything else
+  mov eax, 0
+  ret
+
+process_directive_line_extern:
+  ;; Add a mock symbol
+  mov eax, [esp+8]
+  push 0
+  push eax
+  call add_symbol
+  add esp, 8
+
+  jmp process_directive_line_ret_true
+
+process_directive_line_ret_true:
+  mov eax, 1
   ret
