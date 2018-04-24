@@ -2,7 +2,7 @@
 all: asmc asmc.x86 boot.iso
 
 asmc.o: asmc.asm stub.asm
-	nasm -f elf -F dwarf -g -o asmc.o stub.asm
+	nasm -f elf -F dwarf -g -w-number-overflow -o asmc.o stub.asm
 
 staging.o: staging.c platform.h
 	gcc -m32 -c -Og -g -ffreestanding staging.c -o staging.o
