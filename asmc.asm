@@ -1803,11 +1803,11 @@ process_jmp_like:
   mov ebp, esp
 
   ;; Allocate space for 5 variables:
-  ;; [ebp-4]: is_direct
-  ;; [ebp-8]: reg
-  ;; [ebp-12]: disp
-  ;; [ebp-16]: is8
-  ;; [ebp-20]: is32
+  ;; [ebp-4], which is [ebp+0xfffffffc]: is_direct
+  ;; [ebp-8], which is [ebp+0xfffffff8]: reg
+  ;; [ebp-12], whch is [ebp+0xfffffff4]: disp
+  ;; [ebp-16], which is [ebp+0xfffffff0]: is8
+  ;; [ebp-20], which is [ebp+0xffffffec]: is32
   sub esp, 20
 
   ;; Call decode_operand
@@ -1837,7 +1837,7 @@ process_jmp_like:
 
 process_jmp_like_rm32:
   ;; Check the operand is not 8 bits
-  cmp DWORD [ebp-16], 0
+  cmp DWORD [ebp+0xfffffff0], 0
   jne platform_panic
 
   ;; Get the opcode data
@@ -1852,14 +1852,14 @@ process_jmp_like_rm32:
   je platform_panic
 
   ;; Select direct or indirect access
-  cmp DWORD [esp-4], 0
+  cmp DWORD [ebp+0xfffffffc], 0
   jne process_jmp_like_direct
   jmp process_jmp_like_indirect
 
 process_jmp_like_direct:
   ;; Prepare all the arguments on the stack, so we do not have to care
   ;; about registers
-  mov edx, [ebp-8]
+  mov edx, [ebp+0xfffffff8]
   push edx
   mov edx, 0
   mov dl, ch
@@ -1880,9 +1880,9 @@ process_jmp_like_direct:
 process_jmp_like_indirect:
   ;; Prepare all the arguments on the stack, so we do not have to care
   ;; about registers
-  mov edx, [ebp-12]
+  mov edx, [ebp+0xfffffff4]
   push edx
-  mov edx, [ebp-8]
+  mov edx, [ebp+0xfffffff8]
   push edx
   mov edx, 0
   mov dl, ch

@@ -494,7 +494,7 @@ enum {
 };
 
 void process_jmp_like(int op, char *data);
-void process_jmp_like2x(int op, char *data) {
+void process_jmp_like2(int op, char *data) {
   int is_direct, reg, disp, is8, is32;
   int res = decode_operand(data, &is_direct, &reg, &disp, &is8, &is32);
   if (res) {
