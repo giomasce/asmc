@@ -1760,6 +1760,68 @@ emit_modrm_ret:
   ret
 
 
+  global emit_helper
+emit_helper:
+  push ebp
+  mov ebp, esp
+
+  ;; Call first emit
+  mov ecx, [ebp+8]
+  mov edx, 0
+  mov dl, cl
+  push edx
+  call emit
+  add esp, 4
+
+  ;; Perhaps call second emit
+  mov ecx, [ebp+8]
+  and ecx, 0xff0000
+  cmp ecx, 0
+  je emit_helper_modrm
+  mov ecx, [ebp+8]
+  mov edx, 0
+  mov dl, ch
+  push edx
+  call emit
+  add esp, 4
+
+emit_helper_modrm:
+  ;; Perhaps call emit_modrm
+  mov eax, [ebp+20]
+  cmp eax, 0xffffffff
+  je emit_helper_disp
+  push eax
+  mov edx, [ebp+16]
+  cmp edx, 0xffffffff
+  jne emit_helper_modrm3
+  mov ecx, [ebp+8]
+  mov edx, 0
+  mov dl, ch
+emit_helper_modrm3:
+  push edx
+  mov ecx, 2
+  cmp DWORD [ebp+12], 0
+  je emit_helper_modrm2
+  mov ecx, 3
+emit_helper_modrm2:
+  push ecx
+  call emit_modrm
+  add esp, 12
+
+emit_helper_disp:
+  ;; Perhaps call emit32
+  cmp DWORD [ebp+12], 0
+  jne emit_helper_end
+  mov edx, [ebp+24]
+  push edx
+  call emit32
+  add esp, 4
+
+emit_helper_end:
+  pop ebp
+  ret
+
+
   global process_jmp_like2
 process_jmp_like2:
   push ebp

@@ -492,7 +492,8 @@ enum {
   OP_IMUL,
 };
 
-void emit_helper(int opcode_data, int is_direct, int reg, int rm, int disp) {
+void emit_helper(int opcode_data, int is_direct, int reg, int rm, int disp);
+void emit_helper2(int opcode_data, int is_direct, int reg, int rm, int disp) {
   int opcode = opcode_data & 0xff;
   int opcode2 = (opcode_data >> 8) & 0xff;
   int has_opcode2 = opcode_data & 0xff0000;
