@@ -516,6 +516,9 @@ str_equ:
   db 'equ'
   db 0
 
+str_empty:
+  db 0
+
 section .bss
 
 input_buf:
@@ -2719,4 +2722,99 @@ process_equ_line:
 
 process_equ_line_ret_false:
   mov eax, 0
+  ret
+
+
+  global process_line
+process_line:
+  ;; Find first space
+  mov eax, [esp+4]
+  push SPACE
+  push eax
+  call find_char
+  add esp, 8
+
+  ;; Select on whether we found it or not
+  cmp eax, 0xffffffff
+  je process_line_without_space
+  jmp process_line_with_space
+
+process_line_with_space:
+  ;; Substitute the space with a terminator; leave opcode in edx and
+  ;; data in eax
+  mov edx, [esp+4]
+  add eax, edx
+  mov BYTE [eax], 0
+  add eax, 1
+
+  jmp process_line_process
+
+process_line_without_space:
+  ;; Leave opcode in edx and set data (in eax) to an empty string
+  mov edx, [esp+4]
+  mov eax, str_empty
+
+  jmp process_line_process
+
+process_line_process:
+  ;; Call all line processing functions
+  push eax
+  push edx
+  push eax
+  push edx
+  call process_directive_line
+  add esp, 8
+  cmp eax, 0
+  pop edx
+  pop eax
+  jne process_line_end
+
+  push eax
+  push edx
+  push eax
+  push edx
+  call process_bss_line
+  add esp, 8
+  cmp eax, 0
+  pop edx
+  pop eax
+  jne process_line_end
+
+  push eax
+  push edx
+  push eax
+  push edx
+  call process_text_line
+  add esp, 8
+  cmp eax, 0
+  pop edx
+  pop eax
+  jne process_line_end
+
+  push eax
+  push edx
+  push eax
+  push edx
+  call process_data_line
+  add esp, 8
+  cmp eax, 0
+  pop edx
+  pop eax
+  jne process_line_end
+
+  push eax
+  push edx
+  push eax
+  push edx
+  call process_equ_line
+  add esp, 8
+  cmp eax, 0
+  pop edx
+  pop eax
+  jne process_line_end
+
+  ;; Nothing matched, panic
+  call platform_panic
+
+process_line_end:
   ret

@@ -719,13 +719,14 @@ int process_equ_line2(char *opcode, char *data) {
   return 1;
 }
 
-void process_line(char *line) {
+void process_line(char *line);
+void process_line2(char *line) {
   char *opcode = line;
   int opcode_len = find_char(line, ' ');
   char *data;
   int data_len;
   if (opcode_len == -1) {
-    data = line + strlen(line);
+    data = "";
   } else {
     opcode[opcode_len] = '\0';
     data = line + opcode_len + 1;
