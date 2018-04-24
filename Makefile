@@ -1,8 +1,8 @@
 
-all: asmc asmc.x86 boot.iso
+all: asmasm asmasm.x86 boot.iso
 
-asmc.o: asmc.asm stub.asm
-	nasm -f elf -F dwarf -g -w-number-overflow -o asmc.o stub.asm
+asmasm.o: asmasm.asm stub.asm
+	nasm -f elf -F dwarf -g -w-number-overflow -o asmasm.o stub.asm
 
 staging.o: staging.c platform.h
 	gcc -m32 -c -Og -g -ffreestanding staging.c -o staging.o
@@ -13,22 +13,22 @@ platform.o: platform.c platform.h
 platform_asm.o: platform_asm.asm
 	nasm -f elf -F dwarf -g platform_asm.asm
 
-asmc: asmc.o staging.o platform.o platform_asm.o
-	ld -g -m elf_i386 asmc.o staging.o platform.o platform_asm.o -o asmc
+asmasm: asmasm.o staging.o platform.o platform_asm.o
+	ld -g -m elf_i386 asmasm.o staging.o platform.o platform_asm.o -o asmasm
 
-full.asm: kernel.asm asmc.asm
-	cat kernel.asm asmc.asm > full.asm
+full.asm: kernel.asm asmasm.asm
+	cat kernel.asm asmasm.asm > full.asm
 
-asmc.x86: full.asm asmc
-	./asmc > asmc.x86
+asmasm.x86: full.asm asmasm
+	./asmasm > asmasm.x86
 
 boot/boot/grub/grub.cfg: grub.cfg
 	mkdir -p boot/boot/grub
 	cp grub.cfg boot/boot/grub
 
-boot/boot/asmc.x86: asmc.x86
+boot/boot/asmasm.x86: asmasm.x86
 	mkdir -p boot/boot
-	cp asmc.x86 boot/boot
+	cp asmasm.x86 boot/boot
 
-boot.iso: boot/boot/grub/grub.cfg boot/boot/asmc.x86
+boot.iso: boot/boot/grub/grub.cfg boot/boot/asmasm.x86
 	grub-mkrescue -o boot.iso boot

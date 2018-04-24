@@ -9,7 +9,7 @@
 
   extern assemble_file
 
-  %include 'asmc.asm'
+  %include 'asmasm.asm'
 
   global  _start
 _start:
