@@ -523,7 +523,7 @@ void emit_helper2(int opcode_data, int is_direct, int reg, int rm, int disp) {
 }
 
 void process_jmp_like(int op, char *data);
-void process_jmp_like(int op, char *data) {
+void process_jmp_like2(int op, char *data) {
   int is_direct, reg, disp, is8, is32;
   int res = decode_operand(data, &is_direct, &reg, &disp, &is8, &is32);
   if (res) {
