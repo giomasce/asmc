@@ -5,6 +5,8 @@
 #define MAX_SYMBOL_NAME_LEN 128
 #define SYMBOL_TABLE_LEN 1024
 
+typedef void (*opcode_func)(int, char*);
+
 char *get_input_buf();
 char *get_symbol_names();
 int *get_symbol_num();
@@ -13,6 +15,8 @@ char *get_current_section();
 int *get_current_loc();
 int *get_stage();
 
+char *get_opcode_names();
+opcode_func *get_opcode_funcs();
 int *get_rm32_opcode();
 int *get_imm32_opcode();
 int *get_rm8r8_opcode();
@@ -662,74 +666,20 @@ void process_ret2(int op, char *data) {
 }
 
 int process_text_line(char *opcode, char *data) {
-  if (strcmp(opcode, "call") == 0) {
-    process_jmp_like(OP_CALL, data);
-  } else if (strcmp(opcode, "jmp") == 0) {
-    process_jmp_like(OP_JMP, data);
-  } else if (strcmp(opcode, "ret") == 0) {
-    process_ret(OP_RET, data);
-  } else if (strcmp(opcode, "push") == 0) {
-    process_push_like(OP_PUSH, data);
-  } else if (strcmp(opcode, "pop") == 0) {
-    process_push_like(OP_POP, data);
-  } else if (strcmp(opcode, "add") == 0) {
-    process_add_like(OP_ADD, data);
-  } else if (strcmp(opcode, "sub") == 0) {
-    process_add_like(OP_SUB, data);
-  } else if (strcmp(opcode, "and") == 0) {
-    process_add_like(OP_AND, data);
-  } else if (strcmp(opcode, "or") == 0) {
-    process_add_like(OP_OR, data);
-  } else if (strcmp(opcode, "mov") == 0) {
-    process_add_like(OP_MOV, data);
-  } else if (strcmp(opcode, "cmp") == 0) {
-    process_add_like(OP_CMP, data);
-  } else if (strcmp(opcode, "je") == 0) {
-    process_jmp_like(OP_JE, data);
-  } else if (strcmp(opcode, "jne") == 0) {
-    process_jmp_like(OP_JNE, data);
-  } else if (strcmp(opcode, "ja") == 0) {
-    process_jmp_like(OP_JA, data);
-  } else if (strcmp(opcode, "jna") == 0) {
-    process_jmp_like(OP_JNA, data);
-  } else if (strcmp(opcode, "jae") == 0) {
-    process_jmp_like(OP_JAE, data);
-  } else if (strcmp(opcode, "jnae") == 0) {
-    process_jmp_like(OP_JNAE, data);
-  } else if (strcmp(opcode, "jb") == 0) {
-    process_jmp_like(OP_JB, data);
-  } else if (strcmp(opcode, "jnb") == 0) {
-    process_jmp_like(OP_JNB, data);
-  } else if (strcmp(opcode, "jbe") == 0) {
-    process_jmp_like(OP_JBE, data);
-  } else if (strcmp(opcode, "jnbe") == 0) {
-    process_jmp_like(OP_JNBE, data);
-  } else if (strcmp(opcode, "jg") == 0) {
-    process_jmp_like(OP_JG, data);
-  } else if (strcmp(opcode, "jng") == 0) {
-    process_jmp_like(OP_JNG, data);
-  } else if (strcmp(opcode, "jge") == 0) {
-    process_jmp_like(OP_JGE, data);
-  } else if (strcmp(opcode, "jnge") == 0) {
-    process_jmp_like(OP_JNGE, data);
-  } else if (strcmp(opcode, "jl") == 0) {
-    process_jmp_like(OP_JL, data);
-  } else if (strcmp(opcode, "jnl") == 0) {
-    process_jmp_like(OP_JNL, data);
-  } else if (strcmp(opcode, "jle") == 0) {
-    process_jmp_like(OP_JLE, data);
-  } else if (strcmp(opcode, "jnle") == 0) {
-    process_jmp_like(OP_JNLE, data);
-  } else if (strcmp(opcode, "mul") == 0) {
-    process_jmp_like(OP_MUL, data);
-  } else if (strcmp(opcode, "imul") == 0) {
-    process_jmp_like(OP_IMUL, data);
-  } else if (strcmp(opcode, "int") == 0) {
-    process_int(OP_INT, data);
-  } else {
-    return 0;
+  char *names = get_opcode_names();
+  int idx = 0;
+  while (1) {
+    if (*names == '\0') {
+      return 0;
+    }
+    if (strcmp(names, opcode) == 0) {
+      get_opcode_funcs()[idx](idx, data);
+      return 1;
+    }
+    int len = strlen(names);
+    names += len + 1;
+    idx++;
   }
-  return 1;
 }
 
 void process_line(char *line) {

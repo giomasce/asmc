@@ -54,6 +54,107 @@
 
 section .data
 
+opcode_names:
+  db 'push'
+  db 0
+  db 'pop'
+  db 0
+  db 'add'
+  db 0
+  db 'sub'
+  db 0
+  db 'mov'
+  db 0
+  db 'cmp'
+  db 0
+  db 'and'
+  db 0
+  db 'or'
+  db 0
+  db 'jmp'
+  db 0
+  db 'call'
+  db 0
+  db 'je'
+  db 0
+  db 'jne'
+  db 0
+  db 'ja'
+  db 0
+  db 'jna'
+  db 0
+  db 'jae'
+  db 0
+  db 'jnae'
+  db 0
+  db 'jb'
+  db 0
+  db 'jnb'
+  db 0
+  db 'jbe'
+  db 0
+  db 'jnbe'
+  db 0
+  db 'jg'
+  db 0
+  db 'jng'
+  db 0
+  db 'jge'
+  db 0
+  db 'jnge'
+  db 0
+  db 'jl'
+  db 0
+  db 'jnl'
+  db 0
+  db 'jle'
+  db 0
+  db 'jnle'
+  db 0
+  db 'mul'
+  db 0
+  db 'imul'
+  db 0
+  db 'int'
+  db 0
+  db 'ret'
+  db 0
+  db 0
+
+opcode_funcs:
+  dd process_push_like   ; OP_PUSH
+  dd process_push_like   ; OP_POP
+  dd process_add_like    ; OP_ADD
+  dd process_add_like    ; OP_SUB
+  dd process_add_like    ; OP_MOV
+  dd process_add_like    ; OP_CMP
+  dd process_add_like    ; OP_AND
+  dd process_add_like    ; OP_OR
+  dd process_jmp_like    ; OP_JMP
+  dd process_jmp_like    ; OP_CALL
+  dd process_jmp_like    ; OP_JE
+  dd process_jmp_like    ; OP_JNE
+  dd process_jmp_like    ; OP_JA
+  dd process_jmp_like    ; OP_JNA
+  dd process_jmp_like    ; OP_JAE
+  dd process_jmp_like    ; OP_JNAE
+  dd process_jmp_like    ; OP_JB
+  dd process_jmp_like    ; OP_JNB
+  dd process_jmp_like    ; OP_JBE
+  dd process_jmp_like    ; OP_JNBE
+  dd process_jmp_like    ; OP_JG
+  dd process_jmp_like    ; OP_JNG
+  dd process_jmp_like    ; OP_JGE
+  dd process_jmp_like    ; OP_JNGE
+  dd process_jmp_like    ; OP_JL
+  dd process_jmp_like    ; OP_JNL
+  dd process_jmp_like    ; OP_JLE
+  dd process_jmp_like    ; OP_JNLE
+  dd process_jmp_like    ; OP_MUL
+  dd process_jmp_like    ; OP_IMUL
+  dd process_int         ; OP_INT
+  dd process_ret         ; OP_RET
+
 rm32_opcode:
   dd 0x06ff  ; OP_PUSH
   dd 0x008f  ; OP_POP
@@ -456,6 +557,16 @@ get_current_loc:
   global get_stage
 get_stage:
   mov eax, stage
+  ret
+
+  global get_opcode_names
+get_opcode_names:
+  mov eax, opcode_names
+  ret
+
+  global get_opcode_funcs
+get_opcode_funcs:
+  mov eax, opcode_funcs
   ret
 
   global get_rm32_opcode
@@ -1651,11 +1762,12 @@ process_data_line_dd:
 
 process_data_line_value:
   ;; Like process_bss_line_resb, but with just one emit at the end
+  ;; (and decode_number_or_symbol is permitted to fail in stage 0)
   push eax
   push 0
   mov ecx, esp
 
-  push 1
+  push 0
   push ecx
   push edx
   call decode_number_or_symbol
