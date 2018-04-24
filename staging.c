@@ -15,7 +15,6 @@ int *get_stage();
 
 int *get_rm32_opcode();
 int *get_imm32_opcode();
-int *get_simp_opcode();
 int *get_rm8r8_opcode();
 int *get_rm32r32_opcode();
 int *get_r8rm8_opcode();
@@ -493,47 +492,55 @@ enum {
   OP_IMUL,
 };
 
+void emit_helper(int opcode_data, int is_direct, int reg, int rm, int disp) {
+  int opcode = opcode_data & 0xff;
+  int opcode2 = (opcode_data >> 8) & 0xff;
+  int has_opcode2 = opcode_data & 0xff0000;
+  if (reg == -1) {
+    reg = opcode2;
+  }
+  int mod;
+  if (is_direct) {
+    mod = 3;
+  } else {
+    mod = 2;
+  }
+  int has_modrm = (rm != -1);
+
+  assert(opcode != 0xf0);
+
+  emit(opcode);
+  if (has_opcode2) {
+    emit(opcode2);
+  }
+  if (has_modrm) {
+    emit_modrm(mod, reg, rm);
+  }
+  if (!is_direct) {
+    emit32(disp);
+  }
+}
+
 void process_jmp_like(int op, char *data);
-void process_jmp_like2(int op, char *data) {
+void process_jmp_like(int op, char *data) {
   int is_direct, reg, disp, is8, is32;
   int res = decode_operand(data, &is_direct, &reg, &disp, &is8, &is32);
   if (res) {
     assert(!is8);
     // r/m32
     int opcode_data = get_rm32_opcode()[op];
-    int opcode = opcode_data & 0xff;
-    if (opcode == 0xf0) {
-      platform_panic();
-    }
-    int ext = (opcode_data >> 8) & 0xff;
-    if (is_direct) {
-      emit(opcode);
-      emit_modrm(3, ext, reg);
-    } else {
-      emit(opcode);
-      emit_modrm(2, ext, reg);
-      emit32(disp);
-    }
+    emit_helper(opcode_data, is_direct, -1, reg, disp);
   } else {
     // rel32
     int opcode_data = get_imm32_opcode()[op];
-    int opcode = opcode_data & 0xff;
-    if (opcode == 0xf0) {
-      platform_panic();
-    }
-    int opcode2 = (opcode_data >> 8) & 0xff;
-    int has_opcode2 = (opcode_data >> 16) & 0xff;
+    emit_helper(opcode_data, 1, -1, -1, 0);
     int rel;
     int res = decode_number_or_symbol(data, &rel, 0);
     if (!res) {
       platform_panic();
     }
     int current_loc = *get_current_loc();
-    rel = rel - current_loc - (has_opcode2 ? 6 : 5);
-    emit(opcode);
-    if (has_opcode2) {
-      emit(opcode2);
-    }
+    rel = rel - current_loc - 4;
     emit32(rel);
   }
 }
@@ -543,24 +550,8 @@ void process_push_like(int op, char *data) {
   int res = decode_operand(data, &is_direct, &reg, &disp, &is8, &is32);
   if (res) {
     assert(!is8);
-    if (is_direct) {
-      int opcode_data = get_simp_opcode()[op];
-      int opcode = opcode_data & 0xff;
-      if (opcode == 0xf0) {
-        platform_panic();
-      }
-      emit(opcode + reg);
-    } else {
-      int opcode_data = get_rm32_opcode()[op];
-      int opcode = opcode_data & 0xff;
-      if (opcode == 0xf0) {
-        platform_panic();
-      }
-      int ext = (opcode_data >> 8) & 0xff;
-      emit(opcode);
-      emit_modrm(2, ext, reg);
-      emit32(disp);
-    }
+    int opcode_data = get_rm32_opcode()[op];
+    emit_helper(opcode_data, is_direct, -1, reg, disp);
   } else {
     assert(op == OP_PUSH);
     int imm;
@@ -599,56 +590,22 @@ void process_add_like(int op, char *data) {
       if (is8) {
         // r8, r/m8
         int opcode_data = get_r8rm8_opcode()[op];
-        int opcode = opcode_data & 0xff;
-        if (opcode == 0xf0) {
-          platform_panic();
-        }
-        if (src_is_direct) {
-          emit(opcode);
-          emit_modrm(3, dest_reg, src_reg);
-        } else {
-          emit(opcode);
-          emit_modrm(2, dest_reg, src_reg);
-          emit32(src_disp);
-        }
+        emit_helper(opcode_data, src_is_direct, dest_reg, src_reg, src_disp);
       } else {
         // r32, r/m32
         int opcode_data = get_r32rm32_opcode()[op];
-        int opcode = opcode_data & 0xff;
-        if (opcode == 0xf0) {
-          platform_panic();
-        }
-        if (src_is_direct) {
-          emit(opcode);
-          emit_modrm(3, dest_reg, src_reg);
-        } else {
-          emit(opcode);
-          emit_modrm(2, dest_reg, src_reg);
-          emit32(src_disp);
-        }
+        emit_helper(opcode_data, src_is_direct, dest_reg, src_reg, src_disp);
       }
     } else {
       if (src_is_direct) {
         if (is8) {
           // r/m8, r8
           int opcode_data = get_rm8r8_opcode()[op];
-          int opcode = opcode_data & 0xff;
-          if (opcode == 0xf0) {
-            platform_panic();
-          }
-          emit(opcode);
-          emit_modrm(2, src_reg, dest_reg);
-          emit32(dest_disp);
+          emit_helper(opcode_data, 0, src_reg, dest_reg, dest_disp);
         } else {
           // r/m32, r32
           int opcode_data = get_rm32r32_opcode()[op];
-          int opcode = opcode_data & 0xff;
-          if (opcode == 0xf0) {
-            platform_panic();
-          }
-          emit(opcode);
-          emit_modrm(2, src_reg, dest_reg);
-          emit32(dest_disp);
+          emit_helper(opcode_data, 0, src_reg, dest_reg, dest_disp);
         }
       } else {
         platform_panic();
@@ -662,39 +619,13 @@ void process_add_like(int op, char *data) {
       if (dest_is8) {
         // r/m8, imm8
         int opcode_data = get_rm8imm8_opcode()[op];
-        int opcode = opcode_data & 0xff;
-        if (opcode == 0xf0) {
-          platform_panic();
-        }
-        int ext = (opcode_data >> 8) & 0xff;
-        if (dest_is_direct) {
-          emit(opcode);
-          emit_modrm(3, ext, dest_reg);
-          emit(imm);
-        } else {
-          emit(opcode);
-          emit_modrm(2, ext, dest_reg);
-          emit32(dest_disp);
-          emit(imm);
-        }
+        emit_helper(opcode_data, dest_is_direct, -1, dest_reg, dest_disp);
+        emit(imm);
       } else {
         // r/m32, imm32
         int opcode_data = get_rm32imm32_opcode()[op];
-        int opcode = opcode_data & 0xff;
-        if (opcode == 0xf0) {
-          platform_panic();
-        }
-        int ext = (opcode_data >> 8) & 0xff;
-        if (dest_is_direct) {
-          emit(opcode);
-          emit_modrm(3, ext, dest_reg);
-          emit32(imm);
-        } else {
-          emit(opcode);
-          emit_modrm(2, ext, dest_reg);
-          emit32(dest_disp);
-          emit32(imm);
-        }
+        emit_helper(opcode_data, dest_is_direct, -1, dest_reg, dest_disp);
+        emit32(imm);
       }
     } else {
       platform_panic();

@@ -51,38 +51,6 @@
 
 section .data
 
-simp_opcode:
-  dd 0x50    ; OP_PUSH
-  dd 0x58    ; OP_POP
-  dd 0xf0    ; OP_ADD
-  dd 0xf0    ; OP_SUB
-  dd 0xf0    ; OP_MOV
-  dd 0xf0    ; OP_CMP
-  dd 0xf0    ; OP_AND
-  dd 0xf0    ; OP_OR
-  dd 0xf0    ; OP_JMP
-  dd 0xf0    ; OP_CALL
-  dd 0xf0    ; OP_JE
-  dd 0xf0    ; OP_JNE
-  dd 0xf0    ; OP_JA
-  dd 0xf0    ; OP_JNA
-  dd 0xf0    ; OP_JAE
-  dd 0xf0    ; OP_JNAE
-  dd 0xf0    ; OP_JB
-  dd 0xf0    ; OP_JNB
-  dd 0xf0    ; OP_JBE
-  dd 0xf0    ; OP_JNBE
-  dd 0xf0    ; OP_JG
-  dd 0xf0    ; OP_JNG
-  dd 0xf0    ; OP_JGE
-  dd 0xf0    ; OP_JNGE
-  dd 0xf0    ; OP_JL
-  dd 0xf0    ; OP_JNL
-  dd 0xf0    ; OP_JLE
-  dd 0xf0    ; OP_JNLE
-  dd 0xf0    ; OP_MUL
-  dd 0xf0    ; OP_IMUL
-
 rm32_opcode:
   dd 0x06ff  ; OP_PUSH
   dd 0x008f  ; OP_POP
@@ -479,11 +447,6 @@ get_rm32_opcode:
   global get_imm32_opcode
 get_imm32_opcode:
   mov eax, imm32_opcode
-  ret
-
-  global get_simp_opcode
-get_simp_opcode:
-  mov eax, simp_opcode
   ret
 
   global get_rm8r8_opcode
@@ -1797,8 +1760,8 @@ emit_modrm_ret:
   ret
 
 
-  global process_jmp_like
-process_jmp_like:
+  global process_jmp_like2
+process_jmp_like2:
   push ebp
   mov ebp, esp
 
@@ -1981,6 +1944,80 @@ process_jmp_like_no_opcode2:
   jmp process_jmp_like_end
 
 process_jmp_like_end:
+  add esp, 20
+  pop ebp
+  ret
+
+
+  global process_push_like2
+process_push_like2:
+  push ebp
+  mov ebp, esp
+
+  ;; Allocate space for 5 variables:
+  ;; [ebp-4], which is [ebp+0xfffffffc]: is_direct
+  ;; [ebp-8], which is [ebp+0xfffffff8]: reg
+  ;; [ebp-12], whch is [ebp+0xfffffff4]: disp
+  ;; [ebp-16], which is [ebp+0xfffffff0]: is8
+  ;; [ebp-20], which is [ebp+0xffffffec]: is32
+  sub esp, 20
+
+  ;; Call decode_operand
+  mov eax, ebp
+  sub eax, 20
+  push eax
+  mov eax, ebp
+  sub eax, 16
+  push eax
+  mov eax, ebp
+  sub eax, 12
+  push eax
+  mov eax, ebp
+  sub eax, 8
+  push eax
+  mov eax, ebp
+  sub eax, 4
+  push eax
+  mov eax, [ebp+12]
+  push eax
+  call decode_operand
+  add esp, 24
+
+  cmp eax, 0
+  jne process_push_like_rm32
+  jmp process_push_like_imm32
+
+process_push_like_rm32:
+  ;; Check the operand is not 8 bits
+  cmp DWORD [ebp+0xfffffff0], 0
+  jne platform_panic
+
+  ;; Get the opcode data
+  mov eax, [ebp+8]
+  mov edx, 4
+  imul edx
+  add eax, rm32_opcode
+  mov ecx, [eax]
+
+  ;; Check that the opcode is valid (0xf0 is the invalid flag)
+  cmp cl, 0xf0
+  je platform_panic
+
+  ;; Select direct or indirect access
+  cmp DWORD [ebp+0xfffffffc], 0
+  jne process_push_like_direct
+  jmp process_push_like_indirect
+
+process_push_like_direct:
+  
+
+process_push_like_indirect:
+  
+
+process_push_like_imm32:
+  
+
+process_push_like_end:
   add esp, 20
   pop ebp
   ret
