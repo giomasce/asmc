@@ -2598,9 +2598,11 @@ process_in_like_find_comma:
 
   ;; Substitute the comma with a terminator
   mov edx, [esp+8]
+  mov ecx, edx
   add edx, eax
   mov BYTE [edx], 0
   add edx, 1
+  mov eax, ecx
 
   ;; Decide which operation to use
   cmp DWORD [esp+4], OP_IN
