@@ -754,13 +754,13 @@ void process_line2(char *line) {
   }
 }
 
-void assemble_file() {
+void assemble(int fd_in, int start_loc);
+void assemble2(int fd_in, int start_loc) {
   *get_symbol_num() = 0;
-  int fd_in = platform_open_file("full.asm");
   for (*get_stage() = 0; *get_stage() < 2; (*get_stage())++) {
     platform_reset_file(fd_in);
     line = 0;
-    *get_current_loc() = 0x100000;
+    *get_current_loc() = start_loc;
     while (1) {
       char *input_buf = get_input_buf();
       int finished = readline(fd_in, input_buf, INPUT_BUF_LEN);
@@ -791,4 +791,9 @@ void assemble_file() {
       line++;
     }
   }
+}
+
+void assemble_file() {
+  int fd_in = platform_open_file("full.asm");
+  assemble(fd_in, 0x100000);
 }

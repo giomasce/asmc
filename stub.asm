@@ -10,3 +10,8 @@
   extern assemble_file
 
   %include 'asmc.asm'
+
+  global  _start
+_start:
+  call assemble_file
+  call platform_exit

@@ -5,8 +5,6 @@
   extern platform_reset_file
   extern platform_read_char
 
-  extern assemble_file
-
   TERM_ROW_NUM equ 25
   TERM_COL_NUM equ 80
   TERM_BASE_ADDR equ 0xb8000

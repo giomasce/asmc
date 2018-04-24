@@ -12,6 +12,8 @@
   PLUS equ 0x2b
   APEX equ 0x27
   COMMA equ 0x2c
+  SEMICOLON equ 0x3b
+  COLON equ 0x3a
 
   OP_PUSH equ 0
   OP_POP equ 1
@@ -516,6 +518,14 @@ str_equ:
   db 'equ'
   db 0
 
+str_decoding_line:
+  db 'Decoding line: '
+  db 0
+
+str_newline:
+  db NEWLINE
+  db 0
+
 str_empty:
   db 0
 
@@ -620,12 +630,6 @@ get_rm8imm8_opcode:
 get_rm32imm32_opcode:
   mov eax, rm32imm32_opcode
   ret
-
-
-  global  _start
-_start:
-  call assemble_file
-  call platform_exit
 
 
   global assert
@@ -2817,4 +2821,146 @@ process_line_process:
   call platform_panic
 
 process_line_end:
+  ret
+
+
+  global assemble
+assemble:
+  push ebp
+  mov ebp, esp
+  push esi
+  push edi
+  push ebx
+
+  ;; Reset symbol_num and stage
+  mov eax, symbol_num
+  mov DWORD [eax], 0
+  mov eax, stage
+  mov DWORD [eax], 0
+
+assemble_stage_loop:
+  ;; Check for termination
+  mov eax, stage
+  cmp DWORD [eax], 2
+  je assemble_end
+
+  ;; Call platform_reset_file
+  mov eax, [ebp+8]
+  push eax
+  call platform_reset_file
+  add esp, 4
+
+  ;; Reset line number (in esi) and current_loc
+  mov esi, 0
+  mov eax, current_loc
+  mov ecx, [ebp+12]
+  mov [eax], ecx
+
+assemble_parse_loop:
+  ;; Call readline and store in ebx if we found the EOF
+  push INPUT_BUF_LEN
+  push input_buf
+  mov eax, [ebp+8]
+  push eax
+  call readline
+  add esp, 12
+  mov ebx, eax
+
+  ;; Log the line
+  push str_decoding_line
+  push 2
+  call platform_log
+  add esp, 8
+
+  push input_buf
+  push 2
+  call platform_log
+  add esp, 8
+
+  push str_newline
+  push 2
+  call platform_log
+  add esp, 8
+
+  ;; Find the first semicolon
+  push SEMICOLON
+  push input_buf
+  call find_char
+  add esp, 8
+
+  ;; If found, substitute it with a terminator
+  cmp eax, 0xffffffff
+  je assemble_parse_trim
+  add eax, input_buf
+  mov BYTE [eax], 0
+
+assemble_parse_trim:
+  ;; Call trimstr
+  push input_buf
+  call trimstr
+  add esp, 4
+
+  ;; Compute line length and store it in edi
+  push input_buf
+  call strlen
+  add esp, 4
+  mov edi, eax
+
+  ;; If the line is not empty, pass to parsing it
+  cmp edi, 0
+  jne assemble_parse_detect_symbol
+
+  ;; If it is empty and we have finished, break
+  cmp ebx, 0
+  jne assemble_break_parse_loop
+
+  ;; If it is empty and we have not finished, continue
+  jmp assemble_continue_parse_loop
+
+assemble_parse_detect_symbol:
+  ;; Detect if this line is a symbol declaration
+  mov eax, input_buf
+  add eax, edi
+  sub eax, 1
+  cmp BYTE [eax], COLON
+  jne assemble_parse_process
+
+  ;; Substitute the colon with a terminator
+  mov BYTE [eax], 0
+
+  ;; Call add_symbol
+  mov edx, current_loc
+  mov eax, [edx]
+  push eax
+  push input_buf
+  call add_symbol
+  add esp, 8
+
+  jmp assemble_continue_parse_loop
+
+assemble_parse_process:
+  ;; Call process_line
+  push input_buf
+  call process_line
+  add esp, 4
+
+  jmp assemble_continue_parse_loop
+
+assemble_continue_parse_loop:
+  ;; Increment line number and restart parse loop
+  add esi, 1
+  jmp assemble_parse_loop
+
+assemble_break_parse_loop:
+  ;; Increment stage
+  mov eax, stage
+  add DWORD [eax], 1
+
+  jmp assemble_stage_loop
+
+assemble_end:
+  pop ebx
+  pop edi
+  pop esi
+  pop ebp
   ret
