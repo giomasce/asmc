@@ -48,8 +48,9 @@ helloasm:
   db 0
 
 start_from_multiboot:
-  ;; Set up stack
+  ;; Set up stack (aligned to 16 bytes)
   mov esp, stack_top
+  and esp, 0xfffffff0
 
   call term_setup
 
