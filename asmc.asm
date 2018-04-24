@@ -1938,8 +1938,8 @@ process_jmp_like_end:
   ret
 
 
-  global process_push_like2
-process_push_like2:
+  global process_push_like
+process_push_like:
   push ebp
   mov ebp, esp
 
@@ -1988,23 +1988,49 @@ process_push_like_rm32:
   add eax, rm32_opcode
   mov ecx, [eax]
 
-  ;; Check that the opcode is valid (0xf0 is the invalid flag)
-  cmp cl, 0xf0
-  je platform_panic
+  ;; Call emit_helper
+  mov edx, [ebp+0xfffffff4]
+  push edx
+  mov edx, [ebp+0xfffffff8]
+  push edx
+  push 0xffffffff
+  mov edx, [ebp+0xfffffffc]
+  push edx
+  push ecx
+  call emit_helper
+  add esp, 20
 
-  ;; Select direct or indirect access
-  cmp DWORD [ebp+0xfffffffc], 0
-  jne process_push_like_direct
-  jmp process_push_like_indirect
-
-process_push_like_direct:
-  
-
-process_push_like_indirect:
-  
+  jmp process_push_like_end
 
 process_push_like_imm32:
-  
+  ;; Check that the operation is push
+  cmp DWORD [ebp+8], OP_PUSH
+  jne platform_panic
+
+  ;; Emit the operand
+  push 0x68
+  call emit
+  add esp, 4
+
+  ;; Call decode_number_or_symbol
+  push 0
+  mov edx, esp
+  push 0
+  push edx
+  mov edx, [ebp+12]
+  push edx
+  call decode_number_or_symbol
+  add esp, 12
+  cmp eax, 0
+  je platform_panic
+
+  ;; Call emit32
+  pop edx
+  push edx
+  call emit32
+  add esp, 4
+
+  jmp process_push_like_end
 
 process_push_like_end:
   add esp, 20

@@ -546,11 +546,13 @@ void process_jmp_like2(int op, char *data) {
   }
 }
 
-void process_push_like(int op, char *data) {
+void process_push_like(int op, char *data);
+void process_push_like2(int op, char *data) {
   int is_direct, reg, disp, is8, is32;
   int res = decode_operand(data, &is_direct, &reg, &disp, &is8, &is32);
   if (res) {
     assert(!is8);
+    // r/m32
     int opcode_data = get_rm32_opcode()[op];
     emit_helper(opcode_data, is_direct, -1, reg, disp);
   } else {
