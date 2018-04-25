@@ -10,20 +10,18 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-enum {
-  TOK_CALL_OPEN = 0x80,
-  TOK_CALL_CLOSED,
-  TOK_SHL,
-  TOK_SHR,
-  TOK_LE,
-  TOK_GE,
-  TOK_EQ,
-  TOK_INEQ,
-  TOK_AND,
-  TOK_OR,
-  TOK_DEREF,
-  TOK_ADDR,
-};
+#define TOK_CALL_OPEN ((char) 0x80)
+#define TOK_CALL_CLOSED ((char) 0x81)
+#define TOK_SHL ((char) 0x82)
+#define TOK_SHR ((char) 0x83)
+#define TOK_LE ((char) 0x84)
+#define TOK_GE ((char) 0x85)
+#define TOK_EQ ((char) 0x86)
+#define TOK_INEQ ((char) 0x87)
+#define TOK_AND ((char) 0x88)
+#define TOK_OR ((char) 0x89)
+#define TOK_DEREF ((char) 0x8a)
+#define TOK_ADDR ((char) 0x8b)
 
 int is_whitespace(char x) {
   return x == ' ' || x == '\t' || x == '\n';
@@ -121,10 +119,10 @@ void print(char *begin, char *end) {
   }
 }
 
-void fix_strings(unsigned char *begin, unsigned char *end) {
+void fix_strings(char *begin, char *end) {
   int mode = 0;
   while (begin < end) {
-    assert(*begin < 0x80);
+    assert((unsigned char) *begin < 0x80);
     if (mode == 0) {
       if (*begin == '\'') {
         mode = 1;
@@ -201,6 +199,7 @@ char *find_matching(char open, char closed, char *begin, char *end) {
     }
     begin++;
   }
+  return 0;
 }
 
 void compile_statement(char *begin, char *end) {
@@ -236,7 +235,7 @@ void compile_statement(char *begin, char *end) {
 
 void compile_block_with_head(char *def_begin, char *block_begin, char *block_end);
 
-void compile_block(unsigned char *begin, unsigned char *end) {
+void compile_block(char *begin, char *end) {
   while (1) {
     int semicolon_pos = find_char(begin, end, ';');
     int brace_pos = find_char(begin, end, '{');
@@ -256,7 +255,7 @@ void compile_block(unsigned char *begin, unsigned char *end) {
         compile_statement(begin, begin + semicolon_pos);
         begin = begin + semicolon_pos + 1;
       } else {
-        unsigned char *res = find_matching('{', '}', begin+brace_pos, end);
+        char *res = find_matching('{', '}', begin+brace_pos, end);
         compile_block_with_head(begin, begin+brace_pos, res);
         begin = res + 1;
       }
@@ -287,4 +286,6 @@ int main() {
   //remove_spaces(src, src+len);
   //print(src, src+len);
   compile_block(src, src+len);
+
+  return 0;
 }
