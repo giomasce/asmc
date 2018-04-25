@@ -13,12 +13,6 @@
 enum {
   TOK_CALL_OPEN = 0x80,
   TOK_CALL_CLOSED,
-  TOK_RO_OPEN,
-  TOK_RO_CLOSED,
-  TOK_SQ_OPEN,
-  TOK_SQ_CLOSED,
-  TOK_CU_OPEN,
-  TOK_CU_CLOSED,
   TOK_SHL,
   TOK_SHR,
   TOK_LE,
@@ -150,19 +144,6 @@ void fix_strings(unsigned char *begin, unsigned char *end) {
         mode = 3;
         *begin = ' ';
       }
-      /* else if (*begin == '(') {
-        *begin = TOK_RO_OPEN;
-      } else if (*begin == ')') {
-        *begin = TOK_RO_CLOSED;
-      } else if (*begin == '[') {
-        *begin = TOK_SQ_OPEN;
-      } else if (*begin == ']') {
-        *begin = TOK_SQ_CLOSED;
-      } else if (*begin == '{') {
-        *begin = TOK_CU_OPEN;
-      } else if (*begin == '}') {
-        *begin = TOK_CU_CLOSED;
-      }*/
     } else if (mode == 1) {
       if (*begin == '\'') {
         mode = 0;
@@ -270,40 +251,6 @@ void compile_block_with_head(char *def_begin, char *block_begin, char *block_end
   fprintf(stderr, "Begin of block: %s\n", def_begin);
   compile_block(block_begin+1, block_end-1);
   fprintf(stderr, "End of block\n");
-}
-
-void compile_function(char *def_begin, char *block_begin, char *block_end) {
-  *block_begin = '\0';
-  trimstr(def_begin);
-  if (strcmp(def_begin, "enum") == 0) {
-    return;
-  }
-  fprintf(stderr, "Function definition: %s\n", def_begin);
-  compile_block(block_begin+1, block_end-1);
-  fprintf(stderr, "End of function definition\n");
-}
-
-void compile_unit(unsigned char *begin, unsigned char *end) {
-  unsigned char *def_begin = 0;
-  while (begin < end) {
-    if (def_begin == 0) {
-      if (!is_whitespace(*begin)) {
-        def_begin = begin;
-      }
-    } else {
-      if (*begin == '{') {
-        unsigned char *res = find_matching('{', '}', begin, end);
-        if (res == end) {
-          abort();
-        }
-        compile_function(def_begin, begin, res+1);
-        begin = res;
-        def_begin = 0;
-      }
-    }
-    begin++;
-  }
-  assert(def_begin == 0);
 }
 
 int main() {
