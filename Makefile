@@ -16,8 +16,8 @@ platform_asm.o: platform_asm.asm
 asmasm: asmasm.o staging.o platform.o platform_asm.o
 	ld -g -m elf_i386 asmasm.o staging.o platform.o platform_asm.o -o asmasm
 
-full.asm: kernel.asm library.asm asmasm.asm
-	cat kernel.asm library.asm asmasm.asm > full.asm
+full.asm: kernel.asm library.asm asmasm.asm top.asm
+	cat kernel.asm library.asm asmasm.asm top.asm > full.asm
 
 asmasm.x86: full.asm asmasm
 	./asmasm > asmasm.x86

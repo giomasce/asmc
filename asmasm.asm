@@ -651,7 +651,7 @@ str_symb_num2:
 section .bss
 
 input_buf:
-  resb 1024
+  resb INPUT_BUF_LEN
 
 symbol_names:
   resb SYMBOL_TABLE_SIZE

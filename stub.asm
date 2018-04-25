@@ -6,6 +6,7 @@
   extern platform_read_char
   extern platform_write_char
   extern platform_log
+  extern platform_allocate
 
   extern assemble_file
 

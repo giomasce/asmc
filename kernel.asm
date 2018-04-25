@@ -5,6 +5,8 @@
   extern platform_reset_file
   extern platform_read_char
 
+  STACK_SIZE equ 65536
+
   TERM_ROW_NUM equ 25
   TERM_COL_NUM equ 80
   TERM_BASE_ADDR equ 0xb8000
@@ -30,14 +32,13 @@
 
   jmp start_from_multiboot
 
-stack:
-  resb 1024
-stack_top:
-
 term_row:
   resd 1
 
 term_col:
+  resd 1
+
+heap_ptr:
   resd 1
 
 str_helloasm:
@@ -46,9 +47,18 @@ str_helloasm:
   db 0
 
 start_from_multiboot:
-  ;; Set up stack (aligned to 16 bytes)
-  mov esp, stack_top
-  and esp, 0xfffffff0
+  ;; Initialize the heap
+  mov eax, heap_ptr
+  mov ecx, heap_ptr_start
+  sub ecx, 1
+  or ecx, 0xf
+  add ecx, 1
+  mov [eax], ecx
+
+  ;; Allocate the stack on the heap
+  add ecx, STACK_SIZE
+  mov [eax], ecx
+  mov esp, ecx
 
   call term_setup
 
@@ -260,4 +270,21 @@ platform_log_loop:
 platform_log_loop_ret:
   pop esi
   pop ebx
+  ret
+
+
+  ;; void *platform_allocate(int size)
+platform_allocate:
+  ;; Prepare to return the current heap_ptr
+  mov ecx, heap_ptr
+  mov eax, [ecx]
+
+  ;; Add the new size to the heap_ptr and realign
+  mov edx, [esp+4]
+  add edx, [ecx]
+  sub edx, 1
+  or edx, 0xf
+  add edx, 1
+  mov [ecx], edx
+
   ret

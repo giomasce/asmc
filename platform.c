@@ -10,6 +10,7 @@ int do_syscall(int syscall_num, int arg1, int arg2, int arg3);
 #define SYS_kill 0x25
 #define SYS_open 0x5
 #define SYS_lseek 0x13
+#define SYS_brk 0x2d
 
 #define SIGABRT 6
 
@@ -67,4 +68,15 @@ void platform_log(int fd, char *s) {
     platform_write_char(fd, *s);
     s++;
   }
+}
+
+void *platform_allocate(int size) {
+  int current_brk = do_syscall(SYS_brk, 0, 0, 0);
+  int new_brk = current_brk + size;
+  new_brk = 1 + ((new_brk - 1) | 0xf);
+  int returned_brk = do_syscall(SYS_brk, new_brk, 0, 0);
+  if (returned_brk != new_brk) {
+    platform_panic();
+  }
+  return (void*) current_brk;
 }
