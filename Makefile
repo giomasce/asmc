@@ -1,5 +1,5 @@
 
-all: asmasm asmasm.x86 boot.iso
+all: asmasm asmasm.x86 boot.iso cc
 
 asmasm.o: asmasm.asm library.asm stub.asm
 	nasm -f elf -F dwarf -g -w-number-overflow -o asmasm.o stub.asm
@@ -42,3 +42,6 @@ boot/boot/asmasm.x86: asmasm.x86
 
 boot.iso: boot/boot/grub/grub.cfg boot/boot/asmasm.x86
 	grub-mkrescue -o boot.iso boot
+
+cc: cc.c
+	gcc -m32 -O0 -g -o cc cc.c
