@@ -31,7 +31,7 @@ int is_whitespace(char x) {
 
 void remove_spaces(char *begin, char *end) {
   char *read_buf = begin;
-  while (read_buf < end) {
+  while (read_buf != end) {
     if (*read_buf == '\0') {
       *begin = '\0';
       return;
@@ -44,7 +44,7 @@ void remove_spaces(char *begin, char *end) {
       read_buf++;
     }
   }
-  if (begin < end) {
+  if (begin != end) {
     *begin = '\0';
   }
 }
@@ -65,10 +65,10 @@ int find_char(char *s, char *e, char c) {
   }
 }
 
-int isstrpref(const char *s1, const char *s2) {
+char *isstrpref(char *s1, char *s2) {
   while (1) {
     if (*s1 == '\0') {
-      return 1;
+      return s2;
     }
     if (*s1 != *s2) {
       return 0;
@@ -209,6 +209,28 @@ void compile_statement(char *begin, char *end) {
   if (*begin == '\0') {
     return;
   }
+  char *s;
+  if (s = isstrpref("unsigned char *", begin)) {
+    remove_spaces(s, 0);
+  } else if (s = isstrpref("unsigned char ", begin)) {
+    remove_spaces(s, 0);
+  } else if (s = isstrpref("unsigned int *", begin)) {
+    remove_spaces(s, 0);
+  } else if (s = isstrpref("unsigned int ", begin)) {
+    remove_spaces(s, 0);
+  } else if (s = isstrpref("char *", begin)) {
+    remove_spaces(s, 0);
+  } else if (s = isstrpref("char ", begin)) {
+    remove_spaces(s, 0);
+  } else if (s = isstrpref("int *", begin)) {
+    remove_spaces(s, 0);
+  } else if (s = isstrpref("int ", begin)) {
+    remove_spaces(s, 0);
+  } else if (s = isstrpref("void *", begin)) {
+    remove_spaces(s, 0);
+  } else {
+    remove_spaces(begin, 0);
+  }
   fprintf(stderr, "Statement: %s\n", begin);
 }
 
@@ -245,6 +267,7 @@ void compile_block(unsigned char *begin, unsigned char *end) {
 void compile_block_with_head(char *def_begin, char *block_begin, char *block_end) {
   *block_begin = '\0';
   trimstr(def_begin);
+  //remove_spaces(def_begin, 0);
   if (strcmp(def_begin, "enum") == 0) {
     return;
   }
