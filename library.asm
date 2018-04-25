@@ -58,3 +58,50 @@ itoa_end:
   mov eax, ecx
   pop esi
   ret
+
+
+  ;; int atoi(char*)
+  global atoi
+atoi:
+  ;; Call decode_number, adapting the parameters
+  mov ecx, [esp+4]
+  push 0
+  mov edx, esp
+  push edx
+  push ecx
+  call decode_number
+  add esp, 8
+  cmp eax, 0
+  pop eax
+  je platform_panic
+  ret
+
+
+  ;; void *memcpy(void *dest, const void *src, int n)
+  global memcpy
+memcpy:
+  ;; Load registers
+  mov eax, [esp+4]
+  mov ecx, [esp+8]
+  mov edx, [esp+12]
+  push ebx
+
+memcpy_loop:
+  ;; Test for termination
+  cmp edx, 0
+  je memcpy_end
+
+  ;; Copy one character
+  mov bl, [ecx]
+  mov [eax], bl
+
+  ;; Decrease the counter and increase the pointers
+  sub edx, 1
+  add eax, 1
+  add ecx, 1
+
+  jmp memcpy_loop
+
+memcpy_end:
+  pop ebx
+  ret

@@ -1,6 +1,4 @@
 
-  extern platform_panic
-  extern platform_exit
   extern platform_open_file
   extern platform_reset_file
   extern platform_read_char
@@ -46,10 +44,55 @@ str_helloasm:
   db 0xa
   db 0
 
+str_exit:
+  db 'Exit!'
+  db 0xa
+  db 0
+str_panic:
+  db 'PANIC!'
+  db 0xa
+  db 0
+
+str_init_heap_stack:
+  db 'Initializing heap and stack... '
+  db 0
+str_inited_heap_stack:
+  db 'done!'
+  db 0xa
+  db 0
+
+temp_stack:
+  resb 64
+temp_stack_top:
+
 start_from_multiboot:
+  ;; Setup a temporary stack
+  mov esp, temp_stack_top
+  and esp, 0xfffffff0
+
+  call term_setup
+
+  ;; Greetings!
+  push str_helloasm
+  push 1
+  call platform_log
+  add esp, 8
+
+  ;; Log
+  push str_init_heap_stack
+  push 1
+  call platform_log
+  add esp, 8
+
+  ;; Find the end of the ar initrd
+  mov eax, top
+  push eax
+  call walk_ar
+  add esp, 4
+
   ;; Initialize the heap
+  mov ecx, eax
   mov eax, heap_ptr
-  mov ecx, heap_ptr_start
   sub ecx, 1
   or ecx, 0xf
   add ecx, 1
@@ -60,10 +103,8 @@ start_from_multiboot:
   mov [eax], ecx
   mov esp, ecx
 
-  call term_setup
-
-  ;; Greetings!
-  push str_helloasm
+  ;; Log
+  push str_inited_heap_stack
   push 1
   call platform_log
   add esp, 8
@@ -77,11 +118,13 @@ start_from_multiboot:
   call platform_log
   add esp, 8
 
-  call loop_forever
+  ;; Print newline
+  push str_newline
+  push 1
+  call platform_log
+  add esp, 8
 
-
-loop_forever:
-  jmp loop_forever
+  call platform_exit
 
 
   ;; void term_setup()
@@ -210,6 +253,7 @@ term_put_char:
 
   ;; Move to the beginning of next row
 term_put_char_newline:
+  mov edx, term_col
   mov DWORD [edx], 0
   mov edx, term_row
   mov eax, [edx]
@@ -227,6 +271,30 @@ term_put_char_newline:
 
 term_put_char_finish:
   ret
+
+
+loop_forever:
+  jmp loop_forever
+
+
+platform_exit:
+  ;; Write an exit string
+  push str_exit
+  push 1
+  call platform_log
+  add esp, 8
+
+  jmp loop_forever
+
+
+platform_panic:
+  ;; Write an exit string
+  push str_panic
+  push 1
+  call platform_log
+  add esp, 8
+
+  jmp loop_forever
 
 
 platform_write_char:

@@ -16,11 +16,21 @@ platform_asm.o: platform_asm.asm
 asmasm: asmasm.o staging.o platform.o platform_asm.o
 	ld -g -m elf_i386 asmasm.o staging.o platform.o platform_asm.o -o asmasm
 
-full.asm: kernel.asm library.asm asmasm.asm top.asm
-	cat kernel.asm library.asm asmasm.asm top.asm > full.asm
+full.asm: kernel.asm ar.asm library.asm asmasm.asm top.asm
+	cat kernel.asm ar.asm library.asm asmasm.asm top.asm > full.asm
 
-asmasm.x86: full.asm asmasm
-	./asmasm > asmasm.x86
+END:
+	touch END
+
+initrd.ar: END
+	-rm initrd.ar
+	ar rcs initrd.ar END
+
+asmasm.x86.exe: full.asm asmasm
+	./asmasm > asmasm.x86.exe
+
+asmasm.x86: asmasm.x86.exe initrd.ar
+	cat asmasm.x86.exe initrd.ar > asmasm.x86
 
 boot/boot/grub/grub.cfg: grub.cfg
 	mkdir -p boot/boot/grub
