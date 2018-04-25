@@ -650,14 +650,14 @@ str_symb_num2:
 
 section .bss
 
-input_buf:
-  resb INPUT_BUF_LEN
+input_buf_ptr:
+  resd 1
 
-symbol_names:
-  resb SYMBOL_TABLE_SIZE
+symbol_names_ptr:
+  resd 1
 
-symbol_loc:
-  resd SYMBOL_TABLE_LEN
+symbol_loc_ptr:
+  resd 1
 
 symbol_num:
   resd 1
@@ -672,17 +672,20 @@ section .text
 
   global get_input_buf
 get_input_buf:
-  mov eax, input_buf
+  mov eax, input_buf_ptr
+  mov eax, [eax]
   ret
 
   global get_symbol_names
 get_symbol_names:
-  mov eax, symbol_names
+  mov eax, symbol_names_ptr
+  mov eax, [eax]
   ret
 
   global get_symbol_loc
 get_symbol_loc:
-  mov eax, symbol_loc
+  mov eax, symbol_loc_ptr
+  mov eax, [eax]
   ret
 
   global get_symbol_num
@@ -844,6 +847,8 @@ trimstr_copy_loop:
 trimstr_trim_end:
   sub eax, 1
 trimstr_trim_loop2:
+  cmp eax, [esp+4]
+  jb trimstr_ret
   cmp BYTE [eax], SPACE
   je trimstr_final_white
   cmp BYTE [eax], TAB
@@ -851,8 +856,6 @@ trimstr_trim_loop2:
   jmp trimstr_ret
 trimstr_final_white:
   mov BYTE [eax], 0
-  cmp eax, [esp+4]
-  je trimstr_ret
   sub eax, 1
   jmp trimstr_trim_loop2
 
@@ -1048,7 +1051,8 @@ find_symbol_loop:
   mov edx, MAX_SYMBOL_NAME_LEN
   mov eax, ecx
   mul edx
-  add eax, symbol_names
+  mov ecx, symbol_names_ptr
+  add eax, [ecx]
   push eax
 
   ;; Push the first argument
@@ -1130,7 +1134,8 @@ add_symbol_stage0:
   mov eax, ebx
   mov ecx, 4
   mul ecx
-  add eax, symbol_loc
+  mov ecx, symbol_loc_ptr
+  add eax, [ecx]
   mov ecx, [ebp+12]
   mov [eax], ecx
 
@@ -1140,7 +1145,8 @@ add_symbol_stage0:
   mov eax, ebx
   mov ecx, MAX_SYMBOL_NAME_LEN
   mul ecx
-  add eax, symbol_names
+  mov ecx, symbol_names_ptr
+  add eax, [ecx]
   push eax
   call strcpy
   add esp, 8
@@ -1168,7 +1174,8 @@ add_symbol_stage1:
   ;; Check the location matches with the symbol table
   mov ecx, 4
   mul ecx
-  add eax, symbol_loc
+  mov ecx, symbol_loc_ptr
+  add eax, [ecx]
   mov ecx, [ebp+12]
   cmp [eax], ecx
   jne platform_panic
@@ -1489,7 +1496,8 @@ decode_number_or_symbol_stage1:
   ;; If it is, set the number and return 1
   mov ecx, 4
   mul ecx
-  add eax, symbol_loc
+  mov ecx, symbol_loc_ptr
+  add eax, [ecx]
   mov edx, [eax]
   mov ecx, [ebp+12]
   mov [ecx], edx
@@ -3089,6 +3097,35 @@ process_line_end:
   ret
 
 
+  global init_assembler
+init_assembler:
+  ;; Allocate input buffer
+  push INPUT_BUF_LEN
+  call platform_allocate
+  add esp, 4
+  mov ecx, input_buf_ptr
+  mov [ecx], eax
+
+  ;; Allocate symbol names table
+  push SYMBOL_TABLE_SIZE
+  call platform_allocate
+  add esp, 4
+  mov ecx, symbol_names_ptr
+  mov [ecx], eax
+
+  ;; Allocate symbol locations table
+  mov eax, SYMBOL_TABLE_LEN
+  mov edx, 4
+  mul eax
+  push eax
+  call platform_allocate
+  add esp, 4
+  mov ecx, symbol_loc_ptr
+  mov [ecx], eax
+
+  ret
+
+
   global assemble
 assemble:
   push ebp
@@ -3124,7 +3161,9 @@ assemble_stage_loop:
 assemble_parse_loop:
   ;; Call readline and store in ebx if we found the EOF
   push INPUT_BUF_LEN
-  push input_buf
+  mov eax, input_buf_ptr
+  mov eax, [eax]
+  push eax
   mov eax, [ebp+8]
   push eax
   call readline
@@ -3137,7 +3176,9 @@ assemble_parse_loop:
   ;; call platform_log
   ;; add esp, 8
 
-  ;; push input_buf
+  ;; mov eax, input_buf_ptr
+  ;; mov eax, [eax]
+  ;; push eax
   ;; push 2
   ;; call platform_log
   ;; add esp, 8
@@ -3149,24 +3190,31 @@ assemble_parse_loop:
 
   ;; Find the first semicolon
   push SEMICOLON
-  push input_buf
+  mov eax, input_buf_ptr
+  mov eax, [eax]
+  push eax
   call find_char
   add esp, 8
 
   ;; If found, substitute it with a terminator
   cmp eax, 0xffffffff
   je assemble_parse_trim
-  add eax, input_buf
+  mov ecx, input_buf_ptr
+  add eax, [ecx]
   mov BYTE [eax], 0
 
 assemble_parse_trim:
   ;; Call trimstr
-  push input_buf
+  mov eax, input_buf_ptr
+  mov eax, [eax]
+  push eax
   call trimstr
   add esp, 4
 
   ;; Compute line length and store it in edi
-  push input_buf
+  mov eax, input_buf_ptr
+  mov eax, [eax]
+  push eax
   call strlen
   add esp, 4
   mov edi, eax
@@ -3184,7 +3232,8 @@ assemble_parse_trim:
 
 assemble_parse_detect_symbol:
   ;; Detect if this line is a symbol declaration
-  mov eax, input_buf
+  mov eax, input_buf_ptr
+  mov eax, [eax]
   add eax, edi
   sub eax, 1
   cmp BYTE [eax], COLON
@@ -3197,7 +3246,9 @@ assemble_parse_detect_symbol:
   mov edx, current_loc
   mov eax, [edx]
   push eax
-  push input_buf
+  mov eax, input_buf_ptr
+  mov eax, [eax]
+  push eax
   call add_symbol
   add esp, 8
 
@@ -3205,7 +3256,9 @@ assemble_parse_detect_symbol:
 
 assemble_parse_process:
   ;; Call process_line
-  push input_buf
+  mov eax, input_buf_ptr
+  mov eax, [eax]
+  push eax
   call process_line
   add esp, 4
 

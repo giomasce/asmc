@@ -9,6 +9,7 @@ itoa_buf:
 section .text
 
   ;; char *itoa(int x)
+  global itoa
 itoa:
   ;; Clear the buffer
   mov ecx, ITOA_BUF_LEN

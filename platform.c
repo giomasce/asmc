@@ -70,6 +70,8 @@ void platform_log(int fd, char *s) {
   }
 }
 
+char *itoa(int x);
+
 void *platform_allocate(int size) {
   int current_brk = do_syscall(SYS_brk, 0, 0, 0);
   int new_brk = current_brk + size;
@@ -78,5 +80,10 @@ void *platform_allocate(int size) {
   if (returned_brk != new_brk) {
     platform_panic();
   }
+  /*platform_log(2, "Allocate from ");
+  platform_log(2, itoa(current_brk));
+  platform_log(2, " to ");
+  platform_log(2, itoa(new_brk));
+  platform_log(2, "\n");*/
   return (void*) current_brk;
 }

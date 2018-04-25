@@ -830,7 +830,10 @@ void assemble2(int fd_in, int start_loc) {
   }
 }
 
+void init_assembler();
+
 void assemble_file() {
+  init_assembler();
   int fd_in = platform_open_file("full.asm");
   assemble(fd_in, 0x100000);
 }
