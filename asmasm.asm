@@ -2903,7 +2903,7 @@ process_directive_line:
   call strcmp
   add esp, 8
   cmp eax, 0
-  je process_directive_line_ret_true
+  je process_directive_line_align
 
   ;; Recognize extern
   mov eax, [esp+4]
@@ -2917,6 +2917,43 @@ process_directive_line:
   ;; Return false for everything else
   mov eax, 0
   ret
+
+process_directive_line_align:
+  ;; Call decode_number_or_symbol
+  mov eax, [esp+8]
+  push 0
+  mov ecx, esp
+  push 1
+  push ecx
+  push eax
+  call decode_number_or_symbol
+  add esp, 12
+  pop ecx
+
+  ;; Panic if it failed
+  cmp eax, 0
+  je platform_panic
+
+  ;; Compute the number of bytes to skip
+  mov edx, current_loc
+  mov eax, [edx]
+  mov edx, 0
+  div ecx
+  cmp edx, 0
+  je process_directive_line_ret_true
+  sub ecx, edx
+
+  ;; Skip them
+process_directive_line_align_loop:
+  cmp ecx, 0
+  je process_directive_line_ret_true
+  push ecx
+  push 0
+  call emit
+  add esp, 4
+  pop ecx
+  sub ecx, 1
+  jmp process_directive_line_align_loop
 
 process_directive_line_extern:
   ;; Add a mock symbol

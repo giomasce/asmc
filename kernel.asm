@@ -61,8 +61,12 @@ str_inited_heap_stack:
   db 0xa
   db 0
 
+str_END:
+  db 'END'
+  db 0
+
 temp_stack:
-  resb 64
+  resb 128
 temp_stack_top:
 
 start_from_multiboot:
@@ -70,6 +74,7 @@ start_from_multiboot:
   mov esp, temp_stack_top
   and esp, 0xfffffff0
 
+  ;; Initialize terminal
   call term_setup
 
   ;; Greetings!
@@ -85,13 +90,19 @@ start_from_multiboot:
   add esp, 8
 
   ;; Find the end of the ar initrd
-  mov eax, top
-  push eax
-  call walk_ar
+  push 0
+  mov edx, esp
+  push 0
+  mov ecx, esp
+  push edx
+  push ecx
+  push str_END
+  call walk_initrd
+  add esp, 12
   add esp, 4
+  pop ecx
 
   ;; Initialize the heap
-  mov ecx, eax
   mov eax, heap_ptr
   sub ecx, 1
   or ecx, 0xf

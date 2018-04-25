@@ -724,6 +724,16 @@ int process_directive_line2(char *opcode, char *data) {
   if (strcmp(opcode, "section") == 0) {
   } else if (strcmp(opcode, "global") == 0) {
   } else if (strcmp(opcode, "align") == 0) {
+    int val;
+    int res = decode_number_or_symbol(data, &val, 1);
+    if (!res) {
+      platform_panic();
+    }
+    int to_skip = val - (*get_current_loc() % val);
+    int i;
+    for (i = 0; i < to_skip; i++) {
+      emit(0);
+    }
   } else if (strcmp(opcode, "extern") == 0) {
     add_symbol(data, 0);
   } else {
