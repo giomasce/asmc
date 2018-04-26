@@ -29,8 +29,14 @@
 int block_depth;
 int stack_depth;
 int current_loc;
+int ret_depth;
 
 char stack_vars[MAX_ID_LEN * STACK_LEN];
+
+int strncmp2(char *b1, char *e1, char *b2) {
+  int len = strlen(b2);
+  return e1 - b1 == len && strncmp(b1, b2, len) == 0;
+}
 
 void push_var(char *var_name) {
   int len = strlen(var_name);
@@ -49,6 +55,26 @@ void pop_to_depth(int depth) {
   stack_depth = depth;
 }
 
+int find_in_stack(char *var_name) {
+  int i;
+  for (i = 0; i < stack_depth; i++) {
+    if (strcmp(var_name, stack_vars + (stack_depth - 1 - i) * MAX_ID_LEN) == 0) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+int find_in_stack2(char* begin, char *end) {
+  int i;
+  for (i = 0; i < stack_depth; i++) {
+    if (strncmp2(begin, end, stack_vars + (stack_depth - 1 - i) * MAX_ID_LEN)) {
+      return i;
+    }
+  }
+  return -1;
+}
+
 void emit(char x) {
   fwrite(&x, 1, 1, stdout);
   current_loc++;
@@ -59,16 +85,6 @@ void emit32(int x) {
   emit(x >> 8);
   emit(x >> 16);
   emit(x >> 24);
-}
-
-int find_in_stack(char *var_name) {
-  int i;
-  for (i = 0; i < stack_depth; i++) {
-    if (strcmp(var_name, stack_vars + (stack_depth - 1 - i) * MAX_ID_LEN) == 0) {
-      return i;
-    }
-  }
-  return -1;
 }
 
 int is_whitespace(char x) {
@@ -282,11 +298,6 @@ char *find_id(char *s) {
   return s;
 }
 
-int strncmp2(char *b1, char *e1, char *b2) {
-  int len = strlen(b2);
-  return e1 - b1 == len && strncmp(b1, b2, len) == 0;
-}
-
 char *interpret_type(char *decl) {
   int state = 0;
   char *name_begin;
@@ -351,12 +362,76 @@ char *interpret_type(char *decl) {
   return name_begin;
 }
 
-int parse_expr(char *begin, char *end, char pivot, int dir) {
-
+int decode_number(char *begin, char *end, unsigned int *num) {
+  *num = 0;
+  int is_decimal = 1;
+  int digit_seen = 0;
+  if (*begin == '0' && *begin == 'x') {
+    begin += 2;
+    is_decimal = 0;
+  }
+  while (1) {
+    if (begin == end) {
+      if (digit_seen) {
+        return 1;
+      } else {
+        return 0;
+      }
+    }
+    digit_seen = 1;
+    if (is_decimal) {
+      *num *= 10;
+    } else {
+      *num *= 16;
+    }
+    if ('0' <= *begin && *begin <= '9') {
+      *num += *begin - '0';
+    } else if (!is_decimal && 'a' <= *begin && *begin <= 'f') {
+      *num += *begin - 'a' + 10;
+    } else {
+      return 0;
+    }
+    begin++;
+  }
 }
 
-int eval_expr(char *begin, char *end, int addr) {
+int parse_expr(char *begin, char *end, char pivot, int dir, int addr) {
+  return 0;
+}
 
+void eval_expr(char *begin, char *end, int addr) {
+  if (*begin == '(') {
+    char *match = find_matching('(', ')', begin, end);
+    if (match == end-1) {
+      eval_expr(begin+1, end-1, addr);
+    }
+  } else if (is_id(*begin) && find_id(begin) == end) {
+    if ('0' <= *begin && *begin <= '9') {
+      int val;
+      int res = decode_number(begin, end, &val);
+      assert(res);
+      emit(0x68);  // push val
+      emit32(val);
+      push_var("__temp");
+    } else {
+      int pos = find_in_stack2(begin, end);
+      assert(pos != -1);
+      emit(0x8b);  // mov eax, [esp+pos]
+      emit(0x84);
+      emit(0x24);
+      emit32(4 * pos);
+      emit(0x50);  // push eax
+      push_var("__temp");
+    }
+  } else {
+    if (parse_expr(begin, end, '=', 1, addr)) {
+    } else if (parse_expr(begin, end, TOK_OR, 0, addr)) {
+    } else if (parse_expr(begin, end, TOK_AND, 0, addr)) {
+    } else {
+      push_var("__placeholder");
+      emit(0x53);
+    }
+  }
 }
 
 void compile_expression(char *exp) {
@@ -395,6 +470,7 @@ void compile_statement(char *begin, char *end) {
     if (equal_pos == -1) {
       fprintf(stderr, "Declaration: %s\n", begin);
       char *name = interpret_type(begin);
+      trimstr(name);
       fprintf(stderr, "  declared name is: %s\n", name);
       push_var(name);
       emit(0x83);  // sub esp, 4
@@ -404,6 +480,7 @@ void compile_statement(char *begin, char *end) {
       begin[equal_pos] = '\0';
       fprintf(stderr, "Declaration: %s\n", begin);
       char *name = interpret_type(begin);
+      trimstr(name);
       fprintf(stderr, "  declared name is: %s\n", name);
       push_var(name);
       emit(0x83);  // sub esp, 4
@@ -414,6 +491,11 @@ void compile_statement(char *begin, char *end) {
       trimstr(initializer);
       fprintf(stderr, "  initialized to: %s\n", initializer);
       compile_expression(initializer);
+      emit(0x58);  // pop eax
+      emit(0x89);  // mov [esp], eax
+      emit(0x04);
+      emit(0x24);
+      pop_var();
     }
   } else if (is_return) {
     if (*first_id_end == '\0') {
@@ -421,10 +503,21 @@ void compile_statement(char *begin, char *end) {
     } else {
       fprintf(stderr, "Return statement: %s\n", first_id_end);
       compile_expression(first_id_end);
+      emit(0x58);  // pop eax
+      pop_var();
     }
+    int exit_stack_depth = stack_depth;
+    emit(0x81);  // add esp, ..
+    emit(0xc4);
+    emit32(4 * (exit_stack_depth - ret_depth));
+    emit(0xc3);  // ret
   } else {
     fprintf(stderr, "Statement: %s\n", begin);
     compile_expression(begin);
+    emit(0x83);  // add esp, 4
+    emit(0xc4);
+    emit(0x04);
+    pop_var();
   }
 }
 
@@ -506,6 +599,7 @@ void compile_block_with_head(char *def_begin, char *block_begin, char *block_end
       }
     }
     push_var("__ret");
+    ret_depth = stack_depth;
   } else {
     fprintf(stderr, "Begin of block: %s\n", def_begin);
   }
