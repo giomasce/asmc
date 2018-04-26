@@ -97,14 +97,14 @@ void trimstr(char *buf) {
 
 void fix_operands(char *begin, char *end) {
   while (begin + 1 < end) {
-    if (*begin == '<' && *(begin+1) == '<') { *begin = TOK_SHL, *(begin+1) = ' '; }
-    if (*begin == '>' && *(begin+1) == '>') { *begin = TOK_SHR, *(begin+1) = ' '; }
-    if (*begin == '<' && *(begin+1) == '=') { *begin = TOK_LE, *(begin+1) = ' '; }
-    if (*begin == '>' && *(begin+1) == '=') { *begin = TOK_GE, *(begin+1) = ' '; }
-    if (*begin == '=' && *(begin+1) == '=') { *begin = TOK_EQ, *(begin+1) = ' '; }
-    if (*begin == '!' && *(begin+1) == '=') { *begin = TOK_INEQ, *(begin+1) = ' '; }
-    if (*begin == '&' && *(begin+1) == '&') { *begin = TOK_AND, *(begin+1) = ' '; }
-    if (*begin == '|' && *(begin+1) == '|') { *begin = TOK_OR, *(begin+1) = ' '; }
+    if (*begin == '<' && *(begin+1) == '<') { *begin = TOK_SHL; *(begin+1) = ' '; }
+    if (*begin == '>' && *(begin+1) == '>') { *begin = TOK_SHR; *(begin+1) = ' '; }
+    if (*begin == '<' && *(begin+1) == '=') { *begin = TOK_LE; *(begin+1) = ' '; }
+    if (*begin == '>' && *(begin+1) == '=') { *begin = TOK_GE; *(begin+1) = ' '; }
+    if (*begin == '=' && *(begin+1) == '=') { *begin = TOK_EQ; *(begin+1) = ' '; }
+    if (*begin == '!' && *(begin+1) == '=') { *begin = TOK_INEQ; *(begin+1) = ' '; }
+    if (*begin == '&' && *(begin+1) == '&') { *begin = TOK_AND; *(begin+1) = ' '; }
+    if (*begin == '|' && *(begin+1) == '|') { *begin = TOK_OR; *(begin+1) = ' '; }
     begin++;
   }
 }
