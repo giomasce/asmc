@@ -272,6 +272,23 @@ void fix_strings(char *begin, char *end) {
   }
 }
 
+char *find_matching_rev(char open, char closed, char *begin, char *end) {
+  int depth = 0;
+  end--;
+  while (begin >= end) {
+    if (*end == closed) {
+      depth++;
+    } else if (*end == open) {
+      depth--;
+    }
+    if (depth == 0) {
+      return end;
+    }
+    end--;
+  }
+  return 0;
+}
+
 char *find_matching(char open, char closed, char *begin, char *end) {
   int depth = 0;
   while (begin < end) {
@@ -395,7 +412,28 @@ int decode_number(char *begin, char *end, unsigned int *num) {
   }
 }
 
+void run_eval_expr(char *begin, char *op, char *end, int addr) {
+  push_var("__placeholder");
+  emit(0x53);
+}
+
 int parse_expr(char *begin, char *end, char pivot, int dir, int addr) {
+  if (dir == 0) {
+    char *p = begin;
+    while (p < end) {
+      if (*p == pivot) {
+        run_eval_expr(begin, p, end, pivot);
+        return 1;
+      } else if (*p == '(') {
+        p = find_matching('(', ')', p, end);
+        assert(p != 0);
+      } else if (*p == '[') {
+        p = find_matching('[', ']', p, end);
+        assert(p != 0);
+      }
+      p++;
+    }
+  }
   return 0;
 }
 
