@@ -23,6 +23,37 @@
 #define TOK_DEREF ((char) 0x8a)
 #define TOK_ADDR ((char) 0x8b)
 
+#define MAX_ID_LEN 128
+#define STACK_LEN 1024
+
+int block_depth;
+int stack_depth;
+int current_loc;
+
+char stack_vars[MAX_ID_LEN * STACK_LEN];
+
+void push_var(char *var_name) {
+  int len = strlen(var_name);
+  assert(len > 0);
+  assert(len < MAX_ID_LEN);
+  strcpy(stack_vars + stack_depth * MAX_ID_LEN, var_name);
+  stack_depth++;
+}
+
+void pop_var() {
+  stack_depth--;
+}
+
+int find_in_stack(char *var_name) {
+  int i;
+  for (i = 0; i < stack_depth; i++) {
+    if (strcmp(var_name, stack_vars + (stack_depth - 1 - i) * MAX_ID_LEN) == 0) {
+      return i;
+    }
+  }
+  return -1;
+}
+
 int is_whitespace(char x) {
   return x == ' ' || x == '\t' || x == '\n';
 }
@@ -60,6 +91,19 @@ int find_char(char *s, char *e, char c) {
       return -1;
     }
     s2++;
+  }
+}
+
+int find_char_back(char *s, char *e, char c) {
+  char *s2 = e;
+  while (1) {
+    s2--;
+    if (*s2 == c) {
+      return s2 - s;
+    }
+    if (s2 == s) {
+      return -1;
+    }
   }
 }
 
@@ -280,6 +324,7 @@ void compile_statement(char *begin, char *end) {
 void compile_block_with_head(char *def_begin, char *block_begin, char *block_end);
 
 void compile_block(char *begin, char *end) {
+  block_depth++;
   while (1) {
     int semicolon_pos = find_char(begin, end, ';');
     int brace_pos = find_char(begin, end, '{');
@@ -305,6 +350,7 @@ void compile_block(char *begin, char *end) {
       }
     }
   }
+  block_depth--;
 }
 
 void compile_block_with_head(char *def_begin, char *block_begin, char *block_end) {
@@ -314,13 +360,59 @@ void compile_block_with_head(char *def_begin, char *block_begin, char *block_end
   if (strcmp(def_begin, "enum") == 0) {
     return;
   }
-  fprintf(stderr, "Begin of block: %s\n", def_begin);
+
+  int param_num = 0;
+  if (block_depth == 1) {
+    // This is a function
+    remove_spaces(def_begin, 0);
+    int open_pos = find_char(def_begin, block_begin, '(');
+    assert(open_pos != -1);
+    int closed_pos = find_char(def_begin, block_begin, ')');
+    assert(closed_pos != -1);
+    assert(def_begin[closed_pos+1] == '\0');
+    def_begin[open_pos] = '\0';
+    def_begin[closed_pos] = '\0';
+    fprintf(stderr, "Beginning of a function with name %s\n", def_begin);
+
+    assert(stack_depth == 0);
+    char *params_begin = def_begin + open_pos + 1;
+    char *params_end = def_begin + closed_pos;
+    while (1) {
+      int pos = find_char_back(params_begin, params_end, ',');
+      if (pos != -1) {
+        params_begin[pos] = '\0';
+        push_var(params_begin + pos + 1);
+        param_num++;
+        fprintf(stderr, "  with parameter %s\n", params_begin + pos + 1);
+        params_end = params_begin + pos;
+      } else {
+        push_var(params_begin);
+        param_num++;
+        fprintf(stderr, "  with parameter %s\n", params_begin);
+        break;
+      }
+    }
+    push_var("__ret");
+  } else {
+    fprintf(stderr, "Begin of block: %s\n", def_begin);
+  }
+
   compile_block(block_begin+1, block_end-1);
+
+  if (block_depth == 1) {
+    pop_var();
+    int i;
+    for (i = 0; i < param_num; i++) {
+      pop_var();
+    }
+    assert(stack_depth == 0);
+  }
+
   fprintf(stderr, "End of block\n");
 }
 
 int main() {
-  int fd = open("cc.c", O_RDONLY);
+  int fd = open("test.c", O_RDONLY);
   int len = lseek(fd, 0, SEEK_END);
   lseek(fd, 0, SEEK_SET);
   char *src = mmap(0, len, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
@@ -329,7 +421,13 @@ int main() {
   fix_operands(src, src+len);
   //remove_spaces(src, src+len);
   //print(src, src+len);
+
+  block_depth = 0;
+  stack_depth = 0;
+  current_loc = 0x100000;
   compile_block(src, src+len);
+  assert(block_depth == 0);
+  assert(stack_depth == 0);
 
   return 0;
 }
