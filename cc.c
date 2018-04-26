@@ -141,6 +141,10 @@ void fix_strings(char *begin, char *end) {
       } else if (*begin == '#') {
         mode = 3;
         *begin = ' ';
+      } else {
+        if (is_whitespace(*begin)) {
+          *begin = ' ';
+        }
       }
     } else if (mode == 1) {
       if (*begin == '\'') {
@@ -169,6 +173,7 @@ void fix_strings(char *begin, char *end) {
     } else if (mode == 3) {
       if (*begin == '\n') {
         mode = 0;
+        *begin = ' ';
       } else {
         *begin = ' ';
       }
@@ -202,13 +207,25 @@ char *find_matching(char open, char closed, char *begin, char *end) {
   return 0;
 }
 
+int find_id(char *s) {
+    char *s2 = s;
+    while (s != 0) {
+        if (!(('a' <= *s && *s <= 'z') || ('A' <= *s && *s <= 'Z') || ('0' <= *s && *s <= '9') || *s == '_')) {
+            return s-s2;
+        }
+        s++;
+    }
+    return -1;
+}
+
 void compile_statement(char *begin, char *end) {
   *end = '\0';
   trimstr(begin);
   if (*begin == '\0') {
     return;
   }
-  char *s;
+  char *s = 0;
+  int is_return = 0;
   if (s = isstrpref("unsigned char *", begin)) {
     remove_spaces(s, 0);
   } else if (s = isstrpref("unsigned char ", begin)) {
@@ -227,10 +244,31 @@ void compile_statement(char *begin, char *end) {
     remove_spaces(s, 0);
   } else if (s = isstrpref("void *", begin)) {
     remove_spaces(s, 0);
+  } else if (s = isstrpref("void ", begin)) {
+    remove_spaces(s, 0);
+  } else if ((s = isstrpref("return ", begin)) || strcmp(begin, "return") == 0) {
+    if (s == 0) {
+      s = "";
+    } else {
+      remove_spaces(s, 0);
+    }
+    is_return = 1;
   } else {
     remove_spaces(begin, 0);
   }
-  fprintf(stderr, "Statement: %s\n", begin);
+  if (s != 0 && !is_return) {
+      int id_len = find_id(s);
+      assert(id_len != -1);
+      char tmp = s[id_len];
+      s[id_len] = '\0';
+      fprintf(stderr, "Declaration: %s\n", begin);
+      s[id_len] = tmp;
+      fprintf(stderr, "Statement: %s\n", s);
+  } else if (s != 0 && is_return) {
+      fprintf(stderr, "Return statement: %s\n", s);
+  } else {
+      fprintf(stderr, "Statement: %s\n", begin);
+  }
 }
 
 void compile_block_with_head(char *def_begin, char *block_begin, char *block_end);
