@@ -207,15 +207,24 @@ char *find_matching(char open, char closed, char *begin, char *end) {
   return 0;
 }
 
-int find_id(char *s) {
-    char *s2 = s;
-    while (s != 0) {
-        if (!(('a' <= *s && *s <= 'z') || ('A' <= *s && *s <= 'Z') || ('0' <= *s && *s <= '9') || *s == '_')) {
-            return s-s2;
-        }
-        s++;
+char *find_id(char *s) {
+  while (s != 0) {
+    if (!(('a' <= *s && *s <= 'z') || ('A' <= *s && *s <= 'Z') || ('0' <= *s && *s <= '9') || *s == '_')) {
+      break;
     }
-    return -1;
+    s++;
+  }
+  return s;
+}
+
+int strncmp2(char *b1, char *e1, char *b2) {
+  int len = strlen(b2);
+  return e1 - b1 == len && strncmp(b1, b2, len) == 0;
+}
+
+void compile_expression(char *exp) {
+  remove_spaces(exp, 0);
+  fprintf(stderr, "Expression: %s\n", exp);
 }
 
 void compile_statement(char *begin, char *end) {
@@ -224,50 +233,47 @@ void compile_statement(char *begin, char *end) {
   if (*begin == '\0') {
     return;
   }
-  char *s = 0;
+  char *first_id_end = find_id(begin);
   int is_return = 0;
-  if (s = isstrpref("unsigned char *", begin)) {
-    remove_spaces(s, 0);
-  } else if (s = isstrpref("unsigned char ", begin)) {
-    remove_spaces(s, 0);
-  } else if (s = isstrpref("unsigned int *", begin)) {
-    remove_spaces(s, 0);
-  } else if (s = isstrpref("unsigned int ", begin)) {
-    remove_spaces(s, 0);
-  } else if (s = isstrpref("char *", begin)) {
-    remove_spaces(s, 0);
-  } else if (s = isstrpref("char ", begin)) {
-    remove_spaces(s, 0);
-  } else if (s = isstrpref("int *", begin)) {
-    remove_spaces(s, 0);
-  } else if (s = isstrpref("int ", begin)) {
-    remove_spaces(s, 0);
-  } else if (s = isstrpref("void *", begin)) {
-    remove_spaces(s, 0);
-  } else if (s = isstrpref("void ", begin)) {
-    remove_spaces(s, 0);
-  } else if ((s = isstrpref("return ", begin)) || strcmp(begin, "return") == 0) {
-    if (s == 0) {
-      s = "";
-    } else {
-      remove_spaces(s, 0);
-    }
+  int has_decl = 0;
+  if (strncmp2(begin, first_id_end, "return")) {
     is_return = 1;
-  } else {
-    remove_spaces(begin, 0);
+  } else if (strncmp2(begin, first_id_end, "unsigned")) {
+    has_decl = 1;
+  } else if (strncmp2(begin, first_id_end, "char")) {
+    has_decl = 1;
+  } else if (strncmp2(begin, first_id_end, "int")) {
+    has_decl = 1;
+  } else if (strncmp2(begin, first_id_end, "void")) {
+    has_decl = 1;
   }
-  if (s != 0 && !is_return) {
-      int id_len = find_id(s);
-      assert(id_len != -1);
-      char tmp = s[id_len];
-      s[id_len] = '\0';
+  int equal_pos;
+  if (has_decl) {
+    equal_pos = find_char(begin, 0, '=');
+  }
+
+  if (has_decl) {
+    if (equal_pos == -1) {
       fprintf(stderr, "Declaration: %s\n", begin);
-      s[id_len] = tmp;
-      fprintf(stderr, "Statement: %s\n", s);
-  } else if (s != 0 && is_return) {
-      fprintf(stderr, "Return statement: %s\n", s);
+    } else {
+      begin[equal_pos] = '\0';
+      fprintf(stderr, "Declaration: %s\n", begin);
+      begin[equal_pos] = '=';
+      char *initializer = begin + equal_pos + 1;
+      trimstr(initializer);
+      fprintf(stderr, "Initialized to: %s\n", initializer);
+      compile_expression(initializer);
+    }
+  } else if (is_return) {
+    if (*first_id_end == '\0') {
+      fprintf(stderr, "Empty return statement\n");
+    } else {
+      fprintf(stderr, "Return statement: %s\n", first_id_end);
+      compile_expression(first_id_end);
+    }
   } else {
-      fprintf(stderr, "Statement: %s\n", begin);
+    fprintf(stderr, "Statement: %s\n", begin);
+    compile_expression(begin);
   }
 }
 
