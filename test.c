@@ -1,7 +1,9 @@
 
 main(argc, argv) {
-  int a = argc + 1;
+  int a;
+  a = argc + 1;
   int b = argv || a;
   char *c = "{hello}[there](world)";
-  return 0;
+  b = c + a * a;
+  return b;
 }

@@ -36,12 +36,29 @@ void push_var(char *var_name) {
   int len = strlen(var_name);
   assert(len > 0);
   assert(len < MAX_ID_LEN);
+  assert(stack_depth < STACK_LEN);
   strcpy(stack_vars + stack_depth * MAX_ID_LEN, var_name);
   stack_depth++;
 }
 
 void pop_var() {
   stack_depth--;
+}
+
+void pop_to_depth(int depth) {
+  stack_depth = depth;
+}
+
+void emit(char x) {
+  fwrite(&x, 1, 1, stdout);
+  current_loc++;
+}
+
+void emit32(int x) {
+  emit(x);
+  emit(x >> 8);
+  emit(x >> 16);
+  emit(x >> 24);
 }
 
 int find_in_stack(char *var_name) {
@@ -56,6 +73,10 @@ int find_in_stack(char *var_name) {
 
 int is_whitespace(char x) {
   return x == ' ' || x == '\t' || x == '\n';
+}
+
+int is_id(char x) {
+  return ('a' <= x && x <= 'z') || ('A' <= x && x <= 'Z') || ('0' <= x && x <= '9') || x == '_';
 }
 
 void remove_spaces(char *begin, char *end) {
@@ -253,7 +274,7 @@ char *find_matching(char open, char closed, char *begin, char *end) {
 
 char *find_id(char *s) {
   while (s != 0) {
-    if (!(('a' <= *s && *s <= 'z') || ('A' <= *s && *s <= 'Z') || ('0' <= *s && *s <= '9') || *s == '_')) {
+    if (!is_id(*s)) {
       break;
     }
     s++;
@@ -266,9 +287,83 @@ int strncmp2(char *b1, char *e1, char *b2) {
   return e1 - b1 == len && strncmp(b1, b2, len) == 0;
 }
 
+char *interpret_type(char *decl) {
+  int state = 0;
+  char *name_begin;
+  char *name_end;
+  while (1) {
+    if (*decl == '\0') {
+      break;
+    } else if (is_whitespace(*decl)) {
+      decl++;
+    } else if (*decl == '*') {
+      decl++;
+      if (state == 1) {
+        state = 2;
+      } else {
+        assert(0);
+      }
+    } else if (*decl == '[') {
+      if (state == 3) {
+        // TODO
+      } else {
+        assert(0);
+      }
+    } else if (is_id(*decl)) {
+      char *id_end = find_id(decl);
+      int type_found = 0;
+      if (strncmp2(decl, id_end, "unsigned")) {
+        decl = id_end;
+        type_found = 1;
+      } else if (strncmp2(decl, id_end, "char")) {
+        decl = id_end;
+        type_found = 1;
+      } else if (strncmp2(decl, id_end, "int")) {
+        decl = id_end;
+        type_found = 1;
+      } else if (strncmp2(decl, id_end, "void")) {
+        decl = id_end;
+        type_found = 1;
+      } else {
+        // This is the declared name
+        if (state == 1 || state == 2) {
+          state = 3;
+          name_begin = decl;
+          name_end = id_end;
+          decl = id_end;
+        } else {
+          assert(0);
+        }
+      }
+      if (type_found) {
+        if (state == 0 || state == 1) {
+          state = 1;
+        } else {
+          assert(0);
+        }
+      }
+    } else {
+      assert(0);
+    }
+  }
+  assert(state == 3);
+  name_end = '\0';
+  return name_begin;
+}
+
+int parse_expr(char *begin, char *end, char pivot, int dir) {
+
+}
+
+int eval_expr(char *begin, char *end, int addr) {
+
+}
+
 void compile_expression(char *exp) {
   remove_spaces(exp, 0);
+  char *end = exp + strlen(exp);
   fprintf(stderr, "Expression: %s\n", exp);
+  eval_expr(exp, end, 0);
 }
 
 void compile_statement(char *begin, char *end) {
@@ -299,13 +394,25 @@ void compile_statement(char *begin, char *end) {
   if (has_decl) {
     if (equal_pos == -1) {
       fprintf(stderr, "Declaration: %s\n", begin);
+      char *name = interpret_type(begin);
+      fprintf(stderr, "  declared name is: %s\n", name);
+      push_var(name);
+      emit(0x83);  // sub esp, 4
+      emit(0xec);
+      emit(0x04);
     } else {
       begin[equal_pos] = '\0';
       fprintf(stderr, "Declaration: %s\n", begin);
+      char *name = interpret_type(begin);
+      fprintf(stderr, "  declared name is: %s\n", name);
+      push_var(name);
+      emit(0x83);  // sub esp, 4
+      emit(0xec);
+      emit(0x04);
       begin[equal_pos] = '=';
       char *initializer = begin + equal_pos + 1;
       trimstr(initializer);
-      fprintf(stderr, "Initialized to: %s\n", initializer);
+      fprintf(stderr, "  initialized to: %s\n", initializer);
       compile_expression(initializer);
     }
   } else if (is_return) {
@@ -325,6 +432,7 @@ void compile_block_with_head(char *def_begin, char *block_begin, char *block_end
 
 void compile_block(char *begin, char *end) {
   block_depth++;
+  int saved_stack_depth = stack_depth;
   while (1) {
     int semicolon_pos = find_char(begin, end, ';');
     int brace_pos = find_char(begin, end, '{');
@@ -350,6 +458,11 @@ void compile_block(char *begin, char *end) {
       }
     }
   }
+  int exit_stack_depth = stack_depth;
+  pop_to_depth(saved_stack_depth);
+  emit(0x81);  // add esp, ..
+  emit(0xc4);
+  emit32(4 * (exit_stack_depth - saved_stack_depth));
   block_depth--;
 }
 
@@ -401,6 +514,7 @@ void compile_block_with_head(char *def_begin, char *block_begin, char *block_end
 
   if (block_depth == 1) {
     pop_var();
+    emit(0xc3);  // ret
     int i;
     for (i = 0; i < param_num; i++) {
       pop_var();
