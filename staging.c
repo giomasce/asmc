@@ -805,7 +805,6 @@ void process_line2(char *line) {
 void assemble(int fd_in, int fd_out, int start_loc);
 void assemble2(int fd_in, int fd_out, int start_loc) {
   *get_emit_fd() = fd_out;
-  *get_symbol_num() = 0;
   for (*get_stage() = 0; *get_stage() < 2; (*get_stage())++) {
     platform_reset_file(fd_in);
     line = 0;

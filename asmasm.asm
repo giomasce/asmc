@@ -633,7 +633,7 @@ str_empty:
   db 0
 
 str_ass_finished1:
-  db 'Finished assembling after processing '
+  db 'Finished assembling a file with '
   db 0
 str_ass_finished2:
   db ' lines!'
@@ -641,10 +641,10 @@ str_ass_finished2:
   db 0
 
 str_symb_num1:
-  db 'The program contains '
+  db 'There are now '
   db 0
 str_symb_num2:
-  db ' symbols.'
+  db ' known symbols.'
   db NEWLINE
   db 0
 
@@ -3173,6 +3173,10 @@ init_assembler:
   mov ecx, symbol_loc_ptr
   mov [ecx], eax
 
+  ;; Reset symbol_num
+  mov eax, symbol_num
+  mov DWORD [eax], 0
+
   ret
 
 
@@ -3189,9 +3193,7 @@ assemble:
   mov ecx, [ebp+12]
   mov [eax], ecx
 
-  ;; Reset symbol_num and stage
-  mov eax, symbol_num
-  mov DWORD [eax], 0
+  ;; Reset stage
   mov eax, stage
   mov DWORD [eax], 0
 
@@ -3226,22 +3228,22 @@ assemble_parse_loop:
   mov ebx, eax
 
   ;; Log the line
-  push str_decoding_line
-  push 2
-  call platform_log
-  add esp, 8
+  ;; push str_decoding_line
+  ;; push 2
+  ;; call platform_log
+  ;; add esp, 8
 
-  mov eax, input_buf_ptr
-  mov eax, [eax]
-  push eax
-  push 2
-  call platform_log
-  add esp, 8
+  ;; mov eax, input_buf_ptr
+  ;; mov eax, [eax]
+  ;; push eax
+  ;; push 2
+  ;; call platform_log
+  ;; add esp, 8
 
-  push str_newline
-  push 2
-  call platform_log
-  add esp, 8
+  ;; push str_newline
+  ;; push 2
+  ;; call platform_log
+  ;; add esp, 8
 
   ;; Find the first semicolon
   push SEMICOLON

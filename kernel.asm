@@ -73,6 +73,9 @@ str_END:
 str_hello_asm:
   db 'hello.asm'
   db 0
+str_greetings:
+  db 'greetings'
+  db 0
 
 temp_stack:
   resb 128
@@ -150,6 +153,9 @@ start_from_multiboot:
   ;; Init assembler
   call init_assembler
 
+  ;; Expose some kernel symbols
+  call init_symbols
+
   ;; Prepare to write in memory
   mov eax, write_mem_ptr
   mov ecx, heap_ptr
@@ -157,9 +163,11 @@ start_from_multiboot:
   mov [eax], edx
 
   ;; Open hello.asm
+  push edx
   push str_hello_asm
   call platform_open_file
   add esp, 4
+  pop edx
 
   ;; Assemble hello.asm
   push edx
@@ -167,6 +175,18 @@ start_from_multiboot:
   push eax
   call assemble
   add esp, 12
+
+  mov eax, current_loc
+  mov ecx, write_mem_ptr
+  mov edx, [ecx]
+  cmp [eax], edx
+  jne platform_panic
+
+  ;; Call greetings
+  push str_greetings
+  call get_symbol
+  add esp, 4
+  call eax
 
   call platform_exit
 
@@ -487,4 +507,41 @@ platform_read_char:
 platform_read_char_eof:
   ;; Return -1
   mov eax, 0xffffffff
+  ret
+
+
+str_platform_log:
+  db 'platform_log'
+  db 0
+
+  ;; Initialize the symbols table with the "kernel API"
+init_symbols:
+  push platform_log
+  push str_platform_log
+  call add_symbol
+  add esp, 8
+
+  ret
+
+
+  ;; as find_symbol, but panic if it does not exist and return the
+  ;; actual address (not the index)
+get_symbol:
+  ;; Call find_symbol
+  mov eax, [esp+4]
+  push eax
+  call find_symbol
+  add esp, 4
+
+  ;; Panic if it does not exist
+  cmp eax, SYMBOL_TABLE_LEN
+  je platform_panic
+
+  ;; Take the symbol address
+  mov edx, 4
+  mul edx
+  mov ecx, symbol_loc_ptr
+  add eax, [ecx]
+  mov eax, [eax]
+
   ret
