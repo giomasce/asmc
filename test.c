@@ -28,3 +28,6 @@ sum(x, y) {
 hello(bye) {
   bye = 10 + 20 + 30;
 }
+
+empty() {
+}

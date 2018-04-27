@@ -742,6 +742,9 @@ void compile_block_with_head(char *def_begin, char *block_begin, char *block_end
     char *params_begin = def_begin + open_pos + 1;
     char *params_end = def_begin + closed_pos;
     while (1) {
+      if (params_begin == params_end) {
+        break;
+      }
       int pos = find_char_back(params_begin, params_end, ',');
       if (pos != -1) {
         params_begin[pos] = '\0';
