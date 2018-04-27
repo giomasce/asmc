@@ -1,4 +1,6 @@
 
+int glob;
+
 main(argc, argv) {
   int a;
   a = argc + 1;
@@ -30,4 +32,5 @@ hello(bye) {
 }
 
 empty() {
+  //return hello(100);
 }

@@ -31,14 +31,51 @@
 
 #define MAX_ID_LEN 128
 #define STACK_LEN 1024
+#define SYMBOL_TABLE_LEN 1024
 
 int block_depth;
 int stack_depth;
 int current_loc;
 int ret_depth;
 int char_op;
+int symbol_num;
+int stage;
 
 char stack_vars[MAX_ID_LEN * STACK_LEN];
+char symbol_names[MAX_ID_LEN * SYMBOL_TABLE_LEN];
+int symbol_locs[SYMBOL_TABLE_LEN];
+
+int find_symbol(const char *name) {
+  int i;
+  for (i = 0; i < symbol_num; i++) {
+    if (strcmp(name, symbol_names + i * MAX_ID_LEN) == 0) {
+      break;
+    }
+  }
+  if (i == symbol_num) {
+    i = SYMBOL_TABLE_LEN;
+  }
+  return i;
+}
+
+void add_symbol(const char *name, int loc) {
+  int len = strlen(name);
+  assert(len > 0);
+  assert(len < MAX_ID_LEN);
+  if (stage == 0) {
+    assert(find_symbol(name) == SYMBOL_TABLE_LEN);
+    assert(symbol_num < SYMBOL_TABLE_LEN);
+    symbol_locs[symbol_num] = loc;
+    strcpy(symbol_names + symbol_num * MAX_ID_LEN, name);
+    symbol_num = symbol_num + 1;
+  } else if (stage == 1) {
+    int idx = find_symbol(name);
+    assert(idx < symbol_num);
+    assert(symbol_locs[idx] == loc);
+  } else {
+    assert(0);
+  }
+}
 
 int strncmp2(char *b1, char *e1, char *b2) {
   int len = strlen(b2);
@@ -639,6 +676,7 @@ void compile_statement(char *begin, char *end) {
   }
   char *p;
   if (p = isstrpref("return", begin)) {
+    assert(block_depth > 1);
     if (*p == '\0') {
       fprintf(stderr, "Empty return statement\n");
     } else {
@@ -658,11 +696,17 @@ void compile_statement(char *begin, char *end) {
     char *name = p + 1;
     trimstr(name);
     fprintf(stderr, "  declared name is: %s\n", name);
-    push_var(name);
-    emit(0x83);  // sub esp, 4
-    emit(0xec);
-    emit(0x04);
+    if (block_depth == 1) {
+      add_symbol(name, current_loc);
+      emit32(0);
+    } else {
+      push_var(name);
+      emit(0x83);  // sub esp, 4
+      emit(0xec);
+      emit(0x04);
+    }
   } else {
+    assert(block_depth > 1);
     char_op = 0;
     if (p = isstrpref("char", begin)) {
       char_op = 1;
@@ -737,6 +781,7 @@ void compile_block_with_head(char *def_begin, char *block_begin, char *block_end
     def_begin[open_pos] = '\0';
     def_begin[closed_pos] = '\0';
     fprintf(stderr, "Beginning of a function with name %s\n", def_begin);
+    add_symbol(def_begin, current_loc);
 
     assert(stack_depth == 0);
     char *params_begin = def_begin + open_pos + 1;
