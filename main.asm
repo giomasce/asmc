@@ -4,7 +4,7 @@ str_helloasm:
   db 0xa
   db 0
 
-greetings:
+main:
   ;; Greetings!
   push str_helloasm
   push 1

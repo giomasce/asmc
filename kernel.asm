@@ -47,7 +47,7 @@ write_mem_ptr:
   resd 1
 
 str_exit:
-  db 'Exit!'
+  db 'The execution has finished, bye bye...'
   db 0xa
   db 0
 str_panic:
@@ -61,6 +61,17 @@ str_init_heap_stack:
 str_init_files:
   db 'Initializing files table... '
   db 0
+str_init_asm_symbols_table:
+  db 'Initializing assembler and symbols table... '
+  db 0
+str_init_assemble_main:
+  db 'Will now assemble main.asm...'
+  db 0xa
+  db 0
+str_init_launch_main:
+  db 'Will now call main!'
+  db 0xa
+  db 0
 str_done:
   db 'done!'
   db 0xa
@@ -70,11 +81,11 @@ str_END:
   db 'END'
   db 0
 
-str_hello_asm:
-  db 'hello.asm'
+str_main_asm:
+  db 'main.asm'
   db 0
-str_greetings:
-  db 'greetings'
+str_main:
+  db 'main'
   db 0
 
 temp_stack:
@@ -150,17 +161,43 @@ start_from_multiboot:
   call platform_log
   add esp, 8
 
+  ;; Log
+  push str_init_asm_symbols_table
+  push 1
+  call platform_log
+  add esp, 8
+
   ;; Init assembler
   call init_assembler
 
   ;; Expose some kernel symbols
   call init_symbols
 
-  ;; Assemble hello.asm and call greetings
-  push str_hello_asm
+  ;; Log
+  push str_done
+  push 1
+  call platform_log
+  add esp, 8
+
+  ;; Log
+  push str_init_assemble_main
+  push 1
+  call platform_log
+  add esp, 8
+
+  ;; Assemble main.asm
+  push str_main_asm
   call platform_assemble
   add esp, 4
-  push str_greetings
+
+  ;; Log
+  push str_init_launch_main
+  push 1
+  call platform_log
+  add esp, 8
+
+  ;; Call main
+  push str_main
   call platform_get_symbol
   add esp, 4
   call eax
