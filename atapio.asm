@@ -1,4 +1,7 @@
 
+  ;; Driver written following https://wiki.osdev.org/ATA_PIO_Mode (but
+  ;; all code is original)
+
   ATAPIO_DATA equ 0x1f0
   ATAPIO_FEATURES_ERROR equ 0x1f1
   ATAPIO_SECTOR_COUNT equ 0x1f2
