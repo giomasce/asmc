@@ -22,9 +22,9 @@ full.asm: kernel.asm ar.asm library.asm asmasm.asm top.asm
 END:
 	touch END
 
-initrd.ar: main.asm END
+initrd.ar: main.asm atapio.asm END
 	-rm initrd.ar
-	ar rcs initrd.ar main.asm END
+	ar rcs initrd.ar main.asm atapio.asm END
 
 asmasm.x86.exe: full.asm asmasm
 	./asmasm > asmasm.x86.exe
