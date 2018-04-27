@@ -156,39 +156,42 @@ start_from_multiboot:
   ;; Expose some kernel symbols
   call init_symbols
 
+  ;; Assemble hello.asm and call greetings
+  push str_hello_asm
+  call platform_assemble
+  add esp, 4
+  push str_greetings
+  call platform_get_symbol
+  add esp, 4
+  call eax
+
+  call platform_exit
+
+
+  ;; void platform_assemble(char *filename)
+platform_assemble:
   ;; Prepare to write in memory
   mov eax, write_mem_ptr
   mov ecx, heap_ptr
   mov edx, [ecx]
   mov [eax], edx
 
-  ;; Open hello.asm
+  ;; Open the file
+  mov eax, [esp+4]
   push edx
-  push str_hello_asm
+  push eax
   call platform_open_file
   add esp, 4
   pop edx
 
-  ;; Assemble hello.asm
+  ;; Assemble the file
   push edx
   push 0
   push eax
   call assemble
   add esp, 12
 
-  mov eax, current_loc
-  mov ecx, write_mem_ptr
-  mov edx, [ecx]
-  cmp [eax], edx
-  jne platform_panic
-
-  ;; Call greetings
-  push str_greetings
-  call get_symbol
-  add esp, 4
-  call eax
-
-  call platform_exit
+  ret
 
 
   ;; void term_setup()
@@ -510,14 +513,78 @@ platform_read_char_eof:
   ret
 
 
+str_platform_panic:
+  db 'platform_panic'
+  db 0
+str_platform_exit:
+  db 'platform_exit'
+  db 0
+str_platform_open_file:
+  db 'platform_open_file'
+  db 0
+str_platform_read_char:
+  db 'platform_read_char'
+  db 0
+str_platform_write_char:
+  db 'platform_write_char'
+  db 0
 str_platform_log:
   db 'platform_log'
+  db 0
+str_platform_allocate:
+  db 'platform_allocate'
+  db 0
+str_platform_assemble:
+  db 'platform_assemble'
+  db 0
+str_platform_get_symbol:
+  db 'platform_get_symbol'
   db 0
 
   ;; Initialize the symbols table with the "kernel API"
 init_symbols:
+  push platform_panic
+  push str_platform_panic
+  call add_symbol
+  add esp, 8
+
+  push platform_exit
+  push str_platform_exit
+  call add_symbol
+  add esp, 8
+
+  push platform_open_file
+  push str_platform_open_file
+  call add_symbol
+  add esp, 8
+
+  push platform_read_char
+  push str_platform_read_char
+  call add_symbol
+  add esp, 8
+
+  push platform_write_char
+  push str_platform_write_char
+  call add_symbol
+  add esp, 8
+
   push platform_log
   push str_platform_log
+  call add_symbol
+  add esp, 8
+
+  push platform_allocate
+  push str_platform_allocate
+  call add_symbol
+  add esp, 8
+
+  push platform_assemble
+  push str_platform_assemble
+  call add_symbol
+  add esp, 8
+
+  push platform_get_symbol
+  push str_platform_get_symbol
   call add_symbol
   add esp, 8
 
@@ -526,7 +593,7 @@ init_symbols:
 
   ;; as find_symbol, but panic if it does not exist and return the
   ;; actual address (not the index)
-get_symbol:
+platform_get_symbol:
   ;; Call find_symbol
   mov eax, [esp+4]
   push eax
