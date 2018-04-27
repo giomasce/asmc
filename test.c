@@ -16,6 +16,11 @@ test(x) {
   return x;
 }
 
+sum(x, y) {
+  int z = x + y;
+  return z;
+}
+
 hello(bye) {
-  bye = 10;
+  bye = 10 + 20;
 }

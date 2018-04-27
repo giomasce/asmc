@@ -412,9 +412,40 @@ int decode_number(char *begin, char *end, unsigned int *num) {
   }
 }
 
+void eval_expr(char *begin, char *end, int addr);
+
 void run_eval_expr(char *begin, char *op, char *end, int addr) {
-  push_var("__placeholder");
-  emit(0x53);
+  if (*op == '=') {
+    eval_expr(op+1, end, 0);
+    eval_expr(begin, op, 1);
+    emit(0x58);  // pop eax
+    pop_var();
+    emit(0x59);  // pop ecx
+    pop_var();
+    emit(0x89);  // mov [eax], ecx
+    emit(0x08);
+    push_var("__temp");
+    if (addr) {
+      emit(0x50);  // push eax
+    } else {
+      emit(0x51);  // push ecx
+    }
+  } else if (*op == '+') {
+    assert(!addr);
+    eval_expr(op+1, end, 0);
+    eval_expr(begin, op, 0);
+    emit(0x58);  // pop eax
+    pop_var();
+    emit(0x59);  // pop ecx
+    pop_var();
+    emit(0x01);  // add eax, cx
+    emit(0xc8);
+    push_var("__temp");
+    emit(0x50);  // push eax
+  } else {
+    push_var("__placeholder");
+    emit(0x57);
+  }
 }
 
 int parse_expr(char *begin, char *end, char pivot, int dir, int addr) {
@@ -422,7 +453,7 @@ int parse_expr(char *begin, char *end, char pivot, int dir, int addr) {
     char *p = begin;
     while (p < end) {
       if (*p == pivot) {
-        run_eval_expr(begin, p, end, pivot);
+        run_eval_expr(begin, p, end, addr);
         return 1;
       } else if (*p == '(') {
         p = find_matching('(', ')', p, end);
@@ -432,6 +463,21 @@ int parse_expr(char *begin, char *end, char pivot, int dir, int addr) {
         assert(p != 0);
       }
       p++;
+    }
+  } else {
+    char *p = end-1;
+    while (p >= begin) {
+      if (*p == pivot) {
+        run_eval_expr(begin, p, end, addr);
+        return 1;
+      } else if (*p == ')') {
+        p = find_matching_rev('(', ')', begin, p+1);
+        assert(p != 0);
+      } else if (*p == ']') {
+        p = find_matching_rev('[', ']', begin, p+1);
+        assert(p != 0);
+      }
+      p--;
     }
   }
   return 0;
@@ -445,6 +491,7 @@ void eval_expr(char *begin, char *end, int addr) {
     }
   } else if (is_id(*begin) && find_id(begin) == end) {
     if ('0' <= *begin && *begin <= '9') {
+      assert(!addr);
       int val;
       int res = decode_number(begin, end, &val);
       assert(res);
@@ -454,20 +501,31 @@ void eval_expr(char *begin, char *end, int addr) {
     } else {
       int pos = find_in_stack2(begin, end);
       assert(pos != -1);
-      emit(0x8b);  // mov eax, [esp+pos]
-      emit(0x84);
-      emit(0x24);
-      emit32(4 * pos);
-      emit(0x50);  // push eax
-      push_var("__temp");
+      if (addr) {
+        emit(0x89);  // mov eax, esp
+        emit(0xe0);
+        emit(0x05);  // add eax, pos
+        emit32(4 * pos);
+        emit(0x50);  // push eax
+        push_var("__temp");
+      } else {
+        emit(0x8b);  // mov eax, [esp+pos]
+        emit(0x84);
+        emit(0x24);
+        emit32(4 * pos);
+        emit(0x50);  // push eax
+        push_var("__temp");
+      }
     }
   } else {
     if (parse_expr(begin, end, '=', 1, addr)) {
     } else if (parse_expr(begin, end, TOK_OR, 0, addr)) {
     } else if (parse_expr(begin, end, TOK_AND, 0, addr)) {
+    } else if (parse_expr(begin, end, '+', 0, addr)) {
+    } else if (parse_expr(begin, end, '*', 0, addr)) {
     } else {
       push_var("__placeholder");
-      emit(0x53);
+      emit(0x56);
     }
   }
 }
