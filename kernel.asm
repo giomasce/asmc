@@ -1,13 +1,11 @@
 
-  extern platform_open_file
-  extern platform_reset_file
-  extern platform_read_char
-
   STACK_SIZE equ 65536
 
   TERM_ROW_NUM equ 25
   TERM_COL_NUM equ 80
   TERM_BASE_ADDR equ 0xb8000
+
+  MAX_OPEN_FILE_NUM equ 1024
 
   MBMAGIC equ 0x1badb002
   ;; Set flags for alignment, memory map and load adds
@@ -39,10 +37,14 @@ term_col:
 heap_ptr:
   resd 1
 
-str_helloasm:
-  db 'Hello, ASM!'
-  db 0xa
-  db 0
+open_files:
+  resd 1
+
+open_file_num:
+  resd 1
+
+write_mem_ptr:
+  resd 1
 
 str_exit:
   db 'Exit!'
@@ -56,13 +58,20 @@ str_panic:
 str_init_heap_stack:
   db 'Initializing heap and stack... '
   db 0
-str_inited_heap_stack:
+str_init_files:
+  db 'Initializing files table... '
+  db 0
+str_done:
   db 'done!'
   db 0xa
   db 0
 
 str_END:
   db 'END'
+  db 0
+
+str_hello_asm:
+  db 'hello.asm'
   db 0
 
 temp_stack:
@@ -76,12 +85,6 @@ start_from_multiboot:
 
   ;; Initialize terminal
   call term_setup
-
-  ;; Greetings!
-  push str_helloasm
-  push 1
-  call platform_log
-  add esp, 8
 
   ;; Log
   push str_init_heap_stack
@@ -115,25 +118,55 @@ start_from_multiboot:
   mov esp, ecx
 
   ;; Log
-  push str_inited_heap_stack
+  push str_done
   push 1
   call platform_log
   add esp, 8
 
-  ;; Try itoa
-  push 2204
-  call itoa
-  add esp, 4
+  ;; Log
+  push str_init_files
+  push 1
+  call platform_log
+  add esp, 8
+
+  ;; Initialize file table
+  mov eax, open_file_num
+  mov DWORD [eax], 0
+  mov eax, MAX_OPEN_FILE_NUM
+  mov edx, 12
+  mul edx
   push eax
+  call platform_allocate
+  add esp, 4
+  mov edx, open_files
+  mov [edx], eax
+
+  ;; Log
+  push str_done
   push 1
   call platform_log
   add esp, 8
 
-  ;; Print newline
-  push str_newline
-  push 1
-  call platform_log
-  add esp, 8
+  ;; Init assembler
+  call init_assembler
+
+  ;; Prepare to write in memory
+  mov eax, write_mem_ptr
+  mov ecx, heap_ptr
+  mov edx, [ecx]
+  mov [eax], edx
+
+  ;; Open hello.asm
+  push str_hello_asm
+  call platform_open_file
+  add esp, 4
+
+  ;; Assemble hello.asm
+  push edx
+  push 0
+  push eax
+  call assemble
+  add esp, 12
 
   call platform_exit
 
@@ -311,8 +344,22 @@ platform_panic:
 platform_write_char:
   ;; Switch depending on the requested file descriptor
   mov eax, [esp+4]
+  cmp eax, 0
+  je platform_write_char_mem
   cmp eax, 1
   je platform_write_char_stdout
+  cmp eax, 2
+  je platform_write_char_stdout
+  ret
+
+platform_write_char_mem:
+  ;; Write to memory and update pointer
+  mov eax, [esp+8]
+  mov ecx, write_mem_ptr
+  mov edx, [ecx]
+  mov [edx], al
+  add edx, 1
+  mov [ecx], edx
   ret
 
 platform_write_char_stdout:
@@ -366,4 +413,78 @@ platform_allocate:
   add edx, 1
   mov [ecx], edx
 
+  ret
+
+
+platform_open_file:
+  ;; Find the new file record
+  mov eax, open_file_num
+  mov eax, [eax]
+  mov edx, 12
+  mul edx
+  mov ecx, open_files
+  add eax, [ecx]
+
+  ;; ;; Call walk_initrd
+  mov edx, [esp+4]
+  mov ecx, eax
+  add ecx, 8
+  push eax
+  push ecx
+  push eax
+  push edx
+  call walk_initrd
+  add esp, 12
+
+  ;; Reset it to the beginning
+  pop eax
+  mov ecx, [eax]
+  mov [eax+4], ecx
+
+  ;; Return and increment the open file number
+  mov ecx, open_file_num
+  mov eax, [ecx]
+  add DWORD [ecx], 1
+
+  ret
+
+
+platform_reset_file:
+  ;; Find the file record
+  mov eax, [esp+4]
+  mov edx, 12
+  mul edx
+  mov ecx, open_files
+  add eax, [ecx]
+
+  ;; Reset it to the beginning
+  mov ecx, [eax]
+  mov [eax+4], ecx
+
+  ret
+
+
+platform_read_char:
+  ;; Find the file record
+  mov eax, [esp+4]
+  mov edx, 12
+  mul edx
+  mov ecx, open_files
+  add eax, [ecx]
+
+  ;; Check if we are at the end
+  mov ecx, [eax+4]
+  cmp ecx, [eax+8]
+  je platform_read_char_eof
+
+  ;; Return a character and increment pointer
+  mov edx, 0
+  mov dl, [ecx]
+  add DWORD [eax+4], 1
+  mov eax, edx
+  ret
+
+platform_read_char_eof:
+  ;; Return -1
+  mov eax, 0xffffffff
   ret

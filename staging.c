@@ -13,6 +13,7 @@ int *get_symbol_num();
 int *get_symbol_loc();
 int *get_current_loc();
 int *get_stage();
+int *get_emit_fd();
 
 char *get_opcode_names();
 opcode_func *get_opcode_funcs();
@@ -801,8 +802,9 @@ void process_line2(char *line) {
   }
 }
 
-void assemble(int fd_in, int start_loc);
-void assemble2(int fd_in, int start_loc) {
+void assemble(int fd_in, int fd_out, int start_loc);
+void assemble2(int fd_in, int fd_out, int start_loc) {
+  *get_emit_fd() = fd_out;
   *get_symbol_num() = 0;
   for (*get_stage() = 0; *get_stage() < 2; (*get_stage())++) {
     platform_reset_file(fd_in);
@@ -845,5 +847,6 @@ void init_assembler();
 void assemble_file() {
   init_assembler();
   int fd_in = platform_open_file("full.asm");
-  assemble(fd_in, 0x100000);
+  int fd_out = 1;
+  assemble(fd_in, fd_out, 0x100000);
 }

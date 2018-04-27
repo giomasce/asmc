@@ -648,6 +648,10 @@ str_symb_num2:
   db NEWLINE
   db 0
 
+str_check:
+  db 'CHECK'
+  db 0
+
 section .bss
 
 input_buf_ptr:
@@ -666,6 +670,9 @@ current_loc:
   resd 1
 
 stage:
+  resd 1
+
+emit_fd:
   resd 1
 
 section .text
@@ -701,6 +708,11 @@ get_current_loc:
   global get_stage
 get_stage:
   mov eax, stage
+  ret
+
+  global get_emit_fd
+get_emit_fd:
+  mov eax, emit_fd
   ret
 
   global get_opcode_names
@@ -1740,8 +1752,9 @@ emit:
   jne emit_ret
   mov ecx, 0
   mov cl, [esp+4]
+  mov edx, emit_fd
   push ecx
-  push 1
+  push DWORD [edx]
   call platform_write_char
   add esp, 8
 
@@ -3171,6 +3184,11 @@ assemble:
   push edi
   push ebx
 
+  ;; Set fd for emit
+  mov eax, emit_fd
+  mov ecx, [ebp+12]
+  mov [eax], ecx
+
   ;; Reset symbol_num and stage
   mov eax, symbol_num
   mov DWORD [eax], 0
@@ -3192,7 +3210,7 @@ assemble_stage_loop:
   ;; Reset line number (in esi) and current_loc
   mov esi, 0
   mov eax, current_loc
-  mov ecx, [ebp+12]
+  mov ecx, [ebp+16]
   mov [eax], ecx
 
 assemble_parse_loop:
@@ -3208,22 +3226,22 @@ assemble_parse_loop:
   mov ebx, eax
 
   ;; Log the line
-  ;; push str_decoding_line
-  ;; push 2
-  ;; call platform_log
-  ;; add esp, 8
+  push str_decoding_line
+  push 2
+  call platform_log
+  add esp, 8
 
-  ;; mov eax, input_buf_ptr
-  ;; mov eax, [eax]
-  ;; push eax
-  ;; push 2
-  ;; call platform_log
-  ;; add esp, 8
+  mov eax, input_buf_ptr
+  mov eax, [eax]
+  push eax
+  push 2
+  call platform_log
+  add esp, 8
 
-  ;; push str_newline
-  ;; push 2
-  ;; call platform_log
-  ;; add esp, 8
+  push str_newline
+  push 2
+  call platform_log
+  add esp, 8
 
   ;; Find the first semicolon
   push SEMICOLON

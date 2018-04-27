@@ -7,7 +7,7 @@ ar_buf:
   resb AR_BUF_SIZE
 
 
-  ;; void *walk_initrd(char *filename, void **begin, void **end)
+  ;; void walk_initrd(char *filename, void **begin, void **end)
   ;; Search the initrd for a file and return the file beginning and
   ;; end in RAM (undefined behaviour if the file does not exist)
 walk_initrd:
