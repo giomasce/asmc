@@ -17,17 +17,11 @@
 #define TOK_LE ((char) 0x84)
 #define TOK_GE ((char) 0x85)
 #define TOK_EQ ((char) 0x86)
-#define TOK_NE ((char) 0x87)
+#define TOK_INEQ ((char) 0x87)
 #define TOK_AND ((char) 0x88)
 #define TOK_OR ((char) 0x89)
 #define TOK_DEREF ((char) 0x8a)
 #define TOK_ADDR ((char) 0x8b)
-
-#define TOKS_AND "\x88"
-#define TOKS_OR "\x89"
-#define TOKS_EQ_NE "\x86\x87"
-#define TOKS_LE_GE "\x84\x85"
-#define TOKS_SHL_SHR "\x82\x83"
 
 #define MAX_ID_LEN 128
 #define STACK_LEN 1024
@@ -36,7 +30,6 @@ int block_depth;
 int stack_depth;
 int current_loc;
 int ret_depth;
-int char_op;
 
 char stack_vars[MAX_ID_LEN * STACK_LEN];
 
@@ -190,7 +183,7 @@ void fix_operands(char *begin, char *end) {
     if (*begin == '<' && *(begin+1) == '=') { *begin = TOK_LE; *(begin+1) = ' '; }
     if (*begin == '>' && *(begin+1) == '=') { *begin = TOK_GE; *(begin+1) = ' '; }
     if (*begin == '=' && *(begin+1) == '=') { *begin = TOK_EQ; *(begin+1) = ' '; }
-    if (*begin == '!' && *(begin+1) == '=') { *begin = TOK_NE; *(begin+1) = ' '; }
+    if (*begin == '!' && *(begin+1) == '=') { *begin = TOK_INEQ; *(begin+1) = ' '; }
     if (*begin == '&' && *(begin+1) == '&') { *begin = TOK_AND; *(begin+1) = ' '; }
     if (*begin == '|' && *(begin+1) == '|') { *begin = TOK_OR; *(begin+1) = ' '; }
     begin++;
@@ -322,6 +315,70 @@ char *find_id(char *s) {
   return s;
 }
 
+char *interpret_type(char *decl) {
+  int state = 0;
+  char *name_begin;
+  char *name_end;
+  while (1) {
+    if (*decl == '\0') {
+      break;
+    } else if (is_whitespace(*decl)) {
+      decl++;
+    } else if (*decl == '*') {
+      decl++;
+      if (state == 1) {
+        state = 2;
+      } else {
+        assert(0);
+      }
+    } else if (*decl == '[') {
+      if (state == 3) {
+        // TODO
+      } else {
+        assert(0);
+      }
+    } else if (is_id(*decl)) {
+      char *id_end = find_id(decl);
+      int type_found = 0;
+      if (strncmp2(decl, id_end, "unsigned")) {
+        decl = id_end;
+        type_found = 1;
+      } else if (strncmp2(decl, id_end, "char")) {
+        decl = id_end;
+        type_found = 1;
+      } else if (strncmp2(decl, id_end, "int")) {
+        decl = id_end;
+        type_found = 1;
+      } else if (strncmp2(decl, id_end, "void")) {
+        decl = id_end;
+        type_found = 1;
+      } else {
+        // This is the declared name
+        if (state == 1 || state == 2) {
+          state = 3;
+          name_begin = decl;
+          name_end = id_end;
+          decl = id_end;
+        } else {
+          assert(0);
+        }
+      }
+      if (type_found) {
+        if (state == 0 || state == 1) {
+          state = 1;
+        } else {
+          assert(0);
+        }
+      }
+    } else {
+      assert(0);
+    }
+  }
+  assert(state == 3);
+  name_end = '\0';
+  return name_begin;
+}
+
 int decode_number(char *begin, char *end, unsigned int *num) {
   *num = 0;
   int is_decimal = 1;
@@ -373,48 +430,7 @@ void run_eval_expr(char *begin, char *op, char *end, int addr) {
     } else {
       emit(0x51);  // push ecx
     }
-  } else if (*op == '#') {
-    assert(begin == op);
-    eval_expr(op+1, end, 0);
-    pop_var();
-    emit(0x58);  // pop eax
-    if (!addr) {
-      emit(0xb8);  // mov eax, [eax]
-      emit(0x00);
-    }
-    push_var("__temp");
-    emit(0x50);  // push eax
-  } else if (*op == '@') {
-    assert(!addr);
-    assert(begin == op);
-    eval_expr(op+1, end, 1);
-  } else if (*op == '!' || *op == '~') {
-    assert(!addr);
-    assert(begin == op);
-    eval_expr(op+1, end, 0);
-    pop_var();
-    emit(0x58);  // pop eax
-    if (*op == '!') {
-      emit(0x83);  // cmp eax, 0
-      emit(0xf8);
-      emit(0x00);
-      emit(0x74);  // je 0x9
-      emit(0x04);
-      emit(0x31);  // xor eax, eax
-      emit(0xc0);
-      emit(0xeb);  // jmp 0xe
-      emit(0x05);
-      emit(0xb8);  // mov eax, 1
-      emit32(1);
-    } else if (*op == '~') {
-      emit(0xf7);  // not eax
-      emit(0xd0);
-    } else {
-      assert(0);
-    }
-    emit(0x50);  // push eax
-    push_var("__temp");
-  } else {
+  } else if (*op == '+') {
     assert(!addr);
     eval_expr(op+1, end, 0);
     eval_expr(begin, op, 0);
@@ -422,126 +438,21 @@ void run_eval_expr(char *begin, char *op, char *end, int addr) {
     pop_var();
     emit(0x59);  // pop ecx
     pop_var();
-    if (*op == '+') {
-      emit(0x01);  // add eax, ecx
-      emit(0xc8);
-    } else if (*op == '-') {
-      emit(0x29);  // sub eax, ecx
-      emit(0xc8);
-    } else if (*op == '*') {
-      emit(0xf7);  // imul ecx
-      emit(0xe9);
-    } else if (*op == '/') {
-      emit(0x31);  // xor edx, edx
-      emit(0xd2);
-      emit(0xf7);  // idiv ecx
-      emit(0xf9);
-    } else if (*op == '%') {
-      emit(0x31);  // xor edx, edx
-      emit(0xd2);
-      emit(0xf7);  // idiv ecx
-      emit(0xf9);
-      emit(0x89);  // mov eax, edx
-      emit(0xd0);
-    } else if (*op == TOK_SHL) {
-      emit(0xd3);  // shl eax, cl
-      emit(0xe0);
-    } else if (*op == TOK_SHR) {
-      emit(0xd3);  // shr eax, cl
-      emit(0xe8);
-    } else if (*op == '&') {
-      emit(0x21);  // and eax, ecx
-      emit(0xc8);
-    } else if (*op == '|') {
-      emit(0x09);  // or eax, ecx
-      emit(0xc8);
-    } else if (*op == TOK_AND) {
-      emit(0x83);  // cmp eax, 0
-      emit(0xf8);
-      emit(0x00);
-      emit(0x74);  // je 0x11
-      emit(0x0c);
-      emit(0x83);  // cmp ecx, 0
-      emit(0xf9);
-      emit(0x00);
-      emit(0x74);  // je 0x11
-      emit(0x07);
-      emit(0xb8);  // mov eax, 1
-      emit32(1);
-      emit(0xeb);  // jmp 0x13
-      emit(0x02);
-      emit(0x31);  // xor eax, eax
-      emit(0xc0);
-    } else if (*op == TOK_OR) {
-      emit(0x83);  // cmp eax, 0
-      emit(0xf8);
-      emit(0x00);
-      emit(0x75);  // jne 0xe
-      emit(0x09);
-      emit(0x83);  // cmp ecx, 0
-      emit(0xf9);
-      emit(0x00);
-      emit(0x75);  // jne 0xe
-      emit(0x04);
-      emit(0x31);  // xor eax, eax
-      emit(0xc0);
-      emit(0xeb);  // jmp 0x13
-      emit(0x05);
-      emit(0xb8);  // mov eax, 1
-      emit32(1);
-    } else {
-      emit(0x39);  // cmp eax, ecx
-      emit(0xc8);
-      if (*op == TOK_EQ) {
-        emit(0x74);  // je 0x8
-        emit(0x04);
-      } else if (*op == TOK_NE) {
-        emit(0x75);  // jne 0x8
-        emit(0x04);
-      } else if (*op == '<') {
-        emit(0x7c);  // jl 0x8
-        emit(0x04);
-      } else if (*op == TOK_LE) {
-        emit(0x7e);  // jle 0x8
-        emit(0x04);
-      } else if (*op == '>') {
-        emit(0x7f);  // jg 0x8
-        emit(0x04);
-      } else if (*op == TOK_GE) {
-        emit(0x7d);  // jge 0x8
-        emit(0x04);
-      } else {
-        assert(0);
-      }
-      emit(0x31);  // xor eax, eax
-      emit(0xc0);
-      emit(0xeb);  // jmp 0xd
-      emit(0x05);
-      emit(0xb8);  // mov eax, 1
-      emit32(1);
-    }
+    emit(0x01);  // add eax, cx
+    emit(0xc8);
     push_var("__temp");
     emit(0x50);  // push eax
+  } else {
+    push_var("__placeholder");
+    emit(0x57);
   }
 }
 
-int is_in(char x, char *set) {
-  while (1) {
-    if (*set == '\0') {
-      return 0;
-    }
-    if (x == *set) {
-      return 1;
-    }
-    set++;
-  }
-}
-
-int parse_expr(char *begin, char *end, char *pivots, int dir, int addr) {
+int parse_expr(char *begin, char *end, char pivot, int dir, int addr) {
   if (dir == 0) {
     char *p = begin;
     while (p < end) {
-      if (is_in(*p, pivots)) {
+      if (*p == pivot) {
         run_eval_expr(begin, p, end, addr);
         return 1;
       } else if (*p == '(') {
@@ -556,7 +467,7 @@ int parse_expr(char *begin, char *end, char *pivots, int dir, int addr) {
   } else {
     char *p = end-1;
     while (p >= begin) {
-      if (is_in(*p, pivots)) {
+      if (*p == pivot) {
         run_eval_expr(begin, p, end, addr);
         return 1;
       } else if (*p == ')') {
@@ -607,17 +518,11 @@ void eval_expr(char *begin, char *end, int addr) {
       }
     }
   } else {
-    if (parse_expr(begin, end, "=", 1, addr)) {
-    } else if (parse_expr(begin, end, TOKS_OR, 0, addr)) {
-    } else if (parse_expr(begin, end, TOKS_AND, 0, addr)) {
-    } else if (parse_expr(begin, end, "|", 0, addr)) {
-    } else if (parse_expr(begin, end, "&", 0, addr)) {
-    } else if (parse_expr(begin, end, TOKS_EQ_NE, 0, addr)) {
-    } else if (parse_expr(begin, end, TOKS_LE_GE "<>", 0, addr)) {
-    } else if (parse_expr(begin, end, TOKS_SHL_SHR, 0, addr)) {
-    } else if (parse_expr(begin, end, "+-", 0, addr)) {
-    } else if (parse_expr(begin, end, "*/%", 0, addr)) {
-    } else if (parse_expr(begin, end, "!~#@", 1, addr)) {
+    if (parse_expr(begin, end, '=', 1, addr)) {
+    } else if (parse_expr(begin, end, TOK_OR, 0, addr)) {
+    } else if (parse_expr(begin, end, TOK_AND, 0, addr)) {
+    } else if (parse_expr(begin, end, '+', 0, addr)) {
+    } else if (parse_expr(begin, end, '*', 0, addr)) {
     } else {
       push_var("__placeholder");
       emit(0x56);
@@ -638,14 +543,62 @@ void compile_statement(char *begin, char *end) {
   if (*begin == '\0') {
     return;
   }
-  char *p;
-  if (p = isstrpref("return", begin)) {
-    if (*p == '\0') {
+  char *first_id_end = find_id(begin);
+  int is_return = 0;
+  int has_decl = 0;
+  if (strncmp2(begin, first_id_end, "return")) {
+    is_return = 1;
+  } else if (strncmp2(begin, first_id_end, "unsigned")) {
+    has_decl = 1;
+  } else if (strncmp2(begin, first_id_end, "char")) {
+    has_decl = 1;
+  } else if (strncmp2(begin, first_id_end, "int")) {
+    has_decl = 1;
+  } else if (strncmp2(begin, first_id_end, "void")) {
+    has_decl = 1;
+  }
+  int equal_pos;
+  if (has_decl) {
+    equal_pos = find_char(begin, 0, '=');
+  }
+
+  if (has_decl) {
+    if (equal_pos == -1) {
+      fprintf(stderr, "Declaration: %s\n", begin);
+      char *name = interpret_type(begin);
+      trimstr(name);
+      fprintf(stderr, "  declared name is: %s\n", name);
+      push_var(name);
+      emit(0x83);  // sub esp, 4
+      emit(0xec);
+      emit(0x04);
+    } else {
+      begin[equal_pos] = '\0';
+      fprintf(stderr, "Declaration: %s\n", begin);
+      char *name = interpret_type(begin);
+      trimstr(name);
+      fprintf(stderr, "  declared name is: %s\n", name);
+      push_var(name);
+      emit(0x83);  // sub esp, 4
+      emit(0xec);
+      emit(0x04);
+      begin[equal_pos] = '=';
+      char *initializer = begin + equal_pos + 1;
+      trimstr(initializer);
+      fprintf(stderr, "  initialized to: %s\n", initializer);
+      compile_expression(initializer);
+      emit(0x58);  // pop eax
+      emit(0x89);  // mov [esp], eax
+      emit(0x04);
+      emit(0x24);
+      pop_var();
+    }
+  } else if (is_return) {
+    if (*first_id_end == '\0') {
       fprintf(stderr, "Empty return statement\n");
     } else {
-      p++;
-      fprintf(stderr, "Return statement: %s\n", p);
-      compile_expression(p);
+      fprintf(stderr, "Return statement: %s\n", first_id_end);
+      compile_expression(first_id_end);
       emit(0x58);  // pop eax
       pop_var();
     }
@@ -654,21 +607,7 @@ void compile_statement(char *begin, char *end) {
     emit(0xc4);
     emit32(4 * (exit_stack_depth - ret_depth));
     emit(0xc3);  // ret
-  } else if (p = isstrpref("int", begin)) {
-    fprintf(stderr, "Declaration: %s\n", begin);
-    char *name = p + 1;
-    trimstr(name);
-    fprintf(stderr, "  declared name is: %s\n", name);
-    push_var(name);
-    emit(0x83);  // sub esp, 4
-    emit(0xec);
-    emit(0x04);
   } else {
-    char_op = 0;
-    if (p = isstrpref("char", begin)) {
-      char_op = 1;
-      begin = p + 1;
-    }
     fprintf(stderr, "Statement: %s\n", begin);
     compile_expression(begin);
     emit(0x83);  // add esp, 4
@@ -708,13 +647,11 @@ void compile_block(char *begin, char *end) {
       }
     }
   }
-  if (block_depth != 1) {
-    int exit_stack_depth = stack_depth;
-    pop_to_depth(saved_stack_depth);
-    emit(0x81);  // add esp, ..
-    emit(0xc4);
-    emit32(4 * (exit_stack_depth - saved_stack_depth));
-  }
+  int exit_stack_depth = stack_depth;
+  pop_to_depth(saved_stack_depth);
+  emit(0x81);  // add esp, ..
+  emit(0xc4);
+  emit32(4 * (exit_stack_depth - saved_stack_depth));
   block_depth--;
 }
 

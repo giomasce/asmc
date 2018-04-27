@@ -2,11 +2,14 @@
 main(argc, argv) {
   int a;
   a = argc + 1;
-  int b = argv || a;
-  char *c = "{hello}[there](world)";
+  int b;
+  b = argv || a;
+  int c;
+  c = "{hello}[there](world)";
   b = c + a * a;
   return b;
-  int d = 1;
+  int d;
+  d = 1;
   return d;
 }
 
@@ -17,7 +20,8 @@ test(x) {
 }
 
 sum(x, y) {
-  int z = x + y;
+  int z;
+  z = x + y;
   return z;
 }
 
