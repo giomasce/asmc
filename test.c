@@ -5,7 +5,7 @@ main(argc, argv) {
   int b;
   b = argv || a;
   int c;
-  c = "{hello}[there](world)";
+  c = 0; //"{hello}[there](world)";
   b = c + a * a;
   return b;
   int d;

@@ -619,8 +619,7 @@ void eval_expr(char *begin, char *end, int addr) {
     } else if (parse_expr(begin, end, "*/%", 0, addr)) {
     } else if (parse_expr(begin, end, "!~#@", 1, addr)) {
     } else {
-      push_var("__placeholder");
-      emit(0x56);
+      assert(0);
     }
   }
 }
