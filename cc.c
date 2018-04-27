@@ -607,17 +607,17 @@ void eval_expr(char *begin, char *end, int addr) {
       }
     }
   } else {
-    if (parse_expr(begin, end, "=", 1, addr)) {
-    } else if (parse_expr(begin, end, TOKS_OR, 0, addr)) {
-    } else if (parse_expr(begin, end, TOKS_AND, 0, addr)) {
-    } else if (parse_expr(begin, end, "|", 0, addr)) {
-    } else if (parse_expr(begin, end, "&", 0, addr)) {
-    } else if (parse_expr(begin, end, TOKS_EQ_NE, 0, addr)) {
-    } else if (parse_expr(begin, end, TOKS_LE_GE "<>", 0, addr)) {
-    } else if (parse_expr(begin, end, TOKS_SHL_SHR, 0, addr)) {
-    } else if (parse_expr(begin, end, "+-", 0, addr)) {
-    } else if (parse_expr(begin, end, "*/%", 0, addr)) {
-    } else if (parse_expr(begin, end, "!~#@", 1, addr)) {
+    if (parse_expr(begin, end, "=", 0, addr)) {
+    } else if (parse_expr(begin, end, TOKS_OR, 1, addr)) {
+    } else if (parse_expr(begin, end, TOKS_AND, 1, addr)) {
+    } else if (parse_expr(begin, end, "|", 1, addr)) {
+    } else if (parse_expr(begin, end, "&", 1, addr)) {
+    } else if (parse_expr(begin, end, TOKS_EQ_NE, 1, addr)) {
+    } else if (parse_expr(begin, end, TOKS_LE_GE "<>", 1, addr)) {
+    } else if (parse_expr(begin, end, TOKS_SHL_SHR, 1, addr)) {
+    } else if (parse_expr(begin, end, "+-", 1, addr)) {
+    } else if (parse_expr(begin, end, "*/%", 1, addr)) {
+    } else if (parse_expr(begin, end, "!~#@", 0, addr)) {
     } else {
       assert(0);
     }
