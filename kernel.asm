@@ -213,9 +213,12 @@ platform_assemble:
   mov edx, [ecx]
   mov [eax], edx
 
-  ;; Open the file
+  ;; Load the parameter and save some registers
   mov eax, [esp+4]
   push edx
+  push edx
+
+  ;; Open the file
   push eax
   call platform_open_file
   add esp, 4
@@ -227,6 +230,21 @@ platform_assemble:
   push eax
   call assemble
   add esp, 12
+
+  ;; Actually allocate used heap memory, so that new allocations will
+  ;; not overwrite it
+  mov eax, write_mem_ptr
+  mov ecx, heap_ptr
+  mov edx, [eax]
+  sub edx, [ecx]
+  push edx
+  call platform_allocate
+  add esp, 4
+
+  ;; Assert that the allocation gave us what we expected
+  pop edx
+  cmp edx, eax
+  jne platform_panic
 
   ret
 
