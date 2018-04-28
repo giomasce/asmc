@@ -12,5 +12,13 @@ fun 2 main {
   &x argc argv + = ;
   argc test ;
   &argv argc = ;
-  x ret
+  if x {
+    &x 2 = ;
+  } else {
+    &x 4 = ;
+  }
+  x ret ;
+  while x {
+    &x x 1 - = ;
+  }
 }

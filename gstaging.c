@@ -4,11 +4,13 @@
 #define MAX_TOKEN_LEN 128
 #define STACK_LEN 1024
 #define SYMBOL_TABLE_LEN 1024
+#define WRITE_LABEL_BUF_LEN 128
 
 #define TEMP_VAR "__temp"
 
 int read_fd;
 
+int token_given_back;
 int token_len;
 char token_buf[MAX_TOKEN_LEN];
 
@@ -27,7 +29,10 @@ char symbol_names[MAX_TOKEN_LEN * SYMBOL_TABLE_LEN];
 int symbol_locs[SYMBOL_TABLE_LEN];
 int symbol_arities[SYMBOL_TABLE_LEN];
 
+char write_label_buf[WRITE_LABEL_BUF_LEN];
+
 int atoi(char*);
+int sprintf(char *str, const char *format, ...);
 
 void assert(int cond);
 void assert(int cond) {
@@ -98,6 +103,15 @@ void emit_str(char *x, int len) {
   }
 }
 
+int gen_label() {
+  return label_num++;
+}
+
+char *write_label(int id) {
+  sprintf(write_label_buf, "__label%d", id);
+  return write_label_buf;
+}
+
 int find_symbol(char *name) {
   int i;
   for (i = 0; i < symbol_num; i++) {
@@ -129,6 +143,19 @@ void add_symbol(char *name, int loc, int arity) {
     assert(symbol_arities[idx] == arity);
   } else {
     assert(0);
+  }
+}
+
+int get_symbol(char *name, int *arity) {
+  if (stage == 1 || arity != 0) {
+    int pos = find_symbol(name);
+    assert(pos != SYMBOL_TABLE_LEN);
+    if (arity != 0) {
+      *arity = symbol_arities[pos];
+    }
+    return symbol_locs[pos];
+  } else {
+    return 0;
   }
 }
 
@@ -176,6 +203,10 @@ int is_whitespace(char x) {
 }
 
 char *get_token() {
+  if (token_given_back) {
+    token_given_back = 0;
+    return token_buf;
+  }
   int x;
   token_len = 0;
   while (1) {
@@ -189,6 +220,11 @@ char *get_token() {
   }
   token_buf[token_len] = '\0';
   return token_buf;
+}
+
+void give_back_token() {
+  assert(!token_given_back);
+  token_given_back = 1;
 }
 
 void expect(char *x) {
@@ -230,6 +266,10 @@ int decode_number(const char *operand, unsigned int *num) {
   }
 }
 
+int compute_rel(int addr) {
+  return addr - current_loc - 4;
+}
+
 void push_expr(char *tok, int want_addr) {
   // Try to interpret as a number
   int val;
@@ -254,10 +294,8 @@ void push_expr(char *tok, int want_addr) {
       emit32(4 * pos);
     }
   } else {
-    pos = find_symbol(tok);
-    assert(pos != SYMBOL_TABLE_LEN);
-    int loc = symbol_locs[pos];
-    int arity = symbol_arities[pos];
+    int arity;
+    int loc = get_symbol(tok, &arity);
     if (want_addr) {
       push_var(TEMP_VAR, 1);
       emit(0x68);  // push loc
@@ -270,8 +308,7 @@ void push_expr(char *tok, int want_addr) {
         emit_str("\xff\x30", 2);  // push [eax]
       } else {
         emit(0xe8);  // call rel
-        int rel = loc - 4 - current_loc;
-        emit32(rel);
+        emit32(compute_rel(loc));
         emit_str("\x81\xc4", 2);  // add esp, ...
         emit32(4 * arity);
         while (arity > 0) {
@@ -306,6 +343,41 @@ void parse_block() {
       emit_str("\x81\xc4", 2);  // add esp, ..
       emit32(4 * stack_depth);
       emit_str("\x5d\xc3", 2);  // pop ebp; ret
+    } else if (strcmp(tok, "if") == 0) {
+      char *cond = get_token();
+      assert(strcmp(cond, "}") != 0);
+      push_expr(cond, 0);
+      int else_lab = gen_label();
+      pop_var(1);
+      emit_str("\x58\x83\xF8\x00\x0F\x84", 6);  // pop eax; cmp eax, 0; je rel
+      emit32(compute_rel(get_symbol(write_label(else_lab), 0)));
+      parse_block();
+      char *else_tok = get_token();
+      if (strcmp(else_tok, "else") == 0) {
+        int fi_lab = gen_label();
+        emit(0xe9);  // jmp rel
+        emit32(compute_rel(get_symbol(write_label(fi_lab), 0)));
+        add_symbol(write_label(else_lab), current_loc, -1);
+        parse_block();
+        add_symbol(write_label(fi_lab), current_loc, -1);
+      } else {
+        add_symbol(write_label(else_lab), current_loc, -1);
+        give_back_token();
+      }
+    } else if (strcmp(tok, "while") == 0) {
+      char *cond = get_token();
+      assert(strcmp(cond, "}") != 0);
+      int restart_lab = gen_label();
+      int end_lab = gen_label();
+      add_symbol(write_label(restart_lab), current_loc, -1);
+      push_expr(cond, 0);
+      pop_var(1);
+      emit_str("\x58\x83\xF8\x00\x0F\x84", 6);  // pop eax; cmp eax, 0; je rel
+      emit32(compute_rel(get_symbol(write_label(end_lab), 0)));
+      parse_block();
+      emit(0xe9);  // jmp rel
+      emit32(compute_rel(get_symbol(write_label(restart_lab), 0)));
+      add_symbol(write_label(end_lab), current_loc, -1);
     } else if (*tok == '$') {
       char *name = tok + 1;
       push_var(name, 0);
