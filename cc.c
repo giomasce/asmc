@@ -45,7 +45,12 @@ char stack_vars[MAX_ID_LEN * STACK_LEN];
 char symbol_names[MAX_ID_LEN * SYMBOL_TABLE_LEN];
 int symbol_locs[SYMBOL_TABLE_LEN];
 
-int find_symbol(const char *name) {
+int strncmp2(char *b1, char *e1, char *b2) {
+  int len = strlen(b2);
+  return e1 - b1 == len && strncmp(b1, b2, len) == 0;
+}
+
+int find_symbol(char *name) {
   int i;
   for (i = 0; i < symbol_num; i++) {
     if (strcmp(name, symbol_names + i * MAX_ID_LEN) == 0) {
@@ -58,7 +63,20 @@ int find_symbol(const char *name) {
   return i;
 }
 
-void add_symbol(const char *name, int loc) {
+int find_symbol2(char *begin, char *end) {
+  int i;
+  for (i = 0; i < symbol_num; i++) {
+    if (strncmp2(begin, end, symbol_names + i * MAX_ID_LEN)) {
+      break;
+    }
+  }
+  if (i == symbol_num) {
+    i = SYMBOL_TABLE_LEN;
+  }
+  return i;
+}
+
+void add_symbol(char *name, int loc) {
   int len = strlen(name);
   assert(len > 0);
   assert(len < MAX_ID_LEN);
@@ -75,11 +93,6 @@ void add_symbol(const char *name, int loc) {
   } else {
     assert(0);
   }
-}
-
-int strncmp2(char *b1, char *e1, char *b2) {
-  int len = strlen(b2);
-  return e1 - b1 == len && strncmp(b1, b2, len) == 0;
 }
 
 void push_var(char *var_name) {
@@ -120,7 +133,9 @@ int find_in_stack2(char* begin, char *end) {
 }
 
 void emit(char x) {
-  fwrite(&x, 1, 1, stdout);
+  if (stage == 1) {
+    fwrite(&x, 1, 1, stdout);
+  }
   current_loc++;
 }
 
@@ -626,21 +641,40 @@ void eval_expr(char *begin, char *end, int addr) {
       push_var("__temp");
     } else {
       int pos = find_in_stack2(begin, end);
-      assert(pos != -1);
-      if (addr) {
-        emit(0x89);  // mov eax, esp
-        emit(0xe0);
-        emit(0x05);  // add eax, pos
-        emit32(4 * pos);
-        emit(0x50);  // push eax
-        push_var("__temp");
+      if (pos != -1) {
+        if (addr) {
+          emit(0x89);  // mov eax, esp
+          emit(0xe0);
+          emit(0x05);  // add eax, pos
+          emit32(4 * pos);
+          emit(0x50);  // push eax
+          push_var("__temp");
+        } else {
+          emit(0x8b);  // mov eax, [esp+pos]
+          emit(0x84);
+          emit(0x24);
+          emit32(4 * pos);
+          emit(0x50);  // push eax
+          push_var("__temp");
+        }
       } else {
-        emit(0x8b);  // mov eax, [esp+pos]
-        emit(0x84);
-        emit(0x24);
-        emit32(4 * pos);
-        emit(0x50);  // push eax
-        push_var("__temp");
+        int var_addr = 0;
+        if (stage == 1) {
+          pos = find_symbol2(begin, end);
+          assert(pos != SYMBOL_TABLE_LEN);
+          var_addr = symbol_locs[pos];
+        }
+        if (addr) {
+          emit(0x68);  // push addr
+          emit32(var_addr);
+          push_var("__temp");
+        } else {
+          emit(0xb8);  // mov eax, addr
+          emit32(var_addr);
+          emit(0xff);  // push DWORD [eax]
+          emit(0x30);
+          push_var("__temp");
+        }
       }
     }
   } else {
@@ -697,6 +731,7 @@ void compile_statement(char *begin, char *end) {
     trimstr(name);
     fprintf(stderr, "  declared name is: %s\n", name);
     if (block_depth == 1) {
+      fprintf(stderr, "  this is a top level declaration\n");
       add_symbol(name, current_loc);
       emit32(0);
     } else {
@@ -826,22 +861,25 @@ void compile_block_with_head(char *def_begin, char *block_begin, char *block_end
 }
 
 int main() {
-  int fd = open("test.c", O_RDONLY);
-  int len = lseek(fd, 0, SEEK_END);
-  lseek(fd, 0, SEEK_SET);
-  char *src = mmap(0, len, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+  symbol_num = 0;
+  for (stage = 0; stage < 2; stage++) {
+    int fd = open("test.c", O_RDONLY);
+    int len = lseek(fd, 0, SEEK_END);
+    lseek(fd, 0, SEEK_SET);
+    char *src = mmap(0, len, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
 
-  fix_strings(src, src+len);
-  fix_operands(src, src+len);
-  //remove_spaces(src, src+len);
-  //print(src, src+len);
+    fix_strings(src, src+len);
+    fix_operands(src, src+len);
+    //remove_spaces(src, src+len);
+    //print(src, src+len);
 
-  block_depth = 0;
-  stack_depth = 0;
-  current_loc = 0x100000;
-  compile_block(src, src+len);
-  assert(block_depth == 0);
-  assert(stack_depth == 0);
+    block_depth = 0;
+    stack_depth = 0;
+    current_loc = 0x100000;
+    compile_block(src, src+len);
+    assert(block_depth == 0);
+    assert(stack_depth == 0);
+  }
 
   return 0;
 }

@@ -1,9 +1,10 @@
 
+int glob2;
 int glob;
 
 main(argc, argv) {
   int a;
-  a = argc + 1;
+  a = glob + argc + 1;
   int b;
   b = argv || a;
   int c;
