@@ -44,4 +44,4 @@ boot.iso: boot/boot/grub/grub.cfg boot/boot/asmasm.x86
 	grub-mkrescue -o boot.iso boot
 
 cc: cc.c
-	gcc -m32 -O0 -g -o cc cc.c
+	gcc -m32 -O0 -fwrapv -g -o cc cc.c

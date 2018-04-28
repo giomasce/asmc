@@ -52,15 +52,18 @@ char stack_vars[MAX_ID_LEN * STACK_LEN];
 char symbol_names[MAX_ID_LEN * SYMBOL_TABLE_LEN];
 int symbol_locs[SYMBOL_TABLE_LEN];
 
-char string_labs[MAX_ID_LEN * MAX_STRING_NUM];
+int string_ids[MAX_STRING_NUM];
 char *string_begin[MAX_STRING_NUM];
 char *string_end[MAX_STRING_NUM];
 
 char gen_lab_buf[GEN_LAB_BUF_LEN];
 
-char *gen_lab() {
-  sprintf(gen_lab_buf, "__label%d", lab_id);
-  lab_id++;
+int gen_id() {
+  return lab_id++;
+}
+
+char *gen_lab(int id) {
+  sprintf(gen_lab_buf, "__label%d", id);
   return gen_lab_buf;
 }
 
@@ -135,6 +138,30 @@ int find_symbol2(char *begin, char *end) {
     i = SYMBOL_TABLE_LEN;
   }
   return i;
+}
+
+int get_symbol(char *name) {
+  if (stage == 0) {
+    return 0;
+  } else if (stage == 1) {
+    int pos = find_symbol(name);
+    assert(pos != SYMBOL_TABLE_LEN);
+    return symbol_locs[pos];
+  } else {
+    assert(0);
+  }
+}
+
+int get_symbol2(char *begin, char *end) {
+  if (stage == 0) {
+    return 0;
+  } else if (stage == 1) {
+    int pos = find_symbol2(begin, end);
+    assert(pos != SYMBOL_TABLE_LEN);
+    return symbol_locs[pos];
+  } else {
+    assert(0);
+  }
 }
 
 void add_symbol(char *name, int loc) {
@@ -760,17 +787,12 @@ void eval_expr(char *begin, char *end, int addr) {
           assert(0);
         }
       } else if (*begin == '"') {
-        char *lab = gen_lab();
-        int var_addr = 0;
-        strcpy(string_labs + string_num * MAX_ID_LEN, lab);
+        int id = gen_id();
+        int var_addr = get_symbol(gen_lab(id));
+        string_ids[string_num] = id;
         string_begin[string_num] = begin;
         string_end[string_num] = end;
         string_num++;
-        if (stage == 1) {
-          int pos = find_symbol(lab);
-          assert(pos != SYMBOL_TABLE_LEN);
-          var_addr = symbol_locs[pos];
-        }
         assert(!addr);
         emit(0x68);  // push addr
         emit32(var_addr);
@@ -794,12 +816,7 @@ void eval_expr(char *begin, char *end, int addr) {
             push_var("__temp");
           }
         } else {
-          int var_addr = 0;
-          if (stage == 1) {
-            pos = find_symbol2(begin, end);
-            assert(pos != SYMBOL_TABLE_LEN);
-            var_addr = symbol_locs[pos];
-          }
+          int var_addr = get_symbol2(begin, end);
           if (addr) {
             emit(0x68);  // push addr
             emit32(var_addr);
@@ -880,11 +897,69 @@ void compile_statement(char *begin, char *end) {
   }
 }
 
-void compile_block_with_head(char *def_begin, char *block_begin, char *block_end);
+void process_fi(int *else_lab, int *fi_lab);
+
+void process_if(char *exp, int *else_lab, int *fi_lab) {
+  process_fi(else_lab, fi_lab);
+  *else_lab = gen_id();
+  *fi_lab = gen_id();
+  compile_expression(exp);
+  pop_var();
+  emit(0x58);  // pop eax
+  emit(0x83);  // cmp eax, 0
+  emit(0xf8);
+  emit(0x00);
+  emit(0x0f);  // je ...
+  emit(0x84);
+  int disp = get_symbol(gen_lab(*else_lab)) - 4 - current_loc;
+  emit32(disp);
+}
+
+void process_if_end(int *else_lab, int *fi_lab) {
+  emit(0xe9);  // jmp ...
+  int disp = get_symbol(gen_lab(*fi_lab)) - 4 - current_loc;
+  emit32(disp);
+}
+
+void process_else(int *else_lab, int *fi_lab) {
+  assert(*else_lab != 0);
+  add_symbol(gen_lab(*else_lab), current_loc);
+  *else_lab = 0;
+}
+
+void process_elseif(char *exp, int *else_lab, int *fi_lab) {
+  process_else(else_lab, fi_lab);
+  *else_lab = gen_id();
+  compile_expression(exp);
+  pop_var();
+  emit(0x58);  // pop eax
+  emit(0x83);  // cmp eax, 0
+  emit(0xf8);
+  emit(0x00);
+  emit(0x0f);  // je ...
+  emit(0x84);
+  int disp = get_symbol(gen_lab(*else_lab)) - 4 - current_loc;
+  emit32(disp);
+}
+
+void process_fi(int *else_lab, int *fi_lab) {
+  if (*else_lab != 0) {
+    add_symbol(gen_lab(*else_lab), current_loc);
+    *else_lab = 0;
+  }
+  if (*fi_lab != 0) {
+    add_symbol(gen_lab(*fi_lab), current_loc);
+    *fi_lab = 0;
+  }
+}
+
+void compile_block_with_head(char *def_begin, char *block_begin, char *block_end, int *else_lab, int *fi_lab);
 
 void compile_block(char *begin, char *end) {
   block_depth++;
   int saved_stack_depth = stack_depth;
+  int else_lab = 0;
+  int fi_lab = 0;
   while (1) {
     int semicolon_pos = find_char(begin, end, ';');
     int brace_pos = find_char(begin, end, '{');
@@ -901,15 +976,17 @@ void compile_block(char *begin, char *end) {
         brace_pos = semicolon_pos + 1;
       }
       if (semicolon_pos < brace_pos) {
+        process_fi(&else_lab, &fi_lab);
         compile_statement(begin, begin + semicolon_pos);
         begin = begin + semicolon_pos + 1;
       } else {
         char *res = find_matching('{', '}', begin+brace_pos, end);
-        compile_block_with_head(begin, begin+brace_pos, res);
+        compile_block_with_head(begin, begin+brace_pos, res, &else_lab, &fi_lab);
         begin = res + 1;
       }
     }
   }
+  process_fi(&else_lab, &fi_lab);
   if (block_depth != 1) {
     int exit_stack_depth = stack_depth;
     pop_to_depth(saved_stack_depth);
@@ -920,25 +997,26 @@ void compile_block(char *begin, char *end) {
   block_depth--;
 }
 
-void compile_block_with_head(char *def_begin, char *block_begin, char *block_end) {
+void compile_block_with_head(char *def_begin, char *block_begin, char *block_end, int *else_lab, int *fi_lab) {
   *block_begin = '\0';
-  trimstr(def_begin);
-  //remove_spaces(def_begin, 0);
-  if (strcmp(def_begin, "enum") == 0) {
-    return;
-  }
-
   int param_num = 0;
-  if (block_depth == 1) {
-    // This is a function
-    remove_spaces(def_begin, 0);
-    int open_pos = find_char(def_begin, block_begin, '(');
-    assert(open_pos != -1);
-    int closed_pos = find_char(def_begin, block_begin, ')');
-    assert(closed_pos != -1);
+  remove_spaces(def_begin, 0);
+  int open_pos = find_char(def_begin, block_begin, '(');
+  int closed_pos;
+  if (open_pos != -1) {
+    char *closed = find_matching('(', ')', def_begin + open_pos, block_begin);
+    assert(closed != 0);
+    closed_pos = closed - def_begin;
     assert(def_begin[closed_pos+1] == '\0');
     def_begin[open_pos] = '\0';
     def_begin[closed_pos] = '\0';
+  }
+  int must_process_if_end = 0;
+  if (block_depth == 1) {
+    // It must be a function
+    assert(*else_lab == 0);
+    assert(*fi_lab == 0);
+    assert(open_pos != -1);
     fprintf(stderr, "Beginning of a function with name %s\n", def_begin);
     add_symbol(def_begin, current_loc);
 
@@ -965,8 +1043,20 @@ void compile_block_with_head(char *def_begin, char *block_begin, char *block_end
     }
     push_var("__ret");
     ret_depth = stack_depth;
+  } else if (open_pos != -1 && strncmp2(def_begin, def_begin + open_pos, "if")) {
+    fprintf(stderr, "Begin of an if block: %s\n", def_begin + open_pos + 1);
+    must_process_if_end = 1;
+    process_if(def_begin + open_pos + 1, else_lab, fi_lab);
+  } else if (open_pos != -1 && strncmp2(def_begin, def_begin + open_pos, "elseif")) {
+    fprintf(stderr, "Begin of an else-if block: %s\n", def_begin + open_pos + 1);
+    must_process_if_end = 1;
+    process_elseif(def_begin + open_pos + 1, else_lab, fi_lab);
+  } else if (open_pos == -1 && strcmp(def_begin, "else") == 0) {
+    fprintf(stderr, "Begin of an else block\n");
+    must_process_if_end = 1;
+    process_else(else_lab, fi_lab);
   } else {
-    fprintf(stderr, "Begin of block: %s\n", def_begin);
+    assert(0);
   }
 
   compile_block(block_begin+1, block_end-1);
@@ -980,13 +1070,16 @@ void compile_block_with_head(char *def_begin, char *block_begin, char *block_end
     }
     assert(stack_depth == 0);
   }
+  if (must_process_if_end) {
+    process_if_end(else_lab, fi_lab);
+  }
 
   fprintf(stderr, "End of block\n");
 }
 
 void create_strings() {
   for (int i = 0; i < string_num; i++) {
-    add_symbol(string_labs + i * MAX_ID_LEN, current_loc);
+    add_symbol(gen_lab(string_ids[i]), current_loc);
     char *begin = string_begin[i];
     char *end = string_end[i];
     assert(*begin == '"');
@@ -1011,7 +1104,7 @@ void create_strings() {
 int main() {
   symbol_num = 0;
   for (stage = 0; stage < 2; stage++) {
-    lab_id = 0;
+    lab_id = 1;
     string_num = 0;
     int fd = open("test.c", O_RDONLY);
     int len = lseek(fd, 0, SEEK_END);
