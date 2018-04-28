@@ -1,9 +1,15 @@
 
-fun 1 test {
+const LEN 1024
+
+$glob
+%array 100
+%array2 LEN
+
+fun test 1 {
 
 }
 
-fun 2 main {
+fun main 2 {
   $argc
   $argv
   &argc 0 param = ;
@@ -17,8 +23,11 @@ fun 2 main {
   } else {
     &x 4 = ;
   }
-  x ret ;
   while x {
     &x x 1 - = ;
   }
+  &x glob = ;
+  &glob x = ;
+  x ret ;
+  &glob LEN = ;
 }

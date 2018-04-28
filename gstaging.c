@@ -13,6 +13,7 @@ int read_fd;
 int token_given_back;
 int token_len;
 char token_buf[MAX_TOKEN_LEN];
+char buf2[MAX_TOKEN_LEN];
 
 int block_depth;
 int stack_depth;
@@ -296,7 +297,10 @@ void push_expr(char *tok, int want_addr) {
   } else {
     int arity;
     int loc = get_symbol(tok, &arity);
-    if (want_addr) {
+    if (arity == -2) {
+      assert(!want_addr);
+    }
+    if (want_addr || arity == -2) {
       push_var(TEMP_VAR, 1);
       emit(0x68);  // push loc
       emit32(loc);
@@ -380,6 +384,7 @@ void parse_block() {
       add_symbol(write_label(end_lab), current_loc, -1);
     } else if (*tok == '$') {
       char *name = tok + 1;
+      assert(*name != '\0');
       push_var(name, 0);
       emit_str("\x83\xec\x04", 3);  // sub esp, 4
     } else {
@@ -399,6 +404,16 @@ void parse_block() {
   block_depth--;
 }
 
+int decode_number_or_symbol(char *str) {
+  int val;
+  int res = decode_number(str, &val);
+  if (res) {
+    return val;
+  }
+  int arity;
+  return get_symbol(str, &arity);
+}
+
 void parse() {
   while (1) {
     char *tok = get_token();
@@ -406,13 +421,36 @@ void parse() {
       break;
     }
     if (strcmp(tok, "fun") == 0) {
+      char *name = get_token();
+      strcpy(buf2, token_buf);
+      name = buf2;
       char *arity_str = get_token();
       int arity = atoi(arity_str);
-      char *name = get_token();
       add_symbol(name, current_loc, arity);
       emit_str("\x55\x89\xe5", 3);  // push ebp; mov ebp, esp
       parse_block();
       emit_str("\x5d\xc3", 2);  // pop ebp; ret
+    } else if (strcmp(tok, "const") == 0) {
+      char *name = get_token();
+      strcpy(buf2, token_buf);
+      name = buf2;
+      char *val_str = get_token();
+      int val = decode_number_or_symbol(val_str);
+      add_symbol(name, val, -2);
+    } else if (*tok == '$') {
+      char *name = tok + 1;
+      assert(*name != '\0');
+      add_symbol(name, current_loc, -1);
+      emit32(0);
+    } else if (*tok == '%') {
+      char *name = tok + 1;
+      add_symbol(name, current_loc, -1);
+      char *len_str = get_token();
+      int len = decode_number_or_symbol(len_str);
+      while (len > 0) {
+        emit(0);
+        len--;
+      }
     } else {
       assert(0);
     }
