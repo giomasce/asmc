@@ -5,7 +5,7 @@ main(argc, argv) {
   int b;
   b = argv || a;
   int c;
-  c = 0; //"{hello}[there](world)";
+  c = "{hello}[there](world)";
   b = c + a * a;
   return b;
   int d;
@@ -35,6 +35,7 @@ empty() {
 
 in_place_sum(x, y, z) {
   *z = x + y;
+  char *z = x + '\n';
   return &y;
 }
 

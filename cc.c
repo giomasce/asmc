@@ -34,6 +34,8 @@
 #define MAX_ID_LEN 128
 #define STACK_LEN 1024
 #define SYMBOL_TABLE_LEN 1024
+#define MAX_STRING_NUM 1024
+#define GEN_LAB_BUF_LEN 32
 
 int block_depth;
 int stack_depth;
@@ -42,10 +44,34 @@ int ret_depth;
 int char_op;
 int symbol_num;
 int stage;
+int string_num;
+int lab_id;
 
 char stack_vars[MAX_ID_LEN * STACK_LEN];
+
 char symbol_names[MAX_ID_LEN * SYMBOL_TABLE_LEN];
 int symbol_locs[SYMBOL_TABLE_LEN];
+
+char string_labs[MAX_ID_LEN * MAX_STRING_NUM];
+char *string_begin[MAX_STRING_NUM];
+char *string_end[MAX_STRING_NUM];
+
+char gen_lab_buf[GEN_LAB_BUF_LEN];
+
+char *gen_lab() {
+  sprintf(gen_lab_buf, "__label%d", lab_id);
+  lab_id++;
+  return gen_lab_buf;
+}
+
+char escaped(char x) {
+  if (x == 'n') { return '\n'; }
+  if (x == 't') { return '\t'; }
+  if (x == '0') { return '\0'; }
+  if (x == '\\') { return '\\'; }
+  if (x == '\'') { return '\''; }
+  return 0;
+}
 
 char *find_matching_rev(char open, char closed, char *begin, char *end) {
   int depth = 0;
@@ -436,7 +462,7 @@ int decode_number(char *begin, char *end, unsigned int *num) {
 
 void eval_expr(char *begin, char *end, int addr);
 
-void run_eval_expr(char *begin, char *op, char *end, int addr) {
+int run_eval_expr(char *begin, char *op, char *end, int addr) {
   if (*op == '=') {
     eval_expr(op+1, end, 0);
     eval_expr(begin, op, 1);
@@ -444,8 +470,14 @@ void run_eval_expr(char *begin, char *op, char *end, int addr) {
     pop_var();
     emit(0x59);  // pop ecx
     pop_var();
-    emit(0x89);  // mov [eax], ecx
-    emit(0x08);
+    if (char_op) {
+      char_op = 0;
+      emit(0x88);  // mov [eax], cl
+      emit(0x08);
+    } else {
+      emit(0x89);  // mov [eax], ecx
+      emit(0x08);
+    }
     push_var("__temp");
     if (addr) {
       emit(0x50);  // push eax
@@ -626,7 +658,7 @@ void run_eval_expr(char *begin, char *op, char *end, int addr) {
         emit(0x7d);  // jge 0x8
         emit(0x04);
       } else {
-        assert(0);
+        return 0;
       }
       emit(0x31);  // xor eax, eax
       emit(0xc0);
@@ -638,6 +670,7 @@ void run_eval_expr(char *begin, char *op, char *end, int addr) {
     push_var("__temp");
     emit(0x50);  // push eax
   }
+  return 1;
 }
 
 int is_in(char x, char *set) {
@@ -657,8 +690,7 @@ int parse_expr(char *begin, char *end, char *pivots, int dir, int addr) {
     char *p = begin;
     while (p < end) {
       if (is_in(*p, pivots)) {
-        run_eval_expr(begin, p, end, addr);
-        return 1;
+        return run_eval_expr(begin, p, end, addr);
       } else if (*p == '(') {
         p = find_matching('(', ')', p, end);
         assert(p != 0);
@@ -672,8 +704,7 @@ int parse_expr(char *begin, char *end, char *pivots, int dir, int addr) {
     char *p = end-1;
     while (p >= begin) {
       if (is_in(*p, pivots)) {
-        run_eval_expr(begin, p, end, addr);
-        return 1;
+        return run_eval_expr(begin, p, end, addr);
       } else if (*p == ')') {
         p = find_matching_rev('(', ')', begin, p+1);
         assert(p != 0);
@@ -693,53 +724,6 @@ void eval_expr(char *begin, char *end, int addr) {
     if (match == end-1) {
       eval_expr(begin+1, end-1, addr);
     }
-  } else if (is_id(*begin) && find_id(begin) == end) {
-    if ('0' <= *begin && *begin <= '9') {
-      assert(!addr);
-      int val;
-      int res = decode_number(begin, end, &val);
-      assert(res);
-      emit(0x68);  // push val
-      emit32(val);
-      push_var("__temp");
-    } else {
-      int pos = find_in_stack2(begin, end);
-      if (pos != -1) {
-        if (addr) {
-          emit(0x89);  // mov eax, esp
-          emit(0xe0);
-          emit(0x05);  // add eax, pos
-          emit32(4 * pos);
-          emit(0x50);  // push eax
-          push_var("__temp");
-        } else {
-          emit(0x8b);  // mov eax, [esp+pos]
-          emit(0x84);
-          emit(0x24);
-          emit32(4 * pos);
-          emit(0x50);  // push eax
-          push_var("__temp");
-        }
-      } else {
-        int var_addr = 0;
-        if (stage == 1) {
-          pos = find_symbol2(begin, end);
-          assert(pos != SYMBOL_TABLE_LEN);
-          var_addr = symbol_locs[pos];
-        }
-        if (addr) {
-          emit(0x68);  // push addr
-          emit32(var_addr);
-          push_var("__temp");
-        } else {
-          emit(0xb8);  // mov eax, addr
-          emit32(var_addr);
-          emit(0xff);  // push DWORD [eax]
-          emit(0x30);
-          push_var("__temp");
-        }
-      }
-    }
   } else {
     if (parse_expr(begin, end, "=", 0, addr)) {
     } else if (parse_expr(begin, end, TOKS_OR, 1, addr)) {
@@ -754,7 +738,81 @@ void eval_expr(char *begin, char *end, int addr) {
     } else if (parse_expr(begin, end, "!~" TOKS_DEREF_ADDR, 0, addr)) {
     } else if (parse_expr(begin, end, TOKS_CALL_OPEN, 1, addr)) {
     } else {
-      assert(0);
+      if ('0' <= *begin && *begin <= '9') {
+        assert(!addr);
+        int val;
+        int res = decode_number(begin, end, &val);
+        assert(res);
+        emit(0x68);  // push val
+        emit32(val);
+        push_var("__temp");
+      } else if (*begin == '\'') {
+        assert(*(end-1) == '\'');
+        push_var("__temp");
+        if (end - begin == 3) {
+          emit(0x68);  // push val
+          emit32(*(begin+1) + 0x80);
+        } else if (end - begin == 4) {
+          assert(*(begin+1) == '\\' - 0x80);
+          emit(0x68);  // push val
+          emit32(escaped(*(begin+2) + 0x80));
+        } else {
+          assert(0);
+        }
+      } else if (*begin == '"') {
+        char *lab = gen_lab();
+        int var_addr = 0;
+        strcpy(string_labs + string_num * MAX_ID_LEN, lab);
+        string_begin[string_num] = begin;
+        string_end[string_num] = end;
+        string_num++;
+        if (stage == 1) {
+          int pos = find_symbol(lab);
+          assert(pos != SYMBOL_TABLE_LEN);
+          var_addr = symbol_locs[pos];
+        }
+        assert(!addr);
+        emit(0x68);  // push addr
+        emit32(var_addr);
+        push_var("__temp");
+      } else {
+        int pos = find_in_stack2(begin, end);
+        if (pos != -1) {
+          if (addr) {
+            emit(0x89);  // mov eax, esp
+            emit(0xe0);
+            emit(0x05);  // add eax, pos
+            emit32(4 * pos);
+            emit(0x50);  // push eax
+            push_var("__temp");
+          } else {
+            emit(0x8b);  // mov eax, [esp+pos]
+            emit(0x84);
+            emit(0x24);
+            emit32(4 * pos);
+            emit(0x50);  // push eax
+            push_var("__temp");
+          }
+        } else {
+          int var_addr = 0;
+          if (stage == 1) {
+            pos = find_symbol2(begin, end);
+            assert(pos != SYMBOL_TABLE_LEN);
+            var_addr = symbol_locs[pos];
+          }
+          if (addr) {
+            emit(0x68);  // push addr
+            emit32(var_addr);
+            push_var("__temp");
+          } else {
+            emit(0xb8);  // mov eax, addr
+            emit32(var_addr);
+            emit(0xff);  // push DWORD [eax]
+            emit(0x30);
+            push_var("__temp");
+          }
+        }
+      }
     }
   }
 }
@@ -926,9 +984,35 @@ void compile_block_with_head(char *def_begin, char *block_begin, char *block_end
   fprintf(stderr, "End of block\n");
 }
 
+void create_strings() {
+  for (int i = 0; i < string_num; i++) {
+    add_symbol(string_labs + i * MAX_ID_LEN, current_loc);
+    char *begin = string_begin[i];
+    char *end = string_end[i];
+    assert(*begin == '"');
+    assert(*(end-1) == '"');
+    assert(end - begin >= 2);
+    begin++;
+    end--;
+    while (begin < end) {
+      if (*begin == '"') {
+        begin++;
+        assert(*begin == '"');
+        begin++;
+      } else {
+        assert(*begin < 0);
+        emit(*begin + 0x80);
+        begin++;
+      }
+    }
+  }
+}
+
 int main() {
   symbol_num = 0;
   for (stage = 0; stage < 2; stage++) {
+    lab_id = 0;
+    string_num = 0;
     int fd = open("test.c", O_RDONLY);
     int len = lseek(fd, 0, SEEK_END);
     lseek(fd, 0, SEEK_SET);
@@ -942,6 +1026,7 @@ int main() {
     stack_depth = 0;
     current_loc = 0x100000;
     compile_block(src, src+len);
+    create_strings();
     assert(block_depth == 0);
     assert(stack_depth == 0);
   }
