@@ -1,7 +1,4 @@
 
-int glob2;
-int glob;
-
 main(argc, argv) {
   int a;
   a = glob + argc + 1;
@@ -33,5 +30,8 @@ hello(bye) {
 }
 
 empty() {
-  //return hello(100);
+  return sum(100, 200);
 }
+
+int glob2;
+int glob;

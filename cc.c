@@ -23,11 +23,13 @@
 #define TOK_DEREF ((char) 0x8a)
 #define TOK_ADDR ((char) 0x8b)
 
+#define TOKS_CALL_OPEN "\x80"
 #define TOKS_AND "\x88"
 #define TOKS_OR "\x89"
 #define TOKS_EQ_NE "\x86\x87"
 #define TOKS_LE_GE "\x84\x85"
 #define TOKS_SHL_SHR "\x82\x83"
+#define TOKS_DEREF_ADDR "\x8a\x8b"
 
 #define MAX_ID_LEN 128
 #define STACK_LEN 1024
@@ -44,6 +46,39 @@ int stage;
 char stack_vars[MAX_ID_LEN * STACK_LEN];
 char symbol_names[MAX_ID_LEN * SYMBOL_TABLE_LEN];
 int symbol_locs[SYMBOL_TABLE_LEN];
+
+char *find_matching_rev(char open, char closed, char *begin, char *end) {
+  int depth = 0;
+  end--;
+  while (begin >= end) {
+    if (*end == closed) {
+      depth++;
+    } else if (*end == open) {
+      depth--;
+    }
+    if (depth == 0) {
+      return end;
+    }
+    end--;
+  }
+  return 0;
+}
+
+char *find_matching(char open, char closed, char *begin, char *end) {
+  int depth = 0;
+  while (begin < end) {
+    if (*begin == open) {
+      depth++;
+    } else if (*begin == closed) {
+      depth--;
+    }
+    if (depth == 0) {
+      return begin;
+    }
+    begin++;
+  }
+  return 0;
+}
 
 int strncmp2(char *b1, char *e1, char *b2) {
   int len = strlen(b2);
@@ -235,17 +270,35 @@ void trimstr(char *buf) {
   }
 }
 
-void fix_operands(char *begin, char *end) {
-  while (begin + 1 < end) {
-    if (*begin == '<' && *(begin+1) == '<') { *begin = TOK_SHL; *(begin+1) = ' '; }
-    if (*begin == '>' && *(begin+1) == '>') { *begin = TOK_SHR; *(begin+1) = ' '; }
-    if (*begin == '<' && *(begin+1) == '=') { *begin = TOK_LE; *(begin+1) = ' '; }
-    if (*begin == '>' && *(begin+1) == '=') { *begin = TOK_GE; *(begin+1) = ' '; }
-    if (*begin == '=' && *(begin+1) == '=') { *begin = TOK_EQ; *(begin+1) = ' '; }
-    if (*begin == '!' && *(begin+1) == '=') { *begin = TOK_NE; *(begin+1) = ' '; }
-    if (*begin == '&' && *(begin+1) == '&') { *begin = TOK_AND; *(begin+1) = ' '; }
-    if (*begin == '|' && *(begin+1) == '|') { *begin = TOK_OR; *(begin+1) = ' '; }
-    begin++;
+void fix_operations(char *exp) {
+  int prev_is_id = 0;
+  while (*exp != '\0') {
+    if (*(exp+1) != '\0') {
+      if (*exp == '<' && *(exp+1) == '<') { *exp = TOK_SHL; *(exp+1) = ' '; }
+      if (*exp == '>' && *(exp+1) == '>') { *exp = TOK_SHR; *(exp+1) = ' '; }
+      if (*exp == '<' && *(exp+1) == '=') { *exp = TOK_LE; *(exp+1) = ' '; }
+      if (*exp == '>' && *(exp+1) == '=') { *exp = TOK_GE; *(exp+1) = ' '; }
+      if (*exp == '=' && *(exp+1) == '=') { *exp = TOK_EQ; *(exp+1) = ' '; }
+      if (*exp == '!' && *(exp+1) == '=') { *exp = TOK_NE; *(exp+1) = ' '; }
+      if (*exp == '&' && *(exp+1) == '&') { *exp = TOK_AND; *(exp+1) = ' '; }
+      if (*exp == '|' && *(exp+1) == '|') { *exp = TOK_OR; *(exp+1) = ' '; }
+    }
+    if (prev_is_id) {
+      if (*exp == '*') { *exp = TOK_DEREF; }
+      if (*exp == '&') { *exp = TOK_ADDR; }
+      if (*exp == '(') {
+        char *match = find_matching('(', ')', exp, exp+strlen(exp));
+        assert(match != 0);
+        *exp = TOK_CALL_OPEN;
+        *match = TOK_CALL_CLOSED;
+      }
+    }
+    if (is_id(*exp) || *exp == ')') {
+      prev_is_id = 1;
+    } else {
+      prev_is_id = 0;
+    }
+    exp++;
   }
 }
 
@@ -331,39 +384,6 @@ void fix_strings(char *begin, char *end) {
   }
 }
 
-char *find_matching_rev(char open, char closed, char *begin, char *end) {
-  int depth = 0;
-  end--;
-  while (begin >= end) {
-    if (*end == closed) {
-      depth++;
-    } else if (*end == open) {
-      depth--;
-    }
-    if (depth == 0) {
-      return end;
-    }
-    end--;
-  }
-  return 0;
-}
-
-char *find_matching(char open, char closed, char *begin, char *end) {
-  int depth = 0;
-  while (begin < end) {
-    if (*begin == open) {
-      depth++;
-    } else if (*begin == closed) {
-      depth--;
-    }
-    if (depth == 0) {
-      return begin;
-    }
-    begin++;
-  }
-  return 0;
-}
-
 char *find_id(char *s) {
   while (s != 0) {
     if (!is_id(*s)) {
@@ -425,7 +445,43 @@ void run_eval_expr(char *begin, char *op, char *end, int addr) {
     } else {
       emit(0x51);  // push ecx
     }
-  } else if (*op == '#') {
+  } else if (*op == TOK_CALL_OPEN) {
+    assert(!addr);
+    char *match = find_matching(TOK_CALL_OPEN, TOK_CALL_CLOSED, op, end);
+    assert(match != 0);
+    char *params_begin = op + 1;
+    char *params_end = end - 1;
+    assert(params_end == match);
+    int param_num = 0;
+    while (1) {
+      if (params_begin == params_end) {
+        break;
+      }
+      int pos = find_char_back(params_begin, params_end, ',');
+      if (pos != -1) {
+        eval_expr(params_begin + pos + 1, params_end, 0);
+        params_end = params_begin + pos;
+        param_num++;
+      } else {
+        eval_expr(params_begin, params_end, 0);
+        param_num++;
+        break;
+      }
+    }
+    eval_expr(begin, op, 1);
+    pop_var();
+    emit(0x58);  // pop eax
+    emit(0xff);  // call eax
+    emit(0xd0);
+    emit(0x81);  // add esp, ...
+    emit(0xc4);
+    emit32(4 * param_num);
+    for (int i = 0; i < param_num; i++) {
+      pop_var();
+    }
+    push_var("__temp");
+    emit(0x50);  // push eax
+  } else if (*op == TOK_DEREF) {
     assert(begin == op);
     eval_expr(op+1, end, 0);
     pop_var();
@@ -436,7 +492,7 @@ void run_eval_expr(char *begin, char *op, char *end, int addr) {
     }
     push_var("__temp");
     emit(0x50);  // push eax
-  } else if (*op == '@') {
+  } else if (*op == TOK_ADDR) {
     assert(!addr);
     assert(begin == op);
     eval_expr(op+1, end, 1);
@@ -688,7 +744,8 @@ void eval_expr(char *begin, char *end, int addr) {
     } else if (parse_expr(begin, end, TOKS_SHL_SHR, 1, addr)) {
     } else if (parse_expr(begin, end, "+-", 1, addr)) {
     } else if (parse_expr(begin, end, "*/%", 1, addr)) {
-    } else if (parse_expr(begin, end, "!~#@", 0, addr)) {
+    } else if (parse_expr(begin, end, "!~" TOKS_DEREF_ADDR, 0, addr)) {
+    } else if (parse_expr(begin, end, TOKS_CALL_OPEN, 1, addr)) {
     } else {
       assert(0);
     }
@@ -696,6 +753,7 @@ void eval_expr(char *begin, char *end, int addr) {
 }
 
 void compile_expression(char *exp) {
+  fix_operations(exp);
   remove_spaces(exp, 0);
   char *end = exp + strlen(exp);
   fprintf(stderr, "Expression: %s\n", exp);
@@ -869,7 +927,6 @@ int main() {
     char *src = mmap(0, len, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
 
     fix_strings(src, src+len);
-    fix_operands(src, src+len);
     //remove_spaces(src, src+len);
     //print(src, src+len);
 
