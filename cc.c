@@ -271,7 +271,6 @@ void trimstr(char *buf) {
 }
 
 void fix_operations(char *exp) {
-  int prev_is_id = 0;
   while (*exp != '\0') {
     if (*(exp+1) != '\0') {
       if (*exp == '<' && *(exp+1) == '<') { *exp = TOK_SHL; *(exp+1) = ' '; }
@@ -283,9 +282,17 @@ void fix_operations(char *exp) {
       if (*exp == '&' && *(exp+1) == '&') { *exp = TOK_AND; *(exp+1) = ' '; }
       if (*exp == '|' && *(exp+1) == '|') { *exp = TOK_OR; *(exp+1) = ' '; }
     }
-    if (prev_is_id) {
+    exp++;
+  }
+}
+
+void fix_operations2(char *exp) {
+  int prev_is_id = 0;
+  while (*exp != '\0') {
+    if (!prev_is_id) {
       if (*exp == '*') { *exp = TOK_DEREF; }
       if (*exp == '&') { *exp = TOK_ADDR; }
+    } else {
       if (*exp == '(') {
         char *match = find_matching('(', ')', exp, exp+strlen(exp));
         assert(match != 0);
@@ -755,6 +762,7 @@ void eval_expr(char *begin, char *end, int addr) {
 void compile_expression(char *exp) {
   fix_operations(exp);
   remove_spaces(exp, 0);
+  fix_operations2(exp);
   char *end = exp + strlen(exp);
   fprintf(stderr, "Expression: %s\n", exp);
   eval_expr(exp, end, 0);

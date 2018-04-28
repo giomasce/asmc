@@ -33,5 +33,10 @@ empty() {
   return sum(100, 200);
 }
 
+in_place_sum(x, y, z) {
+  *z = x + y;
+  return &y;
+}
+
 int glob2;
 int glob;
