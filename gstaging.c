@@ -348,6 +348,22 @@ void emit_preamble() {
    */
   add_symbol("param", current_loc, 1);
   emit_str("\x8B\x44\x24\x04\x8B\x44\x85\x08\xC3", 9);
+
+  /*
+    0:  8b 44 24 04             mov    eax,DWORD PTR [esp+0x4]
+    4:  03 44 24 08             add    eax,DWORD PTR [esp+0x8]
+    8:  c3                      ret
+  */
+  add_symbol("+", current_loc, 2);
+  emit_str("\x8B\x44\x24\x04\x03\x44\x24\x08\xC3", 9);
+
+  /*
+    0:  8b 44 24 04             mov    eax,DWORD PTR [esp+0x4]
+    4:  2b 44 24 08             sub    eax,DWORD PTR [esp+0x8]
+    8:  c3                      ret
+  */
+  add_symbol("-", current_loc, 2);
+  emit_str("\x8B\x44\x24\x04\x2b\x44\x24\x08\xC3", 9);
 }
 
 int main() {
