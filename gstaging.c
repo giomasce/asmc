@@ -230,6 +230,61 @@ int decode_number(const char *operand, unsigned int *num) {
   }
 }
 
+void push_expr(char *tok, int want_addr) {
+  // Try to interpret as a number
+  int val;
+  if (decode_number(tok, &val)) {
+    assert(!want_addr);
+    push_var(TEMP_VAR, 1);
+    emit(0x68);  // push val
+    emit32(val);
+    return;
+  }
+  // Look for the name in the stack
+  int pos = find_in_stack(tok);
+  if (pos != -1) {
+    if (want_addr) {
+      push_var(TEMP_VAR, 1);
+      emit_str("\x8d\x84\x24", 3);  // lea eax, [esp+pos]
+      emit32(4 * pos);
+      emit(0x50);  // push eax
+    } else {
+      push_var(TEMP_VAR, 1);
+      emit_str("\xff\xb4\x24", 3);  // push [esp+pos]
+      emit32(4 * pos);
+    }
+  } else {
+    pos = find_symbol(tok);
+    assert(pos != SYMBOL_TABLE_LEN);
+    int loc = symbol_locs[pos];
+    int arity = symbol_arities[pos];
+    if (want_addr) {
+      push_var(TEMP_VAR, 1);
+      emit(0x68);  // push loc
+      emit32(loc);
+    } else {
+      if (arity == -1) {
+        push_var(TEMP_VAR, 1);
+        emit(0xb8);  // mov eax, loc
+        emit32(loc);
+        emit_str("\xff\x30", 2);  // push [eax]
+      } else {
+        emit(0xe8);  // call rel
+        int rel = loc - 4 - current_loc;
+        emit32(rel);
+        emit_str("\x81\xc4", 2);  // add esp, ...
+        emit32(4 * arity);
+        while (arity > 0) {
+          pop_var(1);
+          arity--;
+        }
+        push_var(TEMP_VAR, 1);
+        emit(0x50);  // push eax
+      }
+    }
+  }
+}
+
 void parse_block() {
   block_depth++;
   int saved_stack_depth = stack_depth;
@@ -237,21 +292,24 @@ void parse_block() {
   while (1) {
     char *tok = get_token();
     assert(*tok != '\0');
-    int val;
     if (strcmp(tok, "}") == 0) {
       break;
     } else if (strcmp(tok, ";") == 0) {
       emit_str("\x81\xc4", 2);  // add esp, ...
       emit32(4 * temp_depth);
       pop_temps();
+    } else if (strcmp(tok, "ret") == 0) {
+      if (temp_depth > 0) {
+        emit(0x58);  // pop eax
+        pop_var(1);
+      }
+      emit_str("\x81\xc4", 2);  // add esp, ..
+      emit32(4 * stack_depth);
+      emit_str("\x5d\xc3", 2);  // pop ebp; ret
     } else if (*tok == '$') {
       char *name = tok + 1;
       push_var(name, 0);
       emit_str("\x83\xec\x04", 3);  // sub esp, 4
-    } else if (decode_number(tok, &val)) {
-      push_var(TEMP_VAR, 1);
-      emit(0x68);  // push val
-      emit32(val);
     } else {
       // Check if we want the address
       int want_addr = 0;
@@ -259,49 +317,7 @@ void parse_block() {
         tok++;
         want_addr = 1;
       }
-      // Look for the name in the stack
-      int pos = find_in_stack(tok);
-      if (pos != -1) {
-        if (want_addr) {
-          push_var(TEMP_VAR, 1);
-          emit_str("\x8d\x84\x24", 3);  // lea eax, [esp+pos]
-          emit32(4 * pos);
-          emit(0x50);  // push eax
-        } else {
-          push_var(TEMP_VAR, 1);
-          emit_str("\xff\xb4\x24", 3);  // push [esp+pos]
-          emit32(4 * pos);
-        }
-      } else {
-        pos = find_symbol(tok);
-        assert(pos != SYMBOL_TABLE_LEN);
-        int loc = symbol_locs[pos];
-        int arity = symbol_arities[pos];
-        if (want_addr) {
-          push_var(TEMP_VAR, 1);
-          emit(0x68);  // push loc
-          emit32(loc);
-        } else {
-          if (arity == -1) {
-            push_var(TEMP_VAR, 1);
-            emit(0xb8);  // mov eax, loc
-            emit32(loc);
-            emit_str("\xff\x30", 2);  // push [eax]
-          } else {
-            emit(0xe8);  // call rel
-            int rel = loc - 4 - current_loc;
-            emit32(rel);
-            emit_str("\x81\xc4", 2);  // add esp, ...
-            emit32(4 * arity);
-            while (arity > 0) {
-              pop_var(1);
-              arity--;
-            }
-            push_var(TEMP_VAR, 1);
-            emit(0x50);  // push eax
-          }
-        }
-      }
+      push_expr(tok, want_addr);
     }
   }
   emit_str("\x81\xc4", 2);  // add esp, ..
@@ -324,7 +340,7 @@ void parse() {
       add_symbol(name, current_loc, arity);
       emit_str("\x55\x89\xe5", 3);  // push ebp; mov ebp, esp
       parse_block();
-      emit_str("\x5d", 1);  // pop ebp
+      emit_str("\x5d\xc3", 2);  // pop ebp; ret
     } else {
       assert(0);
     }

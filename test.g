@@ -12,4 +12,5 @@ fun 2 main {
   &x argc argv + = ;
   argc test ;
   &argv argc = ;
+  x ret
 }
