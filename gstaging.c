@@ -249,9 +249,50 @@ void expect(char *x) {
   assert(strcmp(tok, x) == 0);
 }
 
+char escaped(char x) {
+  if (x == 'n') { return '\n'; }
+  if (x == 't') { return '\t'; }
+  if (x == '0') { return '\0'; }
+  if (x == '\\') { return '\\'; }
+  if (x == '\'') { return '\''; }
+  if (x == '"') { return '"'; }
+  return 0;
+}
+
+void emit_escaped_string(char *s) {
+  assert(*s == '"');
+  s++;
+  while (1) {
+    assert(*s != 0);
+    if (*s == '"') {
+      s++;
+      assert(*s == 0);
+      return;
+    }
+    if (*s == '\\') {
+      s++;
+      assert(*s != 0);
+      emit(escaped(*s));
+    } else {
+      emit(*s);
+    }
+    s++;
+  }
+}
+
 int decode_number(const char *operand, unsigned int *num);
 int decode_number(const char *operand, unsigned int *num) {
   *num = 0;
+  if (*operand == '\'') {
+    if (operand[1] == '\\') {
+      *num = escaped(operand[2]);
+      assert(operand[3] == 0);
+    } else {
+      *num = operand[1];
+      assert(operand[2] == 0);
+    }
+    return 1;
+  }
   int is_decimal = 1;
   int digit_seen = 0;
   if (operand[0] == '0' && operand[1] == 'x') {
@@ -403,6 +444,17 @@ void parse_block() {
       assert(*name != '\0');
       push_var(name, 0);
       emit_str("\x83\xec\x04", 3);  // sub esp, 4
+    } else if (*tok == '"') {
+      int str_lab = gen_label();
+      int jmp_lab = gen_label();
+      emit(0xe9);  // jmp rel
+      emit32(compute_rel(get_symbol(write_label(jmp_lab), 0)));
+      add_symbol(write_label(str_lab), current_loc, -1);
+      emit_escaped_string(tok);
+      add_symbol(write_label(jmp_lab), current_loc, -1);
+      push_var(TEMP_VAR, 1);
+      emit(0x68);  // push val
+      emit32(get_symbol(write_label(str_lab), 0));
     } else {
       // Check if we want the address
       int want_addr = 0;
