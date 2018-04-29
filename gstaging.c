@@ -216,6 +216,7 @@ char *get_token() {
     if (x == -1) {
       break;
     }
+    int save_char = 0;
     if (state == 0) {
       if (is_whitespace(x)) {
         if (token_len > 0) {
@@ -227,7 +228,7 @@ char *get_token() {
         if ((char) x == '"') {
           state = 2;
         }
-        token_buf[token_len++] = (char) x;
+        save_char = 1;
       }
     } else if (state == 1) {
       if ((char) x == '\n') {
@@ -242,12 +243,15 @@ char *get_token() {
       } else if ((char) x == '\\') {
         state = 3;
       }
-      token_buf[token_len++] = (char) x;
+      save_char = 1;
     } else if (state == 3) {
       state = 2;
-      token_buf[token_len++] = (char) x;
+      save_char = 1;
     } else {
       assert(0);
+    }
+    if (save_char) {
+      token_buf[token_len++] = (char) x;
     }
   }
   token_buf[token_len] = '\0';
