@@ -224,6 +224,9 @@ char *get_token() {
       } else if ((char) x == '#') {
         state = 1;
       } else {
+        if ((char) x == '"') {
+          state = 2;
+        }
         token_buf[token_len++] = (char) x;
       }
     } else if (state == 1) {
@@ -233,6 +236,18 @@ char *get_token() {
           break;
         }
       }
+    } else if (state == 2) {
+      if ((char) x == '"') {
+        state = 0;
+      } else if ((char) x == '\\') {
+        state = 3;
+      }
+      token_buf[token_len++] = (char) x;
+    } else if (state == 3) {
+      state = 2;
+      token_buf[token_len++] = (char) x;
+    } else {
+      assert(0);
     }
   }
   token_buf[token_len] = '\0';
