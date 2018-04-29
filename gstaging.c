@@ -210,13 +210,29 @@ char *get_token() {
   }
   int x;
   token_len = 0;
+  int state = 0;
   while (1) {
     x = platform_read_char(read_fd);
-    if (x == -1 || is_whitespace(x) && token_len > 0) {
+    if (x == -1) {
       break;
     }
-    if (!is_whitespace(x)) {
-      token_buf[token_len++] = (char) x;
+    if (state == 0) {
+      if (is_whitespace(x)) {
+        if (token_len > 0) {
+          break;
+        }
+      } else if ((char) x == '#') {
+        state = 1;
+      } else {
+        token_buf[token_len++] = (char) x;
+      }
+    } else if (state == 1) {
+      if ((char) x == '\n') {
+        state = 0;
+        if (token_len > 0) {
+          break;
+        }
+      }
     }
   }
   token_buf[token_len] = '\0';

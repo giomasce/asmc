@@ -1,4 +1,7 @@
 
+# Comments
+# Other comments
+
 const LEN 1024
 
 $glob
