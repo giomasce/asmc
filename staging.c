@@ -174,14 +174,19 @@ void add_symbol2(const char *name, int loc) {
   int len = strlen(name);
   assert(len > 0);
   assert(len < MAX_SYMBOL_NAME_LEN);
+  int symbol_num = *get_symbol_num();
+  assert(find_symbol(name) == -1);
+  assert(symbol_num < SYMBOL_TABLE_LEN);
+  get_symbol_loc()[symbol_num] = loc;
+  strcpy(get_symbol_names() + symbol_num * MAX_SYMBOL_NAME_LEN, name);
+  *get_symbol_num() = symbol_num + 1;
+}
+
+void add_symbol_wrapper(const char *name, int loc);
+void add_symbol_wrapper2(const char *name, int loc) {
   int stage = *get_stage();
   if (stage == 0) {
-    int symbol_num = *get_symbol_num();
-    assert(find_symbol(name) == -1);
-    assert(symbol_num < SYMBOL_TABLE_LEN);
-    get_symbol_loc()[symbol_num] = loc;
-    strcpy(get_symbol_names() + symbol_num * MAX_SYMBOL_NAME_LEN, name);
-    *get_symbol_num() = symbol_num + 1;
+    add_symbol(name, loc);
   } else if (stage == 1) {
     int idx = find_symbol(name);
     assert(idx < *get_symbol_num());
@@ -736,7 +741,7 @@ int process_directive_line2(char *opcode, char *data) {
       emit(0);
     }
   } else if (strcmp(opcode, "extern") == 0) {
-    add_symbol(data, 0);
+    add_symbol_wrapper(data, 0);
   } else {
     return 0;
   }
@@ -754,7 +759,7 @@ int process_equ_line2(char *opcode, char *data) {
       int val;
       int res = decode_number_or_symbol(val_str, &val, 0);
       if (res) {
-        add_symbol(opcode, val);
+        add_symbol_wrapper(opcode, val);
       } else {
         platform_panic();
       }
@@ -832,7 +837,7 @@ void assemble2(int fd_in, int fd_out, int start_loc) {
       }
       if (input_buf[len-1] == ':') {
         input_buf[len-1] = '\0';
-        add_symbol(input_buf, *get_current_loc());
+        add_symbol_wrapper(input_buf, *get_current_loc());
       } else {
         process_line(input_buf);
       }

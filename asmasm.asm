@@ -2785,7 +2785,7 @@ process_directive_line_extern:
   mov eax, [esp+8]
   push 0
   push eax
-  call add_symbol
+  call add_symbol_wrapper
   add esp, 8
 
   jmp process_directive_line_ret_true
@@ -2852,7 +2852,7 @@ process_equ_line:
   mov eax, [esp+4]
   push edx
   push eax
-  call add_symbol
+  call add_symbol_wrapper
   add esp, 8
 
   ;; Return true
@@ -3090,14 +3090,14 @@ assemble_parse_detect_symbol:
   ;; Substitute the colon with a terminator
   mov BYTE [eax], 0
 
-  ;; Call add_symbol
+  ;; Call add_symbol_wrapper
   mov edx, current_loc
   mov eax, [edx]
   push eax
   mov eax, input_buf_ptr
   mov eax, [eax]
   push eax
-  call add_symbol
+  call add_symbol_wrapper
   add esp, 8
 
   jmp assemble_continue_parse_loop

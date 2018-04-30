@@ -202,6 +202,58 @@ find_symbol_ret:
   ret
 
 
+  global add_symbol_wrapper
+add_symbol_wrapper:
+  push ebp
+  mov ebp, esp
+
+  ;; Branch to appropriate stage
+  mov edx, stage
+  mov eax, [edx]
+  cmp eax, 0
+  je add_symbol_wrapper_stage0
+  cmp eax, 1
+  je add_symbol_wrapper_stage1
+  jmp platform_panic
+
+add_symbol_wrapper_stage0:
+  ;; Call actual add_symbol
+  push DWORD [ebp+12]
+  push DWORD [ebp+8]
+  call add_symbol
+  add esp, 8
+
+  jmp add_symbol_wrapper_ret
+
+add_symbol_wrapper_stage1:
+  ;; Call find_symbol
+  mov eax, [ebp+8]
+  push eax
+  call find_symbol
+  add esp, 4
+
+  ;; Check it is smaller than the symbol number
+  mov ecx, symbol_num
+  mov edx, [ecx]
+  cmp eax, edx
+  jnb platform_panic
+
+  ;; Check the location matches with the symbol table
+  mov ecx, 4
+  mul ecx
+  mov ecx, symbol_locs_ptr
+  add eax, [ecx]
+  mov ecx, [ebp+12]
+  cmp [eax], ecx
+  jne platform_panic
+
+  jmp add_symbol_wrapper_ret
+
+add_symbol_wrapper_ret:
+  pop ebp
+  ret
+
+
   global add_symbol
 add_symbol:
   push ebp
@@ -220,16 +272,6 @@ add_symbol:
   cmp eax, MAX_SYMBOL_NAME_LEN
   jnb platform_panic
 
-  ;; Branch to appropriate stage
-  mov edx, stage
-  mov eax, [edx]
-  cmp eax, 0
-  je add_symbol_stage0
-  cmp eax, 1
-  je add_symbol_stage1
-  jmp platform_panic
-
-add_symbol_stage0:
   ;; Call find_symbol
   mov eax, [ebp+8]
   push eax
@@ -273,33 +315,6 @@ add_symbol_stage0:
   mov eax, symbol_num
   mov [eax], ebx
 
-  jmp add_symbol_ret
-
-add_symbol_stage1:
-  ;; Call find_symbol
-  mov eax, [ebp+8]
-  push eax
-  call find_symbol
-  add esp, 4
-
-  ;; Check it is smaller than the symbol number
-  mov ecx, symbol_num
-  mov edx, [ecx]
-  cmp eax, edx
-  jnb platform_panic
-
-  ;; Check the location matches with the symbol table
-  mov ecx, 4
-  mul ecx
-  mov ecx, symbol_locs_ptr
-  add eax, [ecx]
-  mov ecx, [ebp+12]
-  cmp [eax], ecx
-  jne platform_panic
-
-  jmp add_symbol_ret
-
-add_symbol_ret:
   pop ebx
   pop ebp
   ret
