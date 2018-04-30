@@ -200,9 +200,10 @@ start_from_multiboot:
   add esp, 8
 
   ;; Call main
+  push 0
   push str_main
   call platform_get_symbol
-  add esp, 4
+  add esp, 8
   call eax
 
   call platform_exit
@@ -601,50 +602,59 @@ str_platform_get_symbol:
 
   ;; Initialize the symbols table with the "kernel API"
 init_kernel_api:
+  push 0
   push platform_panic
   push str_platform_panic
   call add_symbol
-  add esp, 8
+  add esp, 12
 
+  push 0
   push platform_exit
   push str_platform_exit
   call add_symbol
-  add esp, 8
+  add esp, 12
 
+  push 1
   push platform_open_file
   push str_platform_open_file
   call add_symbol
-  add esp, 8
+  add esp, 12
 
+  push 1
   push platform_read_char
   push str_platform_read_char
   call add_symbol
-  add esp, 8
+  add esp, 12
 
+  push 2
   push platform_write_char
   push str_platform_write_char
   call add_symbol
-  add esp, 8
+  add esp, 12
 
+  push 2
   push platform_log
   push str_platform_log
   call add_symbol
-  add esp, 8
+  add esp, 12
 
+  push 1
   push platform_allocate
   push str_platform_allocate
   call add_symbol
-  add esp, 8
+  add esp, 12
 
+  push 1
   push platform_assemble
   push str_platform_assemble
   call add_symbol
-  add esp, 8
+  add esp, 12
 
+  push 2
   push platform_get_symbol
   push str_platform_get_symbol
   call add_symbol
-  add esp, 8
+  add esp, 12
 
   ret
 

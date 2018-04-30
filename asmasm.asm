@@ -871,46 +871,6 @@ remove_spaces_ret:
   ret
 
 
-  global strcmp
-strcmp:
-  push ebx
-
-  ;; Load registers
-  mov eax, [esp+8]
-  mov ecx, [esp+12]
-
-strcmp_begin_loop:
-  ;; Compare a byte
-  mov bl, [eax]
-  mov dl, [ecx]
-  cmp bl, dl
-  je strcmp_after_cmp1
-
-  ;; Return 1 if they differ
-  ;; TODO Differentiate the less than and greater than cases
-  mov eax, 1
-  jmp strcmp_end
-
-strcmp_after_cmp1:
-  ;; Check for string termination
-  cmp bl, 0
-  jne strcmp_after_cmp2
-
-  ;; Return 0 if we arrived at the end without finding differences
-  mov eax, 0
-  jmp strcmp_end
-
-strcmp_after_cmp2:
-  ;; Increment both pointers and restart
-  add eax, 1
-  add ecx, 1
-  jmp strcmp_begin_loop
-
-strcmp_end:
-  pop ebx
-  ret
-
-
   global isstrpref
 isstrpref:
   ;; Load registers
@@ -937,51 +897,6 @@ isstrpref_after_cmp2:
   add eax, 1
   add ecx, 1
   jmp isstrpref_loop
-
-
-  global strcpy
-strcpy:
-  ;; Load registers
-  mov eax, [esp+4]
-  mov ecx, [esp+8]
-
-strcpy_begin_loop:
-  ;; Copy a byte
-  mov dl, [ecx]
-  mov [eax], dl
-
-  ;; Return if it was the terminator
-  cmp dl, 0
-  je strcpy_end
-
-  ;; Increment both pointers and restart
-  add eax, 1
-  add ecx, 1
-  jmp strcpy_begin_loop
-
-strcpy_end:
-  ret
-
-
-  global strlen
-strlen:
-  ;; Load register
-  mov eax, [esp+4]
-
-strlen_begin_loop:
-  ;; Check for termination
-  mov cl, [eax]
-  cmp cl, 0
-  je strlen_end
-
-  ;; Increment pointer
-  add eax, 1
-  jmp strlen_begin_loop
-
-strlen_end:
-  ;; Return the difference between the current and initial address
-  sub eax, [esp+4]
-  ret
 
 
   global find_char
