@@ -164,7 +164,7 @@ int find_symbol2(const char *name) {
     }
   }
   if (i == *get_symbol_num()) {
-    i = SYMBOL_TABLE_LEN;
+    i = -1;
   }
   return i;
 }
@@ -177,7 +177,7 @@ void add_symbol2(const char *name, int loc) {
   int stage = *get_stage();
   if (stage == 0) {
     int symbol_num = *get_symbol_num();
-    assert(find_symbol(name) == SYMBOL_TABLE_LEN);
+    assert(find_symbol(name) == -1);
     assert(symbol_num < SYMBOL_TABLE_LEN);
     get_symbol_loc()[symbol_num] = loc;
     strcpy(get_symbol_names() + symbol_num * MAX_SYMBOL_NAME_LEN, name);
@@ -280,7 +280,7 @@ int decode_number_or_symbol2(const char *operand, unsigned int *num, int force_s
   int stage = *get_stage();
   if (stage == 1 || force_symbol) {
     int idx = find_symbol(operand);
-    if (idx < SYMBOL_TABLE_LEN) {
+    if (idx != -1) {
       *num = get_symbol_loc()[idx];
       return 1;
     } else {
@@ -842,8 +842,10 @@ void assemble2(int fd_in, int fd_out, int start_loc) {
 }
 
 void init_assembler();
+void init_symbols();
 
 void assemble_file() {
+  init_symbols();
   init_assembler();
   int fd_in = platform_open_file("full.asm");
   int fd_out = 1;

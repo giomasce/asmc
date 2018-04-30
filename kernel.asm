@@ -167,11 +167,14 @@ start_from_multiboot:
   call platform_log
   add esp, 8
 
+  ;; Init symbol table
+  call init_symbols
+
   ;; Init assembler
   call init_assembler
 
   ;; Expose some kernel symbols
-  call init_symbols
+  call init_kernel_api
 
   ;; Log
   push str_done
@@ -597,7 +600,7 @@ str_platform_get_symbol:
   db 0
 
   ;; Initialize the symbols table with the "kernel API"
-init_symbols:
+init_kernel_api:
   push platform_panic
   push str_platform_panic
   call add_symbol
@@ -662,7 +665,7 @@ platform_get_symbol:
   ;; Take the symbol address
   mov edx, 4
   mul edx
-  mov ecx, symbol_loc_ptr
+  mov ecx, symbol_locs_ptr
   add eax, [ecx]
   mov eax, [eax]
 

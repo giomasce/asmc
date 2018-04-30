@@ -56,12 +56,6 @@
   OP_XOR equ 38
   OP_TEST equ 39
 
-  INPUT_BUF_LEN equ 1024
-  MAX_SYMBOL_NAME_LEN equ 128
-  SYMBOL_TABLE_LEN equ 1024
-  ;; SYMBOL_TABLE_SIZE = SYMBOL_TABLE_LEN * MAX_SYMBOL_NAME_LEN
-  SYMBOL_TABLE_SIZE equ 131072
-
 section .data
 
 opcode_names:
@@ -657,15 +651,6 @@ section .bss
 input_buf_ptr:
   resd 1
 
-symbol_names_ptr:
-  resd 1
-
-symbol_loc_ptr:
-  resd 1
-
-symbol_num:
-  resd 1
-
 current_loc:
   resd 1
 
@@ -687,22 +672,6 @@ get_input_buf:
 get_symbol_names:
   mov eax, symbol_names_ptr
   mov eax, [eax]
-  ret
-
-  global get_symbol_loc
-get_symbol_loc:
-  mov eax, symbol_loc_ptr
-  mov eax, [eax]
-  ret
-
-  global get_symbol_num
-get_symbol_num:
-  mov eax, symbol_num
-  ret
-
-  global get_current_loc
-get_current_loc:
-  mov eax, current_loc
   ret
 
   global get_stage
@@ -1043,163 +1012,6 @@ find_char_ret_error:
   ret
 
 
-  global find_symbol
-find_symbol:
-  ;; Set up registers and stack
-  push ebp
-  mov ebp, esp
-  mov ecx, 0
-
-find_symbol_loop:
-  ;; Check for termination
-  mov eax, symbol_num
-  cmp ecx, [eax]
-  je find_symbol_not_found
-
-  ;; Save ecx
-  push ecx
-
-  ;; Compute and push the second argument to strcmp
-  mov edx, MAX_SYMBOL_NAME_LEN
-  mov eax, ecx
-  mul edx
-  mov ecx, symbol_names_ptr
-  add eax, [ecx]
-  push eax
-
-  ;; Push the first argument
-  mov eax, [ebp+8]
-  push eax
-
-  ;; Call strcmp, clean the stack and restore ecx
-  call strcmp
-  add esp, 8
-  pop ecx
-
-  ;; If strcmp returned 0, then we return
-  cmp eax, 0
-  je find_symbol_found
-
-  ;; Increment ecx and check for termination
-  add ecx, 1
-  jmp find_symbol_loop
-
-find_symbol_found:
-  mov eax, ecx
-  jmp find_symbol_ret
-
-find_symbol_not_found:
-  mov eax, SYMBOL_TABLE_LEN
-  jmp find_symbol_ret
-
-find_symbol_ret:
-  pop ebp
-  ret
-
-
-  global add_symbol
-add_symbol:
-  push ebp
-  mov ebp, esp
-  push ebx
-
-  ;; Call strlen
-  mov eax, [ebp+8]
-  push eax
-  call strlen
-  add esp, 4
-
-  ;; Check input length
-  cmp eax, 0
-  jna platform_panic
-  cmp eax, MAX_SYMBOL_NAME_LEN
-  jnb platform_panic
-
-  ;; Branch to appropriate stage
-  mov edx, stage
-  mov eax, [edx]
-  cmp eax, 0
-  je add_symbol_stage0
-  cmp eax, 1
-  je add_symbol_stage1
-  jmp platform_panic
-
-add_symbol_stage0:
-  ;; Call find_symbol
-  mov eax, [ebp+8]
-  push eax
-  call find_symbol
-  add esp, 4
-
-  ;; Check that the symbol does not exist yet
-  cmp eax, SYMBOL_TABLE_LEN
-  jne platform_panic
-
-  ;; Put the current symbol number in ebx and check it is not
-  ;; overflowing
-  mov eax, symbol_num
-  mov ebx, [eax]
-  cmp ebx, SYMBOL_TABLE_LEN
-  jnb platform_panic
-
-  ;; Save the location for the new symbol
-  mov eax, ebx
-  mov ecx, 4
-  mul ecx
-  mov ecx, symbol_loc_ptr
-  add eax, [ecx]
-  mov ecx, [ebp+12]
-  mov [eax], ecx
-
-  ;; Save the name for the new symbol
-  mov eax, [ebp+8]
-  push eax
-  mov eax, ebx
-  mov ecx, MAX_SYMBOL_NAME_LEN
-  mul ecx
-  mov ecx, symbol_names_ptr
-  add eax, [ecx]
-  push eax
-  call strcpy
-  add esp, 8
-
-  ;; Increment and store the new symbol number
-  add ebx, 1
-  mov eax, symbol_num
-  mov [eax], ebx
-
-  jmp add_symbol_ret
-
-add_symbol_stage1:
-  ;; Call find_symbol
-  mov eax, [ebp+8]
-  push eax
-  call find_symbol
-  add esp, 4
-
-  ;; Check it is smaller than the symbol number
-  mov ecx, symbol_num
-  mov edx, [ecx]
-  cmp eax, edx
-  jnb platform_panic
-
-  ;; Check the location matches with the symbol table
-  mov ecx, 4
-  mul ecx
-  mov ecx, symbol_loc_ptr
-  add eax, [ecx]
-  mov ecx, [ebp+12]
-  cmp [eax], ecx
-  jne platform_panic
-
-  jmp add_symbol_ret
-
-add_symbol_ret:
-  pop ebx
-  pop ebp
-  ret
-
-
   global decode_reg32
 decode_reg32:
   ;; Save and load registers
@@ -1502,13 +1314,13 @@ decode_number_or_symbol_stage1:
   add esp, 4
 
   ;; Check if the symbol is valid
-  cmp eax, SYMBOL_TABLE_LEN
-  jae decode_number_or_symbol_invalid
+  cmp eax, 0xffffffff
+  je decode_number_or_symbol_invalid
 
   ;; If it is, set the number and return 1
   mov ecx, 4
   mul ecx
-  mov ecx, symbol_loc_ptr
+  mov ecx, symbol_locs_ptr
   add eax, [ecx]
   mov edx, [eax]
   mov ecx, [ebp+12]
@@ -3155,27 +2967,6 @@ init_assembler:
   add esp, 4
   mov ecx, input_buf_ptr
   mov [ecx], eax
-
-  ;; Allocate symbol names table
-  push SYMBOL_TABLE_SIZE
-  call platform_allocate
-  add esp, 4
-  mov ecx, symbol_names_ptr
-  mov [ecx], eax
-
-  ;; Allocate symbol locations table
-  mov eax, SYMBOL_TABLE_LEN
-  mov edx, 4
-  mul eax
-  push eax
-  call platform_allocate
-  add esp, 4
-  mov ecx, symbol_loc_ptr
-  mov [ecx], eax
-
-  ;; Reset symbol_num
-  mov eax, symbol_num
-  mov DWORD [eax], 0
 
   ret
 
