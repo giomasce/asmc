@@ -14,6 +14,7 @@
   COMMA equ 0x2c
   SEMICOLON equ 0x3b
   COLON equ 0x3a
+  DOT equ 0x2e
 
   ITOA_BUF_LEN equ 32
 

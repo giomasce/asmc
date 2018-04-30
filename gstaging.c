@@ -15,14 +15,7 @@ int token_len;
 char token_buf[MAX_TOKEN_LEN];
 char buf2[MAX_TOKEN_LEN];
 
-int block_depth;
-int stack_depth;
-int temp_depth;
 int current_loc;
-int ret_depth;
-int label_num;
-
-char stack_vars[MAX_TOKEN_LEN * STACK_LEN];
 
 char write_label_buf[WRITE_LABEL_BUF_LEN];
 
@@ -33,11 +26,17 @@ void add_symbol(const char *name, int loc, int arity);
 void add_symbol_wrapper(const char *name, int loc, int arity);
 int *get_symbol_num();
 int *get_stage();
+int *get_label_num();
+char *get_stack_vars();
+int *get_block_depth();
+int *get_stack_depth();
+int *get_temp_depth();
 int decode_number(const char *operand, unsigned int *num);
 int strcmp(const char *s1, const char *s2);
 void strcpy(char *d, const char *s);
 int strlen(const char *s);
 void init_symbols();
+void init_g_compiler();
 
 void assert(int cond);
 void assert(int cond) {
@@ -70,16 +69,19 @@ void emit_str(char *x, int len) {
   }
 }
 
-int gen_label() {
-  return label_num++;
+int gen_label();
+int gen_label2() {
+  return (*get_label_num())++;
 }
 
-char *write_label(int id) {
-  sprintf(write_label_buf, "__label%d", id);
+char *write_label(int id);
+char *write_label2(int id) {
+  sprintf(write_label_buf, ".%d", id);
   return write_label_buf;
 }
 
-int get_symbol(char *name, int *arity) {
+int get_symbol(char *name, int *arity);
+int get_symbol2(char *name, int *arity) {
   if (*get_stage() == 1 || arity != 0) {
     int loc;
     int res = find_symbol(name, &loc, arity);
@@ -94,42 +96,43 @@ void push_var(char *var_name, int temp) {
   int len = strlen(var_name);
   assert(len > 0);
   assert(len < MAX_TOKEN_LEN);
-  assert(stack_depth < STACK_LEN);
-  strcpy(stack_vars + stack_depth * MAX_TOKEN_LEN, var_name);
-  stack_depth++;
+  assert(*get_stack_depth() < STACK_LEN);
+  strcpy(get_stack_vars() + *get_stack_depth() * MAX_TOKEN_LEN, var_name);
+  (*get_stack_depth())++;
   if (temp) {
-    temp_depth++;
+    (*get_temp_depth())++;
   } else {
-    assert(temp_depth == 0);
+    assert(*get_temp_depth() == 0);
   }
 }
 
 void pop_var(int temp) {
-  assert(stack_depth > 0);
-  stack_depth--;
+  assert(*get_stack_depth() > 0);
+  (*get_stack_depth())--;
   if (temp) {
-    assert(temp_depth > 0);
-    temp_depth--;
+    assert(*get_temp_depth() > 0);
+    (*get_temp_depth())--;
   }
 }
 
 int pop_temps() {
-  while (temp_depth > 0) {
+  while (*get_temp_depth() > 0) {
     pop_var(1);
   }
 }
 
 int find_in_stack(char *var_name) {
   int i;
-  for (i = 0; i < stack_depth; i++) {
-    if (strcmp(var_name, stack_vars + (stack_depth - 1 - i) * MAX_TOKEN_LEN) == 0) {
+  for (i = 0; i < *get_stack_depth(); i++) {
+    if (strcmp(var_name, get_stack_vars() + (*get_stack_depth() - 1 - i) * MAX_TOKEN_LEN) == 0) {
       return i;
     }
   }
   return -1;
 }
 
-int is_whitespace(char x) {
+int is_whitespace(char x);
+int is_whitespace2(char x) {
   return x == ' ' || x == '\t' || x == '\n';
 }
 
@@ -304,8 +307,8 @@ void push_expr(char *tok, int want_addr) {
 }
 
 void parse_block() {
-  block_depth++;
-  int saved_stack_depth = stack_depth;
+  (*get_block_depth())++;
+  int saved_stack_depth = *get_stack_depth();
   expect("{");
   while (1) {
     char *tok = get_token();
@@ -314,15 +317,15 @@ void parse_block() {
       break;
     } else if (strcmp(tok, ";") == 0) {
       emit_str("\x81\xc4", 2);  // add esp, ...
-      emit32(4 * temp_depth);
+      emit32(4 * *get_temp_depth());
       pop_temps();
     } else if (strcmp(tok, "ret") == 0) {
-      if (temp_depth > 0) {
+      if (*get_temp_depth() > 0) {
         emit(0x58);  // pop eax
         pop_var(1);
       }
       emit_str("\x81\xc4", 2);  // add esp, ..
-      emit32(4 * stack_depth);
+      emit32(4 * *get_stack_depth());
       emit_str("\x5d\xc3", 2);  // pop ebp; ret
     } else if (strcmp(tok, "if") == 0) {
       char *cond = get_token();
@@ -386,10 +389,10 @@ void parse_block() {
     }
   }
   emit_str("\x81\xc4", 2);  // add esp, ..
-  assert(stack_depth >= saved_stack_depth);
-  emit32(4 * (stack_depth - saved_stack_depth));
-  stack_depth = saved_stack_depth;
-  block_depth--;
+  assert(*get_stack_depth() >= saved_stack_depth);
+  emit32(4 * (*get_stack_depth() - saved_stack_depth));
+  *get_stack_depth() = saved_stack_depth;
+  (*get_block_depth())--;
 }
 
 int decode_number_or_symbol(char *str) {
@@ -482,19 +485,20 @@ void emit_preamble() {
 
 int main() {
   init_symbols();
+  init_g_compiler();
   read_fd = platform_open_file("test.g");
-  block_depth = 0;
-  stack_depth = 0;
+  *get_block_depth() = 0;
+  *get_stack_depth() = 0;
   *get_symbol_num() = 0;
 
   for (*get_stage() = 0; *get_stage() < 2; (*get_stage())++) {
     platform_reset_file(read_fd);
-    label_num = 0;
+    *get_label_num() = 0;
     current_loc = 0x100000;
     emit_preamble();
     parse();
-    assert(block_depth == 0);
-    assert(stack_depth == 0);
+    assert(*get_block_depth() == 0);
+    assert(*get_stack_depth() == 0);
   }
 
   return 0;

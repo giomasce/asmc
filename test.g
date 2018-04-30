@@ -34,6 +34,6 @@ fun main 2 {
   x ret ;
   &glob LEN = ;
   &x '\0 = ;
-  &glob "Hello, ASM!" = ;
-  &glob "String\nwith\tescapes\"\'" = ;
+#  &glob "Hello, ASM!" = ;
+#  &glob "String\nwith\tescapes\"\'" = ;
 }
