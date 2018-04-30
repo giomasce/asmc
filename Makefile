@@ -46,7 +46,7 @@ boot.iso: boot/boot/grub/grub.cfg boot/boot/asmasm.x86
 cc: cc.c
 	gcc -m32 -O0 -fwrapv -g -o cc cc.c
 
-asmg.o: asmg.asm gstub.asm
+asmg.o: asmg.asm gstub.asm library.asm
 	nasm -f elf -F dwarf -g -w-number-overflow -o asmg.o gstub.asm
 
 gstaging.o: gstaging.c platform.h

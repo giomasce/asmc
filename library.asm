@@ -1,4 +1,20 @@
 
+  NEWLINE equ 0xa
+  SPACE equ 0x20
+  TAB equ 0x9
+  ZERO equ 0x30
+  NINE equ 0x39
+  LITTLEA equ 0x61
+  LITTLEF equ 0x66
+  LITTLEX equ 0x78
+  SQ_OPEN equ 0x5b
+  SQ_CLOSED equ 0x5d
+  PLUS equ 0x2b
+  APEX equ 0x27
+  COMMA equ 0x2c
+  SEMICOLON equ 0x3b
+  COLON equ 0x3a
+
   ITOA_BUF_LEN equ 32
 
   INPUT_BUF_LEN equ 1024
@@ -24,7 +40,47 @@ symbol_arities_ptr:
 symbol_num:
   resd 1
 
+current_loc:
+  resd 1
+
+stage:
+  resd 1
+
 section .text
+
+  global get_symbol_names
+get_symbol_names:
+  mov eax, symbol_names_ptr
+  mov eax, [eax]
+  ret
+
+  global get_symbol_locs
+get_symbol_locs:
+  mov eax, symbol_locs_ptr
+  mov eax, [eax]
+  ret
+
+  global get_symbol_arities
+get_symbol_arities:
+  mov eax, symbol_arities_ptr
+  mov eax, [eax]
+  ret
+
+  global get_symbol_num
+get_symbol_num:
+  mov eax, symbol_num
+  ret
+
+  global get_current_loc
+get_current_loc:
+  mov eax, current_loc
+  ret
+
+  global get_stage
+get_stage:
+  mov eax, stage
+  ret
+
 
   ;; char *itoa(int x)
   global itoa
@@ -75,6 +131,98 @@ itoa_loop:
 itoa_end:
   mov eax, ecx
   pop esi
+  ret
+
+
+  global decode_number
+decode_number:
+  push ebp
+  mov ebp, esp
+  push ebx
+  push edi
+  push esi
+
+  ;; Use eax for storing the result
+  mov eax, 0
+
+  ;; Use ebx for storing the input string
+  mov ebx, [ebp+8]
+
+  ;; Use esi to remember if we have seen at least one digit
+  mov esi, 0
+
+  ;; Determine whether we work in base 10 (edi==1) or 16 (edi==0)
+  mov edi, 1
+  cmp BYTE [ebx], ZERO
+  jne decode_number_loop
+  cmp BYTE [ebx+1], LITTLEX
+  jne decode_number_loop
+  mov edi, 0
+  add ebx, 2
+
+decode_number_loop:
+  ;; Check if we have found the terminator
+  mov cl, [ebx]
+  cmp cl, 0
+  je decode_number_ret
+
+  ;; If not, then we have seen at least one digit
+  mov esi, 1
+
+  ;; Multiply the current result by 10 or 16 depending on edi
+  cmp edi, 1
+  jne decode_number_mult16
+  mov edx, 10
+  mul edx
+  jmp decode_number_after_mult
+decode_number_mult16:
+  mov edx, 16
+  mul edx
+
+decode_number_after_mult:
+  ;; If we have a decimal digit, add it to the number
+  cmp cl, ZERO
+  jnae decode_number_after_decimal_digit
+  cmp cl, NINE
+  jnbe decode_number_after_decimal_digit
+  mov edx, 0
+  mov dl, cl
+  add eax, edx
+  sub eax, ZERO
+  jmp decode_number_finish_loop
+
+decode_number_after_decimal_digit:
+  ;; If we have an hexadecimal digit and we are in hexadecimal mode,
+  ;; add it to the number
+  cmp edi, 0
+  jne decode_number_after_hex_digit
+  cmp cl, LITTLEA
+  jnae decode_number_after_hex_digit
+  cmp cl, LITTLEF
+  jnbe decode_number_after_hex_digit
+  mov edx, 0
+  mov dl, cl
+  add eax, edx
+  add eax, 10
+  sub eax, LITTLEA
+  jmp decode_number_finish_loop
+
+decode_number_after_hex_digit:
+  mov esi, 0
+  jmp decode_number_ret
+
+decode_number_finish_loop:
+  add ebx, 1
+  jmp decode_number_loop
+
+decode_number_ret:
+  mov edx, [ebp+12]
+  mov [edx], eax
+  mov eax, esi
+  pop esi
+  pop edi
+  pop ebx
+  pop ebp
   ret
 
 
@@ -369,30 +517,6 @@ add_symbol_wrapper_stage1:
 
 add_symbol_wrapper_ret:
   pop ebp
-  ret
-
-
-  global get_symbol_names
-get_symbol_names:
-  mov eax, symbol_names_ptr
-  mov eax, [eax]
-  ret
-
-  global get_symbol_locs
-get_symbol_locs:
-  mov eax, symbol_locs_ptr
-  mov eax, [eax]
-  ret
-
-  global get_symbol_arities
-get_symbol_arities:
-  mov eax, symbol_arities_ptr
-  mov eax, [eax]
-  ret
-
-  global get_symbol_num
-get_symbol_num:
-  mov eax, symbol_num
   ret
 
 

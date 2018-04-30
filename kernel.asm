@@ -48,11 +48,11 @@ write_mem_ptr:
 
 str_exit:
   db 'The execution has finished, bye bye...'
-  db 0xa
+  db NEWLINE
   db 0
 str_panic:
   db 'PANIC!'
-  db 0xa
+  db NEWLINE
   db 0
 
 str_init_heap_stack:
@@ -66,15 +66,15 @@ str_init_asm_symbols_table:
   db 0
 str_init_assemble_main:
   db 'Will now assemble main.asm...'
-  db 0xa
+  db NEWLINE
   db 0
 str_init_launch_main:
   db 'Will now call main!'
-  db 0xa
+  db NEWLINE
   db 0
 str_done:
   db 'done!'
-  db 0xa
+  db NEWLINE
   db 0
 
 str_END:
