@@ -18,6 +18,9 @@ symbol_names_ptr:
 symbol_locs_ptr:
   resd 1
 
+symbol_arities_ptr:
+  resd 1
+
 symbol_num:
   resd 1
 
@@ -141,6 +144,16 @@ init_symbols:
   mov ecx, symbol_locs_ptr
   mov [ecx], eax
 
+  ;; Allocate symbol arities table
+  mov eax, SYMBOL_TABLE_LEN
+  mov edx, 4
+  mul eax
+  push eax
+  call platform_allocate
+  add esp, 4
+  mov ecx, symbol_arities_ptr
+  mov [ecx], eax
+
   ;; Reset symbol_num
   mov eax, symbol_num
   mov DWORD [eax], 0
@@ -190,22 +203,33 @@ find_symbol_loop:
   jmp find_symbol_loop
 
 find_symbol_found:
-  ;; Return immediately if the second argument is null
-  mov eax, 1
+  ;; If the second argument is not null, fill it with the location
   mov edx, [ebp+12]
   cmp edx, 0
-  je find_symbol_ret
-
-  ;; Fill it with the location if it is not
+  je find_symbol_arity
   mov eax, 4
   mul ecx
   mov edx, symbol_locs_ptr
   add eax, [edx]
-  mov ecx, [eax]
+  mov eax, [eax]
   mov edx, [ebp+12]
-  mov [edx], ecx
-  mov eax, 1
+  mov [edx], eax
 
+find_symbol_arity:
+  ;; If the third argument is not null, fill it with the arity
+  mov edx, [ebp+16]
+  cmp edx, 0
+  je find_symbol_ret_found
+  mov eax, 4
+  mul ecx
+  mov edx, symbol_arities_ptr
+  add eax, [edx]
+  mov eax, [eax]
+  mov edx, [ebp+16]
+  mov [edx], eax
+
+find_symbol_ret_found:
+  mov eax, 1
   jmp find_symbol_ret
 
 find_symbol_not_found:
@@ -213,54 +237,6 @@ find_symbol_not_found:
   jmp find_symbol_ret
 
 find_symbol_ret:
-  pop ebp
-  ret
-
-
-  global add_symbol_wrapper
-add_symbol_wrapper:
-  push ebp
-  mov ebp, esp
-
-  ;; Branch to appropriate stage
-  mov edx, stage
-  mov eax, [edx]
-  cmp eax, 0
-  je add_symbol_wrapper_stage0
-  cmp eax, 1
-  je add_symbol_wrapper_stage1
-  jmp platform_panic
-
-add_symbol_wrapper_stage0:
-  ;; Call actual add_symbol
-  push DWORD [ebp+12]
-  push DWORD [ebp+8]
-  call add_symbol
-  add esp, 8
-
-  jmp add_symbol_wrapper_ret
-
-add_symbol_wrapper_stage1:
-  ;; Call find_symbol
-  push 0
-  mov edx, esp
-  push edx
-  push DWORD [ebp+8]
-  call find_symbol
-  add esp, 8
-  pop edx
-
-  ;; Check the symbol was found
-  cmp eax, 0
-  je platform_panic
-
-  ;; Check the location matches
-  cmp edx, [ebp+12]
-  jne platform_panic
-
-  jmp add_symbol_wrapper_ret
-
-add_symbol_wrapper_ret:
   pop ebp
   ret
 
@@ -285,9 +261,10 @@ add_symbol:
 
   ;; Call find_symbol and check the symbol does not exist yet
   push 0
+  push 0
   push DWORD [ebp+8]
   call find_symbol
-  add esp, 8
+  add esp, 12
   cmp eax, 0
   jne platform_panic
 
@@ -305,6 +282,15 @@ add_symbol:
   mov ecx, symbol_locs_ptr
   add eax, [ecx]
   mov ecx, [ebp+12]
+  mov [eax], ecx
+
+  ;; Save the arity for the new symbol
+  mov eax, ebx
+  mov ecx, 4
+  mul ecx
+  mov ecx, symbol_arities_ptr
+  add eax, [ecx]
+  mov ecx, [ebp+16]
   mov [eax], ecx
 
   ;; Save the name for the new symbol
@@ -329,15 +315,78 @@ add_symbol:
   ret
 
 
+  global add_symbol_wrapper
+add_symbol_wrapper:
+  push ebp
+  mov ebp, esp
+
+  ;; Branch to appropriate stage
+  mov edx, stage
+  mov eax, [edx]
+  cmp eax, 0
+  je add_symbol_wrapper_stage0
+  cmp eax, 1
+  je add_symbol_wrapper_stage1
+  jmp platform_panic
+
+add_symbol_wrapper_stage0:
+  ;; Call actual add_symbol
+  push DWORD [ebp+16]
+  push DWORD [ebp+12]
+  push DWORD [ebp+8]
+  call add_symbol
+  add esp, 12
+
+  jmp add_symbol_wrapper_ret
+
+add_symbol_wrapper_stage1:
+  ;; Call find_symbol
+  push 0
+  mov edx, esp
+  push 0
+  mov ecx, esp
+  push edx
+  push ecx
+  push DWORD [ebp+8]
+  call find_symbol
+  add esp, 12
+  pop edx
+  pop ecx
+
+  ;; Check the symbol was found
+  cmp eax, 0
+  je platform_panic
+
+  ;; Check the location matches
+  cmp edx, [ebp+12]
+  jne platform_panic
+
+  ;; Check the arity matches
+  cmp ecx, [ebp+16]
+  jne platform_panic
+
+  jmp add_symbol_wrapper_ret
+
+add_symbol_wrapper_ret:
+  pop ebp
+  ret
+
+
   global get_symbol_names
 get_symbol_names:
   mov eax, symbol_names_ptr
   mov eax, [eax]
   ret
 
-  global get_symbol_loc
-get_symbol_loc:
+  global get_symbol_locs
+get_symbol_locs:
   mov eax, symbol_locs_ptr
+  mov eax, [eax]
+  ret
+
+  global get_symbol_arities
+get_symbol_arities:
+  mov eax, symbol_arities_ptr
   mov eax, [eax]
   ret
 

@@ -24,9 +24,10 @@ main:
   add esp, 4
 
   ;; Call atapio_test
+  push 0
   push str_atapio_test
   call platform_get_symbol
-  add esp, 4
+  add esp, 8
   call eax
 
   ret

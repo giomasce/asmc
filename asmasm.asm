@@ -1307,10 +1307,11 @@ decode_number_or_symbol_stage0:
 
 decode_number_or_symbol_stage1:
   ;; Call find_symbol and return what it returns
+  push 0
   push DWORD [ebp+12]
   push DWORD [ebp+8]
   call find_symbol
-  add esp, 8
+  add esp, 12
   jmp decode_number_or_symbol_ret
 
 decode_number_or_symbol_ret:
@@ -2763,10 +2764,11 @@ process_directive_line_align_loop:
 process_directive_line_extern:
   ;; Add a mock symbol
   mov eax, [esp+8]
+  push 0xffffffff
   push 0
   push eax
   call add_symbol_wrapper
-  add esp, 8
+  add esp, 12
 
   jmp process_directive_line_ret_true
 
@@ -2830,10 +2832,11 @@ process_equ_line:
   ;; Create a symbol if it did work
   pop edx
   mov eax, [esp+4]
+  push 0xffffffff
   push edx
   push eax
   call add_symbol_wrapper
-  add esp, 8
+  add esp, 12
 
   ;; Return true
   mov eax, 1
@@ -3071,6 +3074,7 @@ assemble_parse_detect_symbol:
   mov BYTE [eax], 0
 
   ;; Call add_symbol_wrapper
+  push 0xffffffff
   mov edx, current_loc
   mov eax, [edx]
   push eax
@@ -3078,7 +3082,7 @@ assemble_parse_detect_symbol:
   mov eax, [eax]
   push eax
   call add_symbol_wrapper
-  add esp, 8
+  add esp, 12
 
   jmp assemble_continue_parse_loop
 

@@ -10,7 +10,8 @@ typedef void (*opcode_func)(int, char*);
 char *get_input_buf();
 char *get_symbol_names();
 int *get_symbol_num();
-int *get_symbol_loc();
+int *get_symbol_locs();
+int *get_symbol_arities();
 int *get_current_loc();
 int *get_stage();
 int *get_emit_fd();
@@ -155,8 +156,8 @@ int find_char2(char *s, char c) {
   }
 }
 
-int find_symbol(const char *name, int *loc);
-int find_symbol2(const char *name, int *loc) {
+int find_symbol(const char *name, int *loc, int *arity);
+int find_symbol2(const char *name, int *loc, int *arity) {
   int i;
   for (i = 0; i < *get_symbol_num(); i++) {
     if (strcmp(name, get_symbol_names() + i * MAX_SYMBOL_NAME_LEN) == 0) {
@@ -167,35 +168,41 @@ int find_symbol2(const char *name, int *loc) {
     return 0;
   } else {
     if (loc != 0) {
-      *loc = get_symbol_loc()[i];
+      *loc = get_symbol_locs()[i];
+    }
+    if (arity != 0) {
+      *arity = get_symbol_arities()[i];
     }
     return 1;
   }
 }
 
-void add_symbol(const char *name, int loc);
-void add_symbol2(const char *name, int loc) {
+void add_symbol(const char *name, int loc, int arity);
+void add_symbol2(const char *name, int loc, int arity) {
   int len = strlen(name);
   assert(len > 0);
   assert(len < MAX_SYMBOL_NAME_LEN);
   int symbol_num = *get_symbol_num();
-  assert(!find_symbol(name, 0));
+  assert(!find_symbol(name, 0, 0));
   assert(symbol_num < SYMBOL_TABLE_LEN);
-  get_symbol_loc()[symbol_num] = loc;
+  get_symbol_locs()[symbol_num] = loc;
+  get_symbol_arities()[symbol_num] = arity;
   strcpy(get_symbol_names() + symbol_num * MAX_SYMBOL_NAME_LEN, name);
   *get_symbol_num() = symbol_num + 1;
 }
 
-void add_symbol_wrapper(const char *name, int loc);
-void add_symbol_wrapper2(const char *name, int loc) {
+void add_symbol_wrapper(const char *name, int loc, int arity);
+void add_symbol_wrapper2(const char *name, int loc, int arity) {
   int stage = *get_stage();
   if (stage == 0) {
-    add_symbol(name, loc);
+    add_symbol(name, loc, arity);
   } else if (stage == 1) {
     int loc2;
-    int res = find_symbol(name, &loc2);
+    int arity2;
+    int res = find_symbol(name, &loc2, &arity2);
     assert(res);
     assert(loc == loc2);
+    assert(arity == arity2);
   } else {
     platform_panic();
   }
@@ -289,7 +296,7 @@ int decode_number_or_symbol2(const char *operand, unsigned int *num, int force_s
   }
   int stage = *get_stage();
   if (stage == 1 || force_symbol) {
-    return find_symbol(operand, num);
+    return find_symbol(operand, num, 0);
   } else if (stage == 0) {
     *num = 0;
     return 1;
@@ -740,7 +747,7 @@ int process_directive_line2(char *opcode, char *data) {
       emit(0);
     }
   } else if (strcmp(opcode, "extern") == 0) {
-    add_symbol_wrapper(data, 0);
+    add_symbol_wrapper(data, 0, -1);
   } else {
     return 0;
   }
@@ -758,7 +765,7 @@ int process_equ_line2(char *opcode, char *data) {
       int val;
       int res = decode_number_or_symbol(val_str, &val, 0);
       if (res) {
-        add_symbol_wrapper(opcode, val);
+        add_symbol_wrapper(opcode, val, -1);
       } else {
         platform_panic();
       }
@@ -836,7 +843,7 @@ void assemble2(int fd_in, int fd_out, int start_loc) {
       }
       if (input_buf[len-1] == ':') {
         input_buf[len-1] = '\0';
-        add_symbol_wrapper(input_buf, *get_current_loc());
+        add_symbol_wrapper(input_buf, *get_current_loc(), -1);
       } else {
         process_line(input_buf);
       }

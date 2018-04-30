@@ -649,16 +649,20 @@ init_kernel_api:
   ret
 
 
-  ;; similar as find_symbol, but panic if it does not exist
+  ;; int platform_get_symbol(char *name, int *arity)
+  ;; similar as find_symbol, but panic if it does not exist; retuns
+  ;; the location and put the arity in *arity if arity is not null
 platform_get_symbol:
   ;; Call find_symbol
   mov eax, [esp+4]
+  mov ecx, [esp+8]
   push 0
   mov edx, esp
+  push ecx
   push edx
   push eax
   call find_symbol
-  add esp, 8
+  add esp, 12
 
   ;; Panic if it does not exist
   cmp eax, 0
