@@ -155,8 +155,8 @@ int find_char2(char *s, char c) {
   }
 }
 
-int find_symbol(const char *name);
-int find_symbol2(const char *name) {
+int find_symbol(const char *name, int *loc);
+int find_symbol2(const char *name, int *loc) {
   int i;
   for (i = 0; i < *get_symbol_num(); i++) {
     if (strcmp(name, get_symbol_names() + i * MAX_SYMBOL_NAME_LEN) == 0) {
@@ -164,9 +164,13 @@ int find_symbol2(const char *name) {
     }
   }
   if (i == *get_symbol_num()) {
-    i = -1;
+    return 0;
+  } else {
+    if (loc != 0) {
+      *loc = get_symbol_loc()[i];
+    }
+    return 1;
   }
-  return i;
 }
 
 void add_symbol(const char *name, int loc);
@@ -175,7 +179,7 @@ void add_symbol2(const char *name, int loc) {
   assert(len > 0);
   assert(len < MAX_SYMBOL_NAME_LEN);
   int symbol_num = *get_symbol_num();
-  assert(find_symbol(name) == -1);
+  assert(!find_symbol(name, 0));
   assert(symbol_num < SYMBOL_TABLE_LEN);
   get_symbol_loc()[symbol_num] = loc;
   strcpy(get_symbol_names() + symbol_num * MAX_SYMBOL_NAME_LEN, name);
@@ -188,9 +192,10 @@ void add_symbol_wrapper2(const char *name, int loc) {
   if (stage == 0) {
     add_symbol(name, loc);
   } else if (stage == 1) {
-    int idx = find_symbol(name);
-    assert(idx < *get_symbol_num());
-    assert(get_symbol_loc()[idx] == loc);
+    int loc2;
+    int res = find_symbol(name, &loc2);
+    assert(res);
+    assert(loc == loc2);
   } else {
     platform_panic();
   }
@@ -284,13 +289,7 @@ int decode_number_or_symbol2(const char *operand, unsigned int *num, int force_s
   }
   int stage = *get_stage();
   if (stage == 1 || force_symbol) {
-    int idx = find_symbol(operand);
-    if (idx != -1) {
-      *num = get_symbol_loc()[idx];
-      return 1;
-    } else {
-      return 0;
-    }
+    return find_symbol(operand, num);
   } else if (stage == 0) {
     *num = 0;
     return 1;

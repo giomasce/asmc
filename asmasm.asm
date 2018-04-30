@@ -668,10 +668,9 @@ get_input_buf:
   mov eax, [eax]
   ret
 
-  global get_symbol_names
-get_symbol_names:
-  mov eax, symbol_names_ptr
-  mov eax, [eax]
+  global get_current_loc
+get_current_loc:
+  mov eax, current_loc
   ret
 
   global get_stage
@@ -1307,30 +1306,11 @@ decode_number_or_symbol_stage0:
   jmp decode_number_or_symbol_ret
 
 decode_number_or_symbol_stage1:
-  ;; Call find_symbol
-  mov eax, [ebp+8]
-  push eax
+  ;; Call find_symbol and return what it returns
+  push DWORD [ebp+12]
+  push DWORD [ebp+8]
   call find_symbol
-  add esp, 4
-
-  ;; Check if the symbol is valid
-  cmp eax, 0xffffffff
-  je decode_number_or_symbol_invalid
-
-  ;; If it is, set the number and return 1
-  mov ecx, 4
-  mul ecx
-  mov ecx, symbol_locs_ptr
-  add eax, [ecx]
-  mov edx, [eax]
-  mov ecx, [ebp+12]
-  mov [ecx], edx
-  mov eax, 1
-  jmp decode_number_or_symbol_ret
-
-decode_number_or_symbol_invalid:
-  ;; If the symbol is invalid in stage 1, we have to return 0
-  mov eax, 0
+  add esp, 8
   jmp decode_number_or_symbol_ret
 
 decode_number_or_symbol_ret:

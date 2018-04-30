@@ -190,11 +190,26 @@ find_symbol_loop:
   jmp find_symbol_loop
 
 find_symbol_found:
-  mov eax, ecx
+  ;; Return immediately if the second argument is null
+  mov eax, 1
+  mov edx, [ebp+12]
+  cmp edx, 0
+  je find_symbol_ret
+
+  ;; Fill it with the location if it is not
+  mov eax, 4
+  mul ecx
+  mov edx, symbol_locs_ptr
+  add eax, [edx]
+  mov ecx, [eax]
+  mov edx, [ebp+12]
+  mov [edx], ecx
+  mov eax, 1
+
   jmp find_symbol_ret
 
 find_symbol_not_found:
-  mov eax, 0xffffffff
+  mov eax, 0
   jmp find_symbol_ret
 
 find_symbol_ret:
@@ -227,24 +242,20 @@ add_symbol_wrapper_stage0:
 
 add_symbol_wrapper_stage1:
   ;; Call find_symbol
-  mov eax, [ebp+8]
-  push eax
+  push 0
+  mov edx, esp
+  push edx
+  push DWORD [ebp+8]
   call find_symbol
-  add esp, 4
+  add esp, 8
+  pop edx
 
-  ;; Check it is smaller than the symbol number
-  mov ecx, symbol_num
-  mov edx, [ecx]
-  cmp eax, edx
-  jnb platform_panic
+  ;; Check the symbol was found
+  cmp eax, 0
+  je platform_panic
 
-  ;; Check the location matches with the symbol table
-  mov ecx, 4
-  mul ecx
-  mov ecx, symbol_locs_ptr
-  add eax, [ecx]
-  mov ecx, [ebp+12]
-  cmp [eax], ecx
+  ;; Check the location matches
+  cmp edx, [ebp+12]
   jne platform_panic
 
   jmp add_symbol_wrapper_ret
@@ -272,14 +283,12 @@ add_symbol:
   cmp eax, MAX_SYMBOL_NAME_LEN
   jnb platform_panic
 
-  ;; Call find_symbol
-  mov eax, [ebp+8]
-  push eax
+  ;; Call find_symbol and check the symbol does not exist yet
+  push 0
+  push DWORD [ebp+8]
   call find_symbol
-  add esp, 4
-
-  ;; Check that the symbol does not exist yet
-  cmp eax, 0xffffffff
+  add esp, 8
+  cmp eax, 0
   jne platform_panic
 
   ;; Put the current symbol number in ebx and check it is not
@@ -320,6 +329,12 @@ add_symbol:
   ret
 
 
+  global get_symbol_names
+get_symbol_names:
+  mov eax, symbol_names_ptr
+  mov eax, [eax]
+  ret
+
   global get_symbol_loc
 get_symbol_loc:
   mov eax, symbol_locs_ptr
@@ -329,9 +344,4 @@ get_symbol_loc:
   global get_symbol_num
 get_symbol_num:
   mov eax, symbol_num
-  ret
-
-  global get_current_loc
-get_current_loc:
-  mov eax, current_loc
   ret

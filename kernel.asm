@@ -649,24 +649,22 @@ init_kernel_api:
   ret
 
 
-  ;; as find_symbol, but panic if it does not exist and return the
-  ;; actual address (not the index)
+  ;; similar as find_symbol, but panic if it does not exist
 platform_get_symbol:
   ;; Call find_symbol
   mov eax, [esp+4]
+  push 0
+  mov edx, esp
+  push edx
   push eax
   call find_symbol
-  add esp, 4
+  add esp, 8
 
   ;; Panic if it does not exist
-  cmp eax, SYMBOL_TABLE_LEN
+  cmp eax, 0
   je platform_panic
 
-  ;; Take the symbol address
-  mov edx, 4
-  mul edx
-  mov ecx, symbol_locs_ptr
-  add eax, [ecx]
-  mov eax, [eax]
+  ;; Return the symbol location
+  pop eax
 
   ret
