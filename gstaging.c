@@ -1,4 +1,6 @@
 
+#include <stdio.h>
+
 #include "platform.h"
 
 #define MAX_TOKEN_LEN 128
@@ -255,7 +257,8 @@ int compute_rel2(int addr) {
   return addr - *get_current_loc() - 4;
 }
 
-void push_expr(char *tok, int want_addr) {
+void push_expr(char *tok, int want_addr);
+void push_expr2(char *tok, int want_addr) {
   // Try to interpret as a number
   int val;
   if (decode_number_or_char(tok, &val)) {
@@ -317,6 +320,7 @@ void parse_block() {
   assert(strcmp(tok, "{") == 0);
   while (1) {
     char *tok = get_token();
+    //fprintf(stderr, "Parsing token %s\n", tok);
     assert(*tok != '\0');
     if (strcmp(tok, "}") == 0) {
       break;
@@ -392,6 +396,7 @@ void parse_block() {
       }
       push_expr(tok, want_addr);
     }
+    //fprintf(stderr, "Stack depth: %d; temp depth: %d; block depth: %d\n", *get_stack_depth(), *get_temp_depth(), *get_block_depth());
   }
   emit_str("\x81\xc4", 2);  // add esp, ..
   assert(*get_stack_depth() >= saved_stack_depth);

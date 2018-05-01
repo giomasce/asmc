@@ -4,6 +4,30 @@
   ;; STACK_SIZE = STACK_LEN * MAX_SYMBOL_NAME_LEN
   STACK_SIZE equ 131072
 
+  section .data
+
+TEMP_VAR:
+  db '__temp'
+  db 0
+
+push_esp_pos:
+  db 0xff
+  db 0xb4
+  db 0x24
+
+lea_eax_esp_pos:
+  db 0x8d
+  db 0x84
+  db 0x24
+
+push_peax:
+  db 0xff
+  db 0x30
+
+add_esp:
+  db 0x81
+  db 0xc4
+
   section .bss
 
 label_num:
@@ -281,7 +305,7 @@ find_in_stack_loop:
   mov edx, stack_depth
   cmp ebx, [edx]
   mov eax, 1
-  je find_in_stack_end
+  je find_in_stack_not_found
 
   ;; Compute the pointer to be checked
   mov eax, [edx]
@@ -304,8 +328,13 @@ find_in_stack_loop:
   add ebx, 1
   jmp find_in_stack_loop
 
+find_in_stack_not_found:
+  mov eax, 0xffffffff
+  jmp find_in_stack_end
+
 find_in_stack_found:
   mov eax, ebx
+  jmp find_in_stack_end
 
 find_in_stack_end:
   pop ebx
@@ -610,6 +639,212 @@ compute_rel:
   mov ecx, current_loc
   sub eax, [ecx]
   sub eax, 4
+  ret
+
+
+  global push_expr
+push_expr:
+  push ebp
+  mov ebp, esp
+  push ebx
+  push esi
+
+  ;; Try to interpret argument as number
+  push 0
+  mov edx, esp
+  push edx
+  push DWORD [ebp+8]
+  call decode_number_or_char
+  add esp, 8
+  pop ebx
+  cmp eax, 0
+  je push_expr_stack
+
+  ;; It is a number, check that we do not want the address
+  cmp DWORD [ebp+12], 0
+  jne platform_panic
+
+  ;; Emit the code
+  push 1
+  push TEMP_VAR
+  call push_var
+  add esp, 8
+  push 0x68
+  call emit
+  add esp, 4
+  push ebx
+  call emit32
+  add esp, 4
+
+  jmp push_expr_ret
+
+push_expr_stack:
+  ;; Call find_in_stack
+  push DWORD [ebp+8]
+  call find_in_stack
+  add esp, 4
+  cmp eax, 0xffffffff
+  je push_expr_symbol
+
+  ;; Multiply the position by 4
+  mov edx, 4
+  mul edx
+  mov ebx, eax
+
+  ;; It is on the stack: check if we want the address or not
+  cmp DWORD [ebp+12], 0
+  jne push_expr_stack_addr
+
+  ;; We want the value, emit the code
+  push 1
+  push TEMP_VAR
+  call push_var
+  add esp, 8
+  push 3
+  push push_esp_pos
+  call emit_str
+  add esp, 8
+  push ebx
+  call emit32
+  add esp, 4
+
+  jmp push_expr_ret
+
+push_expr_stack_addr:
+  ;; We want the address, emit the code
+  push 1
+  push TEMP_VAR
+  call push_var
+  add esp, 8
+  push 3
+  push lea_eax_esp_pos
+  call emit_str
+  add esp, 8
+  push ebx
+  call emit32
+  add esp, 4
+  push 0x50
+  call emit
+  add esp, 4
+
+  jmp push_expr_ret
+
+push_expr_symbol:
+  ;; Get symbol data
+  push 0
+  mov edx, esp
+  push edx
+  push DWORD [ebp+8]
+  call get_symbol
+  add esp, 8
+  mov ebx, eax
+  pop edx
+
+  ;; If arity is -2, check we do not want the address
+  cmp edx, 0xfffffffe
+  jne push_expr_after_assert
+  cmp DWORD [ebp+12], 0
+  jne platform_panic
+
+push_expr_after_assert:
+  ;; Check if we want the address or arity is -2
+  cmp edx, 0xfffffffe
+  je push_expr_addr
+  cmp DWORD [ebp+12], 0
+  jne push_expr_addr
+
+  ;; Check if arity is -1
+  cmp edx, 0xffffffff
+  je push_expr_val
+  mov esi, edx
+
+  ;; This is a real function call, emit the code (part 1)
+  push 0xe8
+  call emit
+  add esp, 4
+  push ebx
+  call compute_rel
+  add esp, 4
+  push eax
+  call emit32
+  add esp, 4
+  push 2
+  push add_esp
+  call emit_str
+  add esp, 8
+
+  ;; Multiply the arity by 4 and continue emitting code
+  mov eax, esi
+  mov edx, 4
+  mul edx
+  push eax
+  call emit32
+  add esp, 4
+  push 0x50
+  call emit
+  add esp, 4
+
+  ;; Update stack variables
+push_expr_symbol_loop:
+  ;; Check for termination
+  cmp esi, 0
+  je push_expr_symbol_loop_end
+
+  ;; Call pop_var
+  push 1
+  call pop_var
+  add esp, 4
+
+  ;; Decrement arity and reloop
+  sub esi, 1
+  jmp push_expr_symbol_loop
+
+push_expr_symbol_loop_end:
+  push 1
+  push TEMP_VAR
+  call push_var
+  add esp, 8
+
+  jmp push_expr_ret
+
+push_expr_addr:
+  ;; We want the address, emit the code
+  push 1
+  push TEMP_VAR
+  call push_var
+  add esp, 8
+  push 0x68
+  call emit
+  add esp, 4
+  push ebx
+  call emit32
+  add esp, 4
+
+  jmp push_expr_ret
+
+push_expr_val:
+  ;; We want the value, emit the code
+  push 1
+  push TEMP_VAR
+  call push_var
+  add esp, 8
+  push 0xb8
+  call emit
+  add esp, 4
+  push ebx
+  call emit32
+  add esp, 4
+  push 2
+  push push_peax
+  call emit_str
+  add esp, 8
+
+  jmp push_expr_ret
+
+push_expr_ret:
+  pop esi
+  pop ebx
+  pop ebp
   ret
 
 
