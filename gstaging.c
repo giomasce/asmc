@@ -202,12 +202,8 @@ void give_back_token2() {
   *get_token_given_back() = 1;
 }
 
-void expect(char *x) {
-  char *tok = get_token();
-  assert(strcmp(tok, x) == 0);
-}
-
-char escaped(char x) {
+char escaped(char x);
+char escaped2(char x) {
   if (x == 'n') { return '\n'; }
   if (x == 't') { return '\t'; }
   if (x == '0') { return '\0'; }
@@ -217,7 +213,8 @@ char escaped(char x) {
   return 0;
 }
 
-void emit_escaped_string(char *s) {
+void emit_escaped_string(char *s);
+void emit_escaped_string2(char *s) {
   assert(*s == '"');
   s++;
   while (1) {
@@ -315,7 +312,8 @@ void push_expr(char *tok, int want_addr) {
 void parse_block() {
   (*get_block_depth())++;
   int saved_stack_depth = *get_stack_depth();
-  expect("{");
+  char *tok = get_token();
+  assert(strcmp(tok, "{") == 0);
   while (1) {
     char *tok = get_token();
     assert(*tok != '\0');

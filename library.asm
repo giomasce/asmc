@@ -6,6 +6,8 @@
   NINE equ 0x39
   LITTLEA equ 0x61
   LITTLEF equ 0x66
+  LITTLEN equ 0x6e
+  LITTLET equ 0x74
   LITTLEX equ 0x78
   SQ_OPEN equ 0x5b
   SQ_CLOSED equ 0x5d

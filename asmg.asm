@@ -468,6 +468,88 @@ give_back_token:
   ret
 
 
+  global escaped
+escaped:
+  mov edx, [esp+4]
+  mov eax, 0
+  mov al, NEWLINE
+  cmp dl, LITTLEN
+  je escaped_ret
+  mov al, TAB
+  cmp dl, LITTLET
+  je escaped_ret
+  mov al, 0
+  cmp dl, ZERO
+  je escaped_ret
+  mov al, BACKSLASH
+  cmp dl, BACKSLASH
+  je escaped_ret
+  mov al, APEX
+  cmp dl, APEX
+  je escaped_ret
+  mov al, QUOTE
+  cmp dl, QUOTE
+  je escaped_ret
+
+  mov eax, 0
+
+escaped_ret:
+  ret
+
+
+  global emit_escaped_string
+emit_escaped_string:
+  ;; Check the string beings with a quote
+  mov eax, [esp+4]
+  cmp BYTE [eax], QUOTE
+  jne platform_panic
+  add eax, 1
+
+emit_escaped_string_loop:
+  ;; Check we did not find the terminator (without a closing quote)
+  cmp BYTE [eax], 0
+  je platform_panic
+
+  ;; If we found a quote, jump to end
+  cmp BYTE [eax], QUOTE
+  je emit_escaped_string_end
+
+  ;; If we found a backslash, jump to the following character and
+  ;; escape it
+  mov edx, 0
+  mov dl, [eax]
+  cmp dl, BACKSLASH
+  jne emit_escaped_string_emit
+  add eax, 1
+  mov dl, [eax]
+  push eax
+  push edx
+  call escaped
+  add esp, 4
+  mov edx, eax
+  pop eax
+
+emit_escaped_string_emit:
+  ;; Call emit
+  push eax
+  push edx
+  call emit
+  add esp, 4
+
+  ;; Increment the pointer
+  pop eax
+  add eax, 1
+
+  jmp emit_escaped_string_loop
+
+emit_escaped_string_end:
+  ;; Check a terminator follows and then return
+  cmp BYTE [eax+1], 0
+  jne platform_panic
+
+  ret
+
+
   global init_g_compiler
 init_g_compiler:
   ;; Allocate stack variables list
