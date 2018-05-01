@@ -635,20 +635,12 @@ section .bss
 input_buf_ptr:
   resd 1
 
-emit_fd:
-  resd 1
-
 section .text
 
   global get_input_buf
 get_input_buf:
   mov eax, input_buf_ptr
   mov eax, [eax]
-  ret
-
-  global get_emit_fd
-get_emit_fd:
-  mov eax, emit_fd
   ret
 
   global get_opcode_names
@@ -1321,58 +1313,6 @@ decode_operand_ret:
   pop esi
   pop ebx
   pop ebp
-  ret
-
-
-  global emit
-emit:
-  ;; Add 1 to the current location
-  mov edx, current_loc
-  add DWORD [edx], 1
-
-  ;; If we are in stage 1, write the character
-  mov edx, stage
-  cmp DWORD [edx], 1
-  jne emit_ret
-  mov ecx, 0
-  mov cl, [esp+4]
-  mov edx, emit_fd
-  push ecx
-  push DWORD [edx]
-  call platform_write_char
-  add esp, 8
-
-emit_ret:
-  ret
-
-
-  global emit32
-emit32:
-  ;; Emit each byte in order
-  mov eax, 0
-  mov al, [esp+4]
-  push eax
-  call emit
-  add esp, 4
-
-  mov eax, 0
-  mov al, [esp+5]
-  push eax
-  call emit
-  add esp, 4
-
-  mov eax, 0
-  mov al, [esp+6]
-  push eax
-  call emit
-  add esp, 4
-
-  mov eax, 0
-  mov al, [esp+7]
-  push eax
-  call emit
-  add esp, 4
-
   ret
 
 

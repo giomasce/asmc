@@ -50,6 +50,9 @@ current_loc:
 stage:
   resd 1
 
+emit_fd:
+  resd 1
+
 section .text
 
   global get_symbol_names
@@ -83,6 +86,11 @@ get_current_loc:
   global get_stage
 get_stage:
   mov eax, stage
+  ret
+
+  global get_emit_fd
+get_emit_fd:
+  mov eax, emit_fd
   ret
 
 
@@ -135,6 +143,81 @@ itoa_loop:
 itoa_end:
   mov eax, ecx
   pop esi
+  ret
+
+
+  global emit
+emit:
+  ;; Add 1 to the current location
+  mov edx, current_loc
+  add DWORD [edx], 1
+
+  ;; If we are in stage 1, write the character
+  mov edx, stage
+  cmp DWORD [edx], 1
+  jne emit_ret
+  mov ecx, 0
+  mov cl, [esp+4]
+  mov edx, emit_fd
+  push ecx
+  push DWORD [edx]
+  call platform_write_char
+  add esp, 8
+
+emit_ret:
+  ret
+
+
+  global emit32
+emit32:
+  ;; Emit each byte in order
+  mov eax, 0
+  mov al, [esp+4]
+  push eax
+  call emit
+  add esp, 4
+
+  mov eax, 0
+  mov al, [esp+5]
+  push eax
+  call emit
+  add esp, 4
+
+  mov eax, 0
+  mov al, [esp+6]
+  push eax
+  call emit
+  add esp, 4
+
+  mov eax, 0
+  mov al, [esp+7]
+  push eax
+  call emit
+  add esp, 4
+
+  ret
+
+
+  global emit_str
+emit_str:
+  ;; Check for termination
+  cmp DWORD [esp+8], 0
+  je emit_str_ret
+
+  ;; Call emit
+  mov eax, [esp+4]
+  mov edx, 0
+  mov dl, [eax]
+  push edx
+  call emit
+  add esp, 4
+
+  ;; Increment/decrement and repeat
+  add DWORD [esp+4], 1
+  sub DWORD [esp+8], 1
+  jmp emit_str
+
+emit_str_ret:
   ret
 
 

@@ -29,6 +29,7 @@ int *get_token_len();
 char *get_token_buf();
 char *get_buf2();
 int *get_read_fd();
+int *get_emit_fd();
 int decode_number(const char *operand, unsigned int *num);
 int strcmp(const char *s1, const char *s2);
 void strcpy(char *d, const char *s);
@@ -44,22 +45,23 @@ void assert(int cond) {
 }
 
 void emit(char c);
-void emit(char c) {
+void emit2(char c) {
   if (*get_stage() == 1) {
-    platform_write_char(1, c);
+    platform_write_char(*get_emit_fd(), c);
   }
   current_loc++;
 }
 
 void emit32(int x);
-void emit32(int x) {
+void emit322(int x) {
   emit(x);
   emit(x >> 8);
   emit(x >> 16);
   emit(x >> 24);
 }
 
-void emit_str(char *x, int len) {
+void emit_str(char *x, int len);
+void emit_str2(char *x, int len) {
   while (len > 0) {
     emit(*x);
     x++;
@@ -490,6 +492,7 @@ void emit_preamble() {
 int main() {
   init_symbols();
   init_g_compiler();
+  *get_emit_fd() = 1;
   *get_read_fd() = platform_open_file("test.g");
   *get_block_depth() = 0;
   *get_stack_depth() = 0;

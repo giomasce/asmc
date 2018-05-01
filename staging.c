@@ -384,7 +384,7 @@ void emit(char c);
 void emit2(char c) {
   int stage = *get_stage();
   if (stage == 1) {
-    platform_write_char(1, c);
+    platform_write_char(*get_emit_fd(), c);
   }
   (*get_current_loc())++;
 }
