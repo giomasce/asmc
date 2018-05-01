@@ -21,6 +21,21 @@ stack_depth:
 temp_depth:
   resd 1
 
+token_given_back:
+  resd 1
+
+token_len:
+  resd 1
+
+token_buf_ptr:
+  resd 1
+
+buf2_ptr:
+  resd 1
+
+read_fd:
+  resd 1
+
 write_label_buf:
   resb WRITE_LABEL_BUF_LEN
 
@@ -50,6 +65,33 @@ get_stack_depth:
   global get_temp_depth
 get_temp_depth:
   mov eax, temp_depth
+  ret
+
+  global get_token_given_back
+get_token_given_back:
+  mov eax, token_given_back
+  ret
+
+  global get_token_len
+get_token_len:
+  mov eax, token_len
+  ret
+
+  global get_token_buf
+get_token_buf:
+  mov eax, token_buf_ptr
+  mov eax, [eax]
+  ret
+
+  global get_buf2
+get_buf2:
+  mov eax, buf2_ptr
+  mov eax, [eax]
+  ret
+
+  global get_read_fd
+get_read_fd:
+  mov eax, read_fd
   ret
 
 
@@ -271,6 +313,161 @@ find_in_stack_end:
   ret
 
 
+  global get_token
+get_token:
+  ;; If last token was given back, just return it
+  mov eax, token_given_back
+  cmp DWORD [eax], 0
+  je get_token_read
+  mov DWORD [eax], 0
+  mov eax, token_buf_ptr
+  mov eax, [eax]
+  ret
+
+get_token_read:
+  push ebx
+
+  ;; Reset length and state
+  mov eax, token_len
+  mov DWORD [eax], 0
+  mov ecx, 0
+
+get_token_loop:
+  ;; Call platform_read_char
+  push ecx
+  mov ecx, read_fd
+  push DWORD [ecx]
+  call platform_read_char
+  add esp, 4
+
+  ;; Break if -1 was returned
+  pop ecx
+  cmp eax, 0xffffffff
+  je get_token_end
+  push ecx
+
+  ;; Call is_whitespace
+  push eax
+  push eax
+  call is_whitespace
+  add esp, 4
+
+  ;; Store is_whitespace in eax, save_char in dh, read char in dl and
+  ;; state in ecx
+  pop edx
+  mov dh, 0
+  pop ecx
+
+  ;; Branch depending on the state
+  cmp ecx, 0
+  je get_token_state0
+  cmp ecx, 1
+  je get_token_state1
+  cmp ecx, 2
+  je get_token_state2
+  cmp ecx, 3
+  je get_token_state3
+  call platform_panic
+
+  ;; Normal program code
+get_token_state0:
+  cmp eax, 0
+  jne get_token_state0_whitespace
+  cmp dl, POUND
+  je get_token_state0_pound
+  mov dh, 1
+  cmp dl, QUOTE
+  je get_token_state0_quote
+  jmp get_token_loop_end
+
+get_token_state0_whitespace:
+  mov eax, token_len
+  cmp DWORD [eax], 0
+  ja get_token_end
+  jmp get_token_loop_end
+
+get_token_state0_pound:
+  mov ecx, 1
+  jmp get_token_loop_end
+
+get_token_state0_quote:
+  mov ecx, 2
+  jmp get_token_loop_end
+
+  ;; Comments
+get_token_state1:
+  cmp dl, NEWLINE
+  jne get_token_loop_end
+  mov ecx, 0
+  mov eax, token_len
+  cmp DWORD [eax], 0
+  ja get_token_end
+  jmp get_token_loop_end
+
+  ;; String
+get_token_state2:
+  mov dh, 1
+  cmp dl, QUOTE
+  je get_token_state2_quote
+  cmp dl, BACKSLASH
+  je get_token_state2_backslash
+  jmp get_token_loop_end
+
+get_token_state2_quote:
+  mov ecx, 0
+  jmp get_token_loop_end
+
+get_token_state2_backslash:
+  mov ecx, 3
+  jmp get_token_loop_end
+
+  ;; Escape character in a string
+get_token_state3:
+  mov ecx, 2
+  mov dh, 1
+  jmp get_token_loop_end
+
+get_token_loop_end:
+  ;; If save_char is true, save the char and increment length
+  cmp dh, 0
+  je get_token_loop
+  mov ebx, token_len
+  mov ebx, [ebx]
+  mov eax, token_buf_ptr
+  mov eax, [eax]
+  add eax, ebx
+  mov [eax], dl
+  add ebx, 1
+  mov eax, token_len
+  mov [eax], ebx
+
+  jmp get_token_loop
+
+get_token_end:
+  ;; Write the terminator and return
+  mov eax, token_buf_ptr
+  mov eax, [eax]
+  mov ecx, token_len
+  mov ecx, [ecx]
+  add ecx, eax
+  mov BYTE [ecx], 0
+
+  pop ebx
+  ret
+
+
+  global give_back_token
+give_back_token:
+  ;; Check another token was not already given back
+  mov eax, token_given_back
+  cmp DWORD [eax], 0
+  jne platform_panic
+
+  ;; Mark the current one as given back
+  mov DWORD [eax], 1
+  ret
+
+
   global init_g_compiler
 init_g_compiler:
   ;; Allocate stack variables list
@@ -279,5 +476,23 @@ init_g_compiler:
   add esp, 4
   mov ecx, stack_vars_ptr
   mov [ecx], eax
+
+  ;; Allocate the token buffer
+  push MAX_SYMBOL_NAME_LEN
+  call platform_allocate
+  add esp, 4
+  mov ecx, token_buf_ptr
+  mov [ecx], eax
+
+  ;; Allocate buf2
+  push MAX_SYMBOL_NAME_LEN
+  call platform_allocate
+  add esp, 4
+  mov ecx, buf2_ptr
+  mov [ecx], eax
+
+  ;; Set token_given_back to false
+  mov eax, token_given_back
+  mov DWORD [eax], 0
 
   ret

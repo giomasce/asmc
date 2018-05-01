@@ -15,6 +15,9 @@
   SEMICOLON equ 0x3b
   COLON equ 0x3a
   DOT equ 0x2e
+  QUOTE equ 0x22
+  BACKSLASH equ 0x5c
+  POUND equ 0x23
 
   ITOA_BUF_LEN equ 32
 

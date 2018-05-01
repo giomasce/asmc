@@ -8,13 +8,6 @@
 
 #define TEMP_VAR "__temp"
 
-int read_fd;
-
-int token_given_back;
-int token_len;
-char token_buf[MAX_TOKEN_LEN];
-char buf2[MAX_TOKEN_LEN];
-
 int current_loc;
 
 char write_label_buf[WRITE_LABEL_BUF_LEN];
@@ -31,6 +24,11 @@ char *get_stack_vars();
 int *get_block_depth();
 int *get_stack_depth();
 int *get_temp_depth();
+int *get_token_given_back();
+int *get_token_len();
+char *get_token_buf();
+char *get_buf2();
+int *get_read_fd();
 int decode_number(const char *operand, unsigned int *num);
 int strcmp(const char *s1, const char *s2);
 void strcpy(char *d, const char *s);
@@ -140,23 +138,24 @@ int is_whitespace2(char x) {
   return x == ' ' || x == '\t' || x == '\n';
 }
 
-char *get_token() {
-  if (token_given_back) {
-    token_given_back = 0;
-    return token_buf;
+char *get_token();
+char *get_token2() {
+  if (*get_token_given_back()) {
+    *get_token_given_back() = 0;
+    return get_token_buf();
   }
   int x;
-  token_len = 0;
+  *get_token_len() = 0;
   int state = 0;
   while (1) {
-    x = platform_read_char(read_fd);
+    x = platform_read_char(*get_read_fd());
     if (x == -1) {
       break;
     }
     int save_char = 0;
     if (state == 0) {
       if (is_whitespace(x)) {
-        if (token_len > 0) {
+        if (*get_token_len() > 0) {
           break;
         }
       } else if ((char) x == '#') {
@@ -170,7 +169,7 @@ char *get_token() {
     } else if (state == 1) {
       if ((char) x == '\n') {
         state = 0;
-        if (token_len > 0) {
+        if (*get_token_len() > 0) {
           break;
         }
       }
@@ -188,16 +187,17 @@ char *get_token() {
       assert(0);
     }
     if (save_char) {
-      token_buf[token_len++] = (char) x;
+      get_token_buf()[(*get_token_len())++] = (char) x;
     }
   }
-  token_buf[token_len] = '\0';
-  return token_buf;
+  get_token_buf()[*get_token_len()] = '\0';
+  return get_token_buf();
 }
 
-void give_back_token() {
-  assert(!token_given_back);
-  token_given_back = 1;
+void give_back_token();
+void give_back_token2() {
+  assert(!*get_token_given_back());
+  *get_token_given_back() = 1;
 }
 
 void expect(char *x) {
@@ -417,8 +417,8 @@ void parse() {
     }
     if (strcmp(tok, "fun") == 0) {
       char *name = get_token();
-      strcpy(buf2, token_buf);
-      name = buf2;
+      strcpy(get_buf2(), name);
+      name = get_buf2();
       char *arity_str = get_token();
       int arity = atoi(arity_str);
       add_symbol_wrapper(name, current_loc, arity);
@@ -427,8 +427,8 @@ void parse() {
       emit_str("\x5d\xc3", 2);  // pop ebp; ret
     } else if (strcmp(tok, "const") == 0) {
       char *name = get_token();
-      strcpy(buf2, token_buf);
-      name = buf2;
+      strcpy(get_buf2(), name);
+      name = get_buf2();
       char *val_str = get_token();
       int val = decode_number_or_symbol(val_str);
       add_symbol_wrapper(name, val, -2);
@@ -490,13 +490,13 @@ void emit_preamble() {
 int main() {
   init_symbols();
   init_g_compiler();
-  read_fd = platform_open_file("test.g");
+  *get_read_fd() = platform_open_file("test.g");
   *get_block_depth() = 0;
   *get_stack_depth() = 0;
   *get_symbol_num() = 0;
 
   for (*get_stage() = 0; *get_stage() < 2; (*get_stage())++) {
-    platform_reset_file(read_fd);
+    platform_reset_file(*get_read_fd());
     *get_label_num() = 0;
     current_loc = 0x100000;
     emit_preamble();
