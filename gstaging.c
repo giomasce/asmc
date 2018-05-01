@@ -92,7 +92,8 @@ int get_symbol2(char *name, int *arity) {
   }
 }
 
-void push_var(char *var_name, int temp) {
+void push_var(char *var_name, int temp);
+void push_var2(char *var_name, int temp) {
   int len = strlen(var_name);
   assert(len > 0);
   assert(len < MAX_TOKEN_LEN);
@@ -106,7 +107,8 @@ void push_var(char *var_name, int temp) {
   }
 }
 
-void pop_var(int temp) {
+void pop_var(int temp);
+void pop_var2(int temp) {
   assert(*get_stack_depth() > 0);
   (*get_stack_depth())--;
   if (temp) {
@@ -115,13 +117,15 @@ void pop_var(int temp) {
   }
 }
 
-int pop_temps() {
+int pop_temps();
+int pop_temps2() {
   while (*get_temp_depth() > 0) {
     pop_var(1);
   }
 }
 
-int find_in_stack(char *var_name) {
+int find_in_stack(char *var_name);
+int find_in_stack2(char *var_name) {
   int i;
   for (i = 0; i < *get_stack_depth(); i++) {
     if (strcmp(var_name, get_stack_vars() + (*get_stack_depth() - 1 - i) * MAX_TOKEN_LEN) == 0) {

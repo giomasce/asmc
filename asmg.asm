@@ -24,7 +24,7 @@ temp_depth:
 write_label_buf:
   resb WRITE_LABEL_BUF_LEN
 
-  section .data
+  section .text
 
   global get_label_num
 get_label_num:
@@ -135,6 +135,139 @@ is_whitespace:
 
 is_whitespace_ret_true:
   mov eax, 1
+  ret
+
+
+  global push_var
+push_var:
+  ;; Check the var name length
+  mov eax, [esp+4]
+  push eax
+  call strlen
+  add esp, 4
+  cmp eax, 0
+  jna platform_panic
+  cmp eax, MAX_SYMBOL_NAME_LEN
+  jnb platform_panic
+
+  ;; Check we are not overflowing the stack
+  mov eax, stack_depth
+  mov eax, [eax]
+  cmp eax, STACK_LEN
+  jnb platform_panic
+
+  ;; Copy the variable name in the stack
+  mov edx, MAX_SYMBOL_NAME_LEN
+  mul edx
+  mov ecx, stack_vars_ptr
+  add eax, [ecx]
+  mov edx, eax
+  mov eax, [esp+4]
+  push eax
+  push edx
+  call strcpy
+  add esp, 8
+
+  ;; Increment the stack depth
+  mov eax, stack_depth
+  add DWORD [eax], 1
+
+  ;; If this is a temp var, increment also temp_depth
+  cmp DWORD [esp+8], 0
+  je push_var_non_temp
+  mov eax, temp_depth
+  add DWORD [eax], 1
+  ret
+
+  ;; If this is not a temp var, check temp_depth is zero
+push_var_non_temp:
+  mov eax, temp_depth
+  cmp DWORD [eax], 0
+  jne platform_panic
+  ret
+
+
+  global pop_var
+pop_var:
+  ;; Check stack depth is positive and decrement it
+  mov eax, stack_depth
+  cmp DWORD [eax], 0
+  jna platform_panic
+  sub DWORD [eax], 1
+
+  ;; If this is a temp var...
+  cmp DWORD [esp+4], 0
+  jne pop_var_temp
+  ret
+
+  ;; ...check and decrement temp_depth
+pop_var_temp:
+  mov eax, temp_depth
+  cmp DWORD [eax], 0
+  jna platform_panic
+  sub DWORD [eax], 1
+  ret
+
+
+  global pop_temps
+pop_temps:
+  ;; Check for termination
+  mov eax, temp_depth
+  cmp DWORD [eax], 0
+  jna pop_temps_ret
+
+  ;; Call pop_var
+  push 1
+  call pop_var
+  add esp, 4
+
+  jmp pop_temps
+
+pop_temps_ret:
+  ret
+
+
+  global find_in_stack
+find_in_stack:
+  push ebp
+  mov ebp, esp
+  push ebx
+  mov ebx, 0
+
+find_in_stack_loop:
+  ;; Check for termination
+  mov edx, stack_depth
+  cmp ebx, [edx]
+  mov eax, 1
+  je find_in_stack_end
+
+  ;; Compute the pointer to be checked
+  mov eax, [edx]
+  sub eax, 1
+  sub eax, ebx
+  mov edx, MAX_SYMBOL_NAME_LEN
+  mul edx
+  mov ecx, stack_vars_ptr
+  add eax, [ecx]
+
+  ;; Call strcmp and return if it matches
+  push eax
+  push DWORD [ebp+8]
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je find_in_stack_found
+
+  ;; Increment index and restart
+  add ebx, 1
+  jmp find_in_stack_loop
+
+find_in_stack_found:
+  mov eax, ebx
+
+find_in_stack_end:
+  pop ebx
+  pop ebp
   ret
 
 
