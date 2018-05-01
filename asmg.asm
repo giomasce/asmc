@@ -550,6 +550,69 @@ emit_escaped_string_end:
   ret
 
 
+  global decode_number_or_char
+decode_number_or_char:
+  ;; The first argument does not begin with an apex, call
+  ;; decode_number
+  mov eax, [esp+4]
+  cmp BYTE [eax], APEX
+  je decode_number_or_char_char
+  mov ecx, [esp+8]
+  push ecx
+  push eax
+  call decode_number
+  add esp, 8
+  ret
+
+decode_number_or_char_char:
+  ;; If second char is not a backslash, just return it
+  cmp BYTE [eax+1], BACKSLASH
+  je decode_number_or_char_backslash
+  mov ecx, [esp+8]
+  mov edx, 0
+  mov dl, [eax+1]
+  mov [ecx], edx
+
+  ;; Check that the input string finishes here
+  cmp BYTE [eax+2], 0
+  jne platform_panic
+
+  mov eax, 1
+  ret
+
+decode_number_or_char_backslash:
+  ;; Call escaped
+  push eax
+  mov edx, 0
+  mov dl, BYTE [eax+2]
+  push edx
+  call escaped
+  add esp, 4
+
+  ;; Return what escaped returned
+  mov edx, eax
+  pop eax
+  mov ecx, [esp+8]
+  mov [ecx], edx
+
+  ;; Check that the input string finishes here
+  cmp BYTE [eax+3], 0
+  jne platform_panic
+
+  mov eax, 1
+  ret
+
+
+  global compute_rel
+compute_rel:
+  ;; Subtract current_loc and than 4
+  mov eax, [esp+4]
+  mov ecx, current_loc
+  sub eax, [ecx]
+  sub eax, 4
+  ret
+
+
   global init_g_compiler
 init_g_compiler:
   ;; Allocate stack variables list

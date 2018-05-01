@@ -8,8 +8,6 @@
 
 #define TEMP_VAR "__temp"
 
-int current_loc;
-
 char write_label_buf[WRITE_LABEL_BUF_LEN];
 
 int atoi(char*);
@@ -30,6 +28,7 @@ char *get_token_buf();
 char *get_buf2();
 int *get_read_fd();
 int *get_emit_fd();
+int *get_current_loc();
 int decode_number(const char *operand, unsigned int *num);
 int strcmp(const char *s1, const char *s2);
 void strcpy(char *d, const char *s);
@@ -49,7 +48,7 @@ void emit2(char c) {
   if (*get_stage() == 1) {
     platform_write_char(*get_emit_fd(), c);
   }
-  current_loc++;
+  (*get_current_loc())++;
 }
 
 void emit32(int x);
@@ -235,7 +234,8 @@ void emit_escaped_string2(char *s) {
   }
 }
 
-int decode_number_or_char(const char *operand, unsigned int *num) {
+int decode_number_or_char(const char *operand, unsigned int *num);
+int decode_number_or_char2(const char *operand, unsigned int *num) {
   if (*operand == '\'') {
     if (operand[1] == '\\') {
       *num = escaped(operand[2]);
@@ -250,8 +250,9 @@ int decode_number_or_char(const char *operand, unsigned int *num) {
   }
 }
 
-int compute_rel(int addr) {
-  return addr - current_loc - 4;
+int compute_rel(int addr);
+int compute_rel2(int addr) {
+  return addr - *get_current_loc() - 4;
 }
 
 void push_expr(char *tok, int want_addr) {
@@ -345,11 +346,11 @@ void parse_block() {
         int fi_lab = gen_label();
         emit(0xe9);  // jmp rel
         emit32(compute_rel(get_symbol(write_label(fi_lab), 0)));
-        add_symbol_wrapper(write_label(else_lab), current_loc, -1);
+        add_symbol_wrapper(write_label(else_lab), *get_current_loc(), -1);
         parse_block();
-        add_symbol_wrapper(write_label(fi_lab), current_loc, -1);
+        add_symbol_wrapper(write_label(fi_lab), *get_current_loc(), -1);
       } else {
-        add_symbol_wrapper(write_label(else_lab), current_loc, -1);
+        add_symbol_wrapper(write_label(else_lab), *get_current_loc(), -1);
         give_back_token();
       }
     } else if (strcmp(tok, "while") == 0) {
@@ -357,7 +358,7 @@ void parse_block() {
       assert(strcmp(cond, "}") != 0);
       int restart_lab = gen_label();
       int end_lab = gen_label();
-      add_symbol_wrapper(write_label(restart_lab), current_loc, -1);
+      add_symbol_wrapper(write_label(restart_lab), *get_current_loc(), -1);
       push_expr(cond, 0);
       pop_var(1);
       emit_str("\x58\x83\xF8\x00\x0F\x84", 6);  // pop eax; cmp eax, 0; je rel
@@ -365,7 +366,7 @@ void parse_block() {
       parse_block();
       emit(0xe9);  // jmp rel
       emit32(compute_rel(get_symbol(write_label(restart_lab), 0)));
-      add_symbol_wrapper(write_label(end_lab), current_loc, -1);
+      add_symbol_wrapper(write_label(end_lab), *get_current_loc(), -1);
     } else if (*tok == '$') {
       char *name = tok + 1;
       assert(*name != '\0');
@@ -376,9 +377,9 @@ void parse_block() {
       int jmp_lab = gen_label();
       emit(0xe9);  // jmp rel
       emit32(compute_rel(get_symbol(write_label(jmp_lab), 0)));
-      add_symbol_wrapper(write_label(str_lab), current_loc, -1);
+      add_symbol_wrapper(write_label(str_lab), *get_current_loc(), -1);
       emit_escaped_string(tok);
-      add_symbol_wrapper(write_label(jmp_lab), current_loc, -1);
+      add_symbol_wrapper(write_label(jmp_lab), *get_current_loc(), -1);
       push_var(TEMP_VAR, 1);
       emit(0x68);  // push val
       emit32(get_symbol(write_label(str_lab), 0));
@@ -421,7 +422,7 @@ void parse() {
       name = get_buf2();
       char *arity_str = get_token();
       int arity = atoi(arity_str);
-      add_symbol_wrapper(name, current_loc, arity);
+      add_symbol_wrapper(name, *get_current_loc(), arity);
       emit_str("\x55\x89\xe5", 3);  // push ebp; mov ebp, esp
       parse_block();
       emit_str("\x5d\xc3", 2);  // pop ebp; ret
@@ -435,11 +436,11 @@ void parse() {
     } else if (*tok == '$') {
       char *name = tok + 1;
       assert(*name != '\0');
-      add_symbol_wrapper(name, current_loc, -1);
+      add_symbol_wrapper(name, *get_current_loc(), -1);
       emit32(0);
     } else if (*tok == '%') {
       char *name = tok + 1;
-      add_symbol_wrapper(name, current_loc, -1);
+      add_symbol_wrapper(name, *get_current_loc(), -1);
       char *len_str = get_token();
       int len = decode_number_or_symbol(len_str);
       while (len > 0) {
@@ -459,7 +460,7 @@ void emit_preamble() {
     8:  89 01                   mov    DWORD PTR [ecx],eax
     a:  c3                      ret
   */
-  add_symbol_wrapper("=", current_loc, 2);
+  add_symbol_wrapper("=", *get_current_loc(), 2);
   emit_str("\x8B\x44\x24\x04\x8B\x4C\x24\x08\x89\x01\xC3", 11);
 
   /*
@@ -467,7 +468,7 @@ void emit_preamble() {
     4:  8b 44 85 08             mov    eax,DWORD PTR [ebp+eax*4+0x8]
     8:  c3                      ret
    */
-  add_symbol_wrapper("param", current_loc, 1);
+  add_symbol_wrapper("param", *get_current_loc(), 1);
   emit_str("\x8B\x44\x24\x04\x8B\x44\x85\x08\xC3", 9);
 
   /*
@@ -475,7 +476,7 @@ void emit_preamble() {
     4:  03 44 24 08             add    eax,DWORD PTR [esp+0x8]
     8:  c3                      ret
   */
-  add_symbol_wrapper("+", current_loc, 2);
+  add_symbol_wrapper("+", *get_current_loc(), 2);
   emit_str("\x8B\x44\x24\x04\x03\x44\x24\x08\xC3", 9);
 
   /*
@@ -483,7 +484,7 @@ void emit_preamble() {
     4:  2b 44 24 08             sub    eax,DWORD PTR [esp+0x8]
     8:  c3                      ret
   */
-  add_symbol_wrapper("-", current_loc, 2);
+  add_symbol_wrapper("-", *get_current_loc(), 2);
   emit_str("\x8B\x44\x24\x04\x2b\x44\x24\x08\xC3", 9);
 }
 
@@ -499,7 +500,7 @@ int main() {
   for (*get_stage() = 0; *get_stage() < 2; (*get_stage())++) {
     platform_reset_file(*get_read_fd());
     *get_label_num() = 0;
-    current_loc = 0x100000;
+    *get_current_loc() = 0x100000;
     emit_preamble();
     parse();
     assert(*get_block_depth() == 0);
