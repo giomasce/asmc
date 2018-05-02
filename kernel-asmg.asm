@@ -339,6 +339,60 @@ deref:
   mov eax, [eax]
   ret
 
+str_inb:
+  db 'inb'
+  db 0
+inb:
+  mov edx, [esp+4]
+  mov eax, 0
+  in al, dx
+  ret
+
+str_inw:
+  db 'inw'
+  db 0
+inw:
+  mov edx, [esp+4]
+  mov eax, 0
+  in ax, dx
+  ret
+
+str_inq:
+  db 'inq'
+  db 0
+inq:
+  mov edx, [esp+4]
+  mov eax, 0
+  in eax, dx
+  ret
+
+str_outb:
+  db 'outb'
+  db 0
+outb:
+  mov eax, [esp+4]
+  mov edx, [esp+8]
+  out dx, al
+  ret
+
+str_outw:
+  db 'outw'
+  db 0
+outw:
+  mov eax, [esp+4]
+  mov edx, [esp+8]
+  out dx, ax
+  ret
+
+str_outq:
+  db 'outq'
+  db 0
+outq:
+  mov eax, [esp+4]
+  mov edx, [esp+8]
+  out dx, eax
+  ret
+
 str_atoi:
   db 'atoi'
   db 0
@@ -447,6 +501,42 @@ init_g_operations:
   push 1
   push lnot
   push str_lnot
+  call add_symbol
+  add esp, 12
+
+  push 1
+  push inb
+  push str_inb
+  call add_symbol
+  add esp, 12
+
+  push 1
+  push inw
+  push str_inw
+  call add_symbol
+  add esp, 12
+
+  push 1
+  push inq
+  push str_inq
+  call add_symbol
+  add esp, 12
+
+  push 2
+  push outb
+  push str_outb
+  call add_symbol
+  add esp, 12
+
+  push 2
+  push outw
+  push str_outw
+  call add_symbol
+  add esp, 12
+
+  push 2
+  push outq
+  push str_outq
   call add_symbol
   add esp, 12
 
