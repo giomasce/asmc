@@ -406,7 +406,8 @@ void parse_block2() {
   (*get_block_depth())--;
 }
 
-int decode_number_or_symbol(char *str) {
+int decode_number_or_symbol(char *str);
+int decode_number_or_symbol2(char *str) {
   int val;
   int res = decode_number_or_char(str, &val);
   if (res) {

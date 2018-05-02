@@ -1368,6 +1368,37 @@ parse_block_break:
   ret
 
 
+  global decode_number_or_symbol
+decode_number_or_symbol:
+  ;; Call decode_number_or_char
+  mov eax, [esp+4]
+  push 0
+  mov edx, esp
+  push edx
+  push eax
+  call decode_number_or_char
+  add esp, 8
+  pop edx
+
+  ;; If it returned true, return
+  cmp eax, 0
+  je decode_number_or_symbol_symbol
+  mov eax, edx
+  ret
+
+decode_number_or_symbol_symbol:
+  ;; Call get_symbol and return
+  mov eax, [esp+4]
+  push 0
+  mov edx, esp
+  push edx
+  push eax
+  call get_symbol
+  add esp, 8
+  add esp, 4
+  ret
+
+
   global init_g_compiler
 init_g_compiler:
   ;; Allocate stack variables list
