@@ -928,6 +928,44 @@ push_expr_ret:
   ret
 
 
+  global push_expr_until_brace
+push_expr_until_brace:
+  push ebx
+
+push_expr_until_brace_loop:
+  ;; Get a token
+  call get_token
+  mov ebx, eax
+
+  ;; If it is an open brace, exit loop
+  push eax
+  push str_cu_open
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je push_expr_until_brace_end
+
+  ;; If not, push it
+  push 0
+  push ebx
+  call push_expr
+  add esp, 8
+
+  jmp push_expr_until_brace_loop
+
+push_expr_until_brace_end:
+  ;; Given the token back
+  call give_back_token
+
+  ;; Check that temp depth is positive
+  mov eax, temp_depth
+  cmp DWORD [eax], 0
+  jna platform_panic
+
+  pop ebx
+  ret
+
+
   global parse_block
 parse_block:
   push ebp
@@ -1060,21 +1098,8 @@ parse_block_ret_emit:
   jmp parse_block_loop
 
 parse_block_if:
-  ;; Get a token and check it is not a closed curly brace
-  call get_token
-  mov ebx, eax
-  push ebx
-  push str_cu_closed
-  call strcmp
-  add esp, 8
-  cmp eax, 0
-  je platform_panic
-
-  ;; Evaluate the token
-  push 0
-  push ebx
-  call push_expr
-  add esp, 8
+  ;; Call push_expr_until_brace
+  call push_expr_until_brace
 
   ;; Generate the else label
   call gen_label
@@ -1181,16 +1206,6 @@ parse_block_else:
   jmp parse_block_loop
 
 parse_block_while:
-  ;; Get a token and check it is not a closed curly brace
-  call get_token
-  mov ebx, eax
-  push ebx
-  push str_cu_closed
-  call strcmp
-  add esp, 8
-  cmp eax, 0
-  je platform_panic
-
   ;; Generate the restart label (in esi) and the end label (in edi)
   call gen_label
   mov esi, eax
@@ -1208,11 +1223,8 @@ parse_block_while:
   call add_symbol_wrapper
   add esp, 12
 
-  ;; Evaluate the token
-  push 0
-  push ebx
-  call push_expr
-  add esp, 8
+  ;; Call push_expr_until_brace
+  call push_expr_until_brace
 
   ;; Emit code to pop and possibly jump to end label
   push 1

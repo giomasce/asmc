@@ -327,6 +327,20 @@ void push_expr2(char *tok, int want_addr) {
   }
 }
 
+void push_expr_until_brace();
+void push_expr_until_brace2() {
+  while (1) {
+    char *tok = get_token();
+    if (strcmp(tok, "{") == 0) {
+      give_back_token();
+      break;
+    } else {
+      push_expr(tok, 0);
+    }
+  }
+  assert(*get_temp_depth() > 0);
+}
+
 void parse_block();
 void parse_block2() {
   (*get_block_depth())++;
@@ -352,9 +366,7 @@ void parse_block2() {
       emit32(4 * *get_stack_depth());
       emit_str("\x5d\xc3", 2);  // pop ebp; ret
     } else if (strcmp(tok, "if") == 0) {
-      char *cond = get_token();
-      assert(strcmp(cond, "}") != 0);
-      push_expr(cond, 0);
+      push_expr_until_brace();
       int else_lab = gen_label();
       pop_var(1);
       emit_str("\x58\x83\xF8\x00\x0F\x84", 6);  // pop eax; cmp eax, 0; je rel
@@ -373,12 +385,10 @@ void parse_block2() {
         give_back_token();
       }
     } else if (strcmp(tok, "while") == 0) {
-      char *cond = get_token();
-      assert(strcmp(cond, "}") != 0);
       int restart_lab = gen_label();
       int end_lab = gen_label();
       add_symbol_wrapper(write_label(restart_lab), *get_current_loc(), -1);
-      push_expr(cond, 0);
+      push_expr_until_brace();
       pop_var(1);
       emit_str("\x58\x83\xF8\x00\x0F\x84", 6);  // pop eax; cmp eax, 0; je rel
       emit32(compute_rel(get_symbol(write_label(end_lab), 0)));

@@ -24,14 +24,9 @@ fun get_token 0 {
     if cont {
       $save_char
       &save_char 0 = ;
-      $ok
-      &ok state 0 == = ;
-      if ok {
-        $isw
-        &isw c is_whitespace = ;
-        if isw {
-          &ok token_len 0 > = ;
-          if ok {
+      if state 0 == {
+        if c is_whitespace {
+          if token_len 0 > {
             &cont 0 = ;
           }
         } else {
