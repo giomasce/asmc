@@ -1,8 +1,8 @@
 
   WRITE_LABEL_BUF_LEN equ 128
-  STACK_LEN equ 1024
-  ;; STACK_SIZE = STACK_LEN * MAX_SYMBOL_NAME_LEN
-  STACK_SIZE equ 131072
+  STACK_VARS_LEN equ 1024
+  ;; STACK_VARS_SIZE = STACK_VARS_LEN * MAX_SYMBOL_NAME_LEN
+  STACK_VARS_SIZE equ 131072
 
   section .data
 
@@ -50,7 +50,7 @@ str_cu_closed:
   db '}'
   db 0
 str_semicolon:
-  db ';'
+  db SEMICOLON
   db 0
 str_ret:
   db 'ret'
@@ -262,7 +262,7 @@ push_var:
   ;; Check we are not overflowing the stack
   mov eax, stack_depth
   mov eax, [eax]
-  cmp eax, STACK_LEN
+  cmp eax, STACK_VARS_LEN
   jnb platform_panic
 
   ;; Copy the variable name in the stack
@@ -907,7 +907,7 @@ parse_block:
   ;; Save stack depth
   mov eax, stack_depth
   mov eax, [eax]
-  mov [ebp-4], eax
+  mov [ebp+0xfffffffc], eax
 
   ;; Expect and discard an open curly brace token
   call get_token
@@ -1161,7 +1161,7 @@ parse_block_while:
   mov edi, eax
 
   ;; Add a symbol for the restart label
-  push -1
+  push 0xffffffff
   mov eax, current_loc
   push DWORD [eax]
   push esi
@@ -1221,7 +1221,7 @@ parse_block_while:
   add esp, 4
 
   ;; Add a symbol for the end label
-  push -1
+  push 0xffffffff
   mov eax, current_loc
   push DWORD [eax]
   push edi
@@ -1279,7 +1279,7 @@ parse_block_string:
   add esp, 4
 
   ;; Add a symbol for the string label
-  push -1
+  push 0xffffffff
   mov eax, current_loc
   push DWORD [eax]
   push edi
@@ -1295,7 +1295,7 @@ parse_block_string:
   add esp, 4
 
   ;; Add a symbol for the jump label
-  push -1
+  push 0xffffffff
   mov eax, current_loc
   push DWORD [eax]
   push esi
@@ -1352,7 +1352,7 @@ parse_block_break:
   ;; Sanity check: stack depth must not have increased
   mov eax, stack_depth
   mov eax, [eax]
-  mov esi, [ebp-4]
+  mov esi, [ebp+0xfffffffc]
   cmp eax, esi
   jnge platform_panic
 
@@ -1578,7 +1578,7 @@ parse_ret:
   global init_g_compiler
 init_g_compiler:
   ;; Allocate stack variables list
-  push STACK_SIZE
+  push STACK_VARS_SIZE
   call platform_allocate
   add esp, 4
   mov ecx, stack_vars_ptr

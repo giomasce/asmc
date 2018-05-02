@@ -1,4 +1,20 @@
 
+str_init_assemble_main:
+  db 'Will now assemble main.asm...'
+  db NEWLINE
+  db 0
+str_init_launch_main:
+  db 'Will now call main!'
+  db NEWLINE
+  db 0
+
+str_main_asm:
+  db 'main.asm'
+  db 0
+str_main:
+  db 'main'
+  db 0
+
   ;; void platform_assemble(char *filename)
 platform_assemble:
   ;; Prepare to write in memory

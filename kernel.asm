@@ -64,14 +64,6 @@ str_init_files:
 str_init_asm_symbols_table:
   db 'Initializing symbols table... '
   db 0
-str_init_assemble_main:
-  db 'Will now assemble main.asm...'
-  db NEWLINE
-  db 0
-str_init_launch_main:
-  db 'Will now call main!'
-  db NEWLINE
-  db 0
 str_done:
   db 'done!'
   db NEWLINE
@@ -79,13 +71,6 @@ str_done:
 
 str_END:
   db 'END'
-  db 0
-
-str_main_asm:
-  db 'main.asm'
-  db 0
-str_main:
-  db 'main'
   db 0
 
 temp_stack:

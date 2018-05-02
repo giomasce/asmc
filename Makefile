@@ -55,9 +55,9 @@ empty.x86: empty.x86.exe initrd-empty.ar
 
 boot/boot/empty.x86: empty.x86
 	mkdir -p boot/boot
-	cp empty.x86 boot/boot/
+	cp empty.x86 boot/boot
 
-boot.iso: boot/boot/grub/grub.cfg boot/boot/asmasm.x86 boot/boot/empty.x86
+boot.iso: boot/boot/grub/grub.cfg boot/boot/asmasm.x86 boot/boot/empty.x86 boot/boot/asmg.x86
 	grub-mkrescue -o boot.iso boot
 
 cc: cc.c
@@ -71,3 +71,20 @@ gstaging.o: gstaging.c platform.h
 
 asmg: asmg.o gstaging.o platform.o platform_asm.o
 	gcc -m32 -O0 -g -o asmg asmg.o gstaging.o platform.o platform_asm.o
+
+full-asmg.asm: kernel.asm ar.asm library.asm kernel-asmg.asm asmg.asm top.asm
+	cat kernel.asm ar.asm library.asm kernel-asmg.asm asmg.asm top.asm > full-asmg.asm
+
+initrd-asmg.ar: END
+	-rm initrd-asmg.ar
+	ar rcs initrd-asmg.ar END
+
+asmg.x86.exe: full-asmg.asm asmasm
+	./asmasm full-asmg.asm > asmg.x86.exe
+
+asmg.x86: asmg.x86.exe initrd-asmg.ar
+	cat asmg.x86.exe initrd-asmg.ar > asmg.x86
+
+boot/boot/asmg.x86: asmg.x86
+	mkdir -p boot/boot
+	cp asmg.x86 boot/boot
