@@ -166,6 +166,8 @@ char *get_token2() {
       } else {
         if ((char) x == '"') {
           state = 2;
+        } else if ((char) x == '\'') {
+          state = 4;
         }
         save_char = 1;
       }
@@ -185,6 +187,16 @@ char *get_token2() {
       save_char = 1;
     } else if (state == 3) {
       state = 2;
+      save_char = 1;
+    } else if (state == 4) {
+      if ((char) x == '\'') {
+        state = 0;
+      } else if ((char) x == '\\') {
+        state = 5;
+      }
+      save_char = 1;
+    } else if (state == 5) {
+      state = 4;
       save_char = 1;
     } else {
       assert(0);
@@ -241,10 +253,12 @@ int decode_number_or_char2(const char *operand, unsigned int *num) {
   if (*operand == '\'') {
     if (operand[1] == '\\') {
       *num = escaped(operand[2]);
-      assert(operand[3] == 0);
+      assert(operand[3] == '\'');
+      assert(operand[4] == 0);
     } else {
       *num = operand[1];
-      assert(operand[2] == 0);
+      assert(operand[2] == '\'');
+      assert(operand[3] == 0);
     }
     return 1;
   } else {
@@ -450,7 +464,7 @@ void parse2() {
     } else if (*tok == '%') {
       char *name = tok + 1;
       assert(*name != '\0');
-      add_symbol_wrapper(name, *get_current_loc(), -1);
+      add_symbol_wrapper(name, *get_current_loc(), -2);
       char *len_str = get_token();
       int len = decode_number_or_symbol(len_str);
       while (len > 0) {

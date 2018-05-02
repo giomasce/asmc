@@ -439,6 +439,10 @@ get_token_loop:
   je get_token_state2
   cmp ecx, 3
   je get_token_state3
+  cmp ecx, 4
+  je get_token_state4
+  cmp ecx, 5
+  je get_token_state5
   call platform_panic
 
   ;; Normal program code
@@ -450,6 +454,8 @@ get_token_state0:
   mov dh, 1
   cmp dl, QUOTE
   je get_token_state0_quote
+  cmp dl, APEX
+  je get_token_state0_apex
   jmp get_token_loop_end
 
 get_token_state0_whitespace:
@@ -464,6 +470,10 @@ get_token_state0_pound:
 
 get_token_state0_quote:
   mov ecx, 2
+  jmp get_token_loop_end
+
+get_token_state0_apex:
+  mov ecx, 4
   jmp get_token_loop_end
 
   ;; Comments
@@ -496,6 +506,29 @@ get_token_state2_backslash:
   ;; Escape character in a string
 get_token_state3:
   mov ecx, 2
+  mov dh, 1
+  jmp get_token_loop_end
+
+  ;; Character
+get_token_state4:
+  mov dh, 1
+  cmp dl, APEX
+  je get_token_state4_quote
+  cmp dl, BACKSLASH
+  je get_token_state4_backslash
+  jmp get_token_loop_end
+
+get_token_state4_quote:
+  mov ecx, 0
+  jmp get_token_loop_end
+
+get_token_state4_backslash:
+  mov ecx, 5
+  jmp get_token_loop_end
+
+  ;; Escape character in a character
+get_token_state5:
+  mov ecx, 4
   mov dh, 1
   jmp get_token_loop_end
 
@@ -646,7 +679,9 @@ decode_number_or_char_char:
   mov [ecx], edx
 
   ;; Check that the input string finishes here
-  cmp BYTE [eax+2], 0
+  cmp BYTE [eax+2], APEX
+  jne platform_panic
+  cmp BYTE [eax+3], 0
   jne platform_panic
 
   mov eax, 1
@@ -668,7 +703,9 @@ decode_number_or_char_backslash:
   mov [ecx], edx
 
   ;; Check that the input string finishes here
-  cmp BYTE [eax+3], 0
+  cmp BYTE [eax+3], APEX
+  jne platform_panic
+  cmp BYTE [eax+4], 0
   jne platform_panic
 
   mov eax, 1
@@ -1542,7 +1579,7 @@ parse_array:
   je platform_panic
 
   ;; Add a symbol
-  push 0xffffffff
+  push 0xfffffffe
   mov eax, current_loc
   push DWORD [eax]
   push ebx

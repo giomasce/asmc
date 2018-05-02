@@ -38,3 +38,5 @@ fun main 2 {
 #  &glob "Hello, ASM!" = ;
 #  &glob "String\nwith\tescapes\"\'" = ;
 }
+
+

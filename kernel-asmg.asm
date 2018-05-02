@@ -122,6 +122,15 @@ equal:
   mov [ecx], eax
   ret
 
+str_equalc:
+  db '=c'
+  db 0
+equalc:
+  mov eax, [esp+4]
+  mov ecx, [esp+8]
+  mov [ecx], al
+  ret
+
 str_param:
   db 'param'
   db 0
@@ -399,12 +408,27 @@ str_atoi:
 str_itoa:
   db 'itoa'
   db 0
+str_strcmp:
+  db 'strcmp'
+  db 0
+str_strcpy:
+  db 'strcpy'
+  db 0
+str_strlen:
+  db 'strlen'
+  db 0
 
 
 init_g_operations:
   push 2
   push equal
   push str_equal
+  call add_symbol
+  add esp, 12
+
+  push 2
+  push equalc
+  push str_equalc
   call add_symbol
   add esp, 12
 
@@ -451,8 +475,38 @@ init_g_operations:
   add esp, 12
 
   push 2
+  push eq
+  push str_eq
+  call add_symbol
+  add esp, 12
+
+  push 2
+  push neq
+  push str_neq
+  call add_symbol
+  add esp, 12
+
+  push 2
+  push l
+  push str_l
+  call add_symbol
+  add esp, 12
+
+  push 2
   push le
   push str_le
+  call add_symbol
+  add esp, 12
+
+  push 2
+  push g
+  push str_g
+  call add_symbol
+  add esp, 12
+
+  push 2
+  push ge
+  push str_ge
   call add_symbol
   add esp, 12
 
@@ -541,20 +595,38 @@ init_g_operations:
   add esp, 12
 
   push 1
-  push atoi
-  push str_atoi
-  call add_symbol
-  add esp, 12
-
-  push 1
   push deref
   push str_deref
   call add_symbol
   add esp, 12
 
   push 1
+  push atoi
+  push str_atoi
+  call add_symbol
+  add esp, 12
+
+  push 1
   push itoa
   push str_itoa
+  call add_symbol
+  add esp, 12
+
+  push 2
+  push strcmp
+  push str_strcmp
+  call add_symbol
+  add esp, 12
+
+  push 2
+  push strcpy
+  push str_strcpy
+  call add_symbol
+  add esp, 12
+
+  push 1
+  push strlen
+  push str_strlen
   call add_symbol
   add esp, 12
 
