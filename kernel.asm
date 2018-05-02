@@ -510,9 +510,6 @@ str_platform_log:
 str_platform_allocate:
   db 'platform_allocate'
   db 0
-str_platform_assemble:
-  db 'platform_assemble'
-  db 0
 str_platform_get_symbol:
   db 'platform_get_symbol'
   db 0

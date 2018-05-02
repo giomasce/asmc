@@ -1,4 +1,8 @@
 
+str_platform_g_compile:
+  db 'platform_g_compile'
+  db 0
+
 str_init_compile_main:
   db 'Will now assemble compile main.g...'
   db NEWLINE
@@ -64,6 +68,12 @@ platform_g_compile:
 start:
   ;; Init compiler
   call init_g_compiler
+  call init_g_operations
+  push 1
+  push platform_g_compile
+  push str_platform_g_compile
+  call add_symbol
+  add esp, 12
 
   ;; Log
   push str_init_compile_main
@@ -88,5 +98,89 @@ start:
   call platform_get_symbol
   add esp, 8
   call eax
+
+  ret
+
+str_equal:
+  db '='
+  db 0
+equal:
+  mov eax, [esp+4]
+  mov ecx, [esp+8]
+  mov [ecx], eax
+  ret
+
+str_param:
+  db 'param'
+  db 0
+param:
+  mov eax, [esp+4]
+  mov edx, 4
+  mul edx
+  add eax, 8
+  add eax, ebp
+  mov eax, [eax]
+  ret
+
+str_plus:
+  db '+'
+  db 0
+plus:
+  mov eax, [esp+8]
+  add eax, [esp+4]
+  ret
+
+str_minus:
+  db '-'
+  db 0
+minus:
+  mov eax, [esp+8]
+  sub eax, [esp+4]
+  ret
+
+str_atoi:
+  db 'atoi'
+  db 0
+str_itoa:
+  db 'itoa'
+  db 0
+
+
+init_g_operations:
+  push 2
+  push equal
+  push str_equal
+  call add_symbol
+  add esp, 12
+
+  push 1
+  push param
+  push str_param
+  call add_symbol
+  add esp, 12
+
+  push 2
+  push plus
+  push str_plus
+  call add_symbol
+  add esp, 12
+
+  push 2
+  push minus
+  push str_minus
+  call add_symbol
+  add esp, 12
+
+  push 1
+  push atoi
+  push str_atoi
+  call add_symbol
+  add esp, 12
+
+  push 1
+  push itoa
+  push str_itoa
+  call add_symbol
+  add esp, 12
 
   ret

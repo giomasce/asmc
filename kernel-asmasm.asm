@@ -1,4 +1,8 @@
 
+str_platform_assemble:
+  db 'platform_assemble'
+  db 0
+
 str_init_assemble_main:
   db 'Will now assemble main.asm...'
   db NEWLINE

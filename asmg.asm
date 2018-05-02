@@ -979,7 +979,7 @@ parse_block_semicolon:
   push add_esp
   call emit_str
   add esp, 8
-  mov eax, stack_depth
+  mov eax, temp_depth
   mov eax, [eax]
   mov edx, 4
   mul edx
