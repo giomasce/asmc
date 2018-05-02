@@ -101,6 +101,18 @@ start:
 
   ret
 
+
+ret:
+  ret
+
+int_to_bool:
+  ;; Return 0 if the parameter is zero, 1 otherwise
+  cmp DWORD [esp+4], 0
+  mov eax, 0
+  je ret
+  mov eax, 1
+  ret
+
 str_equal:
   db '='
   db 0
@@ -138,6 +150,195 @@ minus:
   sub eax, [esp+4]
   ret
 
+str_un_minus:
+  db '--'
+  db 0
+un_minus:
+  mov eax, [esp+8]
+  neg eax
+  ret
+
+str_times:
+  db '*'
+  db 0
+times:
+  mov eax, [esp+8]
+  mul [esp+4]
+  ret
+
+str_over:
+  db '/'
+  db 0
+over:
+  mov edx, 0
+  mov eax, [esp+8]
+  div [esp+4]
+  ret
+
+str_mod:
+  db '%'
+  db 0
+mod:
+  mov edx, 0
+  mov eax, [esp+8]
+  div [esp+4]
+  mov eax, edx
+  ret
+
+str_eq:
+  db '=='
+  db 0
+eq:
+  mov eax, 1
+  mov ecx, [esp+8]
+  cmp ecx, [esp+4]
+  je ret
+  mov eax, 0
+  ret
+
+str_neq:
+  db '!='
+  db 0
+neq:
+  mov eax, 1
+  mov ecx, [esp+8]
+  cmp ecx, [esp+4]
+  jne ret
+  mov eax, 0
+  ret
+
+str_l:
+  db '<'
+  db 0
+l:
+  mov eax, 1
+  mov ecx, [esp+8]
+  cmp ecx, [esp+4]
+  jl ret
+  mov eax, 0
+  ret
+
+str_le:
+  db '<='
+  db 0
+le:
+  mov eax, 1
+  mov ecx, [esp+8]
+  cmp ecx, [esp+4]
+  jle ret
+  mov eax, 0
+  ret
+
+str_g:
+  db '>'
+  db 0
+g:
+  mov eax, 1
+  mov ecx, [esp+8]
+  cmp ecx, [esp+4]
+  jg ret
+  mov eax, 0
+  ret
+
+str_ge:
+  db '>='
+  db 0
+ge:
+  mov eax, 1
+  mov ecx, [esp+8]
+  cmp ecx, [esp+4]
+  jge ret
+  mov eax, 0
+  ret
+
+str_shl:
+  db '<<'
+  db 0
+shl:
+  mov ecx, [esp+4]
+  mov eax, [esp+8]
+  ;; shl eax, cl
+  db 0xd3
+  db 0xe0
+  ret
+
+str_shr:
+  db '>>'
+  db 0
+shr:
+  mov ecx, [esp+4]
+  mov eax, [esp+8]
+  ;; shr eax, cl
+  db 0xd3
+  db 0xe8
+  ret
+
+str_and:
+  db '&'
+  db 0
+and:
+  mov eax, [esp+8]
+  and eax, [esp+4]
+  ret
+
+str_or:
+  db '|'
+  db 0
+or:
+  mov eax, [esp+8]
+  or eax, [esp+4]
+  ret
+
+str_not:
+  db '~'
+  db 0
+not:
+  mov eax, [esp+4]
+  not eax
+  ret
+
+str_land:
+  db '&&'
+  db 0
+land:
+  mov eax, 0
+  cmp DWORD [esp+8], 0
+  je ret
+  cmp DWORD [esp+4], 0
+  je ret
+  mov eax, 1
+  ret
+
+str_lor:
+  db '||'
+  db 0
+lor:
+  mov eax, 1
+  cmp DWORD [esp+8], 1
+  je ret
+  cmp DWORD [esp+4], 1
+  je ret
+  mov eax, 0
+  ret
+
+str_lnot:
+  db '!'
+  db 0
+lnot:
+  mov eax, 0
+  cmp DWORD [esp+4], 0
+  jne ret
+  mov eax, 1
+  ret
+
+str_deref:
+  db '@'
+  db 0
+deref:
+  mov eax, [esp+4]
+  mov eax, [eax]
+  ret
+
 str_atoi:
   db 'atoi'
   db 0
@@ -172,8 +373,92 @@ init_g_operations:
   add esp, 12
 
   push 1
+  push un_minus
+  push str_un_minus
+  call add_symbol
+  add esp, 12
+
+  push 2
+  push times
+  push str_times
+  call add_symbol
+  add esp, 12
+
+  push 2
+  push over
+  push str_over
+  call add_symbol
+  add esp, 12
+
+  push 2
+  push mod
+  push str_mod
+  call add_symbol
+  add esp, 12
+
+  push 2
+  push le
+  push str_le
+  call add_symbol
+  add esp, 12
+
+  push 2
+  push shl
+  push str_shl
+  call add_symbol
+  add esp, 12
+
+  push 2
+  push shr
+  push str_shr
+  call add_symbol
+  add esp, 12
+
+  push 2
+  push and
+  push str_and
+  call add_symbol
+  add esp, 12
+
+  push 2
+  push or
+  push str_or
+  call add_symbol
+  add esp, 12
+
+  push 1
+  push not
+  push str_not
+  call add_symbol
+  add esp, 12
+
+  push 2
+  push land
+  push str_land
+  call add_symbol
+  add esp, 12
+
+  push 2
+  push lor
+  push str_lor
+  call add_symbol
+  add esp, 12
+
+  push 1
+  push lnot
+  push str_lnot
+  call add_symbol
+  add esp, 12
+
+  push 1
   push atoi
   push str_atoi
+  call add_symbol
+  add esp, 12
+
+  push 1
+  push deref
+  push str_deref
   call add_symbol
   add esp, 12
 
