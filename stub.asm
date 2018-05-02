@@ -12,8 +12,3 @@
 
   %include 'library.asm'
   %include 'asmasm.asm'
-
-  global  _start
-_start:
-  call assemble_file
-  call platform_exit

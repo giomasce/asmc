@@ -14,23 +14,23 @@ platform_asm.o: platform_asm.asm
 	nasm -f elf -F dwarf -g platform_asm.asm
 
 asmasm: asmasm.o staging.o platform.o platform_asm.o
-	ld -g -m elf_i386 asmasm.o staging.o platform.o platform_asm.o -o asmasm
+	gcc -m32 -O0 -g -o asmasm asmasm.o staging.o platform.o platform_asm.o
 
-full.asm: kernel.asm ar.asm library.asm asmasm.asm top.asm
-	cat kernel.asm ar.asm library.asm asmasm.asm top.asm > full.asm
+full-asmasm.asm: kernel.asm ar.asm library.asm asmasm.asm kernel-asmasm.asm top.asm
+	cat kernel.asm ar.asm library.asm asmasm.asm kernel-asmasm.asm top.asm > full-asmasm.asm
 
 END:
 	touch END
 
-initrd.ar: main.asm atapio.asm END
-	-rm initrd.ar
-	ar rcs initrd.ar main.asm atapio.asm END
+initrd-asmasm.ar: main.asm atapio.asm END
+	-rm initrd-asmasm.ar
+	ar rcs initrd-asmasm.ar main.asm atapio.asm END
 
-asmasm.x86.exe: full.asm asmasm
-	./asmasm > asmasm.x86.exe
+asmasm.x86.exe: full-asmasm.asm asmasm
+	./asmasm full-asmasm.asm > asmasm.x86.exe
 
-asmasm.x86: asmasm.x86.exe initrd.ar
-	cat asmasm.x86.exe initrd.ar > asmasm.x86
+asmasm.x86: asmasm.x86.exe initrd-asmasm.ar
+	cat asmasm.x86.exe initrd-asmasm.ar > asmasm.x86
 
 boot/boot/grub/grub.cfg: grub.cfg
 	mkdir -p boot/boot/grub
@@ -40,7 +40,24 @@ boot/boot/asmasm.x86: asmasm.x86
 	mkdir -p boot/boot
 	cp asmasm.x86 boot/boot
 
-boot.iso: boot/boot/grub/grub.cfg boot/boot/asmasm.x86
+full-empty.asm: kernel.asm ar.asm library.asm kernel-empty.asm top.asm
+	cat kernel.asm ar.asm library.asm kernel-empty.asm top.asm > full-empty.asm
+
+initrd-empty.ar: END
+	-rm initrd-empty.ar
+	ar rcs initrd-empty.ar END
+
+empty.x86.exe: full-empty.asm asmasm
+	./asmasm full-empty.asm > empty.x86.exe
+
+empty.x86: empty.x86.exe initrd-empty.ar
+	cat empty.x86.exe initrd-empty.ar > empty.x86
+
+boot/boot/empty.x86: empty.x86
+	mkdir -p boot/boot
+	cp empty.x86 boot/boot/
+
+boot.iso: boot/boot/grub/grub.cfg boot/boot/asmasm.x86 boot/boot/empty.x86
 	grub-mkrescue -o boot.iso boot
 
 cc: cc.c

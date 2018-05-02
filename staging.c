@@ -855,10 +855,12 @@ void assemble2(int fd_in, int fd_out, int start_loc) {
 void init_assembler();
 void init_symbols();
 
-void assemble_file() {
+int main(int argc, char **argv) {
   init_symbols();
   init_assembler();
-  int fd_in = platform_open_file("full.asm");
+  int fd_in = platform_open_file(argv[1]);
   int fd_out = 1;
   assemble(fd_in, fd_out, 0x100000);
+
+  return 0;
 }

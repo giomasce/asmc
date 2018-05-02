@@ -497,7 +497,7 @@ void emit_preamble() {
   emit_str("\x8B\x44\x24\x04\x2b\x44\x24\x08\xC3", 9);
 }
 
-int main() {
+int main(int argc, char **argv) {
   init_symbols();
   init_g_compiler();
   *get_emit_fd() = 1;
