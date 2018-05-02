@@ -417,7 +417,8 @@ int decode_number_or_symbol2(char *str) {
   return get_symbol(str, &arity);
 }
 
-void parse() {
+void parse();
+void parse2() {
   while (1) {
     char *tok = get_token();
     if (*tok == 0) {
@@ -447,6 +448,7 @@ void parse() {
       emit32(0);
     } else if (*tok == '%') {
       char *name = tok + 1;
+      assert(*name != '\0');
       add_symbol_wrapper(name, *get_current_loc(), -1);
       char *len_str = get_token();
       int len = decode_number_or_symbol(len_str);

@@ -38,6 +38,10 @@ sub_esp_4:
   db 0x83
   db 0xec
   db 0x04
+push_ebp_mov_ebp_esp:
+  db 0x55
+  db 0x89
+  db 0xe5
 
 str_cu_open:
   db '{'
@@ -59,6 +63,12 @@ str_while:
   db 0
 str_else:
   db 'else'
+  db 0
+str_fun:
+  db 'fun'
+  db 0
+str_const:
+  db 'const'
   db 0
 
   section .bss
@@ -1396,6 +1406,172 @@ decode_number_or_symbol_symbol:
   call get_symbol
   add esp, 8
   add esp, 4
+  ret
+
+
+  global parse
+parse:
+  push ebp
+  mov ebp, esp
+  push ebx
+
+  ;; Main loop
+parse_loop:
+  ;; Get a token and break if it is empty
+  call get_token
+  mov ebx, eax
+  cmp BYTE [ebx], 0
+  je parse_ret
+
+  ;; Jump to the appropriate handler
+  push ebx
+  push str_fun
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je parse_fun
+
+  push ebx
+  push str_const
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je parse_const
+
+  cmp BYTE [ebx], DOLLAR
+  je parse_var
+  cmp BYTE [ebx], PERCENT
+  je parse_array
+
+  call platform_panic
+
+parse_fun:
+  ;; Get a token and copy it in buf2 (pointed by ebx)
+  mov eax, buf2_ptr
+  mov ebx, [eax]
+  call get_token
+  push eax
+  push ebx
+  call strcpy
+  add esp, 8
+
+  ;; Get another token and convert it to an integer
+  call get_token
+  push eax
+  call atoi
+  add esp, 4
+
+  ;; Add a symbol for the function
+  push eax
+  mov eax, current_loc
+  push DWORD [eax]
+  push ebx
+  call add_symbol_wrapper
+  add esp, 12
+
+  ;; Emit the prologue
+  push 3
+  push push_ebp_mov_ebp_esp
+  call emit_str
+  add esp, 8
+
+  ;; Parse the block
+  call parse_block
+
+  ;; Emit the epilogue
+  push 2
+  push pop_ebp_ret
+  call emit_str
+  add esp, 8
+
+  jmp parse_loop
+
+parse_const:
+  ;; Get a token and copy it in buf2 (pointed by ebx)
+  mov eax, buf2_ptr
+  mov ebx, [eax]
+  call get_token
+  push eax
+  push ebx
+  call strcpy
+  add esp, 8
+
+  ;; Get another token and interpret it as a number or symbol
+  call get_token
+  push eax
+  call decode_number_or_symbol
+  add esp, 4
+
+  ;; Add a symbol
+  push 0xfffffffe
+  push eax
+  push ebx
+  call add_symbol_wrapper
+  add esp, 12
+
+  jmp parse_loop
+
+parse_var:
+  ;; Increment the pointer and check the string continues
+  add ebx, 1
+  cmp BYTE [ebx], 0
+  je platform_panic
+
+  ;; Add a symbol
+  push 0xffffffff
+  mov eax, current_loc
+  push DWORD [eax]
+  push ebx
+  call add_symbol_wrapper
+  add esp, 12
+
+  ;; Emit a zero to allocate space for the variable
+  push 0
+  call emit32
+  add esp, 4
+
+  jmp parse_loop
+
+parse_array:
+  ;; Increment the pointer and check the string continues
+  add ebx, 1
+  cmp BYTE [ebx], 0
+  je platform_panic
+
+  ;; Add a symbol
+  push 0xffffffff
+  mov eax, current_loc
+  push DWORD [eax]
+  push ebx
+  call add_symbol_wrapper
+  add esp, 12
+
+  ;; Get another token and interpret it as a number or symbol
+  call get_token
+  push eax
+  call decode_number_or_symbol
+  add esp, 4
+  mov ebx, eax
+
+  ;; Emit that number of zero bytes to allocate the array
+parse_array_loop:
+  ;; Check for termination
+  cmp ebx, 0
+  je parse_loop
+
+  ;; Decrement counter
+  sub ebx, 1
+
+  ;; Emit a zero byte
+  push 0
+  call emit
+  add esp, 4
+
+  jmp parse_array_loop
+
+parse_ret:
+  pop ebx
+  pop ebp
   ret
 
 
