@@ -384,6 +384,7 @@ void parse_block2() {
       emit32(compute_rel(get_symbol(write_label(jmp_lab), 0)));
       add_symbol_wrapper(write_label(str_lab), *get_current_loc(), -1);
       emit_escaped_string(tok);
+      emit(0);
       add_symbol_wrapper(write_label(jmp_lab), *get_current_loc(), -1);
       push_var(TEMP_VAR, 1);
       emit(0x68);  // push val
@@ -497,24 +498,34 @@ void emit_preamble() {
   emit_str("\x8B\x44\x24\x04\x2b\x44\x24\x08\xC3", 9);
 }
 
-int main(int argc, char **argv) {
-  init_symbols();
-  init_g_compiler();
-  *get_emit_fd() = 1;
-  *get_read_fd() = platform_open_file("test.g");
+void compile(int fd_in, int fd_out, int start_loc, int with_preamble);
+void compile2(int fd_in, int fd_out, int start_loc, int with_preamble) {
+  *get_emit_fd() = fd_out;
+  *get_read_fd() = fd_in;
   *get_block_depth() = 0;
   *get_stack_depth() = 0;
-  *get_symbol_num() = 0;
+  *get_temp_depth() = 0;
 
   for (*get_stage() = 0; *get_stage() < 2; (*get_stage())++) {
-    platform_reset_file(*get_read_fd());
+    platform_reset_file(fd_in);
     *get_label_num() = 0;
-    *get_current_loc() = 0x100000;
-    emit_preamble();
+    *get_current_loc() = start_loc;
+    if (with_preamble) {
+      emit_preamble();
+    }
     parse();
     assert(*get_block_depth() == 0);
     assert(*get_stack_depth() == 0);
+    assert(*get_temp_depth() == 0);
   }
+}
+
+int main(int argc, char **argv) {
+  init_symbols();
+  init_g_compiler();
+  int fd_in = platform_open_file(argv[1]);
+  int fd_out = 1;
+  compile(fd_in, fd_out, 0x100000, 1);
 
   return 0;
 }

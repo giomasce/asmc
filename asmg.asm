@@ -1289,9 +1289,12 @@ parse_block_string:
   call add_symbol_wrapper
   add esp, 12
 
-  ;; Emit escaped string
+  ;; Emit escaped string and a terminator
   push ebx
   call emit_escaped_string
+  add esp, 4
+  push 0
+  call emit
   add esp, 4
 
   ;; Add a symbol for the jump label
@@ -1602,4 +1605,76 @@ init_g_compiler:
   mov eax, token_given_back
   mov DWORD [eax], 0
 
+  ret
+
+
+  global compile
+compile:
+  ;; Set emit_fd and read_fd
+  mov eax, emit_fd
+  mov ecx, [esp+8]
+  mov [eax], ecx
+  mov eax, read_fd
+  mov ecx, [esp+4]
+  mov [eax], ecx
+
+  ;; Reset depths
+  mov eax, block_depth
+  mov DWORD [eax], 0
+  mov eax, stack_depth
+  mov DWORD [eax], 0
+  mov eax, temp_depth
+  mov DWORD [eax], 0
+
+  ;; Reset stage
+  mov eax, stage
+  mov DWORD [eax], 0
+
+compile_stage_loop:
+  ;; Check for termination
+  mov eax, stage
+  cmp DWORD [eax], 2
+  je compile_end
+
+  ;; Call platform_reset_file
+  mov eax, [esp+4]
+  push eax
+  call platform_reset_file
+  add esp, 4
+
+  ;; Reset label_num and current_loc
+  mov eax, label_num
+  mov DWORD [eax], 0
+  mov eax, current_loc
+  mov ecx, [esp+12]
+  mov [eax], ecx
+
+  ;; If the preable was requested, emit it
+  cmp DWORD [esp+16], 0
+  je compile_parse
+  extern emit_preamble
+  call emit_preamble
+
+compile_parse:
+  ;; Call parse
+  call parse
+
+  ;; Check that depths were reset to zero
+  mov eax, block_depth
+  cmp DWORD [eax], 0
+  jne platform_panic
+  mov eax, stack_depth
+  cmp DWORD [eax], 0
+  jne platform_panic
+  mov eax, temp_depth
+  cmp DWORD [eax], 0
+  jne platform_panic
+
+  ;; Increment stage
+  mov eax, stage
+  add DWORD [eax], 1
+
+  jmp compile_stage_loop
+
+compile_end:
   ret
