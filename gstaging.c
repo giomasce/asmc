@@ -313,7 +313,8 @@ void push_expr2(char *tok, int want_addr) {
   }
 }
 
-void parse_block() {
+void parse_block();
+void parse_block2() {
   (*get_block_depth())++;
   int saved_stack_depth = *get_stack_depth();
   char *tok = get_token();

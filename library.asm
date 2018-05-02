@@ -20,6 +20,8 @@
   QUOTE equ 0x22
   BACKSLASH equ 0x5c
   POUND equ 0x23
+  DOLLAR equ 0x24
+  AMPERSAND equ 0x26
 
   ITOA_BUF_LEN equ 32
 

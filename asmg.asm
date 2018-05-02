@@ -14,19 +14,52 @@ push_esp_pos:
   db 0xff
   db 0xb4
   db 0x24
-
 lea_eax_esp_pos:
   db 0x8d
   db 0x84
   db 0x24
-
 push_peax:
   db 0xff
   db 0x30
-
 add_esp:
   db 0x81
   db 0xc4
+pop_ebp_ret:
+  db 0x5d
+  db 0xc3
+pop_eax_cmp_eax_0_je_rel:
+  db 0x58
+  db 0x83
+  db 0xf8
+  db 0x00
+  db 0x0f
+  db 0x84
+sub_esp_4:
+  db 0x83
+  db 0xec
+  db 0x04
+
+str_cu_open:
+  db '{'
+  db 0
+str_cu_closed:
+  db '}'
+  db 0
+str_semicolon:
+  db ';'
+  db 0
+str_ret:
+  db 'ret'
+  db 0
+str_if:
+  db 'if'
+  db 0
+str_while:
+  db 'while'
+  db 0
+str_else:
+  db 'else'
+  db 0
 
   section .bss
 
@@ -844,6 +877,493 @@ push_expr_val:
 push_expr_ret:
   pop esi
   pop ebx
+  pop ebp
+  ret
+
+
+  global parse_block
+parse_block:
+  push ebp
+  mov ebp, esp
+  sub esp, 4
+  push ebx
+  push esi
+  push edi
+
+  ;; Increment block depth
+  mov eax, block_depth
+  add DWORD [eax], 1
+
+  ;; Save stack depth
+  mov eax, stack_depth
+  mov eax, [eax]
+  mov [ebp-4], eax
+
+  ;; Expect and discard an open curly brace token
+  call get_token
+  push eax
+  push str_cu_open
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  jne platform_panic
+
+  ;; Main parsing loop
+parse_block_loop:
+  ;; Receive a token and save it in ebx
+  call get_token
+  mov ebx, eax
+
+  ;; Ensure it is not empty (meaning EOF)
+  cmp BYTE [ebx], 0
+  je platform_panic
+
+  ;; If it is a closed curly brace, then break
+  push ebx
+  push str_cu_closed
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je parse_block_break
+
+  ;; Jump to the appropriate handler
+  push ebx
+  push str_semicolon
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je parse_block_semicolon
+
+  push ebx
+  push str_ret
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je parse_block_ret
+
+  push ebx
+  push str_if
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je parse_block_if
+
+  push ebx
+  push str_while
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je parse_block_while
+
+  cmp BYTE [ebx], DOLLAR
+  je parse_block_alloc
+
+  cmp BYTE [ebx], QUOTE
+  je parse_block_string
+
+  jmp parse_block_push
+
+parse_block_semicolon:
+  ;; Emit code to rewind temp stack
+  push 2
+  push add_esp
+  call emit_str
+  add esp, 8
+  mov eax, stack_depth
+  mov eax, [eax]
+  mov edx, 4
+  mul edx
+  push eax
+  call emit32
+  add esp, 4
+  call pop_temps
+
+  jmp parse_block_loop
+
+parse_block_ret:
+  ;; If there are temp vars, emit code to pop one
+  mov eax, temp_depth
+  cmp DWORD [eax], 0
+  jna parse_block_ret_emit
+  push 0x58
+  call emit
+  add esp, 4
+  push 1
+  call pop_var
+  add esp, 4
+
+parse_block_ret_emit:
+  ;; Emit code to unwind stack end return
+  push 2
+  push add_esp
+  call emit_str
+  add esp, 8
+  mov eax, stack_depth
+  mov eax, [eax]
+  mov edx, 4
+  mul edx
+  push eax
+  call emit32
+  add esp, 4
+  push 2
+  push pop_ebp_ret
+  call emit_str
+  add esp, 8
+
+  jmp parse_block_loop
+
+parse_block_if:
+  ;; Get a token and check it is not a closed curly brace
+  call get_token
+  mov ebx, eax
+  push ebx
+  push str_cu_closed
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je platform_panic
+
+  ;; Evaluate the token
+  push 0
+  push ebx
+  call push_expr
+  add esp, 8
+
+  ;; Generate the else label
+  call gen_label
+  mov ebx, eax
+
+  ;; Emit code to pop and possibly jump to else label
+  push 1
+  call pop_var
+  add esp, 4
+  push 6
+  push pop_eax_cmp_eax_0_je_rel
+  call emit_str
+  add esp, 8
+  push 0
+  push ebx
+  call write_label
+  add esp, 4
+  push eax
+  call get_symbol
+  add esp, 8
+  push eax
+  call compute_rel
+  add esp, 4
+  push eax
+  call emit32
+  add esp, 4
+
+  ;; Recursively parse the inner block
+  call parse_block
+
+  ;; Get another token and check if it is an else
+  call get_token
+  push eax
+  push str_else
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je parse_block_else
+
+  ;; Not an else: add a symbol for the else label
+  push 0xffffffff
+  mov eax, current_loc
+  push DWORD [eax]
+  push ebx
+  call write_label
+  add esp, 4
+  push eax
+  call add_symbol_wrapper
+  add esp, 12
+
+  ;; Give the token back
+  call give_back_token
+
+  jmp parse_block_loop
+
+parse_block_else:
+  ;; There is an else: generate the fi label (load in edi)
+  call gen_label
+  mov edi, eax
+
+  ;; Emit code to jump to fi
+  push 0xe9
+  call emit
+  add esp, 4
+  push 0
+  push edi
+  call write_label
+  add esp, 4
+  push eax
+  call get_symbol
+  add esp, 8
+  push eax
+  call compute_rel
+  add esp, 4
+  push eax
+  call emit32
+  add esp, 4
+
+  ;; Add the symbol for the else label
+  push 0xffffffff
+  mov eax, current_loc
+  push DWORD [eax]
+  push ebx
+  call write_label
+  add esp, 4
+  push eax
+  call add_symbol_wrapper
+  add esp, 12
+
+  ;; Recursively parse the inner block
+  call parse_block
+
+  ;; Add the symbol for the fi label
+  push 0xffffffff
+  mov eax, current_loc
+  push DWORD [eax]
+  push edi
+  call write_label
+  add esp, 4
+  push eax
+  call add_symbol_wrapper
+  add esp, 12
+
+  jmp parse_block_loop
+
+parse_block_while:
+  ;; Get a token and check it is not a closed curly brace
+  call get_token
+  mov ebx, eax
+  push ebx
+  push str_cu_closed
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je platform_panic
+
+  ;; Generate the restart label (in esi) and the end label (in edi)
+  call gen_label
+  mov esi, eax
+  call gen_label
+  mov edi, eax
+
+  ;; Add a symbol for the restart label
+  push -1
+  mov eax, current_loc
+  push DWORD [eax]
+  push esi
+  call write_label
+  add esp, 4
+  push eax
+  call add_symbol_wrapper
+  add esp, 12
+
+  ;; Evaluate the token
+  push 0
+  push ebx
+  call push_expr
+  add esp, 8
+
+  ;; Emit code to pop and possibly jump to end label
+  push 1
+  call pop_var
+  add esp, 4
+  push 6
+  push pop_eax_cmp_eax_0_je_rel
+  call emit_str
+  add esp, 8
+  push 0
+  push edi
+  call write_label
+  add esp, 4
+  push eax
+  call get_symbol
+  add esp, 8
+  push eax
+  call compute_rel
+  add esp, 4
+  push eax
+  call emit32
+  add esp, 4
+
+  ;; Recursively parse the inner block
+  call parse_block
+
+  ;; Emit code to restart the loop
+  push 0xe9
+  call emit
+  add esp, 4
+  push 0
+  push esi
+  call write_label
+  add esp, 4
+  push eax
+  call get_symbol
+  add esp, 8
+  push eax
+  call compute_rel
+  add esp, 4
+  push eax
+  call emit32
+  add esp, 4
+
+  ;; Add a symbol for the end label
+  push -1
+  mov eax, current_loc
+  push DWORD [eax]
+  push edi
+  call write_label
+  add esp, 4
+  push eax
+  call add_symbol_wrapper
+  add esp, 12
+
+  jmp parse_block_loop
+
+parse_block_alloc:
+  ;; Skip to following char and check it is not a terminator
+  add ebx, 1
+  cmp BYTE [ebx], 0
+  je platform_panic
+
+  ;; Call push_var
+  push 0
+  push ebx
+  call push_var
+  add esp, 8
+
+  ;; Emit code
+  push 3
+  push sub_esp_4
+  call emit_str
+  add esp, 8
+
+  jmp parse_block_loop
+
+parse_block_string:
+  ;; Generate a jump (in esi) and a string (in edi) label
+  call gen_label
+  mov esi, eax
+  call gen_label
+  mov edi, eax
+
+  ;; Emit code to jump to the jump label
+  push 0xe9
+  call emit
+  add esp, 4
+  push 0
+  push esi
+  call write_label
+  add esp, 4
+  push eax
+  call get_symbol
+  add esp, 8
+  push eax
+  call compute_rel
+  add esp, 4
+  push eax
+  call emit32
+  add esp, 4
+
+  ;; Add a symbol for the string label
+  push -1
+  mov eax, current_loc
+  push DWORD [eax]
+  push edi
+  call write_label
+  add esp, 4
+  push eax
+  call add_symbol_wrapper
+  add esp, 12
+
+  ;; Emit escaped string
+  push ebx
+  call emit_escaped_string
+  add esp, 4
+
+  ;; Add a symbol for the jump label
+  push -1
+  mov eax, current_loc
+  push DWORD [eax]
+  push esi
+  call write_label
+  add esp, 4
+  push eax
+  call add_symbol_wrapper
+  add esp, 12
+
+  ;; Emit code to push the string label
+  push 1
+  push TEMP_VAR
+  call push_var
+  add esp, 8
+  push 0x68
+  call emit
+  add esp, 4
+  push 0
+  push edi
+  call write_label
+  add esp, 4
+  push eax
+  call get_symbol
+  add esp, 8
+  push eax
+  call emit32
+  add esp, 4
+
+  jmp parse_block_loop
+
+parse_block_push:
+  ;; Check if we want the address
+  mov esi, 0
+  cmp BYTE [ebx], AMPERSAND
+  jne parse_block_push_after_if
+  mov esi, 1
+  add ebx, 1
+
+parse_block_push_after_if:
+  push esi
+  push ebx
+  call push_expr
+  add esp, 8
+
+  jmp parse_block_loop
+
+parse_block_break:
+  ;; Emit stack unwinding code
+  push 2
+  push add_esp
+  call emit_str
+  add esp, 8
+
+  ;; Sanity check: stack depth must not have increased
+  mov eax, stack_depth
+  mov eax, [eax]
+  mov esi, [ebp-4]
+  cmp eax, esi
+  jnge platform_panic
+
+  ;; Emit stack depth different, multiplied by 4
+  sub eax, esi
+  mov edx, 4
+  mul edx
+  push eax
+  call emit32
+  add esp, 4
+
+  ;; Reset stack depth to saved value and decrease block depth
+  mov eax, stack_depth
+  mov [eax], esi
+  mov eax, block_depth
+  sub DWORD [eax], 1
+
+  pop edi
+  pop esi
+  pop ebx
+  add esp, 4
   pop ebp
   ret
 
