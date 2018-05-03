@@ -323,10 +323,10 @@ str_lor:
   db 0
 lor:
   mov eax, 1
-  cmp DWORD [esp+8], 1
-  je ret
-  cmp DWORD [esp+4], 1
-  je ret
+  cmp DWORD [esp+8], 0
+  jne ret
+  cmp DWORD [esp+4], 0
+  jne ret
   mov eax, 0
   ret
 

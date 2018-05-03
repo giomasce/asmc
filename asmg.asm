@@ -1381,7 +1381,7 @@ parse_block_string:
 parse_block_push:
   ;; Check if we want the address
   mov esi, 0
-  cmp BYTE [ebx], AMPERSAND
+  cmp BYTE [ebx], AT_SIGN
   jne parse_block_push_after_if
   mov esi, 1
   add ebx, 1

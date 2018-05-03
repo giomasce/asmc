@@ -23,6 +23,7 @@
   DOLLAR equ 0x24
   AMPERSAND equ 0x26
   PERCENT equ 0x25
+  AT_SIGN equ 0x40
 
   ITOA_BUF_LEN equ 32
 

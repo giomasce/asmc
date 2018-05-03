@@ -15,28 +15,28 @@ fun test 1 {
 fun main 2 {
   $argc
   $argv
-  &argc 0 param = ;
-  &argv 1 param = ;
+  @argc 0 param = ;
+  @argv 1 param = ;
   $x
-  &x argc argv + = ;
+  @x argc argv + = ;
   argc test ;
-  &argv argc = ;
+  @argv argc = ;
   if x {
-    &x 2 = ;
+    @x 2 = ;
   } else {
-    &x 4 = ;
+    @x 4 = ;
   }
   while x {
-    &x x 1 - = ;
+    @x x 1 - = ;
   }
-  &x glob = ;
-  &glob x = ;
+  @x glob = ;
+  @glob x = ;
   x ret ;
-  &glob LEN = ;
-  &x '\n = ;
-  &x 100 = ;
-#  &glob "Hello, ASM!" = ;
-#  &glob "String\nwith\tescapes\"\'" = ;
+  @glob LEN = ;
+  @x '\n' = ;
+  @x 100 = ;
+  @glob "Hello, ASM!" = ;
+  @glob "String\nwith\tescapes\"\'" = ;
 }
 
 

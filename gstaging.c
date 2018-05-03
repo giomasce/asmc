@@ -416,7 +416,7 @@ void parse_block2() {
     } else {
       // Check if we want the address
       int want_addr = 0;
-      if (*tok == '&') {
+      if (*tok == '@') {
         tok++;
         want_addr = 1;
       }

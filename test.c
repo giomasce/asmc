@@ -1,5 +1,8 @@
 
 main(argc, argv) {
+  int a1;
+  int aA;
+  int a_a;
   int a;
   a = glob + argc + 1;
   int b;
