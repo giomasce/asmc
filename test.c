@@ -1,4 +1,6 @@
 
+#include "other.h"
+
 main(argc, argv) {
   int a1;
   int aA;
@@ -48,7 +50,7 @@ test_if() {
   int x;
   if (x == 0) {
     x = 1;
-  } else if (x == 2) {
+  } else if (x != 2) {
     x = 3;
   } else {
     x = 2;

@@ -4,7 +4,7 @@ str_platform_g_compile:
   db 0
 
 str_init_compile_main:
-  db 'Will now assemble compile main.g...'
+  db 'Will now compile main.g...'
   db NEWLINE
   db 0
 str_init_launch_main:
@@ -341,11 +341,20 @@ lnot:
   ret
 
 str_deref:
-  db '@'
+  db '**'
   db 0
 deref:
   mov eax, [esp+4]
   mov eax, [eax]
+  ret
+
+str_derefc:
+  db '**c'
+  db 0
+derefc:
+  mov edx, [esp+4]
+  mov eax, 0
+  mov al, [edx]
   ret
 
 str_inb:
@@ -597,6 +606,12 @@ init_g_operations:
   push 1
   push deref
   push str_deref
+  call add_symbol
+  add esp, 12
+
+  push 1
+  push derefc
+  push str_derefc
   call add_symbol
   add esp, 12
 
