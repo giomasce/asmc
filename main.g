@@ -89,6 +89,29 @@ fun fl_add 1 {
   }
 }
 
+fun scan_merge 0 {
+  $curr
+  @curr head = ;
+  $header_curr
+  $header_next
+  $break
+  @break 0 = ;
+  while curr take_next break || {
+    @header_curr curr = ;
+    @header_next curr take_next = ;
+    if header_curr curr take_size + 12 + header_next == {
+      curr take_size_addr curr take_size curr take_next take_size + 12 + = ;
+      curr take_next_addr curr take_next take_next = ;
+      if curr take_next {
+        curr take_next take_prev_addr curr = ;
+      } else {
+        @break 1 = ;
+      }
+    }
+    @curr curr take_next = ;
+  }
+}
+
 fun get_char_type 1 {
   $x
   @x 0 param = ;
