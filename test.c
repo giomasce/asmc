@@ -57,5 +57,6 @@ test_if() {
   }
 }
 
-int glob2;
-int glob;
+// C++ comment
+int glob2;   \
+int glob; /* C comment */
