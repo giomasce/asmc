@@ -13,6 +13,82 @@ fun assert 1 {
   }
 }
 
+# Malloc
+# Based on https://github.com/andrestc/linux-prog/blob/master/ch7/malloc.c
+$head
+
+fun take_size 1 {
+  0 param ** ret ;
+}
+
+fun take_size_addr 1 {
+  0 param ret ;
+}
+
+fun take_next 1 {
+  0 param 4 + ** ret ;
+}
+
+fun take_next_addr 1 {
+  0 param 4 + ret ;
+}
+
+fun take_prev 1 {
+  0 param 8 + ** ret ;
+}
+
+fun take_prev_addr 1 {
+  0 param 8 + ret ;
+}
+
+fun fl_remove 1 {
+  $b
+  @b 0 param = ;
+  if b take_prev ! {
+    if b take_next {
+      @head b take_next = ;
+    } else {
+      @head 0 = ;
+    }
+  } else {
+    b take_prev take_next_addr b take_next = ;
+  }
+  if b take_next {
+    b take_next take_prev_addr b take_prev = ;
+  }
+}
+
+fun fl_add 1 {
+  $b
+  @b 0 param = ;
+  b take_next_addr 0 = ;
+  b take_prev_addr 0 = ;
+  if head ! head b > || {
+    if head {
+      head take_prev_addr b = ;
+    }
+    b take_next_addr head = ;
+    @head b = ;
+  } else {
+    $curr
+    @curr head = ;
+    $cond
+    @cond curr take_next = ;
+    if cond {
+      @cond curr take_next b < = ;
+    }
+    while cond {
+      @curr curr take_next = ;
+      @cond curr take_next = ;
+      if cond {
+        @cond curr take_next b < = ;
+      }
+    }
+    b take_next_addr curr take_next = ;
+    curr take_next_addr b = ;
+  }
+}
+
 fun get_char_type 1 {
   $x
   @x 0 param = ;
