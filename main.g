@@ -17,6 +17,9 @@ fun assert 1 {
 # Based on https://github.com/andrestc/linux-prog/blob/master/ch7/malloc.c
 $head
 
+const SIZE_OF_BLOCK 12
+const ALLOC_UNIT 12288
+
 fun take_size 1 {
   0 param ** ret ;
 }
@@ -99,8 +102,8 @@ fun scan_merge 0 {
   while curr take_next break || {
     @header_curr curr = ;
     @header_next curr take_next = ;
-    if header_curr curr take_size + 12 + header_next == {
-      curr take_size_addr curr take_size curr take_next take_size + 12 + = ;
+    if header_curr curr take_size + SIZE_OF_BLOCK + header_next == {
+      curr take_size_addr curr take_size curr take_next take_size + SIZE_OF_BLOCK + = ;
       curr take_next_addr curr take_next take_next = ;
       if curr take_next {
         curr take_next take_prev_addr curr = ;
@@ -110,6 +113,62 @@ fun scan_merge 0 {
     }
     @curr curr take_next = ;
   }
+}
+
+fun split 2 {
+  $b
+  $size
+  @b 0 param = ;
+  @size 1 param = ;
+  $mem_block
+  @mem_block b SIZE_OF_BLOCK + = ;
+  $newptr
+  @newptr mem_block size + = ;
+  newptr take_size_addr b take_size size - SIZE_OF_BLOCK - = ;
+  b take_size_addr size = ;
+  newptr ret ;
+}
+
+fun malloc 1 {
+  $size
+  @size 0 param = ;
+  $block_mem
+  $ptr
+  $newptr
+  $alloc_size
+  if size ALLOC_UNIT >= {
+    @alloc_size size SIZE_OF_BLOCK + = ;
+  } else {
+    @alloc_size ALLOC_UNIT = ;
+  }
+  @ptr head = ;
+  while ptr {
+    if ptr take_size size SIZE_OF_BLOCK + >= {
+      @block_mem ptr SIZE_OF_BLOCK + = ;
+      ptr fl_remove ;
+      @newptr size ptr split = ;
+      newptr fl_add ;
+      block_mem ret ;
+    } else {
+      @ptr ptr take_next = ;
+    }
+  }
+  @ptr alloc_size platform_allocate = ;
+  ptr take_next_addr 0 = ;
+  ptr take_prev_addr 0 = ;
+  ptr take_size_addr alloc_size SIZE_OF_BLOCK - = ;
+  if alloc_size size SIZE_OF_BLOCK + > {
+    @newptr size ptr split = ;
+    newptr fl_add ;
+  }
+  ptr SIZE_OF_BLOCK + ret ;
+}
+
+fun free 1 {
+  $ptr
+  @ptr 0 param = ;
+  ptr SIZE_OF_BLOCK - fl_add ;
+  scan_merge ;
 }
 
 fun get_char_type 1 {
