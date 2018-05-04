@@ -603,10 +603,6 @@ str_decoding_line:
   db 'Decoding line: '
   db 0
 
-str_newline:
-  db NEWLINE
-  db 0
-
 str_empty:
   db 0
 

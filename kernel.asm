@@ -69,6 +69,27 @@ str_done:
   db NEWLINE
   db 0
 
+str_newline:
+  db NEWLINE
+  db 0
+
+str_dump_multiboot:
+  db 'Dumping multiboot boot information...'
+  db NEWLINE
+  db 0
+str_mem_lower:
+  db 'mem_lower = '
+  db 0
+str_mem_upper:
+  db 'mem_lower = '
+  db 0
+str_mmap:
+  db 'Memory region: '
+  db 0
+str_slash:
+  db ' / '
+  db 0
+
 str_END:
   db 'END'
   db 0
@@ -84,6 +105,11 @@ start_from_multiboot:
 
   ;; Initialize terminal
   call term_setup
+
+  ;; Dump data from multiboot information structure
+  push ebx
+  call dump_multiboot
+  add esp, 4
 
   ;; Log
   push str_init_heap_stack
@@ -168,6 +194,195 @@ start_from_multiboot:
   call start
 
   call platform_exit
+
+
+dump_multiboot:
+  push ebp
+  mov ebp, esp
+  push ebx
+  push esi
+
+  ;; Save multiboot location
+  mov ebx, [ebp+8]
+
+  ;; Log
+  push str_dump_multiboot
+  push 1
+  call platform_log
+  add esp, 8
+
+  ;; Check mem_lower and mem_upper are supported
+  mov eax, [ebx]
+  test eax, 1
+  je dump_multiboot_mmap
+
+  ;; Print mem_lower
+  push str_mem_lower
+  push 1
+  call platform_log
+  add esp, 8
+  mov eax, [ebx+4]
+  push eax
+  call itoa
+  add esp, 4
+  push eax
+  push 1
+  call platform_log
+  add esp, 8
+  push str_newline
+  push 1
+  call platform_log
+  add esp, 8
+
+  ;; Print mem_upper
+  push str_mem_upper
+  push 1
+  call platform_log
+  add esp, 8
+  mov eax, [ebx+8]
+  push eax
+  call itoa
+  add esp, 4
+  push eax
+  push 1
+  call platform_log
+  add esp, 8
+  push str_newline
+  push 1
+  call platform_log
+  add esp, 8
+
+dump_multiboot_mmap:
+  ;; Check mmap_* are supported
+  mov eax, [ebx]
+  test eax, 64
+  je dump_multiboot_end
+
+  ;; Save mmap buffer in registers
+  mov esi, [ebx+48]
+  mov ebx, [ebx+44]
+  add ebx, esi
+
+dump_multiboot_mmap_dump:
+  ;; Call mmap_dump
+  push esi
+  call mmap_dump
+  add esp, 4
+
+  ;; Increment pointer
+  add esi, [esi]
+  add esi, 4
+
+  cmp esi, ebx
+  jb dump_multiboot_mmap_dump
+
+dump_multiboot_end:
+  pop esi
+  pop ebx
+  pop ebp
+  ret
+
+
+mmap_dump:
+  push ebp
+  mov ebp, esp
+  push ebx
+
+  mov ebx, [ebp+8]
+
+  ;; Check that ignored fields are not used
+  cmp DWORD [ebx+8], 0
+  jne platform_panic
+  cmp DWORD [ebx+16], 0
+  jne platform_panic
+
+  ;; Print size
+  ;; push str_mmap_size
+  ;; push 1
+  ;; call platform_log
+  ;; add esp, 8
+  ;; mov eax, [ebx]
+  ;; push eax
+  ;; call itoa
+  ;; add esp, 4
+  ;; push eax
+  ;; push 1
+  ;; call platform_log
+  ;; add esp, 8
+  ;; push str_newline
+  ;; push 1
+  ;; call platform_log
+  ;; add esp, 8
+
+  ;; Print base_addr
+  ;; push str_mmap_base_addr
+  ;; push 1
+  ;; call platform_log
+  ;; add esp, 8
+  push str_mmap
+  push 1
+  call platform_log
+  add esp, 8
+  mov eax, [ebx+4]
+  push eax
+  call itoa
+  add esp, 4
+  push eax
+  push 1
+  call platform_log
+  add esp, 8
+  ;; push str_newline
+  ;; push 1
+  ;; call platform_log
+  ;; add esp, 8
+
+  ;; Print length
+  ;; push str_mmap_length
+  ;; push 1
+  ;; call platform_log
+  ;; add esp, 8
+  push str_slash
+  push 1
+  call platform_log
+  add esp, 8
+  mov eax, [ebx+12]
+  push eax
+  call itoa
+  add esp, 4
+  push eax
+  push 1
+  call platform_log
+  add esp, 8
+  ;; push str_newline
+  ;; push 1
+  ;; call platform_log
+  ;; add esp, 8
+
+  ;; Print type
+  ;; push str_mmap_type
+  ;; push 1
+  ;; call platform_log
+  ;; add esp, 8
+  push str_slash
+  push 1
+  call platform_log
+  add esp, 8
+  mov eax, [ebx+20]
+  push eax
+  call itoa
+  add esp, 4
+  push eax
+  push 1
+  call platform_log
+  add esp, 8
+  push str_newline
+  push 1
+  call platform_log
+  add esp, 8
+
+  pop ebx
+  pop ebp
+  ret
 
 
   ;; void term_setup()
