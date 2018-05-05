@@ -1,4 +1,5 @@
 
+#include <first.h>
 #include "other.h"
 
 main(argc, argv) {

@@ -1,8 +1,4 @@
 
-const MAX_TOKEN_LEN 128
-%token_buf MAX_TOKEN_LEN
-$token_len
-
 $fd_in
 $read_char
 $char_given_back
@@ -10,6 +6,30 @@ $char_given_back
 fun assert 1 {
   if 0 param ! {
     platform_panic ;
+  }
+}
+
+fun min 2 {
+  $x
+  $y
+  @x 0 param = ;
+  @y 1 param = ;
+  if x y < {
+    x ret ;
+  } else {
+    y ret ;
+  }
+}
+
+fun max 2 {
+  $x
+  $y
+  @x 0 param = ;
+  @y 1 param = ;
+  if x y > {
+    x ret ;
+  } else {
+    y ret ;
   }
 }
 
@@ -99,7 +119,7 @@ fun scan_merge 0 {
   $header_next
   $break
   @break 0 = ;
-  while curr take_next break || {
+  while curr take_next break ! && {
     @header_curr curr = ;
     @header_next curr take_next = ;
     if header_curr curr take_size + SIZE_OF_BLOCK + header_next == {
@@ -171,6 +191,33 @@ fun free 1 {
   scan_merge ;
 }
 
+fun realloc 2 {
+  $ptr
+  $newsize
+  @ptr 0 param = ;
+  @newsize 1 param = ;
+  $size
+  @size ptr SIZE_OF_BLOCK - take_size = ;
+  $newptr
+  @newptr newsize malloc = ;
+  $copysize
+  @copysize size newsize min = ;
+  copysize ptr newptr memcpy ;
+  ptr free ;
+  newptr ret ;
+}
+
+fun strdup 1 {
+  $s
+  @s 0 param = ;
+  $len
+  @len s strlen = ;
+  $ptr
+  @ptr len 1 + malloc = ;
+  s ptr strcpy ;
+  ptr ret ;
+}
+
 fun get_char_type 1 {
   $x
   @x 0 param = ;
@@ -237,9 +284,14 @@ fun is_line_escape 1 {
 }
 
 fun get_token 0 {
+  $token_buf
+  $token_buf_len
+  @token_buf_len 32 = ;
+  @token_buf token_buf_len malloc = ;
   $state
   @state 0 = ;
   $token_type
+  $token_len
   @token_len 0 = ;
   $cont
   @cont 1 = ;
@@ -336,7 +388,7 @@ fun get_token 0 {
           }
         } else {
           if token_buf is_line_escape {
-             @token_len 0 = ;
+            @token_len 0 = ;
           } else {
             if token_type type == token_type 0 == || {
               @token_len token_len 1 + = ;
@@ -369,7 +421,10 @@ fun get_token 0 {
           }
         }
       }
-      1 token_len + MAX_TOKEN_LEN <= assert ;
+      if token_len 1 + token_buf_len >= {
+        @token_buf_len token_buf_len 2 * = ;
+        @token_buf token_buf_len token_buf realloc = ;
+      }
     }
   }
   if token_type 2 == {
@@ -397,6 +452,7 @@ fun parse_c 0 {
     } else {
       "\nParsing finished\n" 1 platform_log ;
     }
+    tok free ;
   }
 }
 

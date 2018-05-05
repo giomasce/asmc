@@ -423,6 +423,9 @@ str_strcmp:
 str_strcpy:
   db 'strcpy'
   db 0
+str_memcpy:
+  db 'memcpy'
+  db 0
 str_strlen:
   db 'strlen'
   db 0
@@ -636,6 +639,12 @@ init_g_operations:
   push 2
   push strcpy
   push str_strcpy
+  call add_symbol
+  add esp, 12
+
+  push 3
+  push memcpy
+  push str_memcpy
   call add_symbol
   add esp, 12
 
