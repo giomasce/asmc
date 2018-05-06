@@ -226,29 +226,32 @@ fun tokenize_file 1 {
   $cont
   @cont 1 = ;
   $token_vect
-  @token_vect vector_init = ;
+  @token_vect 4 vector_init = ;
   while cont {
     @tok get_token = ;
     @cont tok "" strcmp 0 != = ;
     if cont {
       token_vect tok vector_push_back ;
     }
-    # @cont tok "" strcmp 0 != = ;
-    # if cont {
-    #   if tok **c '\n' == {
-    #     "NL" 1 platform_log ;
-    #   } else {
-    #     tok 1 platform_log ;
-    #   }
-    #   "#" 1 platform_log ;
-    # } else {
-    #   "\nParsing finished\n" 1 platform_log ;
-    # }
-    # tok free ;
   }
   token_vect ret ;
 }
 
 fun parse_c 1 {
-  0 param tokenize_file ;
+  $tokens
+  @tokens 0 param tokenize_file = ;
+  $i
+  @i 0 = ;
+  while i tokens VECTOR_SIZE take < {
+    $tok
+    @tok tokens i vector_at = ;
+    if tok **c '\n' == {
+      "NL" 1 platform_log ;
+    } else {
+      tok 1 platform_log ;
+    }
+    "#" 1 platform_log ;
+    @i i 1 + = ;
+  }
+  "\n" 1 platform_log ;
 }

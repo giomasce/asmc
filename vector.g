@@ -2,16 +2,18 @@
 const VECTOR_DATA 0
 const VECTOR_SIZE 4
 const VECTOR_CAP 8
-const SIZEOF_VECTOR 12
+const VECTOR_SIZEOF_ELEM 12
+const SIZEOF_VECTOR 16
 
-const INITIAL_CAP 2
+const INITIAL_CAP 1
 
-fun vector_init 0 {
+fun vector_init 1 {
   $vptr
   @vptr SIZEOF_VECTOR malloc = ;
   vptr VECTOR_SIZE take_addr 0 = ;
   vptr VECTOR_CAP take_addr INITIAL_CAP 0 = ;
-  vptr VECTOR_DATA take_addr INITIAL_CAP 4 * malloc = ;
+  vptr VECTOR_SIZEOF_ELEM take_addr 0 param = ;
+  vptr VECTOR_DATA take_addr vptr VECTOR_CAP take vptr VECTOR_SIZEOF_ELEM take * malloc = ;
   vptr ret ;
 }
 
@@ -27,7 +29,7 @@ fun vector_at 2 {
   $idx
   @vptr 1 param = ;
   @idx 0 param = ;
-  vptr VECTOR_DATA take idx 4 * + ** ret ;
+  vptr VECTOR_DATA take idx vptr VECTOR_SIZEOF_ELEM take * + ** ret ;
 }
 
 fun vector_push_back 2 {
@@ -37,10 +39,11 @@ fun vector_push_back 2 {
   @elem 0 param = ;
   if vptr VECTOR_SIZE take vptr VECTOR_CAP take == {
     vptr VECTOR_CAP take_addr vptr VECTOR_CAP take 2 * = ;
-    vptr VECTOR_DATA take_addr vptr VECTOR_CAP take vptr VECTOR_DATA take realloc = ;
+    vptr VECTOR_DATA take_addr vptr VECTOR_CAP take vptr VECTOR_SIZEOF_ELEM take * vptr VECTOR_DATA take realloc = ;
   }
-  vptr VECTOR_DATA take vptr VECTOR_SIZE take 4 * + elem = ;
+  vptr VECTOR_DATA take vptr VECTOR_SIZE take vptr VECTOR_SIZEOF_ELEM take * + elem = ;
   vptr VECTOR_SIZE take_addr vptr VECTOR_SIZE take 1 + = ;
+  vptr VECTOR_SIZE take ret ;
 }
 
 fun vector_size 1 {

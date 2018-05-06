@@ -3,78 +3,62 @@
 # Based on https://github.com/andrestc/linux-prog/blob/master/ch7/malloc.c
 $head
 
-const SIZE_OF_BLOCK 12
+const MALLOC_MAGIC_ALLOC 0xfeedbeef
+const MALLOC_MAGIC_FREE 0xdeadc0de
+
+const MALLOC_SIZE 0
+const MALLOC_NEXT 4
+const MALLOC_PREV 8
+const MALLOC_MAGIC 12
+const SIZEOF_MALLOC 16
+
 const ALLOC_UNIT 12288
-
-fun take_size 1 {
-  0 param ** ret ;
-}
-
-fun take_size_addr 1 {
-  0 param ret ;
-}
-
-fun take_next 1 {
-  0 param 4 + ** ret ;
-}
-
-fun take_next_addr 1 {
-  0 param 4 + ret ;
-}
-
-fun take_prev 1 {
-  0 param 8 + ** ret ;
-}
-
-fun take_prev_addr 1 {
-  0 param 8 + ret ;
-}
 
 fun fl_remove 1 {
   $b
   @b 0 param = ;
-  if b take_prev ! {
-    if b take_next {
-      @head b take_next = ;
+  if b MALLOC_PREV take ! {
+    if b MALLOC_NEXT take {
+      @head b MALLOC_NEXT take = ;
     } else {
       @head 0 = ;
     }
   } else {
-    b take_prev take_next_addr b take_next = ;
+    b MALLOC_PREV take MALLOC_NEXT take_addr b MALLOC_NEXT take = ;
   }
-  if b take_next {
-    b take_next take_prev_addr b take_prev = ;
+  if b MALLOC_NEXT take {
+    b MALLOC_NEXT take MALLOC_PREV take_addr b MALLOC_PREV take = ;
   }
 }
 
 fun fl_add 1 {
   $b
   @b 0 param = ;
-  b take_next_addr 0 = ;
-  b take_prev_addr 0 = ;
+  b MALLOC_NEXT take_addr 0 = ;
+  b MALLOC_PREV take_addr 0 = ;
   if head ! head b > || {
     if head {
-      head take_prev_addr b = ;
+      head MALLOC_PREV take_addr b = ;
     }
-    b take_next_addr head = ;
+    b MALLOC_NEXT take_addr head = ;
     @head b = ;
   } else {
     $curr
     @curr head = ;
     $cond
-    @cond curr take_next = ;
+    @cond curr MALLOC_NEXT take = ;
     if cond {
-      @cond curr take_next b < = ;
+      @cond curr MALLOC_NEXT take b < = ;
     }
     while cond {
-      @curr curr take_next = ;
-      @cond curr take_next = ;
+      @curr curr MALLOC_NEXT take = ;
+      @cond curr MALLOC_NEXT take = ;
       if cond {
-        @cond curr take_next b < = ;
+        @cond curr MALLOC_NEXT take b < = ;
       }
     }
-    b take_next_addr curr take_next = ;
-    curr take_next_addr b = ;
+    b MALLOC_NEXT take_addr curr MALLOC_NEXT take = ;
+    curr MALLOC_NEXT take_addr b = ;
   }
 }
 
@@ -85,19 +69,19 @@ fun scan_merge 0 {
   $header_next
   $break
   @break 0 = ;
-  while curr take_next break ! && {
+  while curr MALLOC_NEXT take break ! && {
     @header_curr curr = ;
-    @header_next curr take_next = ;
-    if header_curr curr take_size + SIZE_OF_BLOCK + header_next == {
-      curr take_size_addr curr take_size curr take_next take_size + SIZE_OF_BLOCK + = ;
-      curr take_next_addr curr take_next take_next = ;
-      if curr take_next {
-        curr take_next take_prev_addr curr = ;
+    @header_next curr MALLOC_NEXT take = ;
+    if header_curr curr MALLOC_SIZE take + SIZEOF_MALLOC + header_next == {
+      curr MALLOC_SIZE take_addr curr MALLOC_SIZE take curr MALLOC_NEXT take MALLOC_SIZE take + SIZEOF_MALLOC + = ;
+      curr MALLOC_NEXT take_addr curr MALLOC_NEXT take MALLOC_NEXT take = ;
+      if curr MALLOC_NEXT take {
+        curr MALLOC_NEXT take MALLOC_PREV take_addr curr = ;
       } else {
         @break 1 = ;
       }
     }
-    @curr curr take_next = ;
+    @curr curr MALLOC_NEXT take = ;
   }
 }
 
@@ -107,11 +91,12 @@ fun split 2 {
   @b 0 param = ;
   @size 1 param = ;
   $mem_block
-  @mem_block b SIZE_OF_BLOCK + = ;
+  @mem_block b SIZEOF_MALLOC + = ;
   $newptr
   @newptr mem_block size + = ;
-  newptr take_size_addr b take_size size - SIZE_OF_BLOCK - = ;
-  b take_size_addr size = ;
+  newptr MALLOC_SIZE take_addr b MALLOC_SIZE take size - SIZEOF_MALLOC - = ;
+  newptr MALLOC_MAGIC take_addr MALLOC_MAGIC_FREE = ;
+  b MALLOC_SIZE take_addr size = ;
   newptr ret ;
 }
 
@@ -123,37 +108,44 @@ fun malloc 1 {
   $newptr
   $alloc_size
   if size ALLOC_UNIT >= {
-    @alloc_size size SIZE_OF_BLOCK + = ;
+    @alloc_size size SIZEOF_MALLOC + = ;
   } else {
     @alloc_size ALLOC_UNIT = ;
   }
   @ptr head = ;
   while ptr {
-    if ptr take_size size SIZE_OF_BLOCK + >= {
-      @block_mem ptr SIZE_OF_BLOCK + = ;
+    if ptr MALLOC_SIZE take size SIZEOF_MALLOC + >= {
+      @block_mem ptr SIZEOF_MALLOC + = ;
       ptr fl_remove ;
       @newptr size ptr split = ;
       newptr fl_add ;
+      ptr MALLOC_MAGIC take MALLOC_MAGIC_FREE == assert ;
+      ptr MALLOC_MAGIC take_addr MALLOC_MAGIC_ALLOC = ;
       block_mem ret ;
     } else {
-      @ptr ptr take_next = ;
+      @ptr ptr MALLOC_NEXT take = ;
     }
   }
   @ptr alloc_size platform_allocate = ;
-  ptr take_next_addr 0 = ;
-  ptr take_prev_addr 0 = ;
-  ptr take_size_addr alloc_size SIZE_OF_BLOCK - = ;
-  if alloc_size size SIZE_OF_BLOCK + > {
+  ptr MALLOC_NEXT take_addr 0 = ;
+  ptr MALLOC_PREV take_addr 0 = ;
+  ptr MALLOC_SIZE take_addr alloc_size SIZEOF_MALLOC - = ;
+  ptr MALLOC_MAGIC take_addr MALLOC_MAGIC_ALLOC = ;
+  if alloc_size size SIZEOF_MALLOC + > {
     @newptr size ptr split = ;
     newptr fl_add ;
   }
-  ptr SIZE_OF_BLOCK + ret ;
+  ptr SIZEOF_MALLOC + ret ;
 }
 
 fun free 1 {
   $ptr
   @ptr 0 param = ;
-  ptr SIZE_OF_BLOCK - fl_add ;
+  $b
+  @b ptr SIZEOF_MALLOC - = ;
+  b MALLOC_MAGIC take MALLOC_MAGIC_ALLOC == assert ;
+  b MALLOC_MAGIC take_addr MALLOC_MAGIC_FREE = ;
+  b fl_add ;
   scan_merge ;
 }
 
@@ -163,7 +155,7 @@ fun realloc 2 {
   @ptr 0 param = ;
   @newsize 1 param = ;
   $size
-  @size ptr SIZE_OF_BLOCK - take_size = ;
+  @size ptr SIZEOF_MALLOC - MALLOC_SIZE take = ;
   $newptr
   @newptr newsize malloc = ;
   $copysize
