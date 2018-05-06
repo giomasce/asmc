@@ -69,10 +69,6 @@ str_done:
   db NEWLINE
   db 0
 
-str_newline:
-  db NEWLINE
-  db 0
-
 str_dump_multiboot:
   db 'Dumping multiboot boot information...'
   db NEWLINE
@@ -574,6 +570,15 @@ platform_write_char_mem:
   mov [edx], al
   add edx, 1
   mov [ecx], edx
+
+  ;; Log (for debug)
+  ;; push edx
+  ;; call debug_log_itoa
+  ;; add esp, 4
+  ;; push str_newline
+  ;; call debug_log
+  ;; add esp, 4
+
   ret
 
 platform_write_char_stdout:
@@ -621,7 +626,7 @@ platform_allocate:
 
   ;; Add the new size to the heap_ptr and realign
   mov edx, [esp+4]
-  add edx, [ecx]
+  add edx, eax
   sub edx, 1
   or edx, 0xf
   add edx, 1

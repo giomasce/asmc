@@ -622,10 +622,6 @@ str_symb_num2:
   db NEWLINE
   db 0
 
-str_check:
-  db 'CHECK'
-  db 0
-
 section .bss
 
 input_buf_ptr:

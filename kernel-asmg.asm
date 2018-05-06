@@ -62,6 +62,92 @@ platform_g_compile:
   cmp edx, eax
   jne platform_panic
 
+  ;; Discard temporary labels
+  call discard_temp_labels
+
+  ret
+
+
+discard_temp_labels:
+  push esi
+  push edi
+  push ebx
+
+  ;; Use esi for the source index and edi for the dst index
+  mov esi, 0
+  mov edi, 0
+
+discard_temp_labels_loop:
+  ;; Check for termination
+  mov eax, symbol_num
+  cmp [eax], esi
+  je discard_temp_labels_end
+
+  ;; Check if the symbol is a temp label
+  mov ecx, symbol_names_ptr
+  mov ecx, [ecx]
+  mov eax, MAX_SYMBOL_NAME_LEN
+  mul esi
+  add eax, ecx
+  cmp BYTE [eax], DOT
+  je discard_temp_label_loop_end
+
+  ;; If the two pointers are equal, do nothing
+  cmp esi, edi
+  je discard_temp_label_update_dest
+
+  ;; Copy name
+  mov ebx, eax
+  mov eax, MAX_SYMBOL_NAME_LEN
+  mul edi
+  add eax, ecx
+  push ebx
+  push eax
+  call strcpy
+  add esp, 8
+
+  ;; Copy location
+  mov ecx, symbol_locs_ptr
+  mov ecx, [ecx]
+  mov eax, 4
+  mul esi
+  add eax, ecx
+  mov ebx, eax
+  mov eax, 4
+  mul edi
+  add eax, ecx
+  mov edx, [ebx]
+  mov [eax], edx
+
+  ;; Copy arity
+  mov ecx, symbol_arities_ptr
+  mov ecx, [ecx]
+  mov eax, 4
+  mul esi
+  add eax, ecx
+  mov ebx, eax
+  mov eax, 4
+  mul edi
+  add eax, ecx
+  mov edx, [ebx]
+  mov [eax], edx
+
+discard_temp_label_update_dest:
+  add edi, 1
+
+discard_temp_label_loop_end:
+  ;; Increment reading pointer and reloop
+  add esi, 1
+  jmp discard_temp_labels_loop
+
+discard_temp_labels_end:
+  ;; Save the new length
+  mov eax, symbol_num
+  mov [eax], edi
+
+  pop ebx
+  pop edi
+  pop esi
   ret
 
 
@@ -103,14 +189,6 @@ start:
 
 
 ret:
-  ret
-
-int_to_bool:
-  ;; Return 0 if the parameter is zero, 1 otherwise
-  cmp DWORD [esp+4], 0
-  mov eax, 0
-  je ret
-  mov eax, 1
   ret
 
 str_equal:
