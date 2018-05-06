@@ -14,5 +14,5 @@ fun main 0 {
   "preproc.g" platform_g_compile ;
   "done!\n" 1 platform_log ;
 
-  #"test.c" "parse_c" call ;
+  "test.c" 0 "parse_c" platform_get_symbol \1 ;
 }

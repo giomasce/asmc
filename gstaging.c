@@ -341,6 +341,17 @@ void push_expr_until_brace2() {
   assert(*get_temp_depth() > 0);
 }
 
+int decode_number_or_symbol(char *str);
+int decode_number_or_symbol2(char *str) {
+  int val;
+  int res = decode_number_or_char(str, &val);
+  if (res) {
+    return val;
+  }
+  int arity;
+  return get_symbol(str, &arity);
+}
+
 void parse_block();
 void parse_block2() {
   (*get_block_depth())++;
@@ -401,6 +412,20 @@ void parse_block2() {
       assert(*name != '\0');
       push_var(name, 0);
       emit_str("\x83\xec\x04", 3);  // sub esp, 4
+    } else if (*tok == '\\') {
+      char *arity_str = tok + 1;
+      assert(*arity_str != '\0');
+      int arity = decode_number_or_symbol(arity_str);
+      pop_var(1);
+      emit_str("\x58\xff\xd0", 3);  // pop eax; call eax
+      emit_str("\x81\xc4", 2);  // add esp, ...
+      emit32(4 * arity);
+      while (arity > 0) {
+        pop_var(1);
+        arity--;
+      }
+      push_var(TEMP_VAR, 1);
+      emit(0x50);  // push eax
     } else if (*tok == '"') {
       int str_lab = gen_label();
       int jmp_lab = gen_label();
@@ -429,17 +454,6 @@ void parse_block2() {
   emit32(4 * (*get_stack_depth() - saved_stack_depth));
   *get_stack_depth() = saved_stack_depth;
   (*get_block_depth())--;
-}
-
-int decode_number_or_symbol(char *str);
-int decode_number_or_symbol2(char *str) {
-  int val;
-  int res = decode_number_or_char(str, &val);
-  if (res) {
-    return val;
-  }
-  int arity;
-  return get_symbol(str, &arity);
 }
 
 void parse();

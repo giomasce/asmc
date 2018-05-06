@@ -42,6 +42,10 @@ push_ebp_mov_ebp_esp:
   db 0x55
   db 0x89
   db 0xe5
+pop_eax_call_eax:
+  db 0x58
+  db 0xff
+  db 0xd0
 
 str_cu_open:
   db '{'
@@ -1043,6 +1047,9 @@ parse_block_loop:
   cmp BYTE [ebx], DOLLAR
   je parse_block_alloc
 
+  cmp BYTE [ebx], BACKSLASH
+  je parse_block_call
+
   cmp BYTE [ebx], QUOTE
   je parse_block_string
 
@@ -1299,6 +1306,67 @@ parse_block_alloc:
   push sub_esp_4
   call emit_str
   add esp, 8
+
+  jmp parse_block_loop
+
+parse_block_call:
+  ;; Skip to following char and check it is not a terminator
+  add ebx, 1
+  cmp BYTE [ebx], 0
+  je platform_panic
+
+  ;; Call decode_number_or_symbol
+  push ebx
+  call decode_number_or_symbol
+  add esp, 4
+  mov ebx, eax
+
+  ;; Call pop_var
+  push 1
+  call pop_var
+  add esp, 4
+
+  ;; Emit code to do the indirect call
+  push 3
+  push pop_eax_call_eax
+  call emit_str
+  add esp, 8
+
+  ;; Emit code for stack cleanup
+  push 2
+  push add_esp
+  call emit_str
+  add esp, 8
+  mov eax, 4
+  mul ebx
+  push eax
+  call emit32
+  add esp, 4
+
+  ;; Pop an appropriate number of temp vars
+parse_block_call_loop:
+  ;; Check for termination
+  cmp ebx, 0
+  je parse_block_call_end
+
+  ;; Pop a var
+  push 1
+  call pop_var
+  add esp, 4
+
+  ;; Decrement counter and reloop
+  sub ebx, 1
+  jmp parse_block_call_loop
+
+parse_block_call_end:
+  ;; Emit code to push the return value
+  push 1
+  push TEMP_VAR
+  call push_var
+  add esp, 8
+  push 0x50
+  call emit
+  add esp, 4
 
   jmp parse_block_loop
 
