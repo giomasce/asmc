@@ -220,24 +220,35 @@ fun get_token 0 {
   token_buf ret ;
 }
 
-fun parse_c 1 {
+fun tokenize_file 1 {
   @fd_in 0 param platform_open_file = ;
   $tok
   $cont
   @cont 1 = ;
+  $token_vect
+  @token_vect vector_init = ;
   while cont {
     @tok get_token = ;
     @cont tok "" strcmp 0 != = ;
     if cont {
-      if tok **c '\n' == {
-        "NL" 1 platform_log ;
-      } else {
-        tok 1 platform_log ;
-      }
-      "#" 1 platform_log ;
-    } else {
-      "\nParsing finished\n" 1 platform_log ;
+      token_vect tok vector_push_back ;
     }
-    tok free ;
+    # @cont tok "" strcmp 0 != = ;
+    # if cont {
+    #   if tok **c '\n' == {
+    #     "NL" 1 platform_log ;
+    #   } else {
+    #     tok 1 platform_log ;
+    #   }
+    #   "#" 1 platform_log ;
+    # } else {
+    #   "\nParsing finished\n" 1 platform_log ;
+    # }
+    # tok free ;
   }
+  token_vect ret ;
+}
+
+fun parse_c 1 {
+  0 param tokenize_file ;
 }

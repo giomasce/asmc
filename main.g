@@ -10,6 +10,10 @@ fun main 0 {
   "malloc.g" platform_g_compile ;
   "done!\n" 1 platform_log ;
 
+  "Compiling vector.g... " 1 platform_log ;
+  "vector.g" platform_g_compile ;
+  "done!\n" 1 platform_log ;
+
   "Compiling preproc.g... " 1 platform_log ;
   "preproc.g" platform_g_compile ;
   "done!\n" 1 platform_log ;

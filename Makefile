@@ -75,9 +75,9 @@ asmg: asmg.o gstaging.o platform.o platform_asm.o
 full-asmg.asm: kernel.asm ar.asm library.asm kernel-asmg.asm asmg.asm top.asm
 	cat kernel.asm ar.asm library.asm kernel-asmg.asm asmg.asm top.asm > full-asmg.asm
 
-initrd-asmg.ar: main.g test.c utils.g malloc.g preproc.g END
+initrd-asmg.ar: main.g test.c utils.g malloc.g vector.g preproc.g END
 	-rm initrd-asmg.ar
-	ar rcs initrd-asmg.ar main.g test.c utils.g malloc.g preproc.g END
+	ar rcs initrd-asmg.ar main.g test.c utils.g malloc.g vector.g preproc.g END
 
 asmg.x86.exe: full-asmg.asm asmasm
 	./asmasm full-asmg.asm > asmg.x86.exe
