@@ -14,6 +14,10 @@ fun main 0 {
   "vector.g" platform_g_compile ;
   "done!\n" 1 platform_log ;
 
+  "Compiling map.g... " 1 platform_log ;
+  "map.g" platform_g_compile ;
+  "done!\n" 1 platform_log ;
+
   "Compiling preproc.g... " 1 platform_log ;
   "preproc.g" platform_g_compile ;
   "done!\n" 1 platform_log ;

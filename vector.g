@@ -24,6 +24,14 @@ fun vector_destroy 1 {
   vptr free ;
 }
 
+fun vector_at_addr 2 {
+  $vptr
+  $idx
+  @vptr 1 param = ;
+  @idx 0 param = ;
+  vptr VECTOR_DATA take idx vptr VECTOR_SIZEOF_ELEM take * + ret ;
+}
+
 fun vector_at 2 {
   $vptr
   $idx
@@ -45,7 +53,7 @@ fun vector_push_back 2 {
   vptr VECTOR_SIZE take vptr VECTOR_CAP take < assert ;
   vptr VECTOR_DATA take vptr VECTOR_SIZE take vptr VECTOR_SIZEOF_ELEM take * + elem = ;
   vptr VECTOR_SIZE take_addr vptr VECTOR_SIZE take 1 + = ;
-  vptr VECTOR_SIZE take ret ;
+  vptr VECTOR_SIZE take 1 - ret ;
 }
 
 fun vector_size 1 {
