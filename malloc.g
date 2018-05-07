@@ -34,6 +34,7 @@ fun fl_remove 1 {
 fun fl_add 1 {
   $b
   @b 0 param = ;
+  b MALLOC_MAGIC take MALLOC_MAGIC_FREE == assert ;
   b MALLOC_NEXT take_addr 0 = ;
   b MALLOC_PREV take_addr 0 = ;
   if head ! head b > || {

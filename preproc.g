@@ -242,7 +242,7 @@ fun parse_c 1 {
   @tokens 0 param tokenize_file = ;
   $i
   @i 0 = ;
-  while i tokens VECTOR_SIZE take < {
+  while i tokens vector_size < {
     $tok
     @tok tokens i vector_at = ;
     if tok **c '\n' == {
@@ -251,6 +251,7 @@ fun parse_c 1 {
       tok 1 platform_log ;
     }
     "#" 1 platform_log ;
+    tok free ;
     @i i 1 + = ;
   }
   "\n" 1 platform_log ;

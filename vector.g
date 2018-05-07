@@ -11,7 +11,7 @@ fun vector_init 1 {
   $vptr
   @vptr SIZEOF_VECTOR malloc = ;
   vptr VECTOR_SIZE take_addr 0 = ;
-  vptr VECTOR_CAP take_addr INITIAL_CAP 0 = ;
+  vptr VECTOR_CAP take_addr INITIAL_CAP = ;
   vptr VECTOR_SIZEOF_ELEM take_addr 0 param = ;
   vptr VECTOR_DATA take_addr vptr VECTOR_CAP take vptr VECTOR_SIZEOF_ELEM take * malloc = ;
   vptr ret ;
@@ -37,10 +37,12 @@ fun vector_push_back 2 {
   $elem
   @vptr 1 param = ;
   @elem 0 param = ;
+  vptr VECTOR_SIZE take vptr VECTOR_CAP take <= assert ;
   if vptr VECTOR_SIZE take vptr VECTOR_CAP take == {
     vptr VECTOR_CAP take_addr vptr VECTOR_CAP take 2 * = ;
     vptr VECTOR_DATA take_addr vptr VECTOR_CAP take vptr VECTOR_SIZEOF_ELEM take * vptr VECTOR_DATA take realloc = ;
   }
+  vptr VECTOR_SIZE take vptr VECTOR_CAP take < assert ;
   vptr VECTOR_DATA take vptr VECTOR_SIZE take vptr VECTOR_SIZEOF_ELEM take * + elem = ;
   vptr VECTOR_SIZE take_addr vptr VECTOR_SIZE take 1 + = ;
   vptr VECTOR_SIZE take ret ;
@@ -50,4 +52,50 @@ fun vector_size 1 {
   $vptr
   @vptr 0 param = ;
   vptr VECTOR_SIZE take ret ;
+}
+
+fun vector_test 0 {
+  $v
+  @v 4 vector_init = ;
+  v 22 vector_push_back ;
+  v 23 vector_push_back ;
+  v 24 vector_push_back ;
+  v 25 vector_push_back ;
+  v 26 vector_push_back ;
+  v 22 vector_push_back ;
+  v 23 vector_push_back ;
+  v 24 vector_push_back ;
+  v 25 vector_push_back ;
+  v 26 vector_push_back ;
+  v 22 vector_push_back ;
+  v 23 vector_push_back ;
+  v 24 vector_push_back ;
+  v 25 vector_push_back ;
+  v 26 vector_push_back ;
+  v 100 vector_push_back ;
+  v 22 vector_push_back ;
+  v 23 vector_push_back ;
+  v 24 vector_push_back ;
+  v 25 vector_push_back ;
+  v 26 vector_push_back ;
+  v 22 vector_push_back ;
+  v 23 vector_push_back ;
+  v 24 vector_push_back ;
+  v 25 vector_push_back ;
+  v 26 vector_push_back ;
+  v 22 vector_push_back ;
+  v 23 vector_push_back ;
+  v 24 vector_push_back ;
+  v 25 vector_push_back ;
+  v 26 vector_push_back ;
+  v 100 vector_push_back ;
+  $i
+  @i 0 = ;
+  while i v vector_size < {
+    $elem
+    @elem v i vector_at = ;
+    elem itoa 1 platform_log ;
+    "\n" 1 platform_log ;
+    @i i 1 + = ;
+  }
 }
