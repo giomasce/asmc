@@ -3,6 +3,16 @@ $fd_in
 $read_char
 $char_given_back
 
+const PPCTX_DEFINES 0
+const SIZEOF_PPCTX 4
+
+fun ppctx_init 0 {
+  $ptr
+  @ptr SIZEOF_PPCTX malloc = ;
+  ptr PPCTX_DEFINES take_addr map_init = ;
+  ptr ret ;
+}
+
 fun get_char_type 1 {
   $x
   @x 0 param = ;
@@ -237,9 +247,57 @@ fun tokenize_file 1 {
   token_vect ret ;
 }
 
-fun parse_c 1 {
+fun discard_white_tokens 2 {
+  $iptr
   $tokens
-  @tokens 0 param tokenize_file = ;
+  @iptr 0 param = ;
+  @tokens 1 param = ;
+  $cont
+  @cont 1 = ;
+  while cont {
+    iptr iptr ** 1 + = ;
+    iptr ** tokens vector_size < assert ;
+    @cont tokens iptr ** vector_at " " strcmp 0 == = ;
+  }
+}
+
+fun preproc_file 3 {
+  $ctx
+  $filename
+  $tokens
+  @ctx 1 param = ;
+  @filename 0 param = ;
+  @tokens 2 param = ;
+  $intoks
+  @intoks filename tokenize_file = ;
+  $i
+  @i 0 = ;
+  $at_newline
+  @at_newline 1 = ;
+  while i intoks vector_size < {
+    $tok
+    @tok intoks i vector_at = ;
+    $is_preproc_dir
+    @is_preproc_dir tok "#" strcmp 0 == at_newline && = ;
+    if is_preproc_dir {
+      intoks @i discard_white_tokens ;
+      @tok intoks i vector_at = ;
+      # ...
+    } else {
+      tokens tok vector_push_back ;
+    }
+    @at_newline tok "\n" strcmp 0 == = ;
+    @i i 1 + = ;
+  }
+  intoks free ;
+}
+
+fun parse_c 1 {
+  $ctx
+  @ctx ppctx_init = ;
+  $tokens
+  @tokens 4 vector_init = ;
+  tokens ctx 0 param preproc_file ;
   $i
   @i 0 = ;
   while i tokens vector_size < {
