@@ -935,6 +935,8 @@ push_expr_ret:
   global push_expr_until_brace
 push_expr_until_brace:
   push ebx
+  push esi
+  push edi
 
 push_expr_until_brace_loop:
   ;; Get a token
@@ -949,8 +951,98 @@ push_expr_until_brace_loop:
   cmp eax, 0
   je push_expr_until_brace_end
 
-  ;; If not, push it
+  ;; If not, branch depending on whether it is a string or not
+  cmp BYTE [ebx], QUOTE
+  je push_expr_until_brace_string
+  jmp push_expr_until_brace_push
+
+push_expr_until_brace_string:
+  ;; Generate a jump (in esi) and a string (in edi) label
+  call gen_label
+  mov esi, eax
+  call gen_label
+  mov edi, eax
+
+  ;; Emit code to jump to the jump label
+  push 0xe9
+  call emit
+  add esp, 4
   push 0
+  push esi
+  call write_label
+  add esp, 4
+  push eax
+  call get_symbol
+  add esp, 8
+  push eax
+  call compute_rel
+  add esp, 4
+  push eax
+  call emit32
+  add esp, 4
+
+  ;; Add a symbol for the string label
+  push 0xffffffff
+  mov eax, current_loc
+  push DWORD [eax]
+  push edi
+  call write_label
+  add esp, 4
+  push eax
+  call add_symbol_wrapper
+  add esp, 12
+
+  ;; Emit escaped string and a terminator
+  push ebx
+  call emit_escaped_string
+  add esp, 4
+  push 0
+  call emit
+  add esp, 4
+
+  ;; Add a symbol for the jump label
+  push 0xffffffff
+  mov eax, current_loc
+  push DWORD [eax]
+  push esi
+  call write_label
+  add esp, 4
+  push eax
+  call add_symbol_wrapper
+  add esp, 12
+
+  ;; Emit code to push the string label
+  push 1
+  push TEMP_VAR
+  call push_var
+  add esp, 8
+  push 0x68
+  call emit
+  add esp, 4
+  push 0
+  push edi
+  call write_label
+  add esp, 4
+  push eax
+  call get_symbol
+  add esp, 8
+  push eax
+  call emit32
+  add esp, 4
+
+  jmp push_expr_until_brace_loop
+
+push_expr_until_brace_push:
+  ;; Check if we want the address
+  mov esi, 0
+  cmp BYTE [ebx], AT_SIGN
+  jne push_expr_until_brace_push_after_if
+  mov esi, 1
+  add ebx, 1
+
+push_expr_until_brace_push_after_if:
+  ;; Call push_expr
+  push esi
   push ebx
   call push_expr
   add esp, 8
@@ -966,6 +1058,8 @@ push_expr_until_brace_end:
   cmp DWORD [eax], 0
   jna platform_panic
 
+  pop edi
+  pop esi
   pop ebx
   ret
 
@@ -1455,6 +1549,7 @@ parse_block_push:
   add ebx, 1
 
 parse_block_push_after_if:
+  ;; Call push_expr
   push esi
   push ebx
   call push_expr

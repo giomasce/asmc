@@ -277,12 +277,14 @@ fun preproc_file 3 {
   while i intoks vector_size < {
     $tok
     @tok intoks i vector_at = ;
-    $is_preproc_dir
-    @is_preproc_dir tok "#" strcmp 0 == at_newline && = ;
-    if is_preproc_dir {
+    if tok "#" strcmp 0 == at_newline && {
       intoks @i discard_white_tokens ;
       @tok intoks i vector_at = ;
-      # ...
+      if tok "include" strcmp 0 == {
+
+      } else {
+        0 assert ;
+      }
     } else {
       tokens tok vector_push_back ;
     }

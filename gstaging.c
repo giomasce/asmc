@@ -334,8 +334,26 @@ void push_expr_until_brace2() {
     if (strcmp(tok, "{") == 0) {
       give_back_token();
       break;
+    } else if (*tok == '"') {
+      int str_lab = gen_label();
+      int jmp_lab = gen_label();
+      emit(0xe9);  // jmp rel
+      emit32(compute_rel(get_symbol(write_label(jmp_lab), 0)));
+      add_symbol_wrapper(write_label(str_lab), *get_current_loc(), -1);
+      emit_escaped_string(tok);
+      emit(0);
+      add_symbol_wrapper(write_label(jmp_lab), *get_current_loc(), -1);
+      push_var(TEMP_VAR, 1);
+      emit(0x68);  // push val
+      emit32(get_symbol(write_label(str_lab), 0));
     } else {
-      push_expr(tok, 0);
+      // Check if we want the address
+      int want_addr = 0;
+      if (*tok == '@') {
+        tok++;
+        want_addr = 1;
+      }
+      push_expr(tok, want_addr);
     }
   }
   assert(*get_temp_depth() > 0);
