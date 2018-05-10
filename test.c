@@ -21,32 +21,6 @@ main(argc, argv) {
   return d;
 }
 
-test(x) {
-  int y;
-  y = x;
-  return x;
-}
-
-sum(x, y) {
-  int z;
-  z = x + y;
-  return z;
-}
-
-hello(bye) {
-  bye = 10 + 20 + 30;
-}
-
-empty() {
-  return sum(100, 200);
-}
-
-in_place_sum(x, y, z) {
-  *z = x + y;
-  char *z = x + '\n';
-  return &y;
-}
-
 test_if() {
   int x;
   if (x == 0) {

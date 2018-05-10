@@ -3,6 +3,23 @@ $fd_in
 $read_char
 $char_given_back
 
+fun append_to_str 2 {
+  $s1
+  $s2
+  @s1 0 param = ;
+  @s2 1 param = ;
+  $len1
+  $len2
+  @len1 s1 strlen = ;
+  @len2 s2 strlen = ;
+  $newlen
+  @newlen len1 len2 + 1 + = ;
+  $news
+  @news newlen s2 realloc = ;
+  s1 news len2 + strcpy ;
+  news ret ;
+}
+
 const PPCTX_DEFINES 0
 const SIZEOF_PPCTX 4
 
@@ -261,6 +278,46 @@ fun discard_white_tokens 2 {
   }
 }
 
+fun preproc_process_include 4 {
+  $ctx
+  $tokens
+  $intoks
+  $iptr
+  @ctx 3 param = ;
+  @tokens 2 param = ;
+  @intoks 1 param = ;
+  @iptr 0 param = ;
+
+  intoks iptr discard_white_tokens ;
+
+  $tok
+  @tok intoks iptr ** vector_at = ;
+  $filename
+  @filename "" strdup = ;
+  if tok "<" strcmp 0 == {
+    iptr iptr ** 1 + = ;
+    @tok intoks iptr ** vector_at = ;
+    while tok ">" strcmp 0 != {
+      @filename filename tok append_to_str = ;
+      iptr iptr ** 1 + = ;
+      @tok intoks iptr ** vector_at = ;
+    }
+    intoks iptr discard_white_tokens ;
+  } else {
+    tok **c '"' == assert ;
+    filename free ;
+    @filename tok 1 + strdup = ;
+    filename filename strlen 1 - + '\0' =c ;
+    intoks iptr discard_white_tokens ;
+  }
+  "Including file " 1 platform_log ;
+  filename 1 platform_log ;
+  "\n" 1 platform_log ;
+  #tokens ctx filename preproc_file ;
+  filename free ;
+  intoks iptr ** vector_at "\n" strcmp 0 == assert ;
+}
+
 fun preproc_file 3 {
   $ctx
   $filename
@@ -281,14 +338,15 @@ fun preproc_file 3 {
       intoks @i discard_white_tokens ;
       @tok intoks i vector_at = ;
       if tok "include" strcmp 0 == {
-
+        ctx tokens intoks @i preproc_process_include ;
       } else {
         0 assert ;
       }
+      @at_newline 1 = ;
     } else {
       tokens tok vector_push_back ;
+      @at_newline tok "\n" strcmp 0 == = ;
     }
-    @at_newline tok "\n" strcmp 0 == = ;
     @i i 1 + = ;
   }
   intoks free ;
