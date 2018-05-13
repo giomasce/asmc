@@ -476,18 +476,18 @@ init_symbols:
   ret
 
 
-  global find_symbol
-find_symbol:
+  global get_symbol_idx
+get_symbol_idx:
   ;; Set up registers and stack
   push ebp
   mov ebp, esp
   mov ecx, 0
 
-find_symbol_loop:
+get_symbol_idx_loop:
   ;; Check for termination
   mov eax, symbol_num
   cmp ecx, [eax]
-  je find_symbol_not_found
+  je get_symbol_idx_end
 
   ;; Save ecx
   push ecx
@@ -511,13 +511,33 @@ find_symbol_loop:
 
   ;; If strcmp returned 0, then we return
   cmp eax, 0
-  je find_symbol_found
+  je get_symbol_idx_end
 
   ;; Increment ecx and check for termination
   add ecx, 1
-  jmp find_symbol_loop
+  jmp get_symbol_idx_loop
 
-find_symbol_found:
+get_symbol_idx_end:
+  mov eax, ecx
+  pop ebp
+  ret
+
+
+  global find_symbol
+find_symbol:
+  ;; Set up registers and stack
+  push ebp
+  mov ebp, esp
+
+  ;; Call get_symbol_idx
+  push DWORD [ebp+8]
+  call get_symbol_idx
+  add esp, 4
+  mov ecx, eax
+  mov eax, symbol_num
+  cmp ecx, [eax]
+  je find_symbol_not_found
+
   ;; If the second argument is not null, fill it with the location
   mov edx, [ebp+12]
   cmp edx, 0
@@ -701,6 +721,130 @@ add_symbol_wrapper_stage1:
   jmp add_symbol_wrapper_ret
 
 add_symbol_wrapper_ret:
+  pop ebp
+  ret
+
+
+  global add_symbol_placeholder
+add_symbol_placeholder:
+  push ebp
+  mov ebp, esp
+
+  ;; Call find_symbol
+  push 0
+  mov edx, esp
+  push edx
+  push 0
+  push DWORD [ebp+8]
+  call find_symbol
+  add esp, 12
+  pop edx
+
+  ;; Check that the symbol exists if we are not in stage 0
+  mov ecx, stage
+  cmp DWORD [ecx], 0
+  je add_symbol_placeholder_after_assert
+  cmp eax, 0
+  je platform_panic
+
+add_symbol_placeholder_after_assert:
+  ;; If the symbol was not found...
+  cmp eax, 0
+  jne add_symbol_placeholder_found
+
+  ;; ...add it, with a fake location
+  push DWORD [ebp+12]
+  push 0xffffffff
+  push DWORD [ebp+8]
+  call add_symbol
+  add esp, 12
+  jmp add_symbol_placeholder_end
+
+add_symbol_placeholder_found:
+  ;; If it was found, check that arity matches
+  cmp [ebp+12], edx
+  jne platform_panic
+
+add_symbol_placeholder_end:
+  pop ebp
+  ret
+
+
+  global fix_symbol_placeholder
+fix_symbol_placeholder:
+  push ebp
+  mov ebp, esp
+  push ebx
+
+  ;; Call find_symbol
+  push 0
+  mov edx, esp
+  push 0
+  mov ecx, esp
+  push edx
+  push ecx
+  push DWORD [ebp+8]
+  call find_symbol
+  add esp, 12
+  pop ebx
+  pop edx
+
+  ;; Check that the symbol exists if we are not in stage 0
+  mov ecx, stage
+  cmp DWORD [ecx], 0
+  je fix_symbol_placeholder_after_assert
+  cmp eax, 0
+  je platform_panic
+
+fix_symbol_placeholder_after_assert:
+  ;; If the symbol was not found...
+  cmp eax, 0
+  jne fix_symbol_placeholder_found
+
+  ;; ...add it, with a fake location
+  push DWORD [ebp+16]
+  push DWORD [ebp+12]
+  push DWORD [ebp+8]
+  call add_symbol
+  add esp, 12
+  jmp fix_symbol_placeholder_end
+
+fix_symbol_placeholder_found:
+  ;; Check that arity matches
+  cmp [ebp+16], edx
+  jne platform_panic
+
+  ;; Check that location matches, or that we are in stage 0 and
+  ;; location is -1
+  cmp [ebp+12], ebx
+  je fix_symbol_placeholder_after_second_assert
+  cmp ebx, 0xffffffff
+  jne platform_panic
+  mov ecx, stage
+  cmp DWORD [ecx], 0
+  jne platform_panic
+
+fix_symbol_placeholder_after_second_assert:
+  ;; Call get_symbol_idx
+  push DWORD [ebp+8]
+  call get_symbol_idx
+  add esp, 4
+
+  ;; Assert the index is valid
+  mov ecx, symbol_num
+  cmp [ecx], eax
+  je platform_panic
+
+  ;; Fix the location value
+  mov edx, 4
+  mul edx
+  mov ecx, symbol_locs_ptr
+  add eax, [ecx]
+  mov edx, [ebp+12]
+  mov [eax], edx
+
+fix_symbol_placeholder_end:
+  pop ebx
   pop ebp
   ret
 

@@ -156,14 +156,20 @@ int find_char2(char *s, char c) {
   }
 }
 
-int find_symbol(const char *name, int *loc, int *arity);
-int find_symbol2(const char *name, int *loc, int *arity) {
-  int i;
+int get_symbol_idx(const char *name);
+int get_symbol_idx2(const char *name) {
+  int i = 0;
   for (i = 0; i < *get_symbol_num(); i++) {
     if (strcmp(name, get_symbol_names() + i * MAX_SYMBOL_NAME_LEN) == 0) {
       break;
     }
   }
+  return i;
+}
+
+int find_symbol(const char *name, int *loc, int *arity);
+int find_symbol2(const char *name, int *loc, int *arity) {
+  int i = get_symbol_idx(name);
   if (i == *get_symbol_num()) {
     return 0;
   } else {
@@ -205,6 +211,41 @@ void add_symbol_wrapper2(const char *name, int loc, int arity) {
     assert(arity == arity2);
   } else {
     platform_panic();
+  }
+}
+
+void add_symbol_placeholder(const char *name, int arity);
+void add_symbol_placeholder2(const char *name, int arity) {
+  int stage = *get_stage();
+  int arity2;
+  int res = find_symbol(name, 0, &arity2);
+  if (stage != 0) {
+    assert(res);
+  }
+  if (!res) {
+    add_symbol(name, 0xffffffff, arity);
+  } else {
+    assert(arity == arity2);
+  }
+}
+
+void fix_symbol_placeholder(const char *name, int loc, int arity);
+void fix_symbol_placeholder2(const char *name, int loc, int arity) {
+  int stage = *get_stage();
+  int loc2;
+  int arity2;
+  int res = find_symbol(name, &loc2, &arity2);
+  if (stage != 0) {
+    assert(res);
+  }
+  if (!res) {
+    add_symbol(name, loc, arity);
+  } else {
+    assert(arity == arity2);
+    assert(loc == loc2 || (stage == 0 && loc2 == 0xffffffff));
+    int idx = get_symbol_idx(name);
+    assert(idx != *get_symbol_num());
+    get_symbol_locs()[idx] = loc;
   }
 }
 

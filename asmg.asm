@@ -68,6 +68,9 @@ str_while:
 str_else:
   db 'else'
   db 0
+str_ifun:
+  db 'ifun'
+  db 0
 str_fun:
   db 'fun'
   db 0
@@ -1647,6 +1650,13 @@ parse_loop:
   je parse_fun
 
   push ebx
+  push str_ifun
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je parse_ifun
+
+  push ebx
   push str_const
   call strcmp
   add esp, 8
@@ -1681,7 +1691,7 @@ parse_fun:
   mov eax, current_loc
   push DWORD [eax]
   push ebx
-  call add_symbol_wrapper
+  call fix_symbol_placeholder
   add esp, 12
 
   ;; Emit the prologue
@@ -1697,6 +1707,30 @@ parse_fun:
   push 2
   push pop_ebp_ret
   call emit_str
+  add esp, 8
+
+  jmp parse_loop
+
+parse_ifun:
+  ;; Get a token and copy it in buf2 (pointed by ebx)
+  mov eax, buf2_ptr
+  mov ebx, [eax]
+  call get_token
+  push eax
+  push ebx
+  call strcpy
+  add esp, 8
+
+  ;; Get another token and convert it to an integer
+  call get_token
+  push eax
+  call atoi
+  add esp, 4
+
+  ;; Add a symbol placeholder for the function
+  push eax
+  push ebx
+  call add_symbol_placeholder
   add esp, 8
 
   jmp parse_loop

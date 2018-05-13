@@ -8,9 +8,7 @@ $glob
 %array 100
 %array2 LEN
 
-fun test 1 {
-
-}
+ifun test 1
 
 fun main 2 {
   $argc
@@ -35,8 +33,16 @@ fun main 2 {
   @glob LEN = ;
   @x '\n' = ;
   @x 100 = ;
-  @glob "Hello, ASM!" = ;
-  @glob "String\nwith\tescapes\"\'" = ;
+  #@glob "Hello, ASM!" = ;
+  #@glob "String\nwith\tescapes\"\'" = ;
 }
 
+fun test2 0 {
+  0 test ;
+}
 
+fun test 1 {
+
+}
+
+ifun test 1

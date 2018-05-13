@@ -17,6 +17,8 @@ int sprintf(char *str, const char *format, ...);
 int find_symbol(const char *name, int *loc, int *arity);
 void add_symbol(const char *name, int loc, int arity);
 void add_symbol_wrapper(const char *name, int loc, int arity);
+void add_symbol_placeholder(const char *name, int arity);
+void fix_symbol_placeholder(const char *name, int loc, int arity);
 int *get_symbol_num();
 int *get_stage();
 int *get_label_num();
@@ -487,10 +489,17 @@ void parse2() {
       name = get_buf2();
       char *arity_str = get_token();
       int arity = atoi(arity_str);
-      add_symbol_wrapper(name, *get_current_loc(), arity);
+      fix_symbol_placeholder(name, *get_current_loc(), arity);
       emit_str("\x55\x89\xe5", 3);  // push ebp; mov ebp, esp
       parse_block();
       emit_str("\x5d\xc3", 2);  // pop ebp; ret
+    } else if (strcmp(tok, "ifun") == 0) {
+      char *name = get_token();
+      strcpy(get_buf2(), name);
+      name = get_buf2();
+      char *arity_str = get_token();
+      int arity = atoi(arity_str);
+      add_symbol_placeholder(name, arity);
     } else if (strcmp(tok, "const") == 0) {
       char *name = get_token();
       strcpy(get_buf2(), name);

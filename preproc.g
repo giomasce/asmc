@@ -278,6 +278,8 @@ fun discard_white_tokens 2 {
   }
 }
 
+ifun preproc_file 3
+
 fun preproc_process_include 4 {
   $ctx
   $tokens
@@ -313,7 +315,7 @@ fun preproc_process_include 4 {
   "Including file " 1 platform_log ;
   filename 1 platform_log ;
   "\n" 1 platform_log ;
-  #tokens ctx filename preproc_file ;
+  tokens ctx filename preproc_file ;
   filename free ;
   intoks iptr ** vector_at "\n" strcmp 0 == assert ;
 }
