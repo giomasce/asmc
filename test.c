@@ -1,6 +1,7 @@
 
 #include <first.h>
-#include "other.h"
+#include \
+"other.h"
 
 main(argc, argv) {
   int a1;

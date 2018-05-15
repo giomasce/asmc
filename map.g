@@ -42,6 +42,17 @@ fun map_at 2 {
   addr MAP_ELEM_VALUE take ret ;
 }
 
+fun map_at_idx 2 {
+  $map
+  $idx
+  @map 1 param = ;
+  @idx 0 param = ;
+  $addr
+  @addr map idx vector_at_addr = ;
+  addr MAP_ELEM_PRESENT take assert ;
+  addr MAP_ELEM_VALUE take ret ;
+}
+
 fun map_has 2 {
   $map
   $key
@@ -52,6 +63,16 @@ fun map_has 2 {
   if idx 0xffffffff == {
     0 ret ;
   }
+  $addr
+  @addr map idx vector_at_addr = ;
+  addr MAP_ELEM_PRESENT take ret ;
+}
+
+fun map_has_idx 2 {
+  $map
+  $idx
+  @map 1 param = ;
+  @idx 0 param = ;
   $addr
   @addr map idx vector_at_addr = ;
   addr MAP_ELEM_PRESENT take ret ;
@@ -90,4 +111,10 @@ fun map_erase 2 {
     @addr map idx vector_at_addr = ;
     addr MAP_ELEM_PRESENT take_addr 0 = ;
   }
+}
+
+fun map_size 1 {
+  $map
+  @map 0 param = ;
+  map vector_size ret ;
 }

@@ -20,6 +20,40 @@ fun append_to_str 2 {
   news ret ;
 }
 
+fun free_vect_of_ptrs 1 {
+  $vect
+  @vect 0 param = ;
+  $i
+  @i 0 = ;
+  while i vect vector_size < {
+    vect i vector_at free ;
+    @i i 1 + = ;
+  }
+  vect vector_destroy ;
+}
+
+const SUBST_IS_FUNCTION 0   # bool
+const SUBST_PARAMETERS 4    # vector of char*
+const SUBST_REPLACEMENT 8   # vector of char*
+const SIZEOF_SUBST 12
+
+fun subst_init 0 {
+  $ptr
+  @ptr SIZEOF_SUBST malloc = ;
+  ptr SUBST_IS_FUNCTION take_addr 0 = ;
+  ptr SUBST_PARAMETERS take_addr 4 vector_init = ;
+  ptr SUBST_REPLACEMENT take_addr 4 vector_init = ;
+  ptr ret ;
+}
+
+fun subst_destroy 1 {
+  $ptr
+  @ptr 0 param = ;
+  ptr SUBST_PARAMETERS take free_vect_of_ptrs ;
+  ptr SUBST_REPLACEMENT take free_vect_of_ptrs ;
+  ptr free ;
+}
+
 const PPCTX_DEFINES 0
 const SIZEOF_PPCTX 4
 
@@ -28,6 +62,22 @@ fun ppctx_init 0 {
   @ptr SIZEOF_PPCTX malloc = ;
   ptr PPCTX_DEFINES take_addr map_init = ;
   ptr ret ;
+}
+
+fun ppctx_destroy 1 {
+  $ptr
+  @ptr 0 param = ;
+  $defs
+  @defs ptr PPCTX_DEFINES take = ;
+  $i
+  @i 0 = ;
+  while i defs map_size < {
+    if defs i map_has_idx {
+      defs i map_at_idx subst_destroy ;
+    }
+  }
+  defs free ;
+  ptr free ;
 }
 
 fun get_char_type 1 {
@@ -346,12 +396,12 @@ fun preproc_file 3 {
       }
       @at_newline 1 = ;
     } else {
-      tokens tok vector_push_back ;
+      tokens tok strdup vector_push_back ;
       @at_newline tok "\n" strcmp 0 == = ;
     }
     @i i 1 + = ;
   }
-  intoks free ;
+  intoks free_vect_of_ptrs ;
 }
 
 fun parse_c 1 {
@@ -371,8 +421,9 @@ fun parse_c 1 {
       tok 1 platform_log ;
     }
     "#" 1 platform_log ;
-    tok free ;
     @i i 1 + = ;
   }
   "\n" 1 platform_log ;
+  tokens free_vect_of_ptrs ;
+  ctx ppctx_destroy ;
 }
