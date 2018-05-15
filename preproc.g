@@ -315,8 +315,8 @@ fun tokenize_file 1 {
 }
 
 fun discard_white_tokens 2 {
-  $iptr
   $tokens
+  $iptr
   @iptr 0 param = ;
   @tokens 1 param = ;
   $cont
@@ -326,6 +326,118 @@ fun discard_white_tokens 2 {
     iptr ** tokens vector_size < assert ;
     @cont tokens iptr ** vector_at " " strcmp 0 == = ;
   }
+}
+
+fun process_token 4 {
+  $ctx
+  $tokens
+  $intoks
+  $iptr
+  @iptr 0 param = ;
+  @intoks 1 param = ;
+  @tokens 2 param = ;
+  @ctx 3 param = ;
+  $tok
+  @tok intoks iptr ** vector_at = ;
+
+  # Search the token in the context defines
+  if ctx PPCTX_DEFINES take tok map_has {
+    $subst
+    @subst ctx PPCTX_DEFINES take tok map_at = ;
+    $repl
+    @repl subst SUBST_REPLACEMENT take = ;
+    if subst SUBST_IS_FUNCTION take {
+      # TODO
+      0 assert ;
+    } else {
+      $j
+      @j 0 = ;
+      while j repl vector_size < {
+        ctx tokens repl @j process_token ;
+        @j j 1 + = ;
+      }
+    }
+  } else {
+    tokens tok strdup vector_push_back ;
+  }
+}
+
+fun preproc_process_define 4 {
+  $ctx
+  $tokens
+  $intoks
+  $iptr
+  @ctx 3 param = ;
+  @tokens 2 param = ;
+  @intoks 1 param = ;
+  @iptr 0 param = ;
+
+  intoks iptr discard_white_tokens ;
+
+  $ident
+  @ident intoks iptr ** vector_at = ;
+  ident "\n" strcmp 0 != assert ;
+  iptr iptr ** 1 + = ;
+  iptr ** intoks vector_size < assert ;
+
+  $tok
+  @tok intoks iptr ** vector_at = ;
+  $is_func
+  @is_func tok "(" strcmp 0 == = ;
+
+  $subst
+  @subst subst_init = ;
+  subst SUBST_IS_FUNCTION take_addr is_func = ;
+  subst SUBST_PARAMETERS take_addr 4 vector_init = ;
+  subst SUBST_REPLACEMENT take_addr 4 vector_init = ;
+  if is_func {
+    # TODO
+    0 assert ;
+  } else {
+    while tok "\n" strcmp 0 != {
+      subst SUBST_REPLACEMENT take tok strdup vector_push_back ;
+      iptr iptr ** 1 + = ;
+      iptr ** intoks vector_size < assert ;
+      @tok intoks iptr ** vector_at = ;
+    }
+  }
+
+  if ctx PPCTX_DEFINES take ident map_has {
+    $subst
+    @subst ctx PPCTX_DEFINES take tok map_at = ;
+    subst subst_destroy ;
+    ctx PPCTX_DEFINES take tok map_erase ;
+  }
+  ctx PPCTX_DEFINES take ident subst map_set ;
+
+  intoks iptr ** vector_at "\n" strcmp 0 == assert ;
+}
+
+fun preproc_process_undef 4 {
+  $ctx
+  $tokens
+  $intoks
+  $iptr
+  @ctx 3 param = ;
+  @tokens 2 param = ;
+  @intoks 1 param = ;
+  @iptr 0 param = ;
+
+  intoks iptr discard_white_tokens ;
+
+  $tok
+  @tok intoks iptr ** vector_at = ;
+
+  # If this definition is known, erase it
+  if ctx PPCTX_DEFINES take tok map_has {
+    $subst
+    @subst ctx PPCTX_DEFINES take tok map_at = ;
+    subst subst_destroy ;
+    ctx PPCTX_DEFINES take tok map_erase ;
+  }
+
+  intoks iptr discard_white_tokens ;
+  intoks iptr ** vector_at "\n" strcmp 0 == assert ;
 }
 
 ifun preproc_file 3
@@ -354,19 +466,19 @@ fun preproc_process_include 4 {
       iptr iptr ** 1 + = ;
       @tok intoks iptr ** vector_at = ;
     }
-    intoks iptr discard_white_tokens ;
   } else {
     tok **c '"' == assert ;
     filename free ;
     @filename tok 1 + strdup = ;
     filename filename strlen 1 - + '\0' =c ;
-    intoks iptr discard_white_tokens ;
   }
   "Including file " 1 platform_log ;
   filename 1 platform_log ;
   "\n" 1 platform_log ;
   tokens ctx filename preproc_file ;
   filename free ;
+
+  intoks iptr discard_white_tokens ;
   intoks iptr ** vector_at "\n" strcmp 0 == assert ;
 }
 
@@ -389,16 +501,28 @@ fun preproc_file 3 {
     if tok "#" strcmp 0 == at_newline && {
       intoks @i discard_white_tokens ;
       @tok intoks i vector_at = ;
-      if tok "include" strcmp 0 == {
+      $processed
+      @processed 0 = ;
+      if tok "include" strcmp 0 == processed ! && {
         ctx tokens intoks @i preproc_process_include ;
-      } else {
+        @processed 1 = ;
+      }
+      if tok "define" strcmp 0 == processed ! && {
+        ctx tokens intoks @i preproc_process_define ;
+        @processed 1 = ;
+      }
+      if tok "undef" strcmp 0 == processed ! && {
+        ctx tokens intoks @i preproc_process_undef ;
+        @processed 1 = ;
+      }
+      if processed ! {
         0 assert ;
       }
-      @at_newline 1 = ;
     } else {
-      tokens tok strdup vector_push_back ;
-      @at_newline tok "\n" strcmp 0 == = ;
+      ctx tokens intoks @i process_token ;
     }
+    @tok intoks i vector_at = ;
+    @at_newline tok "\n" strcmp 0 == = ;
     @i i 1 + = ;
   }
   intoks free_vect_of_ptrs ;

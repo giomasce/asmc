@@ -1,4 +1,10 @@
 
+TEST_TOK
+#define TEST_TOK 22
+TEST_TOK
+#undef TEST_TOK
+TEST_TOK
+
 #include <first.h>
 #include \
 "other.h"
