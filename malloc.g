@@ -142,6 +142,9 @@ fun malloc 1 {
 fun free 1 {
   $ptr
   @ptr 0 param = ;
+  if ptr 0 == {
+    ret ;
+  }
   $b
   @b ptr SIZEOF_MALLOC - = ;
   b MALLOC_MAGIC take MALLOC_MAGIC_ALLOC == assert ;

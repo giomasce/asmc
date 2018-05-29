@@ -1,4 +1,6 @@
 
+#if 1 == 2
+
 TEST_TOK
 #define TEST_TOK 22
 TEST_TOK

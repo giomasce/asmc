@@ -482,6 +482,21 @@ fun preproc_process_include 4 {
   intoks iptr ** vector_at "\n" strcmp 0 == assert ;
 }
 
+fun preproc_process_if 4 {
+  $ctx
+  $tokens
+  $intoks
+  $iptr
+  @ctx 3 param = ;
+  @tokens 2 param = ;
+  @intoks 1 param = ;
+  @iptr 0 param = ;
+
+  $ast
+  @ast intoks iptr "\n" ast_parse = ;
+  intoks iptr ** vector_at "\n" strcmp 0 == assert ;
+}
+
 fun preproc_file 3 {
   $ctx
   $filename
@@ -513,6 +528,10 @@ fun preproc_file 3 {
       }
       if tok "undef" strcmp 0 == processed ! && {
         ctx tokens intoks @i preproc_process_undef ;
+        @processed 1 = ;
+      }
+      if tok "if" strcmp 0 == processed ! && {
+        ctx tokens intoks @i preproc_process_if ;
         @processed 1 = ;
       }
       if processed ! {

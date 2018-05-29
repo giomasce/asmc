@@ -18,6 +18,10 @@ fun main 0 {
   "map.g" platform_g_compile ;
   "done!\n" 1 platform_log ;
 
+  "Compiling ast.g... " 1 platform_log ;
+  "ast.g" platform_g_compile ;
+  "done!\n" 1 platform_log ;
+
   "Compiling preproc.g... " 1 platform_log ;
   "preproc.g" platform_g_compile ;
   "done!\n" 1 platform_log ;
