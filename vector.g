@@ -56,6 +56,14 @@ fun vector_push_back 2 {
   vptr VECTOR_SIZE take 1 - ret ;
 }
 
+fun vector_pop_back 1 {
+  $vptr
+  @vptr 0 param = ;
+  vptr VECTOR_SIZE take 0 > assert ;
+  vptr VECTOR_SIZE take_addr vptr VECTOR_SIZE take 1 - = ;
+  vptr VECTOR_DATA take vptr VECTOR_SIZE take vptr VECTOR_SIZEOF_ELEM take * + ** ret ;
+}
+
 fun vector_size 1 {
   $vptr
   @vptr 0 param = ;

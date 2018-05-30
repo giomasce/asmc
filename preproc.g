@@ -107,6 +107,8 @@ fun is_valid_2_char_token 1 {
   $second
   @first 0 param **c = ;
   @second 0 param 1 + **c = ;
+  if first '+' == second '+' == && { 1 ret ; }
+  if first '-' == second '-' == && { 1 ret ; }
   if first '=' == second '=' == && { 1 ret ; }
   if first '!' == second '=' == && { 1 ret ; }
   if first '<' == second '=' == && { 1 ret ; }
@@ -494,6 +496,7 @@ fun preproc_process_if 4 {
 
   $ast
   @ast intoks iptr "\n" ast_parse = ;
+  ast ast_dump ;
   intoks iptr ** vector_at "\n" strcmp 0 == assert ;
 }
 

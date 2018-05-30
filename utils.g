@@ -5,6 +5,15 @@ fun assert 1 {
   }
 }
 
+fun assert_msg 2 {
+  if 1 param ! {
+    "\nASSERTION FAILED:\n" 1 platform_log ;
+    0 param 1 platform_log ;
+    "\n" 1 platform_log ;
+    platform_panic ;
+  }
+}
+
 fun min 2 {
   $x
   $y
