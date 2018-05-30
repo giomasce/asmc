@@ -1,6 +1,8 @@
 
 # Malloc
 # Based on https://github.com/andrestc/linux-prog/blob/master/ch7/malloc.c
+# A few bugs were fixed
+
 $head
 
 const MALLOC_MAGIC_ALLOC 0xfeedbeef
@@ -12,7 +14,7 @@ const MALLOC_PREV 8
 const MALLOC_MAGIC 12
 const SIZEOF_MALLOC 16
 
-const ALLOC_UNIT 12288
+const ALLOC_UNIT 16384
 
 fun fl_remove 1 {
   $b
@@ -34,7 +36,7 @@ fun fl_remove 1 {
 fun fl_add 1 {
   $b
   @b 0 param = ;
-  b MALLOC_MAGIC take MALLOC_MAGIC_FREE == assert ;
+  b MALLOC_MAGIC take MALLOC_MAGIC_FREE == "fl_add: missing magic number" assert_msg ;
   b MALLOC_NEXT take_addr 0 = ;
   b MALLOC_PREV take_addr 0 = ;
   if head ! head b > || {
@@ -46,43 +48,33 @@ fun fl_add 1 {
   } else {
     $curr
     @curr head = ;
-    $cond
-    @cond curr MALLOC_NEXT take = ;
-    if cond {
-      @cond curr MALLOC_NEXT take b < = ;
-    }
-    while cond {
+    while curr MALLOC_NEXT take curr MALLOC_NEXT take b < && {
       @curr curr MALLOC_NEXT take = ;
-      @cond curr MALLOC_NEXT take = ;
-      if cond {
-        @cond curr MALLOC_NEXT take b < = ;
-      }
     }
-    b MALLOC_NEXT take_addr curr MALLOC_NEXT take = ;
+    $next
+    @next curr MALLOC_NEXT take = ;
+    b MALLOC_NEXT take_addr next = ;
+    b MALLOC_PREV take_addr curr = ;
     curr MALLOC_NEXT take_addr b = ;
+    next MALLOC_PREV take_addr b = ;
   }
 }
 
 fun scan_merge 0 {
   $curr
   @curr head = ;
-  $header_curr
-  $header_next
-  $break
-  @break 0 = ;
-  while curr MALLOC_NEXT take break ! && {
-    @header_curr curr = ;
-    @header_next curr MALLOC_NEXT take = ;
-    if header_curr curr MALLOC_SIZE take + SIZEOF_MALLOC + header_next == {
-      curr MALLOC_SIZE take_addr curr MALLOC_SIZE take curr MALLOC_NEXT take MALLOC_SIZE take + SIZEOF_MALLOC + = ;
-      curr MALLOC_NEXT take_addr curr MALLOC_NEXT take MALLOC_NEXT take = ;
+  while curr MALLOC_NEXT take {
+    $next
+    @next curr MALLOC_NEXT take = ;
+    if curr curr MALLOC_SIZE take + SIZEOF_MALLOC + next == {
+      curr MALLOC_SIZE take_addr curr MALLOC_SIZE take next MALLOC_SIZE take + SIZEOF_MALLOC + = ;
+      curr MALLOC_NEXT take_addr next MALLOC_NEXT take = ;
       if curr MALLOC_NEXT take {
         curr MALLOC_NEXT take MALLOC_PREV take_addr curr = ;
-      } else {
-        @break 1 = ;
       }
+    } else {
+      @curr curr MALLOC_NEXT take = ;
     }
-    @curr curr MALLOC_NEXT take = ;
   }
 }
 
@@ -101,27 +93,48 @@ fun split 2 {
   newptr ret ;
 }
 
+fun check_fl 0 {
+  $ptr
+  $prevptr
+  @ptr head = ;
+  @prevptr 0 = ;
+  while ptr {
+    ptr MALLOC_MAGIC take MALLOC_MAGIC_FREE == "check_fl: wrong magic number" assert_msg ;
+    ptr MALLOC_SIZE take 0xf & 0 == "check_fl: wrong alignment" assert_msg ;
+    ptr MALLOC_PREV take prevptr == "check_fl: wrong prev" assert_msg ;
+    ptr MALLOC_NEXT take 0 == ptr MALLOC_NEXT take ptr > || "check_fl: regions are not increasing" assert_msg ;
+    ptr MALLOC_NEXT take 0 == ptr MALLOC_NEXT take ptr ptr MALLOC_SIZE take + SIZEOF_MALLOC + >= || "check_fl: adjacent regions are overlapping" assert_msg ;
+    ptr MALLOC_NEXT take 0 == ptr MALLOC_NEXT take ptr ptr MALLOC_SIZE take + SIZEOF_MALLOC + > || "check_fl: adjacent regions are contiguous" assert_msg ;
+    @prevptr ptr = ;
+    @ptr ptr MALLOC_NEXT take = ;
+  }
+}
+
 fun malloc 1 {
   $size
   @size 0 param = ;
+  # Make it a multiple of 16
+  @size size 1 - 0xf | 1 + = ;
   $block_mem
   $ptr
   $newptr
   $alloc_size
-  if size ALLOC_UNIT >= {
-    @alloc_size size SIZEOF_MALLOC + = ;
-  } else {
+  if size SIZEOF_MALLOC 2 * + ALLOC_UNIT <= {
     @alloc_size ALLOC_UNIT = ;
+  } else {
+    @alloc_size size SIZEOF_MALLOC + = ;
   }
   @ptr head = ;
   while ptr {
+    ptr MALLOC_MAGIC take MALLOC_MAGIC_FREE == "malloc: missing magic number" assert_msg ;
+    ptr MALLOC_SIZE take 0xf & 0 == "malloc: error 3" assert_msg ;
     if ptr MALLOC_SIZE take size SIZEOF_MALLOC + >= {
       @block_mem ptr SIZEOF_MALLOC + = ;
       ptr fl_remove ;
       @newptr size ptr split = ;
       newptr fl_add ;
-      ptr MALLOC_MAGIC take MALLOC_MAGIC_FREE == assert ;
       ptr MALLOC_MAGIC take_addr MALLOC_MAGIC_ALLOC = ;
+      block_mem 0xf & 0 == "malloc: error 1" assert_msg ;
       block_mem ret ;
     } else {
       @ptr ptr MALLOC_NEXT take = ;
@@ -136,7 +149,9 @@ fun malloc 1 {
     @newptr size ptr split = ;
     newptr fl_add ;
   }
-  ptr SIZEOF_MALLOC + ret ;
+  @block_mem ptr SIZEOF_MALLOC + = ;
+  block_mem 0xf & 0 == "malloc: error 2" assert_msg ;
+  block_mem ret ;
 }
 
 fun free 1 {
@@ -147,10 +162,13 @@ fun free 1 {
   }
   $b
   @b ptr SIZEOF_MALLOC - = ;
-  b MALLOC_MAGIC take MALLOC_MAGIC_ALLOC == assert ;
+  b MALLOC_MAGIC take MALLOC_MAGIC_ALLOC == "free: missing magic number" assert_msg ;
   b MALLOC_MAGIC take_addr MALLOC_MAGIC_FREE = ;
   b fl_add ;
   scan_merge ;
+  # For debugging, it can be helpful to check the state
+  # of the free list after each call of free
+  #check_fl ;
 }
 
 fun realloc 2 {

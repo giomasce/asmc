@@ -1,7 +1,7 @@
 
 #if a + b * c
-#if a * b + c
-/*
+#if a * (b + c)
+
 TEST_TOK
 #define TEST_TOK 22
 TEST_TOK
@@ -41,7 +41,7 @@ test_if() {
     x = 2;
   }
 }
-*/
+
 // C++ comment
 int glob2;   \
 int glob; /* C comment */

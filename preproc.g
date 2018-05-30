@@ -26,6 +26,8 @@ fun free_vect_of_ptrs 1 {
   $i
   @i 0 = ;
   while i vect vector_size < {
+    #i itoa 1 platform_log ;
+    #" " 1 platform_log ;
     vect i vector_at free ;
     @i i 1 + = ;
   }
@@ -497,7 +499,7 @@ fun preproc_process_if 4 {
   $ast
   @ast intoks iptr "\n" ast_parse = ;
   ast ast_dump ;
-  intoks iptr ** vector_at "\n" strcmp 0 == assert ;
+  intoks iptr ** vector_at "\n" strcmp 0 == "Internal error" assert_msg ;
 }
 
 fun preproc_file 3 {
@@ -556,6 +558,7 @@ fun parse_c 1 {
   $tokens
   @tokens 4 vector_init = ;
   tokens ctx 0 param preproc_file ;
+  "Finished preprocessing\n" 1 platform_log ;
   $i
   @i 0 = ;
   while i tokens vector_size < {

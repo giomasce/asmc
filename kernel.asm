@@ -1,5 +1,6 @@
 
   STACK_SIZE equ 65536
+  ;; STACK_SIZE equ 8388608
 
   TERM_ROW_NUM equ 25
   TERM_COL_NUM equ 80

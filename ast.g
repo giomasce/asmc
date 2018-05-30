@@ -311,11 +311,15 @@ fun ast_parse 3 {
             operator_stack tok strdup vector_push_back ;
             operand_stack ast_init vector_push_back ;
           } else {
-            # Operand as we expect, push it in the operand stack
             $ast
-            @ast ast_init = ;
-            ast AST_TYPE take_addr 0 = ;
-            ast AST_NAME take_addr tok strdup = ;
+            if tok "(" strcmp 0 == {
+              @ast intoks iptr ")" ast_parse = ;
+            } else {
+              # Operand as we expect, push it in the operand stack
+              @ast ast_init = ;
+              ast AST_TYPE take_addr 0 = ;
+              ast AST_NAME take_addr tok strdup = ;
+            }
             operand_stack ast vector_push_back ;
             @expect_operator 1 = ;
           }
@@ -332,11 +336,14 @@ fun ast_parse 3 {
 
   # Ad a final placeholder operator with the weakest possible priority,
   # in order to force the whole stack rewind
-  operator_stack " " strdup vector_push_back ;
+  $tmp
+  @tmp " " strdup = ;
+  operator_stack tmp vector_push_back ;
   operator_stack operand_stack ast_rewind_stack ;
   operand_stack vector_size 1 == "Internal error" assert_msg ;
   operator_stack vector_size 1 == "Internal error" assert_msg ;
-  operator_stack vector_pop_back free ;
+  operator_stack vector_pop_back tmp == assert ;
+  tmp free ;
 
   $res
   @res operand_stack vector_pop_back = ;
@@ -375,6 +382,7 @@ fun ast_dump_int 2 {
     ast AST_RIGHT take depth 1 + ast_dump_int ;
   }
 }
+
 fun ast_dump 1 {
   0 param 0 ast_dump_int ;
 }

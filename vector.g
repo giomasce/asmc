@@ -29,6 +29,7 @@ fun vector_at_addr 2 {
   $idx
   @vptr 1 param = ;
   @idx 0 param = ;
+  idx vptr VECTOR_SIZE take < "Vector access out of bounds" assert_msg ;
   vptr VECTOR_DATA take idx vptr VECTOR_SIZEOF_ELEM take * + ret ;
 }
 
@@ -37,6 +38,7 @@ fun vector_at 2 {
   $idx
   @vptr 1 param = ;
   @idx 0 param = ;
+  idx vptr VECTOR_SIZE take < "Vector access out of bounds" assert_msg ;
   vptr VECTOR_DATA take idx vptr VECTOR_SIZEOF_ELEM take * + ** ret ;
 }
 
@@ -45,12 +47,12 @@ fun vector_push_back 2 {
   $elem
   @vptr 1 param = ;
   @elem 0 param = ;
-  vptr VECTOR_SIZE take vptr VECTOR_CAP take <= assert ;
+  vptr VECTOR_SIZE take vptr VECTOR_CAP take <= "Internal error: size > capacity" assert_msg ;
   if vptr VECTOR_SIZE take vptr VECTOR_CAP take == {
     vptr VECTOR_CAP take_addr vptr VECTOR_CAP take 2 * = ;
     vptr VECTOR_DATA take_addr vptr VECTOR_CAP take vptr VECTOR_SIZEOF_ELEM take * vptr VECTOR_DATA take realloc = ;
   }
-  vptr VECTOR_SIZE take vptr VECTOR_CAP take < assert ;
+  vptr VECTOR_SIZE take vptr VECTOR_CAP take < "Internal error: size >= capacity again" assert_msg ;
   vptr VECTOR_DATA take vptr VECTOR_SIZE take vptr VECTOR_SIZEOF_ELEM take * + elem = ;
   vptr VECTOR_SIZE take_addr vptr VECTOR_SIZE take 1 + = ;
   vptr VECTOR_SIZE take 1 - ret ;
@@ -59,7 +61,7 @@ fun vector_push_back 2 {
 fun vector_pop_back 1 {
   $vptr
   @vptr 0 param = ;
-  vptr VECTOR_SIZE take 0 > assert ;
+  vptr VECTOR_SIZE take 0 > "Popping from empty vector" assert_msg ;
   vptr VECTOR_SIZE take_addr vptr VECTOR_SIZE take 1 - = ;
   vptr VECTOR_DATA take vptr VECTOR_SIZE take vptr VECTOR_SIZEOF_ELEM take * + ** ret ;
 }
