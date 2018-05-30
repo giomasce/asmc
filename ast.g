@@ -3,8 +3,7 @@ const AST_TYPE 0      # 0 for operand, 1 for operator
 const AST_NAME 4      # char*
 const AST_LEFT 8      # AST*
 const AST_RIGHT 12    # AST*
-const AST_ARGS 16     # vector of AST*
-const SIZEOF_AST 20
+const SIZEOF_AST 16
 
 fun ast_init 0 {
   $ptr
@@ -13,7 +12,6 @@ fun ast_init 0 {
   ptr AST_NAME take_addr 0 = ;
   ptr AST_LEFT take_addr 0 = ;
   ptr AST_RIGHT take_addr 0 = ;
-  ptr AST_ARGS take_addr 4 vector_init = ;
   ptr ret ;
 }
 
@@ -23,14 +21,6 @@ fun ast_destroy 1 {
   ptr AST_NAME take free ;
   ptr AST_LEFT take ast_destroy ;
   ptr AST_RIGHT take ast_destroy ;
-  $args
-  @args ptr AST_ARGS take = ;
-  $i
-  @i 0 = ;
-  while i args vector_size < {
-    args i vector_at ast_destroy ;
-    @i i 1 + = ;
-  }
   ptr free ;
 }
 
@@ -83,6 +73,8 @@ fun ast_get_priority 1 {
   @str 0 param = ;
   if str "++_POST" strcmp 0 == { 1 ret ; }
   if str "--_POST" strcmp 0 == { 1 ret ; }
+  if str "(" strcmp 0 == { 1 ret ; }
+  if str "[" strcmp 0 == { 1 ret ; }
   if str "." strcmp 0 == { 1 ret ; }
   if str "->" strcmp 0 == { 1 ret ; }
   if str "++_PRE" strcmp 0 == { 2 ret ; }
@@ -136,6 +128,8 @@ fun ast_get_ass_direction 1 {
   @str 0 param = ;
   if str "++_POST" strcmp 0 == { 1 ret ; }
   if str "--_POST" strcmp 0 == { 1 ret ; }
+  if str "(" strcmp 0 == { 1 ret ; }
+  if str "[" strcmp 0 == { 1 ret ; }
   if str "." strcmp 0 == { 1 ret ; }
   if str "->" strcmp 0 == { 1 ret ; }
   if str "++_PRE" strcmp 0 == { 0 ret ; }
@@ -273,8 +267,27 @@ fun ast_parse 3 {
               @expect_operator 0 = ;
             }
           } else {
-            # Operand instead of operator: error!
-            0 "Operand instead of operator" assert_msg ;
+            $ast
+            # Here we treat the argument-separating comma as the
+            # comma operator; this is not correct, in theory, because
+            # it makes a((b,c),d) the same thing as a(b,c,d). However
+            # we hope that no sane program relies on that.
+            if tok "(" strcmp 0 == {
+              @ast intoks iptr ")" ast_parse = ;
+              operator_stack tok strdup vector_push_back ;
+              operator_stack operand_stack ast_rewind_stack ;
+              operand_stack ast vector_push_back ;
+            } else {
+              if tok "[" strcmp 0 == {
+                @ast intoks iptr "]" ast_parse = ;
+                operator_stack tok strdup vector_push_back ;
+                operator_stack operand_stack ast_rewind_stack ;
+                operand_stack ast vector_push_back ;
+              } else {
+                # Operand instead of operator: error!
+                0 "Operand instead of operator" assert_msg ;
+              }
+            }
           }
         } else {
           if is_operator {
