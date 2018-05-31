@@ -146,7 +146,7 @@ check_a20__exit:
     ret
 
 enable_a20_kbd:
-        cli
+        ;cli
 
         call    a20wait
         mov     al,0xAD
@@ -174,7 +174,7 @@ enable_a20_kbd:
         out     0x64,al
 
         call    a20wait
-        sti
+        ;sti
         ret
 
 a20wait:
