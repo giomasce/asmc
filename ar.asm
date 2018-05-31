@@ -41,7 +41,7 @@ walk_initrd_loop:
 
   ;; Compare the name with the target name (store in edi)
   push ar_buf
-  push [ebp+8]
+  push DWORD [ebp+8]
   call strcmp
   add esp, 8
   mov edi, eax

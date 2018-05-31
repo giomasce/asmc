@@ -248,7 +248,7 @@ un_minus:
 str_times:
   db '*'
   db 0
-times:
+times_op:
   mov eax, [esp+8]
   mul [esp+4]
   ret
@@ -547,7 +547,7 @@ init_g_operations:
   add esp, 12
 
   push 2
-  push times
+  push times_op
   push str_times
   call add_symbol
   add esp, 12

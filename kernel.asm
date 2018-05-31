@@ -1,4 +1,6 @@
 
+  bits 32
+
   STACK_SIZE equ 65536
   ;; STACK_SIZE equ 8388608
 
