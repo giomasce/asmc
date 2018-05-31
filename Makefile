@@ -1,5 +1,5 @@
 
-all: asmasm asmasm.x86 boot.iso cc asmg
+all: asmasm asmasm.x86 boot.iso cc asmg boot.x86
 
 asmasm.o: asmasm.asm library.asm stub.asm
 	nasm -f elf -F dwarf -g -w-number-overflow -o asmasm.o stub.asm
@@ -88,3 +88,12 @@ asmg.x86: asmg.x86.exe initrd-asmg.ar
 boot/boot/asmg.x86: asmg.x86
 	mkdir -p boot/boot
 	cp asmg.x86 boot/boot
+
+stage1.x86.exe: stage1.asm
+	nasm stage1.asm -f bin -o stage1.x86.exe
+
+stage2.x86.exe: stage2.asm
+	nasm stage2.asm -f bin -o stage2.x86.exe
+
+boot.x86: stage1.x86.exe stage2.x86.exe
+	cat stage1.x86.exe stage2.x86.exe > boot.x86
