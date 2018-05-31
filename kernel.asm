@@ -16,18 +16,24 @@
 
   ;; MB_ENTRY_ADDR equ _start
 
+  jmp start_from_raw
+
+  align 4
+
+  jmp start_from_multiboot
+
+  align 4
+
   ;; Multiboot header
   dd MBMAGIC
   dd MBFLAGS
   dd MBCHECKSUM
 
-  dd 0x100000
+  dd 0x100010
   dd 0x100000
   dd 0x0
   dd 0x0
-  dd 0x100020
-
-  jmp start_from_multiboot
+  dd 0x100008
 
 term_row:
   resd 1
@@ -53,6 +59,15 @@ str_exit:
   db 0
 str_panic:
   db 'PANIC!'
+  db NEWLINE
+  db 0
+
+str_started_multiboot:
+  db 'Called from multiboot'
+  db NEWLINE
+  db 0
+str_started_raw:
+  db 'Called directly'
   db NEWLINE
   db 0
 
@@ -95,6 +110,22 @@ temp_stack:
   resb 128
 temp_stack_top:
 
+start_from_raw:
+  ;; Setup a temporary stack
+  mov esp, temp_stack_top
+  and esp, 0xfffffff0
+
+  ;; Initialize terminal
+  call term_setup
+
+  ;; Log
+  push str_started_raw
+  push 1
+  call platform_log
+  add esp, 8
+
+  jmp start_common
+
 start_from_multiboot:
   ;; Setup a temporary stack
   mov esp, temp_stack_top
@@ -103,11 +134,20 @@ start_from_multiboot:
   ;; Initialize terminal
   call term_setup
 
+  ;; Log
+  push str_started_multiboot
+  push 1
+  call platform_log
+  add esp, 8
+
   ;; Dump data from multiboot information structure
   push ebx
   call dump_multiboot
   add esp, 4
 
+  jmp start_common
+
+start_common:
   ;; Log
   push str_init_heap_stack
   push 1
