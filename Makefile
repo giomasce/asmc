@@ -79,8 +79,8 @@ initrd-asmg.ar: main.g test.c first.h other.h utils.g malloc.g vector.g map.g pr
 	-rm initrd-asmg.ar
 	ar rcs initrd-asmg.ar main.g test.c first.h other.h utils.g malloc.g vector.g map.g preproc.g ast.g END
 
-asmg.x86.exe: full-asmg.asm asmasm
-	./asmasm full-asmg.asm > asmg.x86.exe
+asmg.x86.exe: full-asmg.asm
+	nasm full-asmg.asm -f bin -o asmg.x86.exe
 
 asmg.x86: asmg.x86.exe initrd-asmg.ar
 	cat asmg.x86.exe initrd-asmg.ar > asmg.x86
@@ -95,11 +95,5 @@ stage1.x86.exe: stage1.asm
 stage2.x86.exe: stage2.asm
 	nasm stage2.asm -f bin -o stage2.x86.exe
 
-stage3.x86.exe: stage3.asm
-	nasm stage3.asm -f bin -o stage3.x86.exe
-
-stop.x86.exe: stop.asm
-	nasm stop.asm -f bin -o stop.x86.exe
-
-boot.x86: stage1.x86.exe stage2.x86.exe stage3.x86.exe stop.x86.exe
-	cat stage1.x86.exe stage2.x86.exe stage3.x86.exe stop.x86.exe > boot.x86
+boot.x86: stage1.x86.exe stage2.x86.exe asmg.x86
+	cat stage1.x86.exe stage2.x86.exe asmg.x86 > boot.x86

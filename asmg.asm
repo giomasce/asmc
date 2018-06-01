@@ -1898,8 +1898,6 @@ compile_stage_loop:
   ;; If the preable was requested, emit it
   cmp DWORD [esp+16], 0
   je compile_parse
-  extern emit_preamble
-  call emit_preamble
 
 compile_parse:
   ;; Call parse

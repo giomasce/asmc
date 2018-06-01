@@ -95,6 +95,7 @@ atapio_in_sector_ret:
   ret
 
 
+  ;; bool atapio_poll()
 atapio_poll:
   mov edx, ATAPIO_COMMAND
   in al, dx
@@ -103,13 +104,13 @@ atapio_poll:
   ;; Panic if ERR bit is set
   and al, 0x01
   cmp al, 0
-  jne platform_panic
+  jne atapio_poll_ret_false
 
   ;; Panic if DF bit is set
   mov al, cl
   and al, 0x20
   cmp al, 0
-  jne platform_panic
+  jne atapio_poll_ret_false
 
   ;; Reloop if BSY is set
   mov al, cl
@@ -123,10 +124,15 @@ atapio_poll:
   cmp al, 0
   je atapio_poll
 
+  mov eax, 1
+  ret
+
+atapio_poll_ret_false:
+  mov eax, 0
   ret
 
 
-  ;; atapio_read_sector(int lba)
+  ;; bool atapio_read_sector(int lba)
 atapio_read_sector:
   ;; Send READ SECTORS EXT
   mov edx, ATAPIO_DRIVE
@@ -162,26 +168,29 @@ atapio_read_sector:
 
   ;; Poll and in
   call atapio_poll
+  cmp eax, 0
+  je atapio_read_sector_ret
   call atapio_in_sector
 
+atapio_read_sector_ret:
   ret
 
 
 
-atapio_test:
+;atapio_test:
   ;; Allocate the read buffer
-  push 512
-  call platform_allocate
-  add esp, 4
-  mov ecx, atapio_buf
-  mov [ecx], eax
+;  push 512
+;  call platform_allocate
+;  add esp, 4
+;  mov ecx, atapio_buf
+;  mov [ecx], eax
 
   ;; Call IDENTIFY
-  call atapio_identify
+;  call atapio_identify
 
   ;; Read a sector
-  push 0
-  call atapio_read_sector
-  add esp, 4
+;  push 0
+;  call atapio_read_sector
+;  add esp, 4
 
-  ret
+;  ret

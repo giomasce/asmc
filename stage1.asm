@@ -36,6 +36,9 @@ boot_stage2:
         mov si, str_booting
         call print_string
 
+; Save the number of blocks read
+mov si, lba
+mov bx, [si]
         jmp 0x7e00
 
 dapack:

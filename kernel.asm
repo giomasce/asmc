@@ -1,5 +1,6 @@
 
-  bits 32
+	bits 32
+	org 0x100000
 
   STACK_SIZE equ 65536
   ;; STACK_SIZE equ 8388608
