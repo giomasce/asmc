@@ -37,16 +37,64 @@ je a20_is_enabled
 mov si, str_failed
 call print_string
 
-
 jmp error
 
 a20_is_enabled:
 mov si, str_ok
 call print_string
 
+mov si, str_enabling_protected
+call print_string
 
-jmp $
+mov si, gdt_size
+mov WORD [si], gdt_end
+sub WORD [si], gdt
+mov si, gdt_offset
+mov DWORD [si], gdt
+lgdt [gdt_desc]
 
+mov eax, cr0
+or al, 1
+mov cr0, eax
+jmp 0x8:enter_protected
+
+enter_protected:
+mov ax, 0x10
+mov ds, ax
+mov es, ax
+mov fs, ax
+mov gs, ax
+mov ss, ax
+
+jmp end
+
+gdt_desc:
+gdt_size:
+dw 0
+gdt_offset:
+dd 0
+
+align 4
+
+gdt:
+; Null descriptor
+dd 0
+dd 0
+; Code descriptor
+dw 0xffff
+dw 0x0000
+db 0x00
+db 10011010b  ; Access byte
+db 11001111b  ; First nibble is flags
+db 0x00
+; Data descriptor
+dw 0xffff
+dw 0x0000
+db 0x00
+db 10010010b  ; Access byte
+db 11001111b  ; First nibble is flags
+db 0x00
+gdt_end:
 
 str_stage2:
 db 'Entered stage2!', 0xa, 0xd, 0
@@ -62,6 +110,8 @@ str_enabling_bios:
 db 'Enabling A20 via BIOS...', 0xa, 0xd, 0
 str_enabling_kbd:
 db 'Enabling A20 via keyboard controller...', 0xa, 0xd, 0
+str_enabling_protected:
+db 'Enabling protected mode, see you on the other side!', 0xa, 0xd, 0
 
 ;; Print character in AL
 print_char:
@@ -222,5 +272,4 @@ mov al, 1
 ret
 
 align 512
-db 'stop'
-align 512
+end:

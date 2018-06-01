@@ -95,5 +95,11 @@ stage1.x86.exe: stage1.asm
 stage2.x86.exe: stage2.asm
 	nasm stage2.asm -f bin -o stage2.x86.exe
 
-boot.x86: stage1.x86.exe stage2.x86.exe
-	cat stage1.x86.exe stage2.x86.exe > boot.x86
+stage3.x86.exe: stage3.asm
+	nasm stage3.asm -f bin -o stage3.x86.exe
+
+stop.x86.exe: stop.asm
+	nasm stop.asm -f bin -o stop.x86.exe
+
+boot.x86: stage1.x86.exe stage2.x86.exe stage3.x86.exe stop.x86.exe
+	cat stage1.x86.exe stage2.x86.exe stage3.x86.exe stop.x86.exe > boot.x86
