@@ -173,6 +173,7 @@ atapio_read_sector:
   call atapio_in_sector
 
 atapio_read_sector_ret:
+  mov eax, 1
   ret
 
 

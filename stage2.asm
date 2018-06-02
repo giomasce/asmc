@@ -351,6 +351,11 @@ push 1
 call platform_write_char
 add esp, 8
 
+push str_chainloading
+push 1
+call platform_log
+add esp, 8
+
 jmp 0x100000
 
 str_other_side:
@@ -359,6 +364,8 @@ str_reading_payload:
 db 'Reading payload from sector ', 0
 str_failed_at:
 db 'Failed reading at sector ', 0
+str_chainloading:
+db 'Chainloading payload, bye bye!', 0xa, 0
 
 %include "atapio.asm"
 
