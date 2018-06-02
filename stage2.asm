@@ -327,23 +327,38 @@ push 1
 call platform_write_char
 add esp, 8
 
+push 0xa
+push 1
+call platform_write_char
+add esp, 8
+
+push str_failed_at
+push 1
+call platform_log
+add esp, 8
+
+push DWORD [next_lba]
+call itoa
+add esp, 4
+push eax
+push 1
+call platform_log
+add esp, 8
+
 payload_loaded:
 push 0xa
 push 1
 call platform_write_char
 add esp, 8
 
-jmp $
-jmp 0x100000
-call platform_exit
-
-jmp $
 jmp 0x100000
 
 str_other_side:
 db 'Hello there on the other side!', 0xa, 0
 str_reading_payload:
 db 'Reading payload from sector ', 0
+str_failed_at:
+db 'Failed reading at sector ', 0
 
 %include "atapio.asm"
 
