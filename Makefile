@@ -92,7 +92,7 @@ boot/boot/asmg.x86: asmg.x86
 stage1.x86.exe: stage1.asm
 	nasm stage1.asm -f bin -o stage1.x86.exe
 
-stage2.x86.exe: stage2.asm
+stage2.x86.exe: stage2.asm atapio.asm kernel.asm ar.asm
 	nasm stage2.asm -f bin -o stage2.x86.exe
 
 boot.x86: stage1.x86.exe stage2.x86.exe asmg.x86

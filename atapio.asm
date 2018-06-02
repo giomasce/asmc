@@ -101,12 +101,12 @@ atapio_poll:
   in al, dx
   mov cl, al
 
-  ;; Panic if ERR bit is set
+  ;; Error if ERR bit is set
   and al, 0x01
   cmp al, 0
   jne atapio_poll_ret_false
 
-  ;; Panic if DF bit is set
+  ;; Error if DF bit is set
   mov al, cl
   and al, 0x20
   cmp al, 0

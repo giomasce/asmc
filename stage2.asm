@@ -284,6 +284,8 @@ push 1
 call platform_log
 add esp, 8
 
+call atapio_identify
+
 push str_reading_payload
 push 1
 call platform_log
@@ -296,8 +298,6 @@ push eax
 push 1
 call platform_log
 add esp, 8
-
-call atapio_identify
 
 mov DWORD [atapio_buf], 0x100000
 
