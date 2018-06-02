@@ -1,6 +1,4 @@
 
-section .text
-
 global do_syscall
 do_syscall:
   push ebp

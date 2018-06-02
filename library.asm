@@ -33,8 +33,6 @@
   ;; SYMBOL_TABLE_SIZE = SYMBOL_TABLE_LEN * MAX_SYMBOL_NAME_LEN
   SYMBOL_TABLE_SIZE equ 131072
 
-section .bss
-
 itoa_buf:
   resb ITOA_BUF_LEN
 
@@ -59,8 +57,6 @@ stage:
 emit_fd:
   resd 1
 
-section .data
-
 str_symbol_already_defined:
   db 'Symbol already defined: '
   db 0
@@ -70,8 +66,6 @@ str_check:
 str_newline:
   db NEWLINE
   db 0
-
-section .text
 
   global get_symbol_names
 get_symbol_names:

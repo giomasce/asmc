@@ -40,8 +40,6 @@
   OP_XOR equ 38
   OP_TEST equ 39
 
-section .data
-
 opcode_names:
   db 'push'
   db 0
@@ -622,12 +620,8 @@ str_symb_num2:
   db NEWLINE
   db 0
 
-section .bss
-
 input_buf_ptr:
   resd 1
-
-section .text
 
   global get_input_buf
 get_input_buf:

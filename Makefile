@@ -1,4 +1,6 @@
 
+AR=gar
+
 all: asmasm asmasm.x86 boot.iso cc asmg boot.x86
 
 asmasm.o: asmasm.asm library.asm stub.asm
@@ -24,7 +26,7 @@ END:
 
 initrd-asmasm.ar: main.asm atapio.asm END
 	-rm initrd-asmasm.ar
-	ar rcs initrd-asmasm.ar main.asm atapio.asm END
+	$(AR) rcs initrd-asmasm.ar main.asm atapio.asm END
 
 asmasm.x86.exe: full-asmasm.asm asmasm
 	./asmasm full-asmasm.asm > asmasm.x86.exe
@@ -45,7 +47,7 @@ full-empty.asm: kernel.asm ar.asm library.asm kernel-empty.asm top.asm
 
 initrd-empty.ar: END
 	-rm initrd-empty.ar
-	ar rcs initrd-empty.ar END
+	$(AR) rcs initrd-empty.ar END
 
 empty.x86.exe: full-empty.asm asmasm
 	./asmasm full-empty.asm > empty.x86.exe
@@ -77,7 +79,7 @@ full-asmg.asm: kernel.asm ar.asm library.asm kernel-asmg.asm asmg.asm top.asm
 
 initrd-asmg.ar: main.g test.c first.h other.h utils.g malloc.g vector.g map.g preproc.g ast.g END
 	-rm initrd-asmg.ar
-	ar rcs initrd-asmg.ar main.g test.c first.h other.h utils.g malloc.g vector.g map.g preproc.g ast.g END
+	$(AR) rcs initrd-asmg.ar main.g test.c first.h other.h utils.g malloc.g vector.g map.g preproc.g ast.g END
 
 asmg.x86.exe: full-asmg.asm
 	nasm full-asmg.asm -f bin -o asmg.x86.exe

@@ -4,8 +4,6 @@
   ;; STACK_VARS_SIZE = STACK_VARS_LEN * MAX_SYMBOL_NAME_LEN
   STACK_VARS_SIZE equ 131072
 
-  section .data
-
 TEMP_VAR:
   db '__temp'
   db 0
@@ -78,8 +76,6 @@ str_const:
   db 'const'
   db 0
 
-  section .bss
-
 label_num:
   resd 1
 
@@ -112,8 +108,6 @@ read_fd:
 
 write_label_buf:
   resb WRITE_LABEL_BUF_LEN
-
-  section .text
 
   global get_label_num
 get_label_num:
