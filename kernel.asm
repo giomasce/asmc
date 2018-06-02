@@ -121,6 +121,9 @@ start_from_raw:
   ;; Initialize terminal
   call term_setup
 
+  ;; Initialize serial port
+  call serial_setup
+
   ;; Log
   push str_started_raw
   push 1
@@ -425,6 +428,67 @@ mmap_dump:
   ret
 
 
+  SERIAL_PORT equ 0x3f8
+
+	;; void serial_setup()
+serial_setup:
+	;; Send command as indicated in https://wiki.osdev.org/Serial_Port
+	mov edx, SERIAL_PORT
+	add edx, 1
+	mov eax, 0x00
+	out dx, al
+
+	mov edx, SERIAL_PORT
+	add edx, 3
+	mov eax, 0x80
+	out dx, al
+
+	mov edx, SERIAL_PORT
+	add edx, 0
+	mov eax, 0x03
+	out dx, al
+
+	mov edx, SERIAL_PORT
+	add edx, 1
+	mov eax, 0x00
+	out dx, al
+
+	mov edx, SERIAL_PORT
+	add edx, 3
+	mov eax, 0x03
+	out dx, al
+
+	mov edx, SERIAL_PORT
+	add edx, 2
+	mov eax, 0xc7
+	out dx, al
+
+	mov edx, SERIAL_PORT
+	add edx, 4
+	mov eax, 0x0b
+	out dx, al
+
+	ret
+
+
+	;; void serial_write_char(char c)
+serial_write_char:
+	;; Test until the serial is available for transmit
+	mov edx, SERIAL_PORT
+	add edx, 5
+	in al, dx
+        and eax, 0x20
+	cmp eax, 0
+	je serial_write_char
+
+	;; Actually write the char
+	mov edx, SERIAL_PORT
+        mov eax, [esp+4]
+	out dx, al
+
+	ret
+
+
   ;; void term_setup()
 term_setup:
   ;; Compute the size of the VGA framebuffer
@@ -630,6 +694,10 @@ platform_write_char_stdout:
   mov eax, [esp+8]
   push eax
   call term_put_char
+  add esp, 4
+  mov eax, [esp+8]
+  push eax
+  call serial_write_char
   add esp, 4
   ret
 
