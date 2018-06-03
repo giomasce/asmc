@@ -34,6 +34,20 @@ fun free_vect_of_ptrs 1 {
   vect vector_destroy ;
 }
 
+fun dup_vect_of_ptrs 1 {
+  $vect
+  @vect 0 param = ;
+  $newvect
+  @newvect 4 vector_init = ;
+  $i
+  @i 0 = ;
+  while i vect vector_size < {
+    newvect vect i vector_at strdup vector_push_back ;
+    @i i 1 + = ;
+  }
+  newvect ret ;
+}
+
 const SUBST_IS_FUNCTION 0   # bool
 const SUBST_PARAMETERS 4    # vector of char*
 const SUBST_REPLACEMENT 8   # vector of char*
@@ -345,14 +359,17 @@ fun process_token 4 {
   @tok intoks iptr ** vector_at = ;
 
   # Search the token in the context defines
+  $changed
+  @changed 0 = ;
   if ctx PPCTX_DEFINES take tok map_has {
+    @changed 1 = ;
     $subst
     @subst ctx PPCTX_DEFINES take tok map_at = ;
     $repl
     @repl subst SUBST_REPLACEMENT take = ;
     if subst SUBST_IS_FUNCTION take {
       # TODO
-      0 assert ;
+      0 "Not implemented yet" assert_msg ;
     } else {
       $j
       @j 0 = ;
@@ -364,6 +381,47 @@ fun process_token 4 {
   } else {
     tokens tok strdup vector_push_back ;
   }
+  changed ret ;
+}
+
+fun preproc_replace_int 3 {
+  $ctx
+  $intoks
+  $outtoks
+  @ctx 2 param = ;
+  @intoks 1 param = ;
+  @outtoks 0 param = ;
+
+  $changed
+  @changed 0 = ;
+  $i
+  @i 0 = ;
+  while i intoks vector_size < {
+    @changed changed ctx outtoks intoks @i process_token || = ;
+    @i i 1 + = ;
+  }
+
+  changed ret ;
+}
+
+fun preproc_replace 2 {
+  $ctx
+  $intoks
+  @ctx 1 param = ;
+  @intoks 0 param = ;
+
+  $changed
+  @changed 1 = ;
+  @intoks intoks dup_vect_of_ptrs = ;
+  while changed {
+    $outtoks
+    @outtoks 4 vector_init = ;
+    changed ctx intoks outtoks preproc_replace_int = ;
+    intoks free_vect_of_ptrs ;
+    @intoks outtoks = ;
+  }
+
+  intoks ret ;
 }
 
 fun preproc_process_define 4 {
@@ -486,6 +544,31 @@ fun preproc_process_include 4 {
   intoks iptr ** vector_at "\n" strcmp 0 == assert ;
 }
 
+fun preproc_eval 2 {
+  $ctx
+  $ast
+  @ctx 1 param = ;
+  @ast 0 param = ;
+
+  $defs
+  @defs ctx PPCTX_DEFINES take = ;
+  $name
+  @name ast AST_NAME take = ;
+
+  if ast AST_TYPE take 0 == {
+    # Operand
+    if defs name map_has {
+      # TODO
+    } else {
+      0 ret ;
+    }
+  } else {
+    # Operator
+    ast AST_TYPE take 1 == assert ;
+    # TODO
+  }
+}
+
 fun preproc_process_if 4 {
   $ctx
   $tokens
@@ -499,6 +582,7 @@ fun preproc_process_if 4 {
   $ast
   @ast intoks iptr "\n" ast_parse = ;
   ast ast_dump ;
+  ctx ast preproc_eval ;
   intoks iptr ** vector_at "\n" strcmp 0 == "Internal error" assert_msg ;
 }
 
