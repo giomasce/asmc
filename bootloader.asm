@@ -22,6 +22,8 @@ load_stage2:
         jc error16
         mov si, sect_num
         cmp WORD [si], 1
+	mov si, str_dot
+	call print_string16
         jne error16
 
 mov di, [dest_off]
@@ -35,6 +37,8 @@ je boot_stage2
 jmp load_stage2
 
 boot_stage2:
+	mov si, str_newline
+	call print_string16
         mov si, str_booting
         call print_string16
         jmp stage2
@@ -134,7 +138,11 @@ db 'Hello, entered stage1!', 0xa, 0
 str_panic:
 db 'PANIC!', 0xa, 0
 str_loading:
-db 'Loading stage2...', 0xa, 0
+db 'Loading stage2', 0
+str_dot:
+db '.', 0
+str_newline:
+db 0xa, 0
 str_booting:
 db 'Booting stage2...', 0xa, 0
 
@@ -480,17 +488,13 @@ db 'Enabling protected mode, see you on the other side!', 0xa, 0xd, 0
 str_other_side:
 db 'Hello there on the other side!', 0xa, 0
 str_reading_payload:
-db 'Reading payload', 0
+db 'Loading payload', 0
 str_failed_payload:
 db 'Failed reading sector!', 0
 str_chainloading:
 db 'Chainloading payload, bye bye!', 0xa, 0
-str_dot:
-db '.', 0
 str_ex:
 db 'X', 0
-str_newline:
-db 0xa, 0
 
 
 align 512
