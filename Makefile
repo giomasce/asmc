@@ -91,11 +91,8 @@ boot/boot/asmg.x86: asmg.x86
 	mkdir -p boot/boot
 	cp asmg.x86 boot/boot
 
-stage1.x86.exe: stage1.asm
-	nasm stage1.asm -f bin -o stage1.x86.exe
+bootloader.x86.exe: bootloader.asm
+	nasm bootloader.asm -f bin -o bootloader.x86.exe
 
-stage2.x86.exe: stage2.asm atapio.asm kernel.asm ar.asm
-	nasm stage2.asm -f bin -o stage2.x86.exe
-
-boot.x86: stage1.x86.exe stage2.x86.exe asmg.x86
-	cat stage1.x86.exe stage2.x86.exe asmg.x86 > boot.x86
+boot.x86: bootloader.x86.exe asmg.x86
+	cat bootloader.x86.exe asmg.x86 > boot.x86

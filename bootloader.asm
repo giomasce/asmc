@@ -1,11 +1,156 @@
+bits 16
+org 0x7c00
 
-        bits 16
-	org 0x7e00
+	cli
+	mov sp, 0x7c00
 
-; Save the content of the LBA address where to read the operating system
-mov si, next_lba
-mov [si], bx
+	call serial_setup
 
+mov si, str_hello
+call print_string
+
+mov si, str_loading
+call print_string
+
+load_stage2:
+        mov si, dapack
+        mov ah, 0x42
+        mov dl, 0x80
+        int 0x13
+        jc error
+        mov si, sect_num
+        cmp WORD [si], 1
+        jne error
+
+mov di, [dest_off]
+add WORD [dest_off], 512
+add DWORD [lba], 1
+
+; The constant 0x706f7473 ("stop" in little endian) is used
+; to mark when to stop loading
+cmp DWORD [di], 0x706f7473
+je boot_stage2
+jmp load_stage2
+
+boot_stage2:
+        mov si, str_booting
+        call print_string
+        jmp stage2
+
+;; Print character in AL
+print_char:
+mov ah, 0x0e
+mov bx, 0x00
+mov bl, 0x07
+int 0x10
+call serial_write_char
+ret
+
+;; Print string pointed by SI
+print_string:
+mov al, [si]
+inc si
+or al, al
+jz print_string_ret
+call print_char
+jmp print_string
+print_string_ret:
+ret
+
+error:
+	mov si, str_panic_
+        call print_string
+        jmp $
+
+  SERIAL_PORT equ 0x3f8
+
+	;; void serial_setup()
+serial_setup:
+	;; Send command as indicated in https://wiki.osdev.org/Serial_Port
+	mov dx, SERIAL_PORT
+	add dx, 1
+	mov ax, 0x00
+	out dx, al
+
+	mov dx, SERIAL_PORT
+	add dx, 3
+	mov ax, 0x80
+	out dx, al
+
+	mov dx, SERIAL_PORT
+	add dx, 0
+	mov ax, 0x03
+	out dx, al
+
+	mov dx, SERIAL_PORT
+	add dx, 1
+	mov ax, 0x00
+	out dx, al
+
+	mov dx, SERIAL_PORT
+	add dx, 3
+	mov ax, 0x03
+	out dx, al
+
+	mov dx, SERIAL_PORT
+	add dx, 2
+	mov ax, 0xc7
+	out dx, al
+
+	mov dx, SERIAL_PORT
+	add dx, 4
+	mov ax, 0x0b
+	out dx, al
+
+	ret
+
+
+	;; void serial_write_char(al)
+serial_write_char:
+	mov bl, al
+
+	;; Test until the serial is available for transmit
+	mov dx, SERIAL_PORT
+	add dx, 5
+	in al, dx
+        and ax, 0x20
+	cmp ax, 0
+	je serial_write_char
+
+	;; Actually write the char
+	mov dx, SERIAL_PORT
+        mov al, bl
+	out dx, al
+
+	ret
+
+
+dapack:
+        db 16
+        db 0
+sect_num:
+        dw 1
+dest_off:
+        dw 0x7e00
+dest_seg:
+        dw 0
+lba:
+        dd 1
+        dd 0
+
+str_hello:
+db 'Hello, entered stage1!', 0xa, 0xd, 0
+str_panic_:
+db 'PANIC!', 0xa, 0xd, 0
+str_loading:
+db 'Loading stage2...', 0xa, 0xd, 0
+str_booting:
+db 'Booting stage2...', 0xa, 0xd, 0
+
+times 510 - ($ - $$) db 0
+dw 0xAA55
+
+stage2:
 mov si, str_stage2
 call print_string
 
@@ -92,8 +237,6 @@ gdt_end:
 
 str_stage2:
 db 'Entered stage2!', 0xa, 0xd, 0
-str_panic_:
-db 'PANIC!', 0xa, 0xd, 0
 str_test_a20:
 db 'Testing whether A20 is enabled... ', 0
 str_ok:
@@ -106,33 +249,6 @@ str_enabling_kbd:
 db 'Enabling A20 via keyboard controller...', 0xa, 0xd, 0
 str_enabling_protected:
 db 'Enabling protected mode, see you on the other side!', 0xa, 0xd, 0
-
-next_lba:
-dd 0
-
-;; Print character in AL
-print_char:
-mov ah, 0x0e
-mov bx, 0x00
-mov bl, 0x07
-int 0x10
-ret
-
-;; Print string pointer by SI
-print_string:
-mov al, [si]
-inc si
-or al, al
-jz print_string_ret
-call print_char
-jmp print_string
-print_string_ret:
-ret
-
-error:
-        mov si, str_panic_
-        call print_string
-        jmp $
 
 ; Function: check_a20
 ;
@@ -291,7 +407,7 @@ push 1
 call platform_log
 add esp, 8
 
-push DWORD [next_lba]
+push DWORD [lba]
 call itoa
 add esp, 4
 push eax
@@ -302,7 +418,7 @@ add esp, 8
 mov DWORD [atapio_buf], 0x100000
 
 load_payload_loop:
-push DWORD [next_lba]
+push DWORD [lba]
 call atapio_read_sector
 add esp, 4
 cmp eax, 0
@@ -313,7 +429,7 @@ push 1
 call platform_write_char
 add esp, 8
 
-add DWORD [next_lba], 1
+add DWORD [lba], 1
 add DWORD [atapio_buf], 512
 
 cmp DWORD [atapio_buf], 0x200000
@@ -337,7 +453,7 @@ push 1
 call platform_log
 add esp, 8
 
-push DWORD [next_lba]
+push DWORD [lba]
 call itoa
 add esp, 4
 push eax
