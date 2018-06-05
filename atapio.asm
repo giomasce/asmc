@@ -169,11 +169,13 @@ atapio_read_sector:
   ;; Poll and in
   call atapio_poll
   cmp eax, 0
-  je atapio_read_sector_ret
+  je atapio_read_sector_ret_false
   call atapio_in_sector
+  mov eax, 1
+  ret
 
 atapio_read_sector_ret:
-  mov eax, 1
+  mov eax, 0
   ret
 
 

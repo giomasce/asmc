@@ -1,99 +1,111 @@
-bits 16
-org 0x7c00
+
+  bits 16
+  org 0x7c00
 
   SERIAL_PORT equ 0x3f8
+  atapio_buf16 equ 0x500
+  lba equ 0x504
 
 	cli
+  mov ax, 0
+  mov ds, ax
+  mov es, ax
+  mov fs, ax
+  mov gs, ax
+  mov ss, ax
+  jmp 0:segments_set_up
+segments_set_up:
 	mov sp, 0x7c00
 
 	call serial_setup16
 
-mov si, str_hello
-call print_string16
+  mov si, str_hello
+  call print_string16
 
-mov si, str_loading
-call print_string16
+  mov si, str_loading
+  call print_string16
+
+  mov DWORD [atapio_buf16], 0x7e00
+  mov DWORD [lba], 1
 
 load_stage2:
-        mov si, dapack
-        mov ah, 0x42
-        mov dl, 0x80
-        int 0x13
-        jc error16
-        mov si, sect_num
-        cmp WORD [si], 1
+  call atapio_read_sector16
+  cmp ax, 0
+  je error16
 	mov si, str_dot
 	call print_string16
-        jne error16
 
-mov di, [dest_off]
-add WORD [dest_off], 512
-add DWORD [lba], 1
+  mov di, [atapio_buf16]
+  add WORD [atapio_buf16], 512
+  add WORD [lba], 1
 
-; The constant 0x706f7473 ("stop" in little endian) is used
-; to mark when to stop loading
-cmp DWORD [di], 0x706f7473
-je boot_stage2
-jmp load_stage2
+  ;; The constant 0x706f7473 ("stop" in little endian) is used
+  ;; to mark when to stop loading
+  cmp DWORD [di], 0x706f7473
+  je boot_stage2
+  jmp load_stage2
 
 boot_stage2:
 	mov si, str_newline
 	call print_string16
-        mov si, str_booting
-        call print_string16
-        jmp stage2
+  mov si, str_booting
+  call print_string16
+
+  jmp stage2
+
+  ;; Print character in AL
+;; print_char16:
+;;   mov ah, 0x0e
+;;   mov bx, 0x00
+;;   mov bl, 0x07
+;;   int 0x10
+;;   ret
 
 ;; Print string pointed by SI
 print_string16:
-mov al, [si]
-inc si
-or al, al
-jz print_string16_ret
-call serial_write_char16
-jmp print_string16
+  mov al, [si]
+  inc si
+  or al, al
+  jz print_string16_ret
+  call serial_write_char16
+  ;; call print_char16
+  jmp print_string16
 print_string16_ret:
-ret
+  ret
 
 error16:
 	mov si, str_panic
-        call print_string16
-        jmp $
+  call print_string16
+  jmp $
 
 	;; void serial_setup()
 serial_setup16:
 	;; Send command as indicated in https://wiki.osdev.org/Serial_Port
-	mov dx, SERIAL_PORT
-	add dx, 1
+	mov dx, SERIAL_PORT + 1
 	mov ax, 0x00
 	out dx, al
 
-	mov dx, SERIAL_PORT
-	add dx, 3
+	mov dx, SERIAL_PORT + 3
 	mov ax, 0x80
 	out dx, al
 
 	mov dx, SERIAL_PORT
-	add dx, 0
 	mov ax, 0x03
 	out dx, al
 
-	mov dx, SERIAL_PORT
-	add dx, 1
+	mov dx, SERIAL_PORT + 1
 	mov ax, 0x00
 	out dx, al
 
-	mov dx, SERIAL_PORT
-	add dx, 3
+	mov dx, SERIAL_PORT + 3
 	mov ax, 0x03
 	out dx, al
 
-	mov dx, SERIAL_PORT
-	add dx, 2
+	mov dx, SERIAL_PORT + 2
 	mov ax, 0xc7
 	out dx, al
 
-	mov dx, SERIAL_PORT
-	add dx, 4
+	mov dx, SERIAL_PORT + 4
 	mov ax, 0x0b
 	out dx, al
 
@@ -105,33 +117,96 @@ serial_write_char16:
 	mov bl, al
 
 	;; Test until the serial is available for transmit
-	mov dx, SERIAL_PORT
-	add dx, 5
+	mov dx, SERIAL_PORT + 5
 	in al, dx
-        and ax, 0x20
+  and ax, 0x20
 	cmp ax, 0
 	je serial_write_char16
 
 	;; Actually write the char
 	mov dx, SERIAL_PORT
-        mov al, bl
+  mov al, bl
 	out dx, al
 
 	ret
 
 
-dapack:
-        db 16
-        db 0
-sect_num:
-        dw 1
-dest_off:
-        dw 0x7e00
-dest_seg:
-        dw 0
-lba:
-        dd 1
-        dd 0
+  ;; Read 512 bytes and store them in atapio_buf16
+atapio_in_sector16:
+  mov cx, 256
+  mov dx, ATAPIO_DATA
+  mov di, [atapio_buf16]
+  rep insw
+  ret
+
+
+  ;; bool atapio_poll16()
+atapio_poll16:
+  mov dx, ATAPIO_COMMAND
+  in al, dx
+
+  ;; Error if ERR or DF bit is set
+  test al, 0x21
+  jnz atapio_poll16_ret_false
+
+  ;; Reloop if BSY is set
+  test al, 0x80
+  jnz atapio_poll16
+
+  ;; Reloop if DRQ is not set
+  test al, 0x08
+  jz atapio_poll16
+
+  mov ax, 1
+  ret
+
+atapio_poll16_ret_false:
+  mov ax, 0
+  ret
+
+
+  ;; bool atapio_read_sector16()
+atapio_read_sector16:
+  ;; Send READ SECTORS EXT
+  mov dx, ATAPIO_DRIVE
+  mov al, 0x40
+  out dx, al
+  mov dx, ATAPIO_SECTOR_COUNT
+  mov al, 0
+  out dx, al
+  inc dx
+  out dx, al
+  inc dx
+  out dx, al
+  inc dx
+  out dx, al
+  mov dx, ATAPIO_SECTOR_COUNT
+  mov al, 1
+  out dx, al
+  inc dx
+  mov ax, [lba]
+  out dx, al
+  inc dx
+  mov al, ah
+  out dx, al
+  inc dx
+  mov al, 0
+  out dx, al
+  mov dx, ATAPIO_COMMAND
+  mov al, 0x24
+  out dx, al
+
+  ;; Poll and in
+  call atapio_poll16
+  cmp ax, 0
+  je atapio_read_sector16_ret_false
+  call atapio_in_sector16
+  mov ax, 1
+  ret
+
+atapio_read_sector16_ret_false:
+  mov ax, 0
+  ret
 
 str_hello:
 db 'Hello, entered stage1!', 0xa, 0
@@ -395,7 +470,7 @@ payload_loaded:
 	mov esi, str_chainloading
 	call print_string
 
-jmp 0x100000
+  jmp 0x100000
 
 ;; Print string pointed by ESI
 print_string:
