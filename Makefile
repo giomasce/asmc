@@ -94,5 +94,8 @@ boot/boot/asmg.x86: asmg.x86
 bootloader.x86.exe: bootloader.asm
 	nasm bootloader.asm -f bin -o bootloader.x86.exe
 
-boot.x86: bootloader.x86.exe asmg.x86
-	cat bootloader.x86.exe asmg.x86 > boot.x86
+zero_sect.bin:
+	dd if=/dev/zero bs=512 count=1 of=zero_sect.bin
+
+boot.x86: bootloader.x86.exe asmg.x86 zero_sect.bin
+	cat bootloader.x86.exe asmg.x86 zero_sect.bin > boot.x86

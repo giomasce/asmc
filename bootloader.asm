@@ -297,7 +297,7 @@ check_a20:
     push di
     push si
 
-    cli
+  ;; cli
 
     xor ax, ax ; ax = 0
     mov es, ax

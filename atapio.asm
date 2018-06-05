@@ -174,7 +174,7 @@ atapio_read_sector:
   mov eax, 1
   ret
 
-atapio_read_sector_ret:
+atapio_read_sector_ret_false:
   mov eax, 0
   ret
 
