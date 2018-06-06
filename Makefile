@@ -1,5 +1,5 @@
 
-AR=ar
+AR=gar
 
 all: asmasm asmasm.x86 boot.iso cc asmg boot.x86
 
@@ -75,14 +75,14 @@ asmg: asmg.o gstaging.o platform.o platform_asm.o
 	gcc -m32 -O0 -g -o asmg asmg.o gstaging.o platform.o platform_asm.o
 
 full-asmg.asm: kernel.asm ar.asm library.asm kernel-asmg.asm asmg.asm top.asm
-	cat kernel.asm ar.asm library.asm kernel-asmg.asm asmg.asm top.asm | grep -v "^ *section " | grep -v "^ *bits " | grep -v "^ *org " > full-asmg.asm
+	cat kernel.asm ar.asm library.asm kernel-asmg.asm asmg.asm top.asm | grep -v "^ *section " > full-asmg.asm
 
 initrd-asmg.ar: main.g test.c first.h other.h utils.g malloc.g vector.g map.g preproc.g ast.g END
 	-rm initrd-asmg.ar
 	$(AR) rcs initrd-asmg.ar main.g test.c first.h other.h utils.g malloc.g vector.g map.g preproc.g ast.g END
 
-asmg.x86.exe: full-asmg.asm asmasm
-	./asmasm full-asmg.asm > asmg.x86.exe
+asmg.x86.exe: full-asmg.asm
+	nasm -f bin full-asmg.asm -o asmg.x86.exe
 
 asmg.x86: asmg.x86.exe initrd-asmg.ar
 	cat asmg.x86.exe initrd-asmg.ar > asmg.x86
