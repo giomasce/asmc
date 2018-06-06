@@ -141,6 +141,7 @@ fun malloc 1 {
     }
   }
   @ptr alloc_size platform_allocate = ;
+  ptr 1024 1024 * 100 * < "too much alloc" assert_msg ;
   ptr MALLOC_NEXT take_addr 0 = ;
   ptr MALLOC_PREV take_addr 0 = ;
   ptr MALLOC_SIZE take_addr alloc_size SIZEOF_MALLOC - = ;
