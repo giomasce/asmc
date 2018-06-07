@@ -24,6 +24,12 @@ fun vector_destroy 1 {
   vptr free ;
 }
 
+fun vector_clear 1 {
+  $vptr
+  @vptr 0 param = ;
+  vptr VECTOR_SIZE take_addr 0 = ;
+}
+
 fun vector_at_addr 2 {
   $vptr
   $idx

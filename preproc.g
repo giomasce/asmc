@@ -364,6 +364,9 @@ fun process_token 4 {
   @changed 0 = ;
   if ctx PPCTX_DEFINES take tok map_has {
     @changed 1 = ;
+    #"Expanding: " 1 platform_log ;
+    #tok 1 platform_log ;
+    #"\n" 1 platform_log ;
     $subst
     @subst ctx PPCTX_DEFINES take tok map_at = ;
     $repl
@@ -375,7 +378,7 @@ fun process_token 4 {
       $j
       @j 0 = ;
       while j repl vector_size < {
-        ctx tokens repl @j process_token ;
+        tokens repl j vector_at strdup vector_push_back ;
         @j j 1 + = ;
       }
     }
@@ -417,12 +420,30 @@ fun preproc_replace 2 {
   while changed {
     $outtoks
     @outtoks 4 vector_init = ;
-    changed ctx intoks outtoks preproc_replace_int = ;
+    @changed ctx intoks outtoks preproc_replace_int = ;
     intoks free_vect_of_ptrs ;
     @intoks outtoks = ;
   }
 
   intoks ret ;
+}
+
+fun preproc_expand 3 {
+  $ctx
+  $intoks
+  $outtoks
+  @ctx 2 param = ;
+  @intoks 1 param = ;
+  @outtoks 0 param = ;
+  $replaced
+  @replaced ctx intoks preproc_replace = ;
+  $i
+  @i 0 = ;
+  while i replaced vector_size < {
+    outtoks replaced i vector_at vector_push_back ;
+    @i i 1 + = ;
+  }
+  replaced vector_destroy ;
 }
 
 fun preproc_process_define 4 {
@@ -596,6 +617,8 @@ fun preproc_file 3 {
   @tokens 2 param = ;
   $intoks
   @intoks filename tokenize_file = ;
+  $ready_toks
+  @ready_toks 4 vector_init = ;
   $i
   @i 0 = ;
   $at_newline
@@ -604,6 +627,8 @@ fun preproc_file 3 {
     $tok
     @tok intoks i vector_at = ;
     if tok "#" strcmp 0 == at_newline && {
+      ctx ready_toks tokens preproc_expand ;
+      ready_toks vector_clear ;
       intoks @i discard_white_tokens ;
       @tok intoks i vector_at = ;
       $processed
@@ -628,12 +653,16 @@ fun preproc_file 3 {
         0 assert ;
       }
     } else {
-      ctx tokens intoks @i process_token ;
+      ready_toks tok vector_push_back ;
+      #ctx tokens intoks @i process_token ;
     }
     @tok intoks i vector_at = ;
     @at_newline tok "\n" strcmp 0 == = ;
     @i i 1 + = ;
   }
+  ctx ready_toks tokens preproc_expand ;
+  ready_toks vector_clear ;
+  ready_toks vector_destroy ;
   intoks free_vect_of_ptrs ;
 }
 
