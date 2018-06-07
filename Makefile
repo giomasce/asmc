@@ -77,9 +77,9 @@ asmg: asmg.o gstaging.o platform.o platform_asm.o
 full-asmg.asm: kernel.asm ar.asm library.asm kernel-asmg.asm asmg.asm top.asm
 	cat kernel.asm ar.asm library.asm kernel-asmg.asm asmg.asm top.asm | grep -v "^ *section " > full-asmg.asm
 
-initrd-asmg.ar: main.g test.c first.h other.h utils.g simple_malloc.g vector.g map.g preproc.g ast.g END
+initrd-asmg.ar: main.g test.c first.h other.h utils.g simple_malloc.g triv_malloc.g vector.g map.g preproc.g ast.g END
 	-rm initrd-asmg.ar
-	$(AR) rcs initrd-asmg.ar main.g test.c first.h other.h utils.g simple_malloc.g vector.g map.g preproc.g ast.g END
+	$(AR) rcs initrd-asmg.ar main.g test.c first.h other.h utils.g simple_malloc.g triv_malloc.g vector.g map.g preproc.g ast.g END
 
 asmg.x86.exe: full-asmg.asm
 	nasm -f bin full-asmg.asm -o asmg.x86.exe
