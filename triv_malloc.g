@@ -5,8 +5,8 @@ fun malloc 1 {
   $alloc_size
   # Add space for the length
   @alloc_size size 4 + = ;
-  # Make it a multiple of 16
-  @alloc_size alloc_size 1 - 0xf | 1 + = ;
+  # Make it a multiple of 4
+  @alloc_size alloc_size 1 - 0x3 | 1 + = ;
   $ptr
   @ptr alloc_size platform_allocate = ;
   ptr 1024 1024 * 100 * < "too much alloc" assert_msg ;

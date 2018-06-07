@@ -740,7 +740,7 @@ platform_allocate:
   mov edx, [esp+4]
   add edx, eax
   sub edx, 1
-  or edx, 0xf
+  or edx, 0x3
   add edx, 1
   mov [ecx], edx
 

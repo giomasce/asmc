@@ -91,6 +91,7 @@ fun ppctx_destroy 1 {
     if defs i map_has_idx {
       defs i map_at_idx subst_destroy ;
     }
+    @i i 1 + = ;
   }
   defs free ;
   ptr free ;
