@@ -1,5 +1,5 @@
 
-AR=gar
+AR=ar
 
 all: asmasm asmasm.x86 boot.iso cc asmg boot.x86
 
