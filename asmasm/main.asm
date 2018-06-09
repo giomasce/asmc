@@ -7,6 +7,9 @@ str_helloasm:
 str_atapio_asm:
   db 'atapio.asm'
   db 0
+str_atapio_test_asm:
+  db 'atapio_test.asm'
+  db 0
 str_atapio_test:
   db 'atapio_test'
   db 0
@@ -20,6 +23,11 @@ main:
 
   ;; Compile the ATA PIO driver
   push str_atapio_asm
+  call platform_assemble
+  add esp, 4
+
+  ;; Compile the ATA PIO test
+  push str_atapio_test_asm
   call platform_assemble
   add esp, 4
 

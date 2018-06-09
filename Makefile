@@ -37,7 +37,7 @@ build/boot_asmasm.x86: build/bootloader.x86.exe build/asmasm.x86 build/zero_sect
 build/full-asmasm.asm: lib/kernel.asm lib/ar.asm lib/library.asm asmasm/asmasm.asm asmasm/kernel-asmasm.asm lib/top.asm
 	cat $^ | grep -v "^ *bits " | grep -v "^ *org " > $@
 
-build/initrd-asmasm.ar: asmasm/main.asm lib/atapio.asm build/END
+build/initrd-asmasm.ar: asmasm/main.asm lib/atapio.asm asmasm/atapio_test.asm build/END
 	-rm $@
 	$(AR) rcs $@ $^
 
