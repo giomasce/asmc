@@ -1,8 +1,25 @@
 
+FOUND := 0
+UNAME := $(shell uname -s)
+
+ifeq ($(UNAME),Linux)
+FOUND := 1
 AR=ar
 USE_NASM=0
-
 all: build build/asmasm_linux build/boot_asmasm.x86 build/boot_empty.x86 build/boot_asmg.x86 build/boot.iso
+endif
+
+ifeq ($(UNAME),Darwin)
+FOUND := 1
+AR=gar
+USE_NASM=1
+all: build build/boot_asmasm.x86 build/boot_empty.x86 build/boot_asmg.x86
+endif
+
+ifeq ($(FOUND),0)
+@echo "Platform not supported, please add it to Makefile!"
+false
+endif
 
 # Trivial things
 build:
