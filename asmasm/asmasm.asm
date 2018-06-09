@@ -585,6 +585,12 @@ str_db:
 str_section:
   db 'section'
   db 0
+str_org:
+  db 'org'
+  db 0
+str_bits:
+  db 'bits'
+  db 0
 str_global:
   db 'global'
   db 0
@@ -2382,9 +2388,25 @@ process_text_line_end:
 
   global process_directive_line
 process_directive_line:
-  ;; Ignore section, global and align
+  ;; Ignore section, org, bits, global and align
   mov eax, [esp+4]
   push str_section
+  push eax
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je process_directive_line_ret_true
+
+  mov eax, [esp+4]
+  push str_org
+  push eax
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  je process_directive_line_ret_true
+
+  mov eax, [esp+4]
+  push str_bits
   push eax
   call strcmp
   add esp, 8

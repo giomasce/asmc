@@ -1,6 +1,6 @@
 
 AR=ar
-USE_NASM=1
+USE_NASM=0
 
 all: build build/asmasm_linux build/boot_asmasm.x86 build/boot_empty.x86 build/boot_asmg.x86 build/boot.iso
 
