@@ -1,5 +1,6 @@
 
 AR=ar
+USE_NASM=1
 
 all: build build/asmasm_linux build/boot_asmasm.x86 build/boot_empty.x86 build/boot_asmg.x86 build/boot.iso
 
@@ -35,28 +36,38 @@ build/boot_asmasm.x86: build/bootloader.x86.exe build/asmasm.x86 build/zero_sect
 
 # Asmasm kernel
 build/full-asmasm.asm: lib/kernel.asm lib/ar.asm lib/library.asm asmasm/asmasm.asm asmasm/kernel-asmasm.asm lib/top.asm
-	cat $^ | grep -v "^ *bits " | grep -v "^ *org " > $@
+	cat $^ | grep -v "^ *section " > $@
 
 build/initrd-asmasm.ar: asmasm/main.asm lib/atapio.asm asmasm/atapio_test.asm build/END
 	-rm $@
 	$(AR) rcs $@ $^
 
+ifeq ($(USE_NASM),1)
+build/asmasm.x86.exe: build/full-asmasm.asm
+	nasm -f bin -o $@ $<
+else
 build/asmasm.x86.exe: build/full-asmasm.asm build/asmasm_linux
 	./build/asmasm_linux $< > $@
+endif
 
 build/asmasm.x86: build/asmasm.x86.exe build/initrd-asmasm.ar
 	cat $^ > $@
 
 # Empty kernel
 build/full-empty.asm: lib/kernel.asm lib/ar.asm lib/library.asm empty/kernel-empty.asm lib/top.asm
-	cat $^ | grep -v "^ *bits " | grep -v "^ *org " > $@
+	cat $^ | grep -v "^ *section " > $@
 
 build/initrd-empty.ar: build/END
 	-rm $@
 	$(AR) rcs $@ $^
 
+ifeq ($(USE_NASM),1)
+build/empty.x86.exe: build/full-empty.asm
+	nasm -f bin -o $@ $<
+else
 build/empty.x86.exe: build/full-empty.asm build/asmasm_linux
 	./build/asmasm_linux $< > $@
+endif
 
 build/empty.x86: build/empty.x86.exe build/initrd-empty.ar
 	cat $^ > $@
@@ -66,14 +77,19 @@ build/boot_empty.x86: build/bootloader.x86.exe build/empty.x86 build/zero_sect.b
 
 # Asmg kernel
 build/full-asmg.asm: lib/kernel.asm lib/ar.asm lib/library.asm asmg/asmg.asm asmg/kernel-asmg.asm lib/top.asm
-	cat $^ | grep -v "^ *bits " | grep -v "^ *org " > $@
+	cat $^ | grep -v "^ *section " > $@
 
 build/initrd-asmg.ar: asmg/*.g test/test.c test/first.h test/other.h build/END
 	-rm $@
 	$(AR) rcs $@ $^
 
+ifeq ($(USE_NASM),1)
+build/asmg.x86.exe: build/full-asmg.asm
+	nasm -f bin -o $@ $<
+else
 build/asmg.x86.exe: build/full-asmg.asm build/asmasm_linux
 	./build/asmasm_linux $< > $@
+endif
 
 build/asmg.x86: build/asmg.x86.exe build/initrd-asmg.ar
 	cat $^ > $@
