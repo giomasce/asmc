@@ -1,101 +1,102 @@
 
 AR=ar
 
-all: asmasm asmasm.x86 boot.iso cc asmg boot.x86
+all: build build/asmasm_linux build/boot_asmasm.x86 build/boot_empty.x86 build/boot_asmg.x86 build/boot.iso
 
-asmasm.o: asmasm.asm library.asm stub.asm
-	nasm -f elf -F dwarf -g -w-number-overflow -o asmasm.o stub.asm
+# Trivial things
+build:
+	mkdir build
 
-staging.o: staging.c platform.h
-	gcc -m32 -c -Og -g -ffreestanding staging.c -o staging.o
+build/zero_sect.bin:
+	dd if=/dev/zero bs=512 count=1 of=$@
 
-platform.o: platform.c platform.h
-	gcc -m32 -c -Og -g -ffreestanding platform.c -o platform.o
+build/END:
+	touch $@
 
-platform_asm.o: platform_asm.asm
-	nasm -f elf -F dwarf -g platform_asm.asm
+# Bootloader
+build/bootloader.x86.exe: boot/bootloader.asm lib/atapio.asm
+	nasm -f bin -I lib/ -o $@ $<
 
-asmasm: asmasm.o staging.o platform.o platform_asm.o
-	gcc -m32 -O0 -g -o asmasm asmasm.o staging.o platform.o platform_asm.o
+# Asmasm executable
+build/asmasm_linux.asm: asmasm/asmasm_linux.asm lib/library.asm asmasm/asmasm.asm
+	cat $^ > $@
 
-full-asmasm.asm: kernel.asm ar.asm library.asm asmasm.asm kernel-asmasm.asm top.asm
-	cat kernel.asm ar.asm library.asm asmasm.asm kernel-asmasm.asm top.asm | grep -v "^ *section " | grep -v "^ *bits " | grep -v "^ *org " > full-asmasm.asm
+build/asmasm_linux.o: build/asmasm_linux.asm
+	nasm -f elf -F dwarf -g -w-number-overflow -o $@ $<
 
-END:
-	touch END
+build/platform_linux.o: lib/platform_linux.c lib/platform.h
+	gcc -m32 -c -Og -g -Ilib -o $@ $<
 
-initrd-asmasm.ar: main.asm atapio.asm END
-	-rm initrd-asmasm.ar
-	$(AR) rcs initrd-asmasm.ar main.asm atapio.asm END
+build/asmasm_linux: build/asmasm_linux.o build/platform_linux.o
+	gcc -m32 -Og -g -o $@ $^
 
-asmasm.x86.exe: full-asmasm.asm asmasm
-	./asmasm full-asmasm.asm > asmasm.x86.exe
+build/boot_asmasm.x86: build/bootloader.x86.exe build/asmasm.x86 build/zero_sect.bin
+	cat $^ > $@
 
-asmasm.x86: asmasm.x86.exe initrd-asmasm.ar
-	cat asmasm.x86.exe initrd-asmasm.ar > asmasm.x86
+# Asmasm kernel
+build/full-asmasm.asm: lib/kernel.asm lib/ar.asm lib/library.asm asmasm/asmasm.asm asmasm/kernel-asmasm.asm lib/top.asm
+	cat $^ | grep -v "^ *bits " | grep -v "^ *org " > $@
 
-boot/boot/grub/grub.cfg: grub.cfg
-	mkdir -p boot/boot/grub
-	cp grub.cfg boot/boot/grub
+build/initrd-asmasm.ar: asmasm/main.asm lib/atapio.asm build/END
+	-rm $@
+	$(AR) rcs $@ $^
 
-boot/boot/asmasm.x86: asmasm.x86
-	mkdir -p boot/boot
-	cp asmasm.x86 boot/boot
+build/asmasm.x86.exe: build/full-asmasm.asm build/asmasm_linux
+	./build/asmasm_linux $< > $@
 
-full-empty.asm: kernel.asm ar.asm library.asm kernel-empty.asm top.asm
-	cat kernel.asm ar.asm library.asm kernel-empty.asm top.asm | grep -v "^ *section " | grep -v "^ *bits " | grep -v "^ *org " > full-empty.asm
+build/asmasm.x86: build/asmasm.x86.exe build/initrd-asmasm.ar
+	cat $^ > $@
 
-initrd-empty.ar: END
-	-rm initrd-empty.ar
-	$(AR) rcs initrd-empty.ar END
+# Empty kernel
+build/full-empty.asm: lib/kernel.asm lib/ar.asm lib/library.asm empty/kernel-empty.asm lib/top.asm
+	cat $^ | grep -v "^ *bits " | grep -v "^ *org " > $@
 
-empty.x86.exe: full-empty.asm asmasm
-	./asmasm full-empty.asm > empty.x86.exe
+build/initrd-empty.ar: build/END
+	-rm $@
+	$(AR) rcs $@ $^
 
-empty.x86: empty.x86.exe initrd-empty.ar
-	cat empty.x86.exe initrd-empty.ar > empty.x86
+build/empty.x86.exe: build/full-empty.asm build/asmasm_linux
+	./build/asmasm_linux $< > $@
 
-boot/boot/empty.x86: empty.x86
-	mkdir -p boot/boot
-	cp empty.x86 boot/boot
+build/empty.x86: build/empty.x86.exe build/initrd-empty.ar
+	cat $^ > $@
 
-boot.iso: boot/boot/grub/grub.cfg boot/boot/asmasm.x86 boot/boot/empty.x86 boot/boot/asmg.x86
-	grub-mkrescue -o boot.iso boot
+build/boot_empty.x86: build/bootloader.x86.exe build/empty.x86 build/zero_sect.bin
+	cat $^ > $@
 
-cc: cc.c
-	gcc -m32 -O0 -fwrapv -g -o cc cc.c
+# Asmg kernel
+build/full-asmg.asm: lib/kernel.asm lib/ar.asm lib/library.asm asmg/asmg.asm asmg/kernel-asmg.asm lib/top.asm
+	cat $^ | grep -v "^ *bits " | grep -v "^ *org " > $@
 
-asmg.o: asmg.asm gstub.asm library.asm
-	nasm -f elf -F dwarf -g -w-number-overflow -o asmg.o gstub.asm
+build/initrd-asmg.ar: asmg/*.g test/test.c test/first.h test/other.h build/END
+	-rm $@
+	$(AR) rcs $@ $^
 
-gstaging.o: gstaging.c platform.h
-	gcc -m32 -c -Og -g -ffreestanding gstaging.c -o gstaging.o
+build/asmg.x86.exe: build/full-asmg.asm build/asmasm_linux
+	./build/asmasm_linux $< > $@
 
-asmg: asmg.o gstaging.o platform.o platform_asm.o
-	gcc -m32 -O0 -g -o asmg asmg.o gstaging.o platform.o platform_asm.o
+build/asmg.x86: build/asmg.x86.exe build/initrd-asmg.ar
+	cat $^ > $@
 
-full-asmg.asm: kernel.asm ar.asm library.asm kernel-asmg.asm asmg.asm top.asm
-	cat kernel.asm ar.asm library.asm kernel-asmg.asm asmg.asm top.asm | grep -v "^ *section " > full-asmg.asm
+build/boot_asmg.x86: build/bootloader.x86.exe build/asmg.x86 build/zero_sect.bin
+	cat $^ > $@
 
-initrd-asmg.ar: main.g test.c first.h other.h utils.g simple_malloc.g triv_malloc.g vector.g map.g preproc.g ast.g END
-	-rm initrd-asmg.ar
-	$(AR) rcs initrd-asmg.ar main.g test.c first.h other.h utils.g simple_malloc.g triv_malloc.g vector.g map.g preproc.g ast.g END
+# GRUB ISO image
+build/boot/boot/grub/grub.cfg: boot/grub.cfg
+	mkdir -p build/boot/boot/grub
+	cp $^ $@
 
-asmg.x86.exe: full-asmg.asm
-	nasm -f bin full-asmg.asm -o asmg.x86.exe
+build/boot/boot/asmasm.x86: build/asmasm.x86
+	mkdir -p build/boot/boot
+	cp $^ $@
 
-asmg.x86: asmg.x86.exe initrd-asmg.ar
-	cat asmg.x86.exe initrd-asmg.ar > asmg.x86
+build/boot/boot/empty.x86: build/empty.x86
+	mkdir -p build/boot/boot
+	cp $^ $@
 
-boot/boot/asmg.x86: asmg.x86
-	mkdir -p boot/boot
-	cp asmg.x86 boot/boot
+build/boot/boot/asmg.x86: build/asmg.x86
+	mkdir -p build/boot/boot
+	cp $^ $@
 
-bootloader.x86.exe: bootloader.asm
-	nasm bootloader.asm -f bin -o bootloader.x86.exe
-
-zero_sect.bin:
-	dd if=/dev/zero bs=512 count=1 of=zero_sect.bin
-
-boot.x86: bootloader.x86.exe asmg.x86 zero_sect.bin
-	cat bootloader.x86.exe asmg.x86 zero_sect.bin > boot.x86
+build/boot.iso: build/boot/boot/grub/grub.cfg build/boot/boot/asmasm.x86 build/boot/boot/empty.x86 build/boot/boot/asmg.x86
+	cd build && grub-mkrescue -o boot.iso boot
