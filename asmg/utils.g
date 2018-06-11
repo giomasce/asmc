@@ -96,3 +96,96 @@ fun strcmp_case 2 {
     @s2 s2 1 + = ;
   }
 }
+
+fun isspace 1 {
+  $c
+  @c 0 param = ;
+  if c '\n' == { 1 ret ; }
+  if c '\r' == { 1 ret ; }
+  if c '\f' == { 1 ret ; }
+  if c '\v' == { 1 ret ; }
+  if c '\t' == { 1 ret ; }
+  if c ' ' == { 1 ret ; }
+  0 ret ;
+}
+
+fun strtol 3 {
+  $ptr
+  $endptr
+  $base
+  @ptr 2 param = ;
+  @endptr 1 param = ;
+  @base 0 param = ;
+
+  $positive
+  @positive 1 = ;
+  $white
+  @white 1 = ;
+  $sign_found
+  @sign_found 0 = ;
+  $val
+  @val 0 = ;
+
+  while ptr **c 0 != {
+    $c
+    @c ptr **c = ;
+    if c 0 == {
+      if endptr 0 != {
+        endptr ptr = ;
+      }
+      val positive * ret ;
+    }
+    base 0 >= base 1 != && base 36 <= && "strtol: wrong base" assert_msg ;
+    if c isspace {
+      white "strtol: wrong whitespace" assert_msg ;
+    } else {
+      @white 0 = ;
+      if c '+' == {
+        sign_found ! "strtol: more than one sign found" assert_msg ;
+        @sign_found 1 = ;
+      } else {
+        if c '-' == {
+          sign_found ! "strtol: more than one sign found" assert_msg ;
+          @sign_found 1 = ;
+          @positive 0 1 - = ;
+        } else {
+          if base 0 == {
+            if c '0' == {
+              base 8 = ;
+              @ptr ptr 1 + = ;
+              @c ptr **c = ;
+              if c 'x' == c 'X' == || {
+                base 16 = ;
+                @ptr ptr 1 + = ;
+                @c ptr **c = ;
+              }
+            } else {
+              base 10 = ;
+            }
+          }
+          if '0' c <= c '9' <= && {
+            @c c '0' - = ;
+          } else {
+            if 'a' c <= c 'z' <= && {
+              @c c 'a' - 10 + = ;
+            } else {
+              if 'A' c <= c 'Z' <= && {
+                @c c 'A' - 10 + = ;
+              } else {
+                @c 255 = ;
+              }
+            }
+          }
+          if c base >= {
+            if endptr 0 != {
+              endptr ptr = ;
+            }
+            val positive * ret ;
+          }
+          @val val base * c + = ;
+        }
+      }
+    }
+    @ptr ptr 1 + = ;
+  }
+}

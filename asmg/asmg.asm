@@ -584,6 +584,15 @@ escaped:
   mov al, TAB
   cmp dl, LITTLET
   je escaped_ret
+  mov al, FEED
+  cmp dl, LITTLEF
+  je escaped_ret
+  mov al, RETURN
+  cmp dl, LITTLER
+  je escaped_ret
+  mov al, VERTTAB
+  cmp dl, LITTLEV
+  je escaped_ret
   mov al, 0
   cmp dl, ZERO
   je escaped_ret
