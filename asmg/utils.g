@@ -64,3 +64,35 @@ fun take_addr 2 {
   @off 0 param = ;
   ptr off + ret ;
 }
+
+fun strcmp_case 2 {
+  $s1
+  $s2
+  @s1 1 param = ;
+  @s2 0 param = ;
+  $diff
+  @diff 'A' 'a' - = ;
+  while 1 {
+    $c1
+    $c2
+    @c1 s1 **c = ;
+    @c2 s2 **c = ;
+    if 'A' c1 <= c1 'Z' <= && {
+      @c1 c1 diff - = ;
+    }
+    if 'A' c2 <= c2 'Z' <= && {
+      @c2 c2 diff - = ;
+    }
+    if c1 c2 < {
+      0xffffffff ret ;
+    }
+    if c1 c2 > {
+      1 ret ;
+    }
+    if c1 0 == {
+      0 ret ;
+    }
+    @s1 s1 1 + = ;
+    @s2 s2 1 + = ;
+  }
+}

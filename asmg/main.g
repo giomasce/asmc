@@ -43,6 +43,10 @@ fun main 0 {
 
     "test.c" 0 "parse_c" platform_get_symbol \1 ;
   } else {
+    "Compiling asm_regs.g... " 1 platform_log ;
+    "asm_regs.g" platform_g_compile ;
+    "done!\n" 1 platform_log ;
+
     "Compiling asm_preproc.g... " 1 platform_log ;
     "asm_preproc.g" platform_g_compile ;
     "done!\n" 1 platform_log ;

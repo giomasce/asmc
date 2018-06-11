@@ -1,8 +1,4 @@
 
-$fd_in
-$read_char
-$char_given_back
-
 fun get_char_type 1 {
   $x
   @x 0 param = ;
@@ -12,20 +8,67 @@ fun get_char_type 1 {
   4 ret ;
 }
 
-fun give_back_char 0 {
-  @char_given_back 1 = ;
+# 0 -> indirect, 1 -> register, 2 -> immediate
+const OPERAND_TYPE 0
+# 0 -> unknown, 1 -> 8 bits, 2 -> 16 bits, 3 -> 32 bits
+const OPERAND_SIZE 4
+const OPERAND_REG 8
+const OPERAND_OFFSET 12
+const OPERAND_SEGMENT 16
+const OPERAND_SCALE 20
+const OPERAND_INDEX 24
+const SIZEOF_OPERAND 28
+
+const ASMCTX_FDIN 0
+const ASMCTX_READ_CHAR 4
+const ASMCTX_CHAR_GIVEN_BACK 8
+const ASMCTX_SYMBOLS 12
+const SIZEOF_ASMCTX 16
+
+fun asmctx_init 0 {
+  $ptr
+  @ptr SIZEOF_ASMCTX malloc = ;
+  ptr ASMCTX_SYMBOLS take_addr map_init = ;
+  ptr ret ;
 }
 
-fun get_char 0 {
-  if char_given_back {
-    @char_given_back 0 = ;
+fun asmctx_destroy 1 {
+  $ptr
+  @ptr 0 param = ;
+  ptr ASMCTX_SYMBOLS take map_destroy ;
+  ptr free ;
+}
+
+fun asmctx_set_fd 2 {
+  $ptr
+  $fd
+  @ptr 1 param = ;
+  @fd 0 param = ;
+  ptr ASMCTX_CHAR_GIVEN_BACK take_addr 0 = ;
+  ptr ASMCTX_FDIN take_addr fd = ;
+}
+
+fun asmctx_give_back_char 1 {
+  $ctx
+  @ctx 0 param = ;
+  ctx ASMCTX_CHAR_GIVEN_BACK take ! "Character already given back" assert_msg ;
+  ctx ASMCTX_CHAR_GIVEN_BACK take_addr 1 = ;
+}
+
+fun asmctx_get_char 1 {
+  $ctx
+  @ctx 0 param = ;
+  if ctx ASMCTX_CHAR_GIVEN_BACK take {
+    ctx ASMCTX_CHAR_GIVEN_BACK take_addr 0 = ;
   } else {
-    @read_char fd_in platform_read_char = ;
+    ctx ASMCTX_READ_CHAR take_addr ctx ASMCTX_FDIN take platform_read_char = ;
   }
-  read_char ret
+  ctx ASMCTX_READ_CHAR take ret ;
 }
 
-fun get_token 0 {
+fun asmctx_get_token 1 {
+  $ctx
+  @ctx 0 param = ;
   $token_buf
   $token_buf_len
   @token_buf_len 32 = ;
@@ -39,7 +82,7 @@ fun get_token 0 {
   @cont 1 = ;
   while cont {
     $c
-    @c get_char = ;
+    @c ctx asmctx_get_char = ;
     @cont c 0xffffffff != = ;
     if cont {
       $save_char
@@ -102,7 +145,7 @@ fun get_token 0 {
           if token_type type == token_type 0 == || {
             @token_len token_len 1 + = ;
           } else {
-            give_back_char ;
+            ctx asmctx_give_back_char ;
             @cont 0 = ;
           }
         }
@@ -121,16 +164,64 @@ fun get_token 0 {
   token_buf ret ;
 }
 
+fun asmctx_parse_operand 1 {
+  $ctx
+  @ctx 0 param = ;
+  $op
+  @op SIZEOF_OPERAND malloc = ;
+
+  $tok
+  @tok ctx asmctx_get_token = ;
+
+  # Find the size prefix
+  op OPERAND_SIZE take_addr 0 = ;
+  if tok "byte" strcmp 0 == {
+    op OPERAND_SIZE take_addr 1 = ;
+  } else {
+    if tok "word" strcmp 0 == {
+      op OPERAND_SIZE take_addr 2 = ;
+    } else {
+      if tok "dword" strcmp 0 == {
+        op OPERAND_SIZE take_addr 3 = ;
+      }
+    }
+  }
+  if op OPERAND_SIZE take 0 != {
+    @tok ctx asmctx_get_token = ;
+  }
+
+  # Is it direct or indirect?
+  if tok **c '[' == {
+    op OPERAND_TYPE take_addr 0 = ;
+    
+  } else {
+    op OPERAND_SIZE take 0 == "Cannot specify the size of a direct operand" assert_msg ;
+    $reg
+    @reg tok parse_register = ;
+    if reg 0xffffffff != {
+      op OPERAND_TYPE take_addr 1 = ;
+      op OPERAND_REG take_addr reg 0x0f & = ;
+      op OPERAND_SIZE take_addr reg 4 >> = ;
+    } else {
+      op OPERAND_TYPE take_addr 2 = ;
+      
+    }
+  }
+
+  op ret ;
+}
+
 fun parse_asm 1 {
-  $cont
-  @cont 1 = ;
   $filename
   @filename 0 param = ;
-  @fd_in filename platform_open_file = ;
-  @char_given_back 0 = ;
+  $ctx
+  @ctx asmctx_init = ;
+  $cont
+  @cont 1 = ;
+  ctx filename platform_open_file asmctx_set_fd ;
   while cont {
     $tok
-    @tok get_token = ;
+    @tok ctx asmctx_get_token = ;
     @cont tok **c 0 != = ;
     if tok **c '\n' == {
       "NL" 1 platform_log ;
@@ -141,4 +232,5 @@ fun parse_asm 1 {
     tok free ;
   }
   "\n" 1 platform_log ;
+  ctx asmctx_destroy ;
 }

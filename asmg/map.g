@@ -9,7 +9,15 @@ fun map_init 0 {
 }
 
 fun map_destroy 1 {
-  0 param vector_destroy ;
+  $ptr
+  @ptr 0 param = ;
+  $i
+  @i 0 = ;
+  while i ptr vector_size < {
+    ptr i vector_at MAP_ELEM_KEY take free ;
+    @i i 1 + = ;
+  }
+  ptr vector_destroy ;
 }
 
 fun _map_find_idx 2 {
