@@ -64,9 +64,9 @@ fun get_token 0 {
       # String
       if enter_state 2 == {
         @save_char 1 = ;
-        if c '\\' == {
-          @state 3 = ;
-        }
+        #if c '\\' == {
+        #  @state 3 = ;
+        #}
         if c '\'' == {
           @state 0 = ;
           @cont 0 = ;
@@ -138,6 +138,7 @@ fun parse_asm 1 {
       tok 1 platform_log ;
     }
     "#" 1 platform_log ;
+    tok free ;
   }
   "\n" 1 platform_log ;
 }

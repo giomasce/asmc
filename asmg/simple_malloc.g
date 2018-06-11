@@ -113,8 +113,8 @@ fun check_fl 0 {
 fun malloc 1 {
   $size
   @size 0 param = ;
-  # Make it a multiple of 16
-  @size size 1 - 0xf | 1 + = ;
+  # Make it a multiple of 4
+  @size size 1 - 0x3 | 1 + = ;
   $block_mem
   $ptr
   $newptr
@@ -127,14 +127,14 @@ fun malloc 1 {
   @ptr head = ;
   while ptr {
     ptr MALLOC_MAGIC take MALLOC_MAGIC_FREE == "malloc: missing magic number" assert_msg ;
-    ptr MALLOC_SIZE take 0xf & 0 == "malloc: error 3" assert_msg ;
+    ptr MALLOC_SIZE take 0x3 & 0 == "malloc: error 3" assert_msg ;
     if ptr MALLOC_SIZE take size SIZEOF_MALLOC + >= {
       @block_mem ptr SIZEOF_MALLOC + = ;
       ptr fl_remove ;
       @newptr size ptr split = ;
       newptr fl_add ;
       ptr MALLOC_MAGIC take_addr MALLOC_MAGIC_ALLOC = ;
-      block_mem 0xf & 0 == "malloc: error 1" assert_msg ;
+      block_mem 0x3 & 0 == "malloc: error 1" assert_msg ;
       block_mem ret ;
     } else {
       @ptr ptr MALLOC_NEXT take = ;
@@ -151,7 +151,7 @@ fun malloc 1 {
     newptr fl_add ;
   }
   @block_mem ptr SIZEOF_MALLOC + = ;
-  block_mem 0xf & 0 == "malloc: error 2" assert_msg ;
+  block_mem 0x3 & 0 == "malloc: error 2" assert_msg ;
   block_mem ret ;
 }
 
