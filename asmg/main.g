@@ -47,6 +47,10 @@ fun main 0 {
     "asm_regs.g" platform_g_compile ;
     "done!\n" 1 platform_log ;
 
+    "Compiling asm_opcodes.g... " 1 platform_log ;
+    "asm_opcodes.g" platform_g_compile ;
+    "done!\n" 1 platform_log ;
+
     "Compiling asm_preproc.g... " 1 platform_log ;
     "asm_preproc.g" platform_g_compile ;
     "done!\n" 1 platform_log ;

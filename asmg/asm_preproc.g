@@ -8,7 +8,7 @@ fun get_char_type 1 {
   4 ret ;
 }
 
-# 0 -> indirect, 1 -> register, 2 -> immediate
+# 0 -> indirect (all fields set), 1 -> register (REG and SIZE set), 2 -> immediate (OFFSET set)
 const OPERAND_TYPE 0
 # 0 -> unknown, 1 -> 8 bits, 2 -> 16 bits, 3 -> 32 bits
 const OPERAND_SIZE 4
@@ -16,7 +16,7 @@ const OPERAND_REG 8
 const OPERAND_OFFSET 12
 const OPERAND_SEGMENT 16
 const OPERAND_SCALE 20
-const OPERAND_INDEX 24
+const OPERAND_INDEX_REG 24
 const SIZEOF_OPERAND 28
 
 const ASMCTX_FDIN 0
@@ -204,11 +204,68 @@ fun asmctx_parse_operand 1 {
       op OPERAND_SIZE take_addr reg 4 >> = ;
     } else {
       op OPERAND_TYPE take_addr 2 = ;
-      
+      $syms
+      @syms ctx ASMCTX_SYMBOLS take = ;
+      if syms tok map_has {
+        op OPERAND_OFFSET take_addr syms tok map_at = ;
+      } else {
+        $endptr
+        op OPERAND_OFFSET take_addr tok @endptr 0 strtol = ;
+        endptr **c 0 == "asmctx_parse_operand: illegal direct operand" assert_msg ;
+      }
     }
   }
 
   op ret ;
+}
+
+fun parse_asm_line 1 {
+  $ctx
+  @ctx 0 param = ;
+  $tok
+  @tok ctx asmctx_get_token = ;
+  while tok "\n" strcmp 0 == {
+    tok free ;
+    @tok ctx asmctx_get_token = ;
+  }
+  if tok "" strcmp 0 == {
+    tok free ;
+    0 ret ;
+  }
+  $opcode_map
+  @opcode_map get_opcode_map = ;
+  if opcode_map tok map_has {
+    $opcode
+    @opcode opcode_map tok map_at = ;
+    $i
+    @i 0 = ;
+    $op
+    while i opcode OPCODE_ARG_NUM take 1 - < {
+      tok free ;
+      @op ctx asmctx_parse_operand = ;
+      
+      op free ;
+      @tok ctx asmctx_get_token = ;
+      tok "," strcmp 0 == "parse_asm_line: expected comma" assert_msg ;
+      tok free ;
+      @i i 1 + = ;
+    }
+    @op ctx asmctx_parse_operand = ;
+    
+    op free ;
+  } else {
+    $label
+    @label tok = ;
+    @tok ctx asmctx_get_token = ;
+    tok ":" strcmp 0 == "parse_asm_line: wrong syntax after label" assert_msg ;
+    tok free ;
+    
+    label free ;
+  }
+  @tok ctx asmctx_get_token = ;
+  tok "\n" strcmp 0 == "parse_asm_line: expected line terminator" assert_msg ;
+  tok free ;
+  1 ret ;
 }
 
 fun parse_asm 1 {
@@ -220,16 +277,17 @@ fun parse_asm 1 {
   @cont 1 = ;
   ctx filename platform_open_file asmctx_set_fd ;
   while cont {
-    $tok
-    @tok ctx asmctx_get_token = ;
-    @cont tok **c 0 != = ;
-    if tok **c '\n' == {
-      "NL" 1 platform_log ;
-    } else {
-      tok 1 platform_log ;
-    }
-    "#" 1 platform_log ;
-    tok free ;
+    #$tok
+    #@tok ctx asmctx_get_token = ;
+    #@cont tok **c 0 != = ;
+    #if tok **c '\n' == {
+    #  "NL" 1 platform_log ;
+    #} else {
+    #  tok 1 platform_log ;
+    #}
+    #"#" 1 platform_log ;
+    #tok free ;
+    @cont ctx parse_asm_line = ;
   }
   "\n" 1 platform_log ;
   ctx asmctx_destroy ;
