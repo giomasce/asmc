@@ -14,7 +14,7 @@ fun map_destroy 1 {
   $i
   @i 0 = ;
   while i ptr vector_size < {
-    ptr i vector_at MAP_ELEM_KEY take free ;
+    ptr i vector_at_addr MAP_ELEM_KEY take free ;
     @i i 1 + = ;
   }
   ptr vector_destroy ;

@@ -23,7 +23,9 @@ const ASMCTX_FDIN 0
 const ASMCTX_READ_CHAR 4
 const ASMCTX_CHAR_GIVEN_BACK 8
 const ASMCTX_SYMBOLS 12
-const SIZEOF_ASMCTX 16
+const ASMCTX_STAGE 16
+const ASMCTX_CURRENT_LOC 20
+const SIZEOF_ASMCTX 24
 
 fun asmctx_init 0 {
   $ptr
@@ -39,6 +41,76 @@ fun asmctx_destroy 1 {
   ptr free ;
 }
 
+fun asmctx_emit 2 {
+  $ctx
+  $byte
+  @ctx 1 param = ;
+  @byte 0 param = ;
+
+  if ctx ASMCTX_STAGE take 2 == {
+    ctx ASMCTX_CURRENT_LOC take byte =c ;
+  }
+  ctx ASMCTX_CURRENT_LOC take_addr ctx ASMCTX_CURRENT_LOC take 1 + = ;
+}
+
+fun asmctx_emit16 2 {
+  $ctx
+  $word
+  @ctx 1 param = ;
+  @word 0 param = ;
+
+  ctx word asmctx_emit ;
+  ctx word 8 >> asmctx_emit ;
+}
+
+fun asmctx_emit32 2 {
+  $ctx
+  $dword
+  @ctx 1 param = ;
+  @dword 0 param = ;
+
+  ctx dword asmctx_emit16 ;
+  ctx dword 16 >> asmctx_emit16 ;
+}
+
+fun asmctx_add_symbol 3 {
+  $ctx
+  $name
+  $value
+  @ctx 2 param = ;
+  @name 1 param = ;
+  @value 0 param = ;
+
+  $syms
+  @syms ctx ASMCTX_SYMBOLS take = ;
+
+  if ctx ASMCTX_STAGE take 1 == {
+    syms name map_has ! "asmctx_add_symbol: symbol already defined" assert_msg ;
+    syms name value map_set ;
+  }
+  if ctx ASMCTX_STAGE take 2 == {
+    syms name map_has "asmctx_add_symbol: error 1" assert_msg ;
+    syms name map_at value == "asmctx_add_symbol: error 2" assert_msg ;
+  }
+}
+
+fun asmctx_get_symbol 2 {
+  $ctx
+  $name
+  @ctx 1 param = ;
+  @name 0 param = ;
+
+  $syms
+  @syms ctx ASMCTX_SYMBOLS take = ;
+
+  if ctx ASMCTX_STAGE take 2 == {
+    syms name map_has "asmctx_add_symbol: symbol undefined" assert_msg ;
+    syms name map_at ret ;
+  } else {
+    0 ret ;
+  }
+}
+
 fun asmctx_set_fd 2 {
   $ptr
   $fd
@@ -47,6 +119,14 @@ fun asmctx_set_fd 2 {
   ptr ASMCTX_CHAR_GIVEN_BACK take_addr 0 = ;
   ptr ASMCTX_FDIN take_addr fd = ;
 }
+
+# fun asmctx_set_starting_loc 2 {
+#   $ptr
+#   $loc
+#   @ptr 1 param = ;
+#   @loc 0 param = ;
+#   ptr ASMCTX_CURRENT_LOC take_addr loc = ;
+# }
 
 fun asmctx_give_back_char 1 {
   $ctx
@@ -219,7 +299,7 @@ fun asmctx_parse_operand 1 {
   op ret ;
 }
 
-fun parse_asm_line 1 {
+fun asmctx_parse_line 1 {
   $ctx
   @ctx 0 param = ;
   $tok
@@ -259,13 +339,44 @@ fun parse_asm_line 1 {
     @tok ctx asmctx_get_token = ;
     tok ":" strcmp 0 == "parse_asm_line: wrong syntax after label" assert_msg ;
     tok free ;
-    
+    ctx label ctx ASMCTX_CURRENT_LOC take asmctx_add_symbol ;
     label free ;
   }
   @tok ctx asmctx_get_token = ;
   tok "\n" strcmp 0 == "parse_asm_line: expected line terminator" assert_msg ;
   tok free ;
   1 ret ;
+}
+
+fun asmctx_compile 1 {
+  $ctx
+  @ctx 0 param = ;
+
+  ctx ASMCTX_STAGE take_addr 0 = ;
+  $start_loc
+  @start_loc 0 = ;
+  $size
+  while ctx ASMCTX_STAGE take 3 < {
+    ctx ASMCTX_FDIN take platform_reset_file ;
+    ctx ASMCTX_CURRENT_LOC take_addr start_loc = ;
+    $cont
+    @cont 1 = ;
+    while cont {
+      @cont ctx asmctx_parse_line = ;
+    }
+    if ctx ASMCTX_STAGE take 0 == {
+      @size ctx ASMCTX_CURRENT_LOC take start_loc - = ;
+      @start_loc size malloc = ;
+    } else {
+      ctx ASMCTX_CURRENT_LOC take start_loc - size == "asmctx_compile: error 1" assert_msg ;
+    }
+    ctx ASMCTX_STAGE take_addr ctx ASMCTX_STAGE take 1 + = ;
+  }
+  "Assembled program has size " 1 platform_log ;
+  size itoa 1 platform_log ;
+  " and starts at " 1 platform_log ;
+  start_loc itoa 1 platform_log ;
+  "\n" 1 platform_log ;
 }
 
 fun parse_asm 1 {
@@ -276,7 +387,8 @@ fun parse_asm 1 {
   $cont
   @cont 1 = ;
   ctx filename platform_open_file asmctx_set_fd ;
-  while cont {
+  ctx asmctx_compile ;
+  #while cont {
     #$tok
     #@tok ctx asmctx_get_token = ;
     #@cont tok **c 0 != = ;
@@ -287,8 +399,8 @@ fun parse_asm 1 {
     #}
     #"#" 1 platform_log ;
     #tok free ;
-    @cont ctx parse_asm_line = ;
-  }
-  "\n" 1 platform_log ;
+    @cont ctx asmctx_parse_line = ;
+  #}
+  #"\n" 1 platform_log ;
   ctx asmctx_destroy ;
 }

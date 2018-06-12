@@ -836,6 +836,9 @@ str_platform_read_char:
 str_platform_write_char:
   db 'platform_write_char'
   db 0
+str_platform_reset_file:
+  db 'platform_reset_file'
+  db 0
 str_platform_log:
   db 'platform_log'
   db 0
@@ -875,6 +878,12 @@ init_kernel_api:
   push 2
   push platform_write_char
   push str_platform_write_char
+  call add_symbol
+  add esp, 12
+
+  push 1
+  push platform_reset_file
+  push str_platform_reset_file
   call add_symbol
   add esp, 12
 
