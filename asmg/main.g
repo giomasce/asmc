@@ -28,6 +28,10 @@ fun main 0 {
   "map.g" platform_g_compile ;
   "done!\n" 1 platform_log ;
 
+  "Compiling utils2.g... " 1 platform_log ;
+  "utils2.g" platform_g_compile ;
+  "done!\n" 1 platform_log ;
+
   if COMPILE_C {
     "Compiling c_ast.g... " 1 platform_log ;
     "c_ast.g" platform_g_compile ;

@@ -8,17 +8,6 @@ fun get_char_type 1 {
   4 ret ;
 }
 
-# 0 -> indirect (all fields set), 1 -> register (REG and SIZE set), 2 -> immediate (OFFSET set)
-const OPERAND_TYPE 0
-# 0 -> unknown, 1 -> 8 bits, 2 -> 16 bits, 3 -> 32 bits
-const OPERAND_SIZE 4
-const OPERAND_REG 8
-const OPERAND_OFFSET 12
-const OPERAND_SEGMENT 16
-const OPERAND_SCALE 20
-const OPERAND_INDEX_REG 24
-const SIZEOF_OPERAND 28
-
 const ASMCTX_FDIN 0
 const ASMCTX_READ_CHAR 4
 const ASMCTX_CHAR_GIVEN_BACK 8

@@ -126,7 +126,7 @@ fun strtol 3 {
   $val
   @val 0 = ;
 
-  while ptr **c 0 != {
+  while 1 {
     $c
     @c ptr **c = ;
     if c 0 == {
@@ -149,18 +149,19 @@ fun strtol 3 {
           @sign_found 1 = ;
           @positive 0 1 - = ;
         } else {
+          @sign_found 1 = ;
           if base 0 == {
             if c '0' == {
-              base 8 = ;
+              @base 8 = ;
               @ptr ptr 1 + = ;
               @c ptr **c = ;
               if c 'x' == c 'X' == || {
-                base 16 = ;
+                @base 16 = ;
                 @ptr ptr 1 + = ;
                 @c ptr **c = ;
               }
             } else {
-              base 10 = ;
+              @base 10 = ;
             }
           }
           if '0' c <= c '9' <= && {
@@ -172,7 +173,7 @@ fun strtol 3 {
               if 'A' c <= c 'Z' <= && {
                 @c c 'A' - 10 + = ;
               } else {
-                @c 255 = ;
+                @c 0x100 = ;
               }
             }
           }
