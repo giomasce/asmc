@@ -22,13 +22,77 @@ fun asmctx_parse_operand 1 {
     }
   }
   if op OPERAND_SIZE take 0 != {
+    tok free ;
     @tok ctx asmctx_get_token = ;
   }
 
   # Is it direct or indirect?
-  if tok **c '[' == {
+  if tok "[" strcmp 0 == {
     op OPERAND_TYPE take_addr 0 = ;
-    
+    op OPERAND_OFFSET take_addr 0 = ;
+    op OPERAND_REG take_addr 8 = ;
+    op OPERAND_INDEX_REG take_addr 8 = ;
+    op OPERAND_SEGMENT take_addr 0 = ;
+    $cont
+    @cont 1 = ;
+    tok free ;
+    @tok ctx asmctx_get_token = ;
+    while cont {
+      $reg
+      @reg tok parse_register = ;
+      if reg 0xffffffff != {
+        reg 4 >> 3 == "asmctx_parse_operand: indirect operands must use 32 bits registers" assert_msg ;
+        @reg reg 0xf & = ;
+        tok free ;
+        @tok ctx asmctx_get_token = ;
+        if tok "+" strcmp 0 == tok "]" strcmp 0 == || {
+          op OPERAND_REG take 8 == "asmctx_parse_operand: more than one register in indirect operand" assert_msg ;
+          op OPERAND_REG take_addr reg = ;
+          if tok "]" strcmp 0 == {
+            @cont 0 = ;
+          }
+        } else {
+          if tok "*" strcmp 0 == {
+            tok free ;
+            @tok ctx asmctx_get_token = ;
+            $scale
+            $endptr
+            @scale tok @endptr 0 strtol = ;
+            endptr **c 0 == "asmctx_parse_operand: illegal scale" assert_msg ;
+            $scalebits
+            if scale 1 == {
+              @scalebits 0 = ;
+            } else {
+              if scale 2 == {
+                @scalebits 1 = ;
+              } else {
+                if scale 4 == {
+                  @scalebits 2 = ;
+                } else {
+                  if scale 8 == {
+                    @scalebits 3 = ;
+                  } else {
+                    0 "asmctx_parse_operand: illegal scale" assert_msg ;
+                  }
+                }
+              }
+            }
+            op OPERAND_INDEX_REG take_addr reg = ;
+            op OPERAND_SCALE take_addr scalebits = ;
+            tok free ;
+            @tok ctx asmctx_get_token = ;
+            tok "+" strcmp 0 == tok "]" strcmp 0 == || "asmctx_parse_operand: \'+\' expected" assert_msg ;
+            if tok "]" strcmp 0 == {
+              @cont 0 = ;
+            }
+          } else {
+            0 "asmctx_parse_operand: unexpected character while scanning indirect operand" assert_msg ;
+          }
+        }
+      } else {
+        
+      }
+    }
   } else {
     op OPERAND_SIZE take 0 == "Cannot specify the size of a direct operand" assert_msg ;
     $reg
@@ -51,6 +115,7 @@ fun asmctx_parse_operand 1 {
     }
   }
 
+  tok free ;
   op ret ;
 }
 
@@ -88,7 +153,7 @@ fun asmctx_parse_line 1 {
     }
     @op ctx asmctx_parse_operand = ;
     ops op vector_push_back ;
-    opcode ops opcode OPCODE_HANDLER take \2 ;
+    ctx opcode ops opcode OPCODE_HANDLER take \3 ;
     ops free_vect_of_ptrs ;
   } else {
     $label
@@ -103,6 +168,49 @@ fun asmctx_parse_line 1 {
   tok "\n" strcmp 0 == "parse_asm_line: expected line terminator" assert_msg ;
   tok free ;
   1 ret ;
+}
+
+fun dump_nibble 1 {
+  $x
+  @x 0 param = ;
+  @x x 0xf & = ;
+  if x 0 == { '0' 1 platform_write_char ; }
+  if x 1 == { '1' 1 platform_write_char ; }
+  if x 2 == { '2' 1 platform_write_char ; }
+  if x 3 == { '3' 1 platform_write_char ; }
+  if x 4 == { '4' 1 platform_write_char ; }
+  if x 5 == { '5' 1 platform_write_char ; }
+  if x 6 == { '6' 1 platform_write_char ; }
+  if x 7 == { '7' 1 platform_write_char ; }
+  if x 8 == { '8' 1 platform_write_char ; }
+  if x 9 == { '9' 1 platform_write_char ; }
+  if x 10 == { 'a' 1 platform_write_char ; }
+  if x 11 == { 'b' 1 platform_write_char ; }
+  if x 12 == { 'c' 1 platform_write_char ; }
+  if x 13 == { 'd' 1 platform_write_char ; }
+  if x 14 == { 'e' 1 platform_write_char ; }
+  if x 15 == { 'f' 1 platform_write_char ; }
+}
+
+fun dump_byte 1 {
+  $x
+  @x 0 param = ;
+  x 4 >> dump_nibble ;
+  x dump_nibble ;
+  ' ' 1 platform_write_char ;
+}
+
+fun dump_mem 2 {
+  $ptr
+  $size
+  @ptr 1 param = ;
+  @size 0 param = ;
+
+  @size size ptr + = ;
+  while ptr size < {
+    ptr **c dump_byte ;
+    @ptr ptr 1 + = ;
+  }
 }
 
 fun asmctx_compile 1 {
@@ -133,6 +241,9 @@ fun asmctx_compile 1 {
   size itoa 1 platform_log ;
   " and starts at " 1 platform_log ;
   start_loc itoa 1 platform_log ;
+  "\n" 1 platform_log ;
+  "Compiled dump:\n" 1 platform_log ;
+  start_loc size dump_mem ;
   "\n" 1 platform_log ;
 }
 

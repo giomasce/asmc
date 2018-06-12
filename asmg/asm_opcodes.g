@@ -46,36 +46,51 @@ fun assemble_sib 3 {
 # Second significant nibble: requires a disp32
 # Second significant byte: first byte
 # Third significant byte: maybe second byte
-fun op_to_modrm 1 {
+fun op_to_modrm 2 {
   $op
-  @op 0 param = ;
+  $reg
+  @op 1 param = ;
+  @reg 0 param = ;
 
   op OPERAND_TYPE take 2 != "op_to_modrm: cannot call on immediate" assert_msg ;
   if op OPERAND_TYPE take 1 == {
     $modrm
-    @modrm 3 0 op OPERAND_REG take assemble_modrm = ;
+    @modrm 3 reg op OPERAND_REG take assemble_modrm = ;
     modrm 8 << 1 + ret ;
   } else {
     if op OPERAND_INDEX_REG take 8 == {
-      $modrm
-      @modrm 2 0 op OPERAND_REG take assemble_modrm = ;
-      # Special case for ESP
-      if op OPERAND_REG take 4 == {
-        $sib
-        @sib 0x24 = ;
-        sib 16 << modrm 8 << + 2 + ret ;
-      } else {
+      if op OPERAND_REG take 8 == {
+        $modrm
+        @modrm 0 reg 5 assemble_modrm = ;
         modrm 8 << 1 + ret ;
+      } else {
+        $modrm
+        @modrm 2 reg op OPERAND_REG take assemble_modrm = ;
+        # Special case for ESP
+        if op OPERAND_REG take 4 == {
+          $sib
+          @sib 0x24 = ;
+          sib 16 << modrm 8 << + 2 + ret ;
+        } else {
+          modrm 8 << 1 + ret ;
+        }
       }
     } else {
-      $modrm
-      $sib
-      @modrm 2 0 4 assemble_modrm = ;
-      # Some combinations are not supported, because they have special encoding
-      op OPERAND_REG take 5 != "op_to_modrm: unsupported EBP in base" assert_msg ;
+      # ESP cannot be used for indexing
       op OPERAND_INDEX_REG take 4 != "op_to_modrm: unsupported ESP in index" assert_msg ;
-      @sib op OPERAND_SCALE take op OPERAND_INDEX_REG take op OPERAND_REG take assemble_sib = ;
-      sib 16 << modrm 8 << + 2 + ret ;
+      if op OPERAND_REG take 8 == {
+        $modrm
+        $sib
+        @modrm 0 reg 4 assemble_modrm = ;
+        @sib op OPERAND_SCALE take op OPERAND_INDEX_REG take 5 assemble_sib = ;
+        sib 16 << modrm 8 << + 2 + ret ;
+      } else {
+        $modrm
+        $sib
+        @modrm 2 reg 4 assemble_modrm = ;
+        @sib op OPERAND_SCALE take op OPERAND_INDEX_REG take op OPERAND_REG take assemble_sib = ;
+        sib 16 << modrm 8 << + 2 + ret ;
+      }
     }
   }
 }
@@ -86,6 +101,12 @@ fun op_to_reg 1 {
 
   op OPERAND_TYPE take 1 == "op_to_reg: must call on register" assert_msg ;
   op OPERAND_REG take 3 << ret ;
+}
+
+fun opcode_to_reg 1 {
+  $opcode
+  @opcode 0 param = ;
+  opcode 24 >> ret ;
 }
 
 fun emit_multibyte 2 {
@@ -110,9 +131,11 @@ fun emit_multibyte 2 {
   0 "emit_multibyte: error 1" assert_msg ;
 }
 
-fun add_like_handler 2 {
+fun add_like_handler 3 {
+  $ctx
   $opcode
   $ops
+  @ctx 2 param = ;
   @opcode 1 param = ;
   @ops 0 param = ;
 
@@ -142,7 +165,14 @@ fun add_like_handler 2 {
   if op2 OPERAND_TYPE take 2 == {
     if size 1 == {
       # r/m8, imm8
-      
+      $opbytes
+      @opbytes opcode OPCODE_RM8IMM8 take = ;
+      ctx opbytes emit_multibyte ;
+      ctx op1 opbytes opcode_to_reg op_to_modrm emit_multibyte ;
+      if op1 OPERAND_TYPE take 0 == {
+        ctx op1 OPERAND_OFFSET take asmctx_emit32 ;
+      }
+      ctx op2 OPERAND_OFFSET take asmctx_emit ;
     } else {
       # r/m32, imm32
       
