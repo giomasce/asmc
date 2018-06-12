@@ -47,12 +47,16 @@ fun main 0 {
     "asm_regs.g" platform_g_compile ;
     "done!\n" 1 platform_log ;
 
+    "Compiling asm_preproc.g... " 1 platform_log ;
+    "asm_preproc.g" platform_g_compile ;
+    "done!\n" 1 platform_log ;
+
     "Compiling asm_opcodes.g... " 1 platform_log ;
     "asm_opcodes.g" platform_g_compile ;
     "done!\n" 1 platform_log ;
 
-    "Compiling asm_preproc.g... " 1 platform_log ;
-    "asm_preproc.g" platform_g_compile ;
+    "Compiling asm_compile.g... " 1 platform_log ;
+    "asm_compile.g" platform_g_compile ;
     "done!\n" 1 platform_log ;
 
     "Memory break after ASM compiler compilation: " 1 platform_log ;
