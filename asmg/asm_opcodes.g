@@ -20,7 +20,9 @@ const OPCODE_RM8R8 20
 const OPCODE_RM32R32 24
 const OPCODE_R8RM8 28
 const OPCODE_R32RM32 32
-const SIZEOF_OPCODE 36
+const OPCODE_RM8 36
+const OPCODE_RM32 40
+const SIZEOF_OPCODE 44
 
 fun assemble_modrm 3 {
   $mod
@@ -237,13 +239,39 @@ fun add_like_handler 3 {
   0 "add_like_handler: error 1" assert_msg ;
 }
 
-fun mul_like_handler 2 {
+fun mul_like_handler 3 {
+  $ctx
   $opcode
   $ops
+  @ctx 2 param = ;
   @opcode 1 param = ;
   @ops 0 param = ;
 
-  
+  # Unpack the operand
+  $op
+  ops vector_size 1 == "mul_like_handler: error 1" assert_msg ;
+  @op ops 0 vector_at = ;
+
+  # Determine the operation size
+  $size
+  @size op OPERAND_SIZE take = ;
+  size 0 != "mul_like_handler: unspecified operand size" assert_msg ;
+  size 1 == size 3 == || "add_like_handler: 16 bits not supported" assert_msg ;
+
+  op OPERAND_TYPE take 2 != "mul_like_handler: operand is immediate" assert_msg ;
+  $opbytes
+  if size 1 == {
+    # r/m8
+    @opbytes opcode OPCODE_RM8 take = ;
+  } else {
+    # r/m32
+    @opbytes opcode OPCODE_RM32 take = ;
+  }
+  ctx opbytes emit_multibyte ;
+  ctx op opbytes opcode_to_reg op_to_modrm emit_multibyte ;
+  if op OPERAND_TYPE take 0 == {
+    ctx op OPERAND_OFFSET take asmctx_emit32 ;
+  }
 }
 
 fun build_opcode_map 0 {
@@ -268,6 +296,8 @@ fun build_opcode_map 0 {
   @opcode SIZEOF_OPCODE malloc = ;
   opcode OPCODE_ARG_NUM take_addr 1 = ;
   opcode OPCODE_HANDLER take_addr @mul_like_handler = ;
+  opcode OPCODE_RM8 take_addr 0x0400f601 = ;
+  opcode OPCODE_RM32 take_addr 0x0400f701 = ;
   opcode_map name opcode map_set ;
 
   @_opcode_map opcode_map = ;

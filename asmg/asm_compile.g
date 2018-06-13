@@ -26,13 +26,13 @@ fun asmctx_parse_operand 1 {
 
   # Find the size prefix
   op OPERAND_SIZE take_addr 0 = ;
-  if tok "byte" strcmp 0 == {
+  if tok "byte" strcmp_case 0 == {
     op OPERAND_SIZE take_addr 1 = ;
   } else {
-    if tok "word" strcmp 0 == {
+    if tok "word" strcmp_case 0 == {
       op OPERAND_SIZE take_addr 2 = ;
     } else {
-      if tok "dword" strcmp 0 == {
+      if tok "dword" strcmp_case 0 == {
         op OPERAND_SIZE take_addr 3 = ;
       }
     }
