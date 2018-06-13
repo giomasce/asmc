@@ -100,13 +100,36 @@ fun op_to_reg 1 {
   @op 0 param = ;
 
   op OPERAND_TYPE take 1 == "op_to_reg: must call on register" assert_msg ;
-  op OPERAND_REG take 3 << ret ;
+  op OPERAND_REG take ret ;
 }
 
 fun opcode_to_reg 1 {
   $opcode
   @opcode 0 param = ;
   opcode 24 >> ret ;
+}
+
+fun emit_size 3 {
+  $ctx
+  $data
+  $size
+  @ctx 2 param = ;
+  @data 1 param = ;
+  @size 0 param = ;
+
+  if size 1 == {
+    ctx data asmctx_emit ;
+  } else {
+    if size 2 == {
+      ctx data asmctx_emit16 ;
+    } else {
+      if size 3 == {
+        ctx data asmctx_emit32 ;
+      } else {
+        0 "emit_size: invalid size" assert_msg ;
+      }
+    }
+  }
 }
 
 fun emit_multibyte 2 {
@@ -163,39 +186,51 @@ fun add_like_handler 3 {
   op1 OPERAND_TYPE take 2 != "add_like_handler: destination is immediate" assert_msg ;
 
   if op2 OPERAND_TYPE take 2 == {
+    $opbytes
     if size 1 == {
       # r/m8, imm8
-      $opbytes
       @opbytes opcode OPCODE_RM8IMM8 take = ;
-      ctx opbytes emit_multibyte ;
-      ctx op1 opbytes opcode_to_reg op_to_modrm emit_multibyte ;
-      if op1 OPERAND_TYPE take 0 == {
-        ctx op1 OPERAND_OFFSET take asmctx_emit32 ;
-      }
-      ctx op2 OPERAND_OFFSET take asmctx_emit ;
     } else {
       # r/m32, imm32
-      
+      @opbytes opcode OPCODE_RM32IMM32 take = ;
     }
+    ctx opbytes emit_multibyte ;
+    ctx op1 opbytes opcode_to_reg op_to_modrm emit_multibyte ;
+    if op1 OPERAND_TYPE take 0 == {
+      ctx op1 OPERAND_OFFSET take asmctx_emit32 ;
+    }
+    ctx op2 OPERAND_OFFSET take size emit_size ;
     ret ;
   }
   if op2 OPERAND_TYPE take 1 == {
+    $opbytes
     if size 1 == {
       # r/m8, r8
-      
+      @opbytes opcode OPCODE_RM8R8 take = ;
     } else {
       # r/m32, r32
-      
+      @opbytes opcode OPCODE_RM32R32 take = ;
+    }
+    ctx opbytes emit_multibyte ;
+    ctx op1 op2 op_to_reg op_to_modrm emit_multibyte ;
+    if op1 OPERAND_TYPE take 0 == {
+      ctx op1 OPERAND_OFFSET take asmctx_emit32 ;
     }
     ret ;
   }
   if op2 OPERAND_TYPE take 0 == {
+    $opbytes
     if size 1 == {
       # r8, r/m 8
-      
+      @opbytes opcode OPCODE_R8RM8 take = ;
     } else {
       # r32, r/m32
-      
+      @opbytes opcode OPCODE_R32RM32 take = ;
+    }
+    ctx opbytes emit_multibyte ;
+    ctx op2 op1 op_to_reg op_to_modrm emit_multibyte ;
+    if op2 OPERAND_TYPE take 0 == {
+      ctx op2 OPERAND_OFFSET take asmctx_emit32 ;
     }
     ret ;
   }
