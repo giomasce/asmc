@@ -1,5 +1,5 @@
 
-test:
+first:
   add eax, ebx                  ; Test line
   add eax, 0x2200
   add al, 0x22
@@ -13,3 +13,15 @@ second:
   mul edx
   mul BYTE [edx]
   mul dWoRd [edx+ebx*4+0x2244]
+
+  jmp first
+  jmp second
+  jmp [eax]
+  jmp [eax+ebx*2]
+
+third:
+  jz third
+  je third
+  ja third
+  jna third
+  jc third
