@@ -1,4 +1,20 @@
 
+fun asmctx_parse_number 2 {
+  $ctx
+  $str
+  @ctx 1 param = ;
+  @str 0 param = ;
+
+  $value
+  $endptr
+  @value str @endptr 0 strtol = ;
+  if endptr **c 0 != {
+    @value ctx str asmctx_get_symbol = ;
+  }
+
+  value ret ;
+}
+
 fun asmctx_parse_operand 1 {
   $ctx
   @ctx 0 param = ;
@@ -46,10 +62,18 @@ fun asmctx_parse_operand 1 {
         tok free ;
         @tok ctx asmctx_get_token = ;
         if tok "+" strcmp 0 == tok "]" strcmp 0 == || {
-          op OPERAND_REG take 8 == "asmctx_parse_operand: more than one register in indirect operand" assert_msg ;
-          op OPERAND_REG take_addr reg = ;
+          if op OPERAND_REG take 8 == {
+            op OPERAND_REG take_addr reg = ;
+          } else {
+            op OPERAND_INDEX_REG take 8 == "asmctx_parse_operand: more than two registers in indirect operand" assert_msg ;
+            op OPERAND_INDEX_REG take_addr reg = ;
+            op OPERAND_SCALE take_addr 0 = ;
+          }
           if tok "]" strcmp 0 == {
             @cont 0 = ;
+          } else {
+            tok free ;
+            @tok ctx asmctx_get_token = ;
           }
         } else {
           if tok "*" strcmp 0 == {
@@ -84,13 +108,27 @@ fun asmctx_parse_operand 1 {
             tok "+" strcmp 0 == tok "]" strcmp 0 == || "asmctx_parse_operand: \'+\' expected" assert_msg ;
             if tok "]" strcmp 0 == {
               @cont 0 = ;
+            } else {
+              tok free ;
+              @tok ctx asmctx_get_token = ;
             }
           } else {
             0 "asmctx_parse_operand: unexpected character while scanning indirect operand" assert_msg ;
           }
         }
       } else {
-        
+        $value
+        @value ctx tok asmctx_parse_number = ;
+        op OPERAND_OFFSET take_addr op OPERAND_OFFSET take value + = ;
+        tok free ;
+        @tok ctx asmctx_get_token = ;
+        tok "+" strcmp 0 == tok "]" strcmp 0 == || "asmctx_parse_operand: \'+\' expected" assert_msg ;
+        if tok "]" strcmp 0 == {
+          @cont 0 = ;
+        } else {
+          tok free ;
+          @tok ctx asmctx_get_token = ;
+        }
       }
     }
   } else {
@@ -103,15 +141,9 @@ fun asmctx_parse_operand 1 {
       op OPERAND_SIZE take_addr reg 4 >> = ;
     } else {
       op OPERAND_TYPE take_addr 2 = ;
-      $syms
-      @syms ctx ASMCTX_SYMBOLS take = ;
-      if syms tok map_has {
-        op OPERAND_OFFSET take_addr syms tok map_at = ;
-      } else {
-        $endptr
-        op OPERAND_OFFSET take_addr tok @endptr 0 strtol = ;
-        endptr **c 0 == "asmctx_parse_operand: illegal direct operand" assert_msg ;
-      }
+      $value
+      @value ctx tok asmctx_parse_number = ;
+      op OPERAND_OFFSET take_addr value = ;
     }
   }
 
