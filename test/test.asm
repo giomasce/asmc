@@ -40,3 +40,5 @@ third:
 
   dd 0x11223344
   rw 2
+
+  db 'Hello world!',0xa,0

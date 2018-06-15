@@ -151,6 +151,29 @@ fun asmctx_parse_operand 1 {
   op ret ;
 }
 
+fun asmctx_parse_db 1 {
+  $ctx
+  @ctx 0 param = ;
+
+  while 1 {
+    $tok
+    @tok ctx asmctx_get_token = ;
+    if tok **c '\'' == {
+      ctx tok emit_string ;
+    } else {
+      ctx ctx tok asmctx_parse_number asmctx_emit ;
+    }
+    tok free ;
+    @tok ctx asmctx_get_token = ;
+    if tok "\n" strcmp 0 == {
+      ctx asmctx_give_back_token ;
+      ret ;
+    }
+    tok "," strcmp 0 == "asmctx_parse_db: comma expected" assert_msg ;
+    tok free ;
+  }
+}
+
 fun asmctx_parse_data 1 {
   $ctx
   @ctx 0 param = ;
@@ -168,6 +191,12 @@ fun asmctx_parse_data 1 {
   @type 0 = ;
   @size 0 = ;
   @arg 0 = ;
+
+  if tok "db" strcmp 0 == {
+    tok free ;
+    ctx asmctx_parse_db ;
+    1 ret ;
+  }
 
   if tok **c 'd' == {
     @type 1 = ;

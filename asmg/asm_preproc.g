@@ -64,6 +64,65 @@ fun asmctx_emit32 2 {
   ctx dword 16 >> asmctx_emit16 ;
 }
 
+fun emit_size 3 {
+  $ctx
+  $data
+  $size
+  @ctx 2 param = ;
+  @data 1 param = ;
+  @size 0 param = ;
+
+  if size 1 == {
+    ctx data asmctx_emit ;
+  } else {
+    if size 2 == {
+      ctx data asmctx_emit16 ;
+    } else {
+      if size 3 == {
+        ctx data asmctx_emit32 ;
+      } else {
+        0 "emit_size: invalid size" assert_msg ;
+      }
+    }
+  }
+}
+
+fun emit_multibyte 2 {
+  $ctx
+  $data
+  @ctx 1 param = ;
+  @data 0 param = ;
+
+  if data 0xff & 1 == {
+    ctx data 8 >> asmctx_emit ;
+    ret ;
+  }
+  if data 0xff & 2 == {
+    ctx data 8 >> asmctx_emit16 ;
+    ret ;
+  }
+  if data 0xff & 3 == {
+    ctx data 8 >> asmctx_emit ;
+    ctx data 16 >> asmctx_emit16 ;
+    ret ;
+  }
+  0 "emit_multibyte: error 1" assert_msg ;
+}
+
+fun emit_string 2 {
+  $ctx
+  $str
+  @ctx 1 param = ;
+  @str 0 param = ;
+
+  str **c '\'' == "emit_string: argument is not a string" assert_msg ;
+  @str str 1 + = ;
+  while str **c '\'' != {
+    ctx str **c asmctx_emit ;
+    @str str 1 + = ;
+  }
+}
+
 fun asmctx_add_symbol 3 {
   $ctx
   $name
