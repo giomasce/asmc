@@ -14,7 +14,9 @@ const ASMCTX_CHAR_GIVEN_BACK 8
 const ASMCTX_SYMBOLS 12
 const ASMCTX_STAGE 16
 const ASMCTX_CURRENT_LOC 20
-const SIZEOF_ASMCTX 24
+const ASMCTX_READ_TOKEN 24
+const ASMCTX_TOKEN_GIVEN_BACK 38
+const SIZEOF_ASMCTX 32
 
 fun asmctx_init 0 {
   $ptr
@@ -106,6 +108,7 @@ fun asmctx_set_fd 2 {
   @ptr 1 param = ;
   @fd 0 param = ;
   ptr ASMCTX_CHAR_GIVEN_BACK take_addr 0 = ;
+  ptr ASMCTX_TOKEN_GIVEN_BACK take_addr 0 = ;
   ptr ASMCTX_FDIN take_addr fd = ;
 }
 
@@ -135,9 +138,22 @@ fun asmctx_get_char 1 {
   ctx ASMCTX_READ_CHAR take ret ;
 }
 
+fun asmctx_give_back_token 1 {
+  $ctx
+  @ctx 0 param = ;
+  ctx ASMCTX_TOKEN_GIVEN_BACK take ! "Token already given back" assert_msg ;
+  ctx ASMCTX_TOKEN_GIVEN_BACK take_addr 1 = ;
+}
+
 fun asmctx_get_token 1 {
   $ctx
   @ctx 0 param = ;
+
+  if ctx ASMCTX_TOKEN_GIVEN_BACK take {
+    ctx ASMCTX_TOKEN_GIVEN_BACK take_addr 0 = ;
+    ctx ASMCTX_READ_TOKEN take ret ;
+  }
+
   $token_buf
   $token_buf_len
   @token_buf_len 32 = ;
@@ -230,5 +246,6 @@ fun asmctx_get_token 1 {
     @token_len 1 = ;
   }
   token_buf token_len + 0 =c ;
+  ctx ASMCTX_READ_TOKEN take_addr token_buf = ;
   token_buf ret ;
 }

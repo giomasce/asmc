@@ -151,9 +151,88 @@ fun asmctx_parse_operand 1 {
   op ret ;
 }
 
+fun asmctx_parse_data 1 {
+  $ctx
+  @ctx 0 param = ;
+
+  $tok
+  @tok ctx asmctx_get_token = ;
+  if tok strlen 2 != {
+    ctx asmctx_give_back_token ;
+    0 ret ;
+  }
+
+  $type
+  $size
+  $arg
+  @type 0 = ;
+  @size 0 = ;
+  @arg 0 = ;
+
+  if tok **c 'd' == {
+    @type 1 = ;
+  }
+  if tok **c 'r' == {
+    @type 2 = ;
+  }
+  if tok 1 + **c 'b' == {
+    @size 1 = ;
+  }
+  if tok 1 + **c 'w' == {
+    @size 2 = ;
+  }
+  if tok 1 + **c 'd' == {
+    @size 3 = ;
+  }
+  if tok 1 + **c 'q' == {
+    @size 4 = ;
+  }
+  if type 0 == size 0 == || {
+    ctx asmctx_give_back_token ;
+    0 ret ;
+  }
+
+  tok free ;
+  @tok ctx asmctx_get_token = ;
+  $value
+  if tok "?" strcmp 0 == {
+    type 1 == "asmctx_parse_data: reservation size must be specified" assert_msg ;
+    @value 0 = ;
+  } else {
+    @value ctx tok asmctx_parse_number = ;
+  }
+  tok free ;
+  $reps
+  @reps 1 = ;
+  if type 2 == {
+    @reps value = ;
+    @value 0 = ;
+  }
+
+  while reps 0 > {
+    if size 1 == {
+      ctx value asmctx_emit ;
+    }
+    if size 2 == {
+      ctx value asmctx_emit16 ;
+    }
+    if size 3 == {
+      ctx value asmctx_emit32 ;
+    }
+    if size 4 == {
+      ctx value asmctx_emit32 ;
+      ctx 0 asmctx_emit32 ;
+    }
+    @reps reps 1 - = ;
+  }
+
+  1 ret ;
+}
+
 fun asmctx_parse_line 1 {
   $ctx
   @ctx 0 param = ;
+
   $tok
   @tok ctx asmctx_get_token = ;
   while tok "\n" strcmp 0 == {
@@ -190,13 +269,23 @@ fun asmctx_parse_line 1 {
     ctx opcode ops opcode OPCODE_HANDLER take \3 ;
     ops free_vect_of_ptrs ;
   } else {
-    $label
-    @label tok = ;
-    @tok ctx asmctx_get_token = ;
-    tok ":" strcmp 0 == "parse_asm_line: wrong syntax after label" assert_msg ;
-    tok free ;
-    ctx label ctx ASMCTX_CURRENT_LOC take asmctx_add_symbol ;
-    label free ;
+    ctx asmctx_give_back_token ;
+    if ctx asmctx_parse_data ! {
+      $label
+      @label ctx asmctx_get_token = ;
+      @tok ctx asmctx_get_token = ;
+      if tok ":" strcmp 0 == {
+        tok free ;
+        ctx label ctx ASMCTX_CURRENT_LOC take asmctx_add_symbol ;
+      } else {
+        ctx label ctx ASMCTX_CURRENT_LOC take asmctx_add_symbol ;
+        ctx asmctx_give_back_token ;
+        if ctx asmctx_parse_data ! {
+          0 "asmctx_parse_line: unknown command" assert_msg ;
+        }
+      }
+      label free ;
+    }
   }
   @tok ctx asmctx_get_token = ;
   tok "\n" strcmp 0 == "parse_asm_line: expected line terminator" assert_msg ;

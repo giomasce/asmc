@@ -37,3 +37,6 @@ third:
   pop ebx
 
   int 0x80
+
+  dd 0x11223344
+  rw 2
