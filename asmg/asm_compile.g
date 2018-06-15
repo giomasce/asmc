@@ -173,18 +173,20 @@ fun asmctx_parse_line 1 {
     @i 0 = ;
     $ops
     @ops 4 vector_init = ;
-    $op
-    while i opcode OPCODE_ARG_NUM take 1 - < {
-      tok free ;
+    if opcode OPCODE_ARG_NUM take 0 != {
+      $op
+      while i opcode OPCODE_ARG_NUM take 1 - < {
+        tok free ;
+        @op ctx asmctx_parse_operand = ;
+        ops op vector_push_back ;
+        @tok ctx asmctx_get_token = ;
+        tok "," strcmp 0 == "parse_asm_line: expected comma" assert_msg ;
+        tok free ;
+        @i i 1 + = ;
+      }
       @op ctx asmctx_parse_operand = ;
       ops op vector_push_back ;
-      @tok ctx asmctx_get_token = ;
-      tok "," strcmp 0 == "parse_asm_line: expected comma" assert_msg ;
-      tok free ;
-      @i i 1 + = ;
     }
-    @op ctx asmctx_parse_operand = ;
-    ops op vector_push_back ;
     ctx opcode ops opcode OPCODE_HANDLER take \3 ;
     ops free_vect_of_ptrs ;
   } else {

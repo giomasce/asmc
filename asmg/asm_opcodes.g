@@ -22,12 +22,15 @@ const OPCODE_R8RM8 28
 const OPCODE_R32RM32 32
 const OPCODE_RM8 36
 const OPCODE_RM32 40
-const OPCODE_IMM32 44
-const OPCODE_ALLOW_IMM 48
-const OPCODE_ALLOW_RM 52
-const OPCODE_RELATIVE 56
-const OPCODE_FORCE_32 60
-const SIZEOF_OPCODE 64
+const OPCODE_IMM8 44
+const OPCODE_IMM32 48
+const OPCODE_ALLOW_IMM 52
+const OPCODE_ALLOW_RM 56
+const OPCODE_RELATIVE 60
+const OPCODE_FORCE_8 64
+const OPCODE_FORCE_32 68
+const OPCODE_NO_OPERAND 72
+const SIZEOF_OPCODE 76
 
 fun assemble_modrm 3 {
   $mod
@@ -260,8 +263,17 @@ fun jmp_like_handler 3 {
   # Determine the operation size
   $size
   @size op OPERAND_SIZE take = ;
-  if size 0 == opcode OPCODE_FORCE_32 take && {
-    @size 3 = ;
+  if opcode OPCODE_FORCE_32 take {
+    if size 0 == {
+      @size 3 = ;
+    }
+    size 3 == "jmp_like_handler: operand must be 32 bits" assert_msg ;
+  }
+  if opcode OPCODE_FORCE_8 take {
+    if size 0 == {
+      @size 1 = ;
+    }
+    size 1 == "jmp_like_handler: operand must be 8 bits" assert_msg ;
   }
   size 0 != "jmp_like_handler: unspecified operand size" assert_msg ;
   size 1 == size 3 == || "add_like_handler: 16 bits not supported" assert_msg ;
@@ -275,8 +287,13 @@ fun jmp_like_handler 3 {
 
   if op OPERAND_TYPE take 2 == {
     $opbytes
-    # imm32
-    @opbytes opcode OPCODE_IMM32 take = ;
+    if size 1 == {
+      # imm8
+      @opbytes opcode OPCODE_IMM8 take = ;
+    } else {
+      # imm32
+      @opbytes opcode OPCODE_IMM32 take = ;
+    }
     ctx opbytes emit_multibyte ;
     $off
     @off op OPERAND_OFFSET take = ;
@@ -285,12 +302,15 @@ fun jmp_like_handler 3 {
       @current_loc ctx ASMCTX_CURRENT_LOC take = ;
       @off off current_loc - 4 - = ;
     }
-    ctx off asmctx_emit32 ;
+    if size 1 == {
+      ctx off asmctx_emit ;
+    } else {
+      ctx off asmctx_emit32 ;
+    }
   } else {
     $opbytes
     if size 1 == {
       # r/m8
-      opcode OPCODE_FORCE_32 take ! "jmp_like_handler: illegal 8 bits operand" assert_msg ;
       @opbytes opcode OPCODE_RM8 take = ;
     } else {
       # r/m32
@@ -302,6 +322,21 @@ fun jmp_like_handler 3 {
       ctx op OPERAND_OFFSET take asmctx_emit32 ;
     }
   }
+}
+
+fun ret_like_handler 3 {
+  $ctx
+  $opcode
+  $ops
+  @ctx 2 param = ;
+  @opcode 1 param = ;
+  @ops 0 param = ;
+
+  # Check there are no operands
+  ops vector_size 0 == "jmp_like_handler: error 1" assert_msg ;
+
+  # Just emit the opcode
+  ctx opcode OPCODE_NO_OPERAND take emit_multibyte ;
 }
 
 fun build_opcode_map 0 {
@@ -415,6 +450,20 @@ fun build_opcode_map 0 {
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
   opcode OPCODE_ALLOW_RM take_addr 1 = ;
   opcode OPCODE_RELATIVE take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
+  opcode OPCODE_FORCE_32 take_addr 1 = ;
+  opcode_map name opcode map_set ;
+
+  @name "call" = ;
+  @opcode SIZEOF_OPCODE malloc = ;
+  opcode OPCODE_ARG_NUM take_addr 1 = ;
+  opcode OPCODE_HANDLER take_addr @jmp_like_handler = ;
+  opcode OPCODE_RM32 take_addr 0x0200ff01 = ;
+  opcode OPCODE_IMM32 take_addr 0x0000e801 = ;
+  opcode OPCODE_ALLOW_IMM take_addr 1 = ;
+  opcode OPCODE_ALLOW_RM take_addr 1 = ;
+  opcode OPCODE_RELATIVE take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
   opcode OPCODE_FORCE_32 take_addr 1 = ;
   opcode_map name opcode map_set ;
 
@@ -426,6 +475,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
   opcode OPCODE_ALLOW_RM take_addr 0 = ;
   opcode OPCODE_RELATIVE take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
   opcode OPCODE_FORCE_32 take_addr 1 = ;
   opcode_map name opcode map_set ;
 
@@ -437,6 +487,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
   opcode OPCODE_ALLOW_RM take_addr 0 = ;
   opcode OPCODE_RELATIVE take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
   opcode OPCODE_FORCE_32 take_addr 1 = ;
   opcode_map name opcode map_set ;
 
@@ -448,6 +499,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
   opcode OPCODE_ALLOW_RM take_addr 0 = ;
   opcode OPCODE_RELATIVE take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
   opcode OPCODE_FORCE_32 take_addr 1 = ;
   opcode_map name opcode map_set ;
 
@@ -459,6 +511,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
   opcode OPCODE_ALLOW_RM take_addr 0 = ;
   opcode OPCODE_RELATIVE take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
   opcode OPCODE_FORCE_32 take_addr 1 = ;
   opcode_map name opcode map_set ;
 
@@ -470,6 +523,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
   opcode OPCODE_ALLOW_RM take_addr 0 = ;
   opcode OPCODE_RELATIVE take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
   opcode OPCODE_FORCE_32 take_addr 1 = ;
   opcode_map name opcode map_set ;
 
@@ -481,6 +535,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
   opcode OPCODE_ALLOW_RM take_addr 0 = ;
   opcode OPCODE_RELATIVE take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
   opcode OPCODE_FORCE_32 take_addr 1 = ;
   opcode_map name opcode map_set ;
 
@@ -492,6 +547,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
   opcode OPCODE_ALLOW_RM take_addr 0 = ;
   opcode OPCODE_RELATIVE take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
   opcode OPCODE_FORCE_32 take_addr 1 = ;
   opcode_map name opcode map_set ;
 
@@ -503,6 +559,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
   opcode OPCODE_ALLOW_RM take_addr 0 = ;
   opcode OPCODE_RELATIVE take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
   opcode OPCODE_FORCE_32 take_addr 1 = ;
   opcode_map name opcode map_set ;
 
@@ -514,6 +571,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
   opcode OPCODE_ALLOW_RM take_addr 0 = ;
   opcode OPCODE_RELATIVE take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
   opcode OPCODE_FORCE_32 take_addr 1 = ;
   opcode_map name opcode map_set ;
 
@@ -525,6 +583,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
   opcode OPCODE_ALLOW_RM take_addr 0 = ;
   opcode OPCODE_RELATIVE take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
   opcode OPCODE_FORCE_32 take_addr 1 = ;
   opcode_map name opcode map_set ;
 
@@ -536,6 +595,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
   opcode OPCODE_ALLOW_RM take_addr 0 = ;
   opcode OPCODE_RELATIVE take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
   opcode OPCODE_FORCE_32 take_addr 1 = ;
   opcode_map name opcode map_set ;
 
@@ -547,6 +607,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
   opcode OPCODE_ALLOW_RM take_addr 0 = ;
   opcode OPCODE_RELATIVE take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
   opcode OPCODE_FORCE_32 take_addr 1 = ;
   opcode_map name opcode map_set ;
 
@@ -558,6 +619,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
   opcode OPCODE_ALLOW_RM take_addr 0 = ;
   opcode OPCODE_RELATIVE take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
   opcode OPCODE_FORCE_32 take_addr 1 = ;
   opcode_map name opcode map_set ;
 
@@ -569,6 +631,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
   opcode OPCODE_ALLOW_RM take_addr 0 = ;
   opcode OPCODE_RELATIVE take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
   opcode OPCODE_FORCE_32 take_addr 1 = ;
   opcode_map name opcode map_set ;
 
@@ -580,6 +643,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
   opcode OPCODE_ALLOW_RM take_addr 0 = ;
   opcode OPCODE_RELATIVE take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
   opcode OPCODE_FORCE_32 take_addr 1 = ;
   opcode_map name opcode map_set ;
 
@@ -591,6 +655,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
   opcode OPCODE_ALLOW_RM take_addr 0 = ;
   opcode OPCODE_RELATIVE take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
   opcode OPCODE_FORCE_32 take_addr 1 = ;
   opcode_map name opcode map_set ;
 
@@ -602,6 +667,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
   opcode OPCODE_ALLOW_RM take_addr 0 = ;
   opcode OPCODE_RELATIVE take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
   opcode OPCODE_FORCE_32 take_addr 1 = ;
   opcode_map name opcode map_set ;
 
@@ -613,6 +679,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
   opcode OPCODE_ALLOW_RM take_addr 0 = ;
   opcode OPCODE_RELATIVE take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
   opcode OPCODE_FORCE_32 take_addr 1 = ;
   opcode_map name opcode map_set ;
 
@@ -624,6 +691,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
   opcode OPCODE_ALLOW_RM take_addr 0 = ;
   opcode OPCODE_RELATIVE take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
   opcode OPCODE_FORCE_32 take_addr 1 = ;
   opcode_map name opcode map_set ;
 
@@ -635,6 +703,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
   opcode OPCODE_ALLOW_RM take_addr 0 = ;
   opcode OPCODE_RELATIVE take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
   opcode OPCODE_FORCE_32 take_addr 1 = ;
   opcode_map name opcode map_set ;
 
@@ -646,6 +715,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
   opcode OPCODE_ALLOW_RM take_addr 0 = ;
   opcode OPCODE_RELATIVE take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
   opcode OPCODE_FORCE_32 take_addr 1 = ;
   opcode_map name opcode map_set ;
 
@@ -657,6 +727,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
   opcode OPCODE_ALLOW_RM take_addr 0 = ;
   opcode OPCODE_RELATIVE take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
   opcode OPCODE_FORCE_32 take_addr 1 = ;
   opcode_map name opcode map_set ;
 
@@ -668,6 +739,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
   opcode OPCODE_ALLOW_RM take_addr 0 = ;
   opcode OPCODE_RELATIVE take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
   opcode OPCODE_FORCE_32 take_addr 1 = ;
   opcode_map name opcode map_set ;
 
@@ -679,6 +751,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
   opcode OPCODE_ALLOW_RM take_addr 0 = ;
   opcode OPCODE_RELATIVE take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
   opcode OPCODE_FORCE_32 take_addr 1 = ;
   opcode_map name opcode map_set ;
 
@@ -690,6 +763,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
   opcode OPCODE_ALLOW_RM take_addr 0 = ;
   opcode OPCODE_RELATIVE take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
   opcode OPCODE_FORCE_32 take_addr 1 = ;
   opcode_map name opcode map_set ;
 
@@ -701,6 +775,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
   opcode OPCODE_ALLOW_RM take_addr 0 = ;
   opcode OPCODE_RELATIVE take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
   opcode OPCODE_FORCE_32 take_addr 1 = ;
   opcode_map name opcode map_set ;
 
@@ -712,6 +787,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
   opcode OPCODE_ALLOW_RM take_addr 0 = ;
   opcode OPCODE_RELATIVE take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
   opcode OPCODE_FORCE_32 take_addr 1 = ;
   opcode_map name opcode map_set ;
 
@@ -723,6 +799,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
   opcode OPCODE_ALLOW_RM take_addr 0 = ;
   opcode OPCODE_RELATIVE take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
   opcode OPCODE_FORCE_32 take_addr 1 = ;
   opcode_map name opcode map_set ;
 
@@ -734,6 +811,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
   opcode OPCODE_ALLOW_RM take_addr 0 = ;
   opcode OPCODE_RELATIVE take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
   opcode OPCODE_FORCE_32 take_addr 1 = ;
   opcode_map name opcode map_set ;
 
@@ -745,6 +823,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_RM32 take_addr 0x0400f701 = ;
   opcode OPCODE_ALLOW_IMM take_addr 0 = ;
   opcode OPCODE_ALLOW_RM take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
   opcode OPCODE_FORCE_32 take_addr 0 = ;
   opcode_map name opcode map_set ;
 
@@ -756,6 +835,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_RM32 take_addr 0x0500f701 = ;
   opcode OPCODE_ALLOW_IMM take_addr 0 = ;
   opcode OPCODE_ALLOW_RM take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
   opcode OPCODE_FORCE_32 take_addr 0 = ;
   opcode_map name opcode map_set ;
 
@@ -767,6 +847,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_RM32 take_addr 0x0600f701 = ;
   opcode OPCODE_ALLOW_IMM take_addr 0 = ;
   opcode OPCODE_ALLOW_RM take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
   opcode OPCODE_FORCE_32 take_addr 0 = ;
   opcode_map name opcode map_set ;
 
@@ -778,6 +859,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_RM32 take_addr 0x0700f701 = ;
   opcode OPCODE_ALLOW_IMM take_addr 0 = ;
   opcode OPCODE_ALLOW_RM take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
   opcode OPCODE_FORCE_32 take_addr 0 = ;
   opcode_map name opcode map_set ;
 
@@ -789,6 +871,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_RM32 take_addr 0x0200f701 = ;
   opcode OPCODE_ALLOW_IMM take_addr 0 = ;
   opcode OPCODE_ALLOW_RM take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
   opcode OPCODE_FORCE_32 take_addr 0 = ;
   opcode_map name opcode map_set ;
 
@@ -800,7 +883,50 @@ fun build_opcode_map 0 {
   opcode OPCODE_RM32 take_addr 0x0300f701 = ;
   opcode OPCODE_ALLOW_IMM take_addr 0 = ;
   opcode OPCODE_ALLOW_RM take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
   opcode OPCODE_FORCE_32 take_addr 0 = ;
+  opcode_map name opcode map_set ;
+
+  @name "push" = ;
+  @opcode SIZEOF_OPCODE malloc = ;
+  opcode OPCODE_ARG_NUM take_addr 1 = ;
+  opcode OPCODE_HANDLER take_addr @jmp_like_handler = ;
+  opcode OPCODE_RM32 take_addr 0x0600ff01 = ;
+  opcode OPCODE_IMM32 take_addr 0x00006801 = ;
+  opcode OPCODE_ALLOW_IMM take_addr 1 = ;
+  opcode OPCODE_ALLOW_RM take_addr 1 = ;
+  opcode OPCODE_RELATIVE take_addr 0 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
+  opcode OPCODE_FORCE_32 take_addr 1 = ;
+  opcode_map name opcode map_set ;
+
+  @name "pop" = ;
+  @opcode SIZEOF_OPCODE malloc = ;
+  opcode OPCODE_ARG_NUM take_addr 1 = ;
+  opcode OPCODE_HANDLER take_addr @jmp_like_handler = ;
+  opcode OPCODE_RM32 take_addr 0x00008f01 = ;
+  opcode OPCODE_ALLOW_IMM take_addr 0 = ;
+  opcode OPCODE_ALLOW_RM take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
+  opcode OPCODE_FORCE_32 take_addr 1 = ;
+  opcode_map name opcode map_set ;
+
+  @name "int" = ;
+  @opcode SIZEOF_OPCODE malloc = ;
+  opcode OPCODE_ARG_NUM take_addr 1 = ;
+  opcode OPCODE_HANDLER take_addr @jmp_like_handler = ;
+  opcode OPCODE_IMM8 take_addr 0x0000cd01 = ;
+  opcode OPCODE_ALLOW_IMM take_addr 1 = ;
+  opcode OPCODE_ALLOW_RM take_addr 0 = ;
+  opcode OPCODE_FORCE_8 take_addr 1 = ;
+  opcode OPCODE_FORCE_32 take_addr 0 = ;
+  opcode_map name opcode map_set ;
+
+  @name "ret" = ;
+  @opcode SIZEOF_OPCODE malloc = ;
+  opcode OPCODE_ARG_NUM take_addr 0 = ;
+  opcode OPCODE_HANDLER take_addr @ret_like_handler = ;
+  opcode OPCODE_NO_OPERAND take_addr 0x0000c301 = ;
   opcode_map name opcode map_set ;
 
   @_opcode_map opcode_map = ;

@@ -11,13 +11,13 @@ second:
   add al, second
 
   mul edx
-  mul BYTE [edx]
-  mul dWoRd [edx+ebx*4+0x2244]
+  neg BYTE [edx]
+  not dWoRd [edx+ebx*4+0x2244]
 
   jmp first
-  jmp second
+  call second
   jmp [eax]
-  jmp [eax+ebx*2]
+  call [eax+ebx*2]
 
 third:
   jz third
@@ -25,3 +25,15 @@ third:
   ja third
   jna third
   jc third
+
+  ret
+
+  push eax
+  push ebx
+  push [eax+ebx*2+first]
+  push first
+  push 0xff5500
+  pop eax
+  pop ebx
+
+  int 0x80
