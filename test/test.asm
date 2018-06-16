@@ -59,7 +59,7 @@ third:
   cli
 
 here:
-  stosb
+  rep stosb
   stosw
   stosd
   lodsb
@@ -67,11 +67,11 @@ here:
   lodsd
 there:
 
-  stos byte [eax]
+  rep stos byte [eax]
   stos word [ebx]
   stos dword [edi]
   lods byte [eax]
-  lods word [ebx]
+  rep lods word [ebx]
   lods dword [edi]
 
   xchg eax, ebx

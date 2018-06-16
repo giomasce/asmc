@@ -327,6 +327,13 @@ fun asmctx_parse_line 1 {
     tok free ;
     0 ret ;
   }
+
+  if tok "rep" strcmp 0 == {
+    tok free ;
+    @tok ctx asmctx_get_token = ;
+    ctx 0xf3 asmctx_emit ;
+  }
+
   $opcode_map
   @opcode_map get_opcode_map = ;
   if opcode_map tok map_has {

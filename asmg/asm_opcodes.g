@@ -208,9 +208,9 @@ fun stos_like_handler 3 {
   @opcode 1 param = ;
   @ops 0 param = ;
 
-  # Unpack operands
+  # Unpack operands (if there are two, the second is ignored)
   $op
-  ops vector_size 1 == "stos_like_handler: error 1" assert_msg ;
+  ops vector_size 1 == ops vector_size 2 == || "stos_like_handler: error 1" assert_msg ;
   @op ops 0 vector_at = ;
 
   # Determine the operation size
@@ -1720,7 +1720,7 @@ fun build_opcode_map 0 {
 
   @name "movs" = ;
   @opcode SIZEOF_OPCODE malloc = ;
-  opcode OPCODE_ARG_NUM take_addr 1 = ;
+  opcode OPCODE_ARG_NUM take_addr 2 = ;
   opcode OPCODE_HANDLER take_addr @stos_like_handler = ;
   opcode OPCODE_M8 take_addr 0x0000a401 = ;
   opcode OPCODE_M16 take_addr 0x00a56602 = ;
