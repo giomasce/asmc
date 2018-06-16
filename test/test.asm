@@ -72,6 +72,9 @@ third:
   lods word [ebx]
   lods dword [edi]
 
+  xchg eax, ebx
+  xchg ecx, [edx+10]
+
   dd 0x11223344
   rw 2
 
