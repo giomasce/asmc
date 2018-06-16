@@ -145,6 +145,12 @@ fun sal_like_handler 3 {
   # Determine the operation size
   $size
   @size op1 OPERAND_SIZE take = ;
+  if opcode OPCODE_FORCE_32 take {
+    if size 0 == {
+      @size 3 = ;
+    }
+    size 3 == "sal_like_handler: operand must be 32 bits" assert_msg ;
+  }
   size 0 != "sal_like_handler: unspecified operand size" assert_msg ;
   size 1 == size 3 == || "sal_like_handler: 16 bits not supported" assert_msg ;
 
@@ -1502,6 +1508,7 @@ fun build_opcode_map 0 {
   @opcode SIZEOF_OPCODE malloc = ;
   opcode OPCODE_ARG_NUM take_addr 2 = ;
   opcode OPCODE_HANDLER take_addr @sal_like_handler = ;
+  opcode OPCODE_FORCE_32 take_addr 0 = ;
   opcode OPCODE_RM8IMM8 take_addr 0x0400c001 = ;
   opcode OPCODE_RM32IMM8 take_addr 0x0400c101 = ;
   opcode_map name opcode map_set ;
@@ -1510,6 +1517,7 @@ fun build_opcode_map 0 {
   @opcode SIZEOF_OPCODE malloc = ;
   opcode OPCODE_ARG_NUM take_addr 2 = ;
   opcode OPCODE_HANDLER take_addr @sal_like_handler = ;
+  opcode OPCODE_FORCE_32 take_addr 0 = ;
   opcode OPCODE_RM8IMM8 take_addr 0x0400c001 = ;
   opcode OPCODE_RM32IMM8 take_addr 0x0400c101 = ;
   opcode_map name opcode map_set ;
@@ -1518,6 +1526,7 @@ fun build_opcode_map 0 {
   @opcode SIZEOF_OPCODE malloc = ;
   opcode OPCODE_ARG_NUM take_addr 2 = ;
   opcode OPCODE_HANDLER take_addr @sal_like_handler = ;
+  opcode OPCODE_FORCE_32 take_addr 0 = ;
   opcode OPCODE_RM8IMM8 take_addr 0x0700c001 = ;
   opcode OPCODE_RM32IMM8 take_addr 0x0700c101 = ;
   opcode_map name opcode map_set ;
@@ -1526,8 +1535,41 @@ fun build_opcode_map 0 {
   @opcode SIZEOF_OPCODE malloc = ;
   opcode OPCODE_ARG_NUM take_addr 2 = ;
   opcode OPCODE_HANDLER take_addr @sal_like_handler = ;
+  opcode OPCODE_FORCE_32 take_addr 0 = ;
   opcode OPCODE_RM8IMM8 take_addr 0x0500c001 = ;
   opcode OPCODE_RM32IMM8 take_addr 0x0500c101 = ;
+  opcode_map name opcode map_set ;
+
+  @name "bt" = ;
+  @opcode SIZEOF_OPCODE malloc = ;
+  opcode OPCODE_ARG_NUM take_addr 2 = ;
+  opcode OPCODE_HANDLER take_addr @sal_like_handler = ;
+  opcode OPCODE_FORCE_32 take_addr 1 = ;
+  opcode OPCODE_RM32IMM8 take_addr 0x04ba0f02 = ;
+  opcode_map name opcode map_set ;
+
+  @name "btc" = ;
+  @opcode SIZEOF_OPCODE malloc = ;
+  opcode OPCODE_ARG_NUM take_addr 2 = ;
+  opcode OPCODE_HANDLER take_addr @sal_like_handler = ;
+  opcode OPCODE_FORCE_32 take_addr 1 = ;
+  opcode OPCODE_RM32IMM8 take_addr 0x07ba0f02 = ;
+  opcode_map name opcode map_set ;
+
+  @name "btr" = ;
+  @opcode SIZEOF_OPCODE malloc = ;
+  opcode OPCODE_ARG_NUM take_addr 2 = ;
+  opcode OPCODE_HANDLER take_addr @sal_like_handler = ;
+  opcode OPCODE_FORCE_32 take_addr 1 = ;
+  opcode OPCODE_RM32IMM8 take_addr 0x06ba0f02 = ;
+  opcode_map name opcode map_set ;
+
+  @name "bts" = ;
+  @opcode SIZEOF_OPCODE malloc = ;
+  opcode OPCODE_ARG_NUM take_addr 2 = ;
+  opcode OPCODE_HANDLER take_addr @sal_like_handler = ;
+  opcode OPCODE_FORCE_32 take_addr 1 = ;
+  opcode OPCODE_RM32IMM8 take_addr 0x05ba0f02 = ;
   opcode_map name opcode map_set ;
 
   @name "movzx" = ;

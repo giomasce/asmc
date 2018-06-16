@@ -91,8 +91,12 @@ there:
 
   lea esi, [esi+ecx-10]
   mov ax, 20
-
   mov eax, there-here+4
+
+  bt [eax+0x345], 3
+  btc [0x345], 4
+  btr eax, 5
+  bts [ebx+ecx*8+0x1234], 6
 
   dd 0x11223344
   rw 2
