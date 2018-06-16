@@ -85,6 +85,9 @@ here:
   jmp first
   loope here
 
+  xlat byte [edx]
+  xlatb
+
   dd 0x11223344
   rw 2
 
