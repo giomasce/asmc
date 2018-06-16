@@ -516,6 +516,34 @@ fun build_opcode_map 0 {
   opcode OPCODE_R32RM32 take_addr 0x00002b01 = ;
   opcode_map name opcode map_set ;
 
+  @name "adc" = ;
+  @opcode SIZEOF_OPCODE malloc = ;
+  opcode OPCODE_ARG_NUM take_addr 2 = ;
+  opcode OPCODE_HANDLER take_addr @add_like_handler = ;
+  opcode OPCODE_ALLOW_IMM take_addr 1 = ;
+  opcode OPCODE_DEFAULT_32 take_addr 0 = ;
+  opcode OPCODE_RM8IMM8 take_addr 0x02008001 = ;
+  opcode OPCODE_RM32IMM32 take_addr 0x02008101 = ;
+  opcode OPCODE_RM8R8 take_addr 0x00001001 = ;
+  opcode OPCODE_RM32R32 take_addr 0x00001101 = ;
+  opcode OPCODE_R8RM8 take_addr 0x00001201 = ;
+  opcode OPCODE_R32RM32 take_addr 0x00001301 = ;
+  opcode_map name opcode map_set ;
+
+  @name "sbb" = ;
+  @opcode SIZEOF_OPCODE malloc = ;
+  opcode OPCODE_ARG_NUM take_addr 2 = ;
+  opcode OPCODE_HANDLER take_addr @add_like_handler = ;
+  opcode OPCODE_ALLOW_IMM take_addr 1 = ;
+  opcode OPCODE_DEFAULT_32 take_addr 0 = ;
+  opcode OPCODE_RM8IMM8 take_addr 0x03008001 = ;
+  opcode OPCODE_RM32IMM32 take_addr 0x03008101 = ;
+  opcode OPCODE_RM8R8 take_addr 0x00001801 = ;
+  opcode OPCODE_RM32R32 take_addr 0x00001901 = ;
+  opcode OPCODE_R8RM8 take_addr 0x00001a01 = ;
+  opcode OPCODE_R32RM32 take_addr 0x00001b01 = ;
+  opcode_map name opcode map_set ;
+
   @name "mov" = ;
   @opcode SIZEOF_OPCODE malloc = ;
   opcode OPCODE_ARG_NUM take_addr 2 = ;
