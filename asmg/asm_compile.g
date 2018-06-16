@@ -319,9 +319,9 @@ fun asmctx_parse_line 1 {
 
   $tok
   @tok ctx asmctx_get_token = ;
-  while tok "\n" strcmp 0 == {
+  if tok "\n" strcmp 0 == {
     tok free ;
-    @tok ctx asmctx_get_token = ;
+    1 ret ;
   }
   if tok "" strcmp 0 == {
     tok free ;
@@ -429,12 +429,16 @@ fun asmctx_compile 1 {
   @start_loc 0 = ;
   $size
   while ctx ASMCTX_STAGE take 3 < {
+    $line_num
+    @line_num 1 = ;
     ctx ASMCTX_FDIN take platform_reset_file ;
     ctx ASMCTX_CURRENT_LOC take_addr start_loc = ;
     $cont
     @cont 1 = ;
     while cont {
+      line_num set_assert_pos ;
       @cont ctx asmctx_parse_line = ;
+      @line_num line_num 1 + = ;
     }
     if ctx ASMCTX_STAGE take 0 == {
       @size ctx ASMCTX_CURRENT_LOC take start_loc - = ;

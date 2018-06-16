@@ -1,4 +1,10 @@
 
+$assert_pos
+
+fun set_assert_pos 1 {
+  @assert_pos 0 param = ;
+}
+
 fun assert 1 {
   if 0 param ! {
     platform_panic ;
@@ -7,7 +13,9 @@ fun assert 1 {
 
 fun assert_msg 2 {
   if 1 param ! {
-    "\nASSERTION FAILED:\n" 1 platform_log ;
+    "\nASSERTION FAILED at line " 1 platform_log ;
+    assert_pos itoa 1 platform_log ;
+    "\n" 1 platform_log ;
     0 param 1 platform_log ;
     "\n" 1 platform_log ;
     platform_panic ;
