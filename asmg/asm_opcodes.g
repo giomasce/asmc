@@ -543,7 +543,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ARG_NUM take_addr 2 = ;
   opcode OPCODE_HANDLER take_addr @add_like_handler = ;
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
-  opcode OPCODE_DEFAULT_32 take_addr 0 = ;
+  opcode OPCODE_DEFAULT_32 take_addr 1 = ;
   opcode OPCODE_RM8IMM8 take_addr 0x04008001 = ;
   opcode OPCODE_RM32IMM32 take_addr 0x04008101 = ;
   opcode OPCODE_RM8R8 take_addr 0x00002001 = ;
