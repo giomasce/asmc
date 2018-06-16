@@ -37,7 +37,8 @@ const OPCODE_M8 88
 const OPCODE_M16 92
 const OPCODE_M32 96
 const OPCODE_RM32M 100
-const SIZEOF_OPCODE 104
+const OPCODE_DEFAULT_32 104
+const SIZEOF_OPCODE 108
 
 fun assemble_modrm 3 {
   $mod
@@ -305,6 +306,9 @@ fun add_like_handler 3 {
   } else {
     @size op2 OPERAND_SIZE take = ;
   }
+  if size 0 == opcode OPCODE_DEFAULT_32 take && {
+    @size 3 = ;
+  }
   size 0 != "add_like_handler: unspecified operand size" assert_msg ;
   size 1 == size 3 == || "add_like_handler: 16 bits not supported" assert_msg ;
 
@@ -478,6 +482,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ARG_NUM take_addr 2 = ;
   opcode OPCODE_HANDLER take_addr @add_like_handler = ;
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
+  opcode OPCODE_DEFAULT_32 take_addr 0 = ;
   opcode OPCODE_RM8IMM8 take_addr 0x00008001 = ;
   opcode OPCODE_RM32IMM32 take_addr 0x00008101 = ;
   opcode OPCODE_RM8R8 take_addr 0x00000001 = ;
@@ -491,6 +496,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ARG_NUM take_addr 2 = ;
   opcode OPCODE_HANDLER take_addr @add_like_handler = ;
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
+  opcode OPCODE_DEFAULT_32 take_addr 0 = ;
   opcode OPCODE_RM8IMM8 take_addr 0x05008001 = ;
   opcode OPCODE_RM32IMM32 take_addr 0x05008101 = ;
   opcode OPCODE_RM8R8 take_addr 0x00002801 = ;
@@ -504,6 +510,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ARG_NUM take_addr 2 = ;
   opcode OPCODE_HANDLER take_addr @add_like_handler = ;
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
+  opcode OPCODE_DEFAULT_32 take_addr 0 = ;
   opcode OPCODE_RM8IMM8 take_addr 0x0000c601 = ;
   opcode OPCODE_RM32IMM32 take_addr 0x0000c701 = ;
   opcode OPCODE_RM8R8 take_addr 0x00008801 = ;
@@ -517,6 +524,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ARG_NUM take_addr 2 = ;
   opcode OPCODE_HANDLER take_addr @add_like_handler = ;
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
+  opcode OPCODE_DEFAULT_32 take_addr 1 = ;
   opcode OPCODE_RM8IMM8 take_addr 0x07008001 = ;
   opcode OPCODE_RM32IMM32 take_addr 0x07008101 = ;
   opcode OPCODE_RM8R8 take_addr 0x00003801 = ;
@@ -530,6 +538,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ARG_NUM take_addr 2 = ;
   opcode OPCODE_HANDLER take_addr @add_like_handler = ;
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
+  opcode OPCODE_DEFAULT_32 take_addr 0 = ;
   opcode OPCODE_RM8IMM8 take_addr 0x04008001 = ;
   opcode OPCODE_RM32IMM32 take_addr 0x04008101 = ;
   opcode OPCODE_RM8R8 take_addr 0x00002001 = ;
@@ -543,6 +552,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ARG_NUM take_addr 2 = ;
   opcode OPCODE_HANDLER take_addr @add_like_handler = ;
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
+  opcode OPCODE_DEFAULT_32 take_addr 0 = ;
   opcode OPCODE_RM8IMM8 take_addr 0x01008001 = ;
   opcode OPCODE_RM32IMM32 take_addr 0x01008101 = ;
   opcode OPCODE_RM8R8 take_addr 0x00000801 = ;
@@ -556,6 +566,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ARG_NUM take_addr 2 = ;
   opcode OPCODE_HANDLER take_addr @add_like_handler = ;
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
+  opcode OPCODE_DEFAULT_32 take_addr 0 = ;
   opcode OPCODE_RM8IMM8 take_addr 0x06008001 = ;
   opcode OPCODE_RM32IMM32 take_addr 0x06008101 = ;
   opcode OPCODE_RM8R8 take_addr 0x00003001 = ;
@@ -569,6 +580,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ARG_NUM take_addr 2 = ;
   opcode OPCODE_HANDLER take_addr @add_like_handler = ;
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
+  opcode OPCODE_DEFAULT_32 take_addr 0 = ;
   opcode OPCODE_RM8IMM8 take_addr 0x0000f601 = ;
   opcode OPCODE_RM32IMM32 take_addr 0x0000f701 = ;
   opcode OPCODE_RM8R8 take_addr 0x00008401 = ;
@@ -582,6 +594,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ARG_NUM take_addr 2 = ;
   opcode OPCODE_HANDLER take_addr @add_like_handler = ;
   opcode OPCODE_ALLOW_IMM take_addr 0 = ;
+  opcode OPCODE_DEFAULT_32 take_addr 0 = ;
   opcode OPCODE_RM8R8 take_addr 0x00008601 = ;
   opcode OPCODE_RM32R32 take_addr 0x00008701 = ;
   opcode OPCODE_R8RM8 take_addr 0x00008601 = ;
