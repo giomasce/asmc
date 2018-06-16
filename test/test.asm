@@ -58,6 +58,20 @@ third:
   cld
   cli
 
+  stosb
+  stosw
+  stosd
+  lodsb
+  lodsw
+  lodsd
+
+  stos byte [eax]
+  stos word [ebx]
+  stos dword [edi]
+  lods byte [eax]
+  lods word [ebx]
+  lods dword [edi]
+
   dd 0x11223344
   rw 2
 

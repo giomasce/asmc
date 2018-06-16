@@ -33,7 +33,10 @@ const OPCODE_NO_OPERAND 72
 const OPCODE_RM32IMM8 76
 const OPCODE_R32RM8 80
 const OPCODE_R32RM16 84
-const SIZEOF_OPCODE 88
+const OPCODE_M8 88
+const OPCODE_M16 92
+const OPCODE_M32 96
+const SIZEOF_OPCODE 100
 
 fun assemble_modrm 3 {
   $mod
@@ -161,6 +164,40 @@ fun sal_like_handler 3 {
     ctx op1 OPERAND_OFFSET take asmctx_emit32 ;
   }
   ctx op2 OPERAND_OFFSET take asmctx_emit ;
+}
+
+fun stos_like_handler 3 {
+  $ctx
+  $opcode
+  $ops
+  @ctx 2 param = ;
+  @opcode 1 param = ;
+  @ops 0 param = ;
+
+  # Unpack operands
+  $op
+  ops vector_size 1 == "stos_like_handler: error 1" assert_msg ;
+  @op ops 0 vector_at = ;
+
+  # Determine the operation size
+  $size
+  @size op OPERAND_SIZE take = ;
+  size 0 != "stos_like_handler: unspecified operand size" assert_msg ;
+
+  $opbytes
+  if size 1 == {
+    # m8
+    @opbytes opcode OPCODE_M8 take = ;
+  } else {
+    if size 2 == {
+      # m16
+      @opbytes opcode OPCODE_M16 take = ;
+    } else {
+      # m32
+      @opbytes opcode OPCODE_M32 take = ;
+    }
+  }
+  ctx opbytes emit_multibyte ;
 }
 
 fun movzx_like_handler 3 {
@@ -1083,6 +1120,66 @@ fun build_opcode_map 0 {
   opcode OPCODE_ARG_NUM take_addr 0 = ;
   opcode OPCODE_HANDLER take_addr @ret_like_handler = ;
   opcode OPCODE_NO_OPERAND take_addr 0x0000fb01 = ;
+  opcode_map name opcode map_set ;
+
+  @name "lodsb" = ;
+  @opcode SIZEOF_OPCODE malloc = ;
+  opcode OPCODE_ARG_NUM take_addr 0 = ;
+  opcode OPCODE_HANDLER take_addr @ret_like_handler = ;
+  opcode OPCODE_NO_OPERAND take_addr 0x0000ac01 = ;
+  opcode_map name opcode map_set ;
+
+  @name "lodsw" = ;
+  @opcode SIZEOF_OPCODE malloc = ;
+  opcode OPCODE_ARG_NUM take_addr 0 = ;
+  opcode OPCODE_HANDLER take_addr @ret_like_handler = ;
+  opcode OPCODE_NO_OPERAND take_addr 0x00ad6602 = ;
+  opcode_map name opcode map_set ;
+
+  @name "lodsd" = ;
+  @opcode SIZEOF_OPCODE malloc = ;
+  opcode OPCODE_ARG_NUM take_addr 0 = ;
+  opcode OPCODE_HANDLER take_addr @ret_like_handler = ;
+  opcode OPCODE_NO_OPERAND take_addr 0x0000ad01 = ;
+  opcode_map name opcode map_set ;
+
+  @name "stosb" = ;
+  @opcode SIZEOF_OPCODE malloc = ;
+  opcode OPCODE_ARG_NUM take_addr 0 = ;
+  opcode OPCODE_HANDLER take_addr @ret_like_handler = ;
+  opcode OPCODE_NO_OPERAND take_addr 0x0000aa01 = ;
+  opcode_map name opcode map_set ;
+
+  @name "stosw" = ;
+  @opcode SIZEOF_OPCODE malloc = ;
+  opcode OPCODE_ARG_NUM take_addr 0 = ;
+  opcode OPCODE_HANDLER take_addr @ret_like_handler = ;
+  opcode OPCODE_NO_OPERAND take_addr 0x00ab6602 = ;
+  opcode_map name opcode map_set ;
+
+  @name "stosd" = ;
+  @opcode SIZEOF_OPCODE malloc = ;
+  opcode OPCODE_ARG_NUM take_addr 0 = ;
+  opcode OPCODE_HANDLER take_addr @ret_like_handler = ;
+  opcode OPCODE_NO_OPERAND take_addr 0x0000ab01 = ;
+  opcode_map name opcode map_set ;
+
+  @name "stos" = ;
+  @opcode SIZEOF_OPCODE malloc = ;
+  opcode OPCODE_ARG_NUM take_addr 1 = ;
+  opcode OPCODE_HANDLER take_addr @stos_like_handler = ;
+  opcode OPCODE_M8 take_addr 0x0000aa01 = ;
+  opcode OPCODE_M16 take_addr 0x00ab6602 = ;
+  opcode OPCODE_M32 take_addr 0x0000ab01 = ;
+  opcode_map name opcode map_set ;
+
+  @name "lods" = ;
+  @opcode SIZEOF_OPCODE malloc = ;
+  opcode OPCODE_ARG_NUM take_addr 1 = ;
+  opcode OPCODE_HANDLER take_addr @stos_like_handler = ;
+  opcode OPCODE_M8 take_addr 0x0000ac01 = ;
+  opcode OPCODE_M16 take_addr 0x00ad6602 = ;
+  opcode OPCODE_M32 take_addr 0x0000ad01 = ;
   opcode_map name opcode map_set ;
 
   @_opcode_map opcode_map = ;
