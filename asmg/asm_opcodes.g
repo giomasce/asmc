@@ -310,7 +310,12 @@ fun add_like_handler 3 {
     @size 3 = ;
   }
   size 0 != "add_like_handler: unspecified operand size" assert_msg ;
-  size 1 == size 3 == || "add_like_handler: 16 bits not supported" assert_msg ;
+  $actual_size
+  @actual_size size = ;
+  if size 2 == {
+    ctx 0x66 asmctx_emit ;
+    @size 3 = ;
+  }
 
   # Check that the destination and possibly the source is not an immediate
   op1 OPERAND_TYPE take 2 != "add_like_handler: destination is immediate" assert_msg ;
@@ -332,7 +337,7 @@ fun add_like_handler 3 {
     if op1 OPERAND_TYPE take 0 == {
       ctx op1 OPERAND_OFFSET take asmctx_emit32 ;
     }
-    ctx op2 OPERAND_OFFSET take size emit_size ;
+    ctx op2 OPERAND_OFFSET take actual_size emit_size ;
     ret ;
   }
   if op2 OPERAND_TYPE take 1 == {
@@ -399,7 +404,7 @@ fun jmp_like_handler 3 {
     size 1 == "jmp_like_handler: operand must be 8 bits" assert_msg ;
   }
   size 0 != "jmp_like_handler: unspecified operand size" assert_msg ;
-  size 1 == size 3 == || "add_like_handler: 16 bits not supported" assert_msg ;
+  size 1 == size 3 == || "jmp_like_handler: 16 bits not supported" assert_msg ;
 
   if opcode OPCODE_ALLOW_IMM take ! {
     op OPERAND_TYPE take 2 != "jmp_like_handler: operand cannot be immediate" assert_msg ;

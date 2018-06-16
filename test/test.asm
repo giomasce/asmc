@@ -90,6 +90,7 @@ there:
   xlatb
 
   lea esi, [esi+ecx-10]
+  mov ax, 20
 
   mov eax, there-here+4
 
