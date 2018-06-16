@@ -65,6 +65,7 @@ here:
   lodsb
   lodsw
   lodsd
+there:
 
   stos byte [eax]
   stos word [ebx]
@@ -89,6 +90,8 @@ here:
   xlatb
 
   lea esi, [esi+ecx+1]
+
+  mov eax, there-here+4
 
   dd 0x11223344
   rw 2

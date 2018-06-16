@@ -162,21 +162,50 @@ fun asmctx_parse_operand 1 {
     }
   } else {
     op OPERAND_SIZE take 0 == "Cannot specify the size of a direct operand" assert_msg ;
-    $reg
-    @reg tok parse_register = ;
-    if reg 0xffffffff != {
-      op OPERAND_TYPE take_addr 1 = ;
-      op OPERAND_REG take_addr reg 0x0f & = ;
-      op OPERAND_SIZE take_addr reg 4 >> = ;
-    } else {
-      op OPERAND_TYPE take_addr 2 = ;
-      $value
-      @value ctx tok asmctx_parse_number = ;
+    $cont
+    @cont 1 = ;
+    $value
+    @value 0 = ;
+    op OPERAND_TYPE take_addr 0 = ;
+    $sign
+    @sign 1 = ;
+    while cont {
+      $reg
+      @reg tok parse_register = ;
+      if reg 0xffffffff != {
+        op OPERAND_TYPE take 0 == "asmctx_parse_operand: invalid direct operand" assert_msg ;
+        op OPERAND_TYPE take_addr 1 = ;
+        op OPERAND_REG take_addr reg 0x0f & = ;
+        op OPERAND_SIZE take_addr reg 4 >> = ;
+        @cont 0 = ;
+        tok free ;
+      } else {
+        op OPERAND_TYPE take 0 == op OPERAND_TYPE take 2 == || "asmctx_parse_operand: invalid direct operand" assert_msg ;
+        op OPERAND_TYPE take_addr 2 = ;
+        @value value ctx tok asmctx_parse_number sign * + = ;
+        tok free ;
+        @tok ctx asmctx_get_token = ;
+        if tok "+" strcmp 0 == {
+          tok free ;
+          @tok ctx asmctx_get_token = ;
+          @sign 1 = ;
+        } else {
+          if tok "-" strcmp 0 == {
+            tok free ;
+            @tok ctx asmctx_get_token = ;
+            @sign 0 1 - = ;
+          } else {
+            ctx asmctx_give_back_token ;
+            @cont 0 = ;
+          }
+        }
+      }
+    }
+    if op OPERAND_TYPE take 2 == {
       op OPERAND_OFFSET take_addr value = ;
     }
   }
 
-  tok free ;
   op ret ;
 }
 
