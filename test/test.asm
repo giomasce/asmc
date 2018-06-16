@@ -76,9 +76,9 @@ here:
   xchg eax, ebx
   xchg ecx, [edx+10]
 
-  seta byte [ebp]
+  seta byte [ebp+10101110b]
 
-  setne byte [ebp+eax*4]
+  setne byte [ebp+eax*4+100H]
   jecxz here
   jmp here
   ;; jecxz first

@@ -5,13 +5,34 @@ fun asmctx_parse_number 2 {
   @ctx 1 param = ;
   @str 0 param = ;
 
+  $len
+  @len str strlen = ;
+  len 0 > "asmctx_parse_number: invalid zero-length string" assert_msg ;
+
   $value
   $endptr
   @value str @endptr 0 strtol = ;
-  if endptr **c 0 != {
-    @value ctx str asmctx_get_symbol = ;
+  if endptr **c 0 == {
+    value ret ;
   }
 
+  if str len + 1 - **c 'b' == str len + 1 - **c 'B' == || {
+    str len + 1 - 0 =c ;
+    @value str @endptr 2 strtol = ;
+    if endptr **c 0 == {
+      value ret ;
+    }
+  }
+
+  if str len + 1 - **c 'h' == str len + 1 - **c 'H' == || {
+    str len + 1 - 0 =c ;
+    @value str @endptr 16 strtol = ;
+    if endptr **c 0 == {
+      value ret ;
+    }
+  }
+
+  @value ctx str asmctx_get_symbol = ;
   value ret ;
 }
 
