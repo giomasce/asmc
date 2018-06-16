@@ -75,6 +75,10 @@ third:
   xchg eax, ebx
   xchg ecx, [edx+10]
 
+  seta byte [ebp]
+
+  setne byte [ebp+eax*4]
+
   dd 0x11223344
   rw 2
 
