@@ -383,7 +383,16 @@ fun jmp_like_handler 3 {
     if opcode OPCODE_RELATIVE take {
       $current_loc
       @current_loc ctx ASMCTX_CURRENT_LOC take = ;
-      @off off current_loc - 4 - = ;
+      if size 1 == {
+        @off off current_loc - 1 - = ;
+        if ctx ASMCTX_STAGE take 2 == {
+          $high
+          @high off 0xffffff80 & = ;
+          high 0 == high 0xffffff80 == || "jmp_like_handler: relative jump too big" assert_msg ;
+        }
+      } else {
+        @off off current_loc - 4 - = ;
+      }
     }
     if size 1 == {
       ctx off asmctx_emit ;
@@ -567,6 +576,18 @@ fun build_opcode_map 0 {
   opcode OPCODE_RELATIVE take_addr 1 = ;
   opcode OPCODE_FORCE_8 take_addr 0 = ;
   opcode OPCODE_FORCE_32 take_addr 1 = ;
+  opcode_map name opcode map_set ;
+
+  @name "jecxz" = ;
+  @opcode SIZEOF_OPCODE malloc = ;
+  opcode OPCODE_ARG_NUM take_addr 1 = ;
+  opcode OPCODE_HANDLER take_addr @jmp_like_handler = ;
+  opcode OPCODE_IMM8 take_addr 0x0000e301 = ;
+  opcode OPCODE_ALLOW_IMM take_addr 1 = ;
+  opcode OPCODE_ALLOW_RM take_addr 0 = ;
+  opcode OPCODE_RELATIVE take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 1 = ;
+  opcode OPCODE_FORCE_32 take_addr 0 = ;
   opcode_map name opcode map_set ;
 
   @name "ja" = ;

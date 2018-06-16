@@ -58,6 +58,7 @@ third:
   cld
   cli
 
+here:
   stosb
   stosw
   stosd
@@ -78,6 +79,10 @@ third:
   seta byte [ebp]
 
   setne byte [ebp+eax*4]
+  jecxz here
+  jmp here
+  ;; jecxz first
+  jmp first
 
   dd 0x11223344
   rw 2
