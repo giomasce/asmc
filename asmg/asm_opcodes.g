@@ -1646,6 +1646,27 @@ fun build_opcode_map 0 {
   opcode OPCODE_NO_OPERAND take_addr 0x0000af01 = ;
   opcode_map name opcode map_set ;
 
+  @name "movsb" = ;
+  @opcode SIZEOF_OPCODE malloc = ;
+  opcode OPCODE_ARG_NUM take_addr 0 = ;
+  opcode OPCODE_HANDLER take_addr @ret_like_handler = ;
+  opcode OPCODE_NO_OPERAND take_addr 0x0000a401 = ;
+  opcode_map name opcode map_set ;
+
+  @name "movsw" = ;
+  @opcode SIZEOF_OPCODE malloc = ;
+  opcode OPCODE_ARG_NUM take_addr 0 = ;
+  opcode OPCODE_HANDLER take_addr @ret_like_handler = ;
+  opcode OPCODE_NO_OPERAND take_addr 0x00a56602 = ;
+  opcode_map name opcode map_set ;
+
+  @name "movsd" = ;
+  @opcode SIZEOF_OPCODE malloc = ;
+  opcode OPCODE_ARG_NUM take_addr 0 = ;
+  opcode OPCODE_HANDLER take_addr @ret_like_handler = ;
+  opcode OPCODE_NO_OPERAND take_addr 0x0000a401 = ;
+  opcode_map name opcode map_set ;
+
   @name "xlat" = ;
   @opcode SIZEOF_OPCODE malloc = ;
   opcode OPCODE_ARG_NUM take_addr 1 = ;
@@ -1681,6 +1702,16 @@ fun build_opcode_map 0 {
   opcode OPCODE_M8 take_addr 0x0000ae01 = ;
   opcode OPCODE_M16 take_addr 0x00af6602 = ;
   opcode OPCODE_M32 take_addr 0x0000af01 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
+  opcode_map name opcode map_set ;
+
+  @name "movs" = ;
+  @opcode SIZEOF_OPCODE malloc = ;
+  opcode OPCODE_ARG_NUM take_addr 1 = ;
+  opcode OPCODE_HANDLER take_addr @stos_like_handler = ;
+  opcode OPCODE_M8 take_addr 0x0000a401 = ;
+  opcode OPCODE_M16 take_addr 0x00a56602 = ;
+  opcode OPCODE_M32 take_addr 0x0000a501 = ;
   opcode OPCODE_FORCE_8 take_addr 0 = ;
   opcode_map name opcode map_set ;
 
