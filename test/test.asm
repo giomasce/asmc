@@ -88,6 +88,8 @@ here:
   xlat byte [edx]
   xlatb
 
+  lea esi, [esi+ecx+1]
+
   dd 0x11223344
   rw 2
 
