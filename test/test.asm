@@ -83,6 +83,7 @@ here:
   jmp here
   ;; jecxz first
   jmp first
+  loope here
 
   dd 0x11223344
   rw 2

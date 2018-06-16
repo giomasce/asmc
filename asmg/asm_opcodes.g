@@ -590,6 +590,42 @@ fun build_opcode_map 0 {
   opcode OPCODE_FORCE_32 take_addr 0 = ;
   opcode_map name opcode map_set ;
 
+  @name "loop" = ;
+  @opcode SIZEOF_OPCODE malloc = ;
+  opcode OPCODE_ARG_NUM take_addr 1 = ;
+  opcode OPCODE_HANDLER take_addr @jmp_like_handler = ;
+  opcode OPCODE_IMM8 take_addr 0x0000e201 = ;
+  opcode OPCODE_ALLOW_IMM take_addr 1 = ;
+  opcode OPCODE_ALLOW_RM take_addr 0 = ;
+  opcode OPCODE_RELATIVE take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 1 = ;
+  opcode OPCODE_FORCE_32 take_addr 0 = ;
+  opcode_map name opcode map_set ;
+
+  @name "loope" = ;
+  @opcode SIZEOF_OPCODE malloc = ;
+  opcode OPCODE_ARG_NUM take_addr 1 = ;
+  opcode OPCODE_HANDLER take_addr @jmp_like_handler = ;
+  opcode OPCODE_IMM8 take_addr 0x0000e101 = ;
+  opcode OPCODE_ALLOW_IMM take_addr 1 = ;
+  opcode OPCODE_ALLOW_RM take_addr 0 = ;
+  opcode OPCODE_RELATIVE take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 1 = ;
+  opcode OPCODE_FORCE_32 take_addr 0 = ;
+  opcode_map name opcode map_set ;
+
+  @name "loopne" = ;
+  @opcode SIZEOF_OPCODE malloc = ;
+  opcode OPCODE_ARG_NUM take_addr 1 = ;
+  opcode OPCODE_HANDLER take_addr @jmp_like_handler = ;
+  opcode OPCODE_IMM8 take_addr 0x0000e001 = ;
+  opcode OPCODE_ALLOW_IMM take_addr 1 = ;
+  opcode OPCODE_ALLOW_RM take_addr 0 = ;
+  opcode OPCODE_RELATIVE take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 1 = ;
+  opcode OPCODE_FORCE_32 take_addr 0 = ;
+  opcode_map name opcode map_set ;
+
   @name "ja" = ;
   @opcode SIZEOF_OPCODE malloc = ;
   opcode OPCODE_ARG_NUM take_addr 1 = ;
