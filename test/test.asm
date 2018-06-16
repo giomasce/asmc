@@ -38,6 +38,10 @@ third:
 
   int 0x80
 
+  sal al, 10
+  sal DWORD [eax], 12
+  sal BYTE [eax], 12
+
   dd 0x11223344
   rw 2
 
