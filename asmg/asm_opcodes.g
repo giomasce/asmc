@@ -31,7 +31,9 @@ const OPCODE_FORCE_8 64
 const OPCODE_FORCE_32 68
 const OPCODE_NO_OPERAND 72
 const OPCODE_RM32IMM8 76
-const SIZEOF_OPCODE 80
+const OPCODE_R32RM8 80
+const OPCODE_R32RM16 84
+const SIZEOF_OPCODE 88
 
 fun assemble_modrm 3 {
   $mod
@@ -159,6 +161,50 @@ fun sal_like_handler 3 {
     ctx op1 OPERAND_OFFSET take asmctx_emit32 ;
   }
   ctx op2 OPERAND_OFFSET take asmctx_emit ;
+}
+
+fun movzx_like_handler 3 {
+  $ctx
+  $opcode
+  $ops
+  @ctx 2 param = ;
+  @opcode 1 param = ;
+  @ops 0 param = ;
+
+  # Unpack operands
+  $op1
+  $op2
+  ops vector_size 2 == "movzx_like_handler: error 1" assert_msg ;
+  @op1 ops 0 vector_at = ;
+  @op2 ops 1 vector_at = ;
+
+  # Determine the operation size
+  $size
+  @size op1 OPERAND_SIZE take = ;
+  size 0 != "movzx_like_handler: unspecified destination size" assert_msg ;
+  size 3 == "movzx_like_handler: destination must be 32 bits" assert_msg ;
+  $src_size
+  @src_size op2 OPERAND_SIZE take = ;
+  src_size 0 != "movzx_like_handler: unspecified source size" assert_msg ;
+  src_size 1 == src_size 2 == || "movzx_like_handler: source must be 8 or 16 bits" assert_msg ;
+
+  # Check that the the source is not an immediate and the destination is a register
+  op1 OPERAND_TYPE take 1 == "sal_like_handler: destination is immediate" assert_msg ;
+  op2 OPERAND_TYPE take 2 != "sal_like_handler: source must be immediate" assert_msg ;
+
+  $opbytes
+  if src_size 1 == {
+    # r32, r/m8
+    @opbytes opcode OPCODE_R32RM8 take = ;
+  } else {
+    # r32, r/m16
+    @opbytes opcode OPCODE_R32RM16 take = ;
+  }
+  ctx opbytes emit_multibyte ;
+  ctx op2 op1 op_to_reg op_to_modrm emit_multibyte ;
+  if op2 OPERAND_TYPE take 0 == {
+    ctx op2 OPERAND_OFFSET take asmctx_emit32 ;
+  }
 }
 
 fun add_like_handler 3 {
@@ -884,6 +930,30 @@ fun build_opcode_map 0 {
   opcode OPCODE_FORCE_32 take_addr 0 = ;
   opcode_map name opcode map_set ;
 
+  @name "inc" = ;
+  @opcode SIZEOF_OPCODE malloc = ;
+  opcode OPCODE_ARG_NUM take_addr 1 = ;
+  opcode OPCODE_HANDLER take_addr @jmp_like_handler = ;
+  opcode OPCODE_RM8 take_addr 0x0000fe01 = ;
+  opcode OPCODE_RM32 take_addr 0x0000ff01 = ;
+  opcode OPCODE_ALLOW_IMM take_addr 0 = ;
+  opcode OPCODE_ALLOW_RM take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
+  opcode OPCODE_FORCE_32 take_addr 0 = ;
+  opcode_map name opcode map_set ;
+
+  @name "dec" = ;
+  @opcode SIZEOF_OPCODE malloc = ;
+  opcode OPCODE_ARG_NUM take_addr 1 = ;
+  opcode OPCODE_HANDLER take_addr @jmp_like_handler = ;
+  opcode OPCODE_RM8 take_addr 0x0100fe01 = ;
+  opcode OPCODE_RM32 take_addr 0x0100ff01 = ;
+  opcode OPCODE_ALLOW_IMM take_addr 0 = ;
+  opcode OPCODE_ALLOW_RM take_addr 1 = ;
+  opcode OPCODE_FORCE_8 take_addr 0 = ;
+  opcode OPCODE_FORCE_32 take_addr 0 = ;
+  opcode_map name opcode map_set ;
+
   @name "push" = ;
   @opcode SIZEOF_OPCODE malloc = ;
   opcode OPCODE_ARG_NUM take_addr 1 = ;
@@ -949,6 +1019,14 @@ fun build_opcode_map 0 {
   opcode OPCODE_HANDLER take_addr @sal_like_handler = ;
   opcode OPCODE_RM8IMM8 take_addr 0x0500c001 = ;
   opcode OPCODE_RM32IMM8 take_addr 0x0500c101 = ;
+  opcode_map name opcode map_set ;
+
+  @name "movzx" = ;
+  @opcode SIZEOF_OPCODE malloc = ;
+  opcode OPCODE_ARG_NUM take_addr 2 = ;
+  opcode OPCODE_HANDLER take_addr @movzx_like_handler = ;
+  opcode OPCODE_R32RM8 take_addr 0x00b60f02 = ;
+  opcode OPCODE_R32RM16 take_addr 0x00b70f02 = ;
   opcode_map name opcode map_set ;
 
   @name "ret" = ;

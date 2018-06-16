@@ -42,6 +42,14 @@ third:
   sal DWORD [eax], 12
   sal BYTE [eax], 12
 
+  movzx eax, byte [ebx]
+  movzx eax, word [ebx]
+  movzx eax, cx
+  movzx eax, ch
+
+  inc ebx
+  dec ah
+
   dd 0x11223344
   rw 2
 
