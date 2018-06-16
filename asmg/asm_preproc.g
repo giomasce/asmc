@@ -154,8 +154,14 @@ fun asmctx_get_symbol 2 {
   @syms ctx ASMCTX_SYMBOLS take = ;
 
   if ctx ASMCTX_STAGE take 2 == {
-    syms name map_has "asmctx_add_symbol: symbol undefined" assert_msg ;
-    syms name map_at ret ;
+    if syms name map_has {
+      syms name map_at ret ;
+    } else {
+      "Undefined symbol: " 1 platform_log ;
+      name 1 platform_log ;
+      "\n" 1 platform_log ;
+      0 "asmctx_add_symbol: symbol undefined" assert_msg ;
+    }
   } else {
     0 ret ;
   }
