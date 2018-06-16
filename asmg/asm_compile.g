@@ -10,6 +10,14 @@ fun asmctx_parse_number 2 {
   len 0 > "asmctx_parse_number: invalid zero-length string" assert_msg ;
 
   $value
+
+  if str **c '\'' == {
+    len 3 == "asmctx_parse_number: invalid length for an immediate character" assert_msg ;
+    str 2 + **c '\'' == "asmctx_parse_number: invalid immediate character" assert_msg ;
+    @value str 1 + **c = ;
+    value ret ;
+  }
+
   $endptr
   @value str @endptr 0 strtol = ;
   if endptr **c 0 == {
