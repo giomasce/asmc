@@ -328,7 +328,7 @@ fun asmctx_parse_line 1 {
     0 ret ;
   }
 
-  if tok "rep" strcmp 0 == {
+  if tok "rep" strcmp 0 == tok "repe" strcmp 0 == || {
     tok free ;
     @tok ctx asmctx_get_token = ;
     ctx 0xf3 asmctx_emit ;
@@ -339,26 +339,43 @@ fun asmctx_parse_line 1 {
   if opcode_map tok map_has {
     $opcode
     @opcode opcode_map tok map_at = ;
+    tok free ;
     $i
     @i 0 = ;
-    $ops
-    @ops 4 vector_init = ;
-    if opcode OPCODE_ARG_NUM take 0 != {
-      $op
-      while i opcode OPCODE_ARG_NUM take 1 - < {
-        tok free ;
+    $arg_num
+    @arg_num opcode OPCODE_ARG_NUM take 0xff & = ;
+    $can_repeat
+    @can_repeat opcode OPCODE_ARG_NUM take 8 >> = ;
+    $cont
+    @cont 1 = ;
+    while cont {
+      $ops
+      @ops 4 vector_init = ;
+      if arg_num 0 != {
+        $op
+        while i arg_num 1 - < {
+          @op ctx asmctx_parse_operand = ;
+          ops op vector_push_back ;
+          @tok ctx asmctx_get_token = ;
+          tok "," strcmp 0 == "parse_asm_line: expected comma" assert_msg ;
+          tok free ;
+          @i i 1 + = ;
+        }
         @op ctx asmctx_parse_operand = ;
         ops op vector_push_back ;
-        @tok ctx asmctx_get_token = ;
-        tok "," strcmp 0 == "parse_asm_line: expected comma" assert_msg ;
-        tok free ;
-        @i i 1 + = ;
       }
-      @op ctx asmctx_parse_operand = ;
-      ops op vector_push_back ;
+      ctx opcode ops opcode OPCODE_HANDLER take \3 ;
+      ops free_vect_of_ptrs ;
+      if can_repeat ! {
+        @cont 0 = ;
+      } else {
+        @tok ctx asmctx_get_token = ;
+        if tok "\n" strcmp 0 == {
+          @cont 0 = ;
+        }
+        ctx asmctx_give_back_token ;
+      }
     }
-    ctx opcode ops opcode OPCODE_HANDLER take \3 ;
-    ops free_vect_of_ptrs ;
   } else {
     ctx asmctx_give_back_token ;
     if ctx asmctx_parse_data ! {

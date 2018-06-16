@@ -549,7 +549,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ARG_NUM take_addr 2 = ;
   opcode OPCODE_HANDLER take_addr @add_like_handler = ;
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
-  opcode OPCODE_DEFAULT_32 take_addr 0 = ;
+  opcode OPCODE_DEFAULT_32 take_addr 1 = ;
   opcode OPCODE_RM8IMM8 take_addr 0x0000c601 = ;
   opcode OPCODE_RM32IMM32 take_addr 0x0000c701 = ;
   opcode OPCODE_RM8R8 take_addr 0x00008801 = ;
@@ -619,7 +619,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ARG_NUM take_addr 2 = ;
   opcode OPCODE_HANDLER take_addr @add_like_handler = ;
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
-  opcode OPCODE_DEFAULT_32 take_addr 0 = ;
+  opcode OPCODE_DEFAULT_32 take_addr 1 = ;
   opcode OPCODE_RM8IMM8 take_addr 0x0000f601 = ;
   opcode OPCODE_RM32IMM32 take_addr 0x0000f701 = ;
   opcode OPCODE_RM8R8 take_addr 0x00008401 = ;
@@ -1499,7 +1499,7 @@ fun build_opcode_map 0 {
 
   @name "push" = ;
   @opcode SIZEOF_OPCODE malloc = ;
-  opcode OPCODE_ARG_NUM take_addr 1 = ;
+  opcode OPCODE_ARG_NUM take_addr 0x101 = ;
   opcode OPCODE_HANDLER take_addr @jmp_like_handler = ;
   opcode OPCODE_RM32 take_addr 0x0600ff01 = ;
   opcode OPCODE_IMM32 take_addr 0x00006801 = ;
@@ -1512,7 +1512,7 @@ fun build_opcode_map 0 {
 
   @name "pop" = ;
   @opcode SIZEOF_OPCODE malloc = ;
-  opcode OPCODE_ARG_NUM take_addr 1 = ;
+  opcode OPCODE_ARG_NUM take_addr 0x101 = ;
   opcode OPCODE_HANDLER take_addr @jmp_like_handler = ;
   opcode OPCODE_RM32 take_addr 0x00008f01 = ;
   opcode OPCODE_ALLOW_IMM take_addr 0 = ;
