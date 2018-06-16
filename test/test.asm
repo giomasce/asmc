@@ -89,7 +89,7 @@ there:
   xlat byte [edx]
   xlatb
 
-  lea esi, [esi+ecx+1]
+  lea esi, [esi+ecx-10]
 
   mov eax, there-here+4
 

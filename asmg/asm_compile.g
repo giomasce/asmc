@@ -82,15 +82,47 @@ fun asmctx_parse_operand 1 {
     @cont 1 = ;
     tok free ;
     @tok ctx asmctx_get_token = ;
+    $sign
+    @sign 1 = ;
     while cont {
       $reg
       @reg tok parse_register = ;
       if reg 0xffffffff != {
+        sign 1 == "asmctx_parse_operand: illegal sign usage in indirect operand" assert_msg ;
         reg 4 >> 3 == "asmctx_parse_operand: indirect operands must use 32 bits registers" assert_msg ;
         @reg reg 0xf & = ;
         tok free ;
         @tok ctx asmctx_get_token = ;
-        if tok "+" strcmp 0 == tok "]" strcmp 0 == || {
+        if tok "*" strcmp 0 == {
+          tok free ;
+          @tok ctx asmctx_get_token = ;
+          $scale
+          $endptr
+          @scale tok @endptr 0 strtol = ;
+          endptr **c 0 == "asmctx_parse_operand: illegal scale" assert_msg ;
+          $scalebits
+          if scale 1 == {
+            @scalebits 0 = ;
+          } else {
+            if scale 2 == {
+              @scalebits 1 = ;
+            } else {
+              if scale 4 == {
+                @scalebits 2 = ;
+              } else {
+                if scale 8 == {
+                  @scalebits 3 = ;
+                } else {
+                  0 "asmctx_parse_operand: illegal scale" assert_msg ;
+                }
+              }
+            }
+          }
+          op OPERAND_INDEX_REG take_addr reg = ;
+          op OPERAND_SCALE take_addr scalebits = ;
+          tok free ;
+        } else {
+          ctx asmctx_give_back_token ;
           if op OPERAND_REG take 8 == {
             op OPERAND_REG take_addr reg = ;
           } else {
@@ -98,65 +130,30 @@ fun asmctx_parse_operand 1 {
             op OPERAND_INDEX_REG take_addr reg = ;
             op OPERAND_SCALE take_addr 0 = ;
           }
-          if tok "]" strcmp 0 == {
-            @cont 0 = ;
-          } else {
-            tok free ;
-            @tok ctx asmctx_get_token = ;
-          }
-        } else {
-          if tok "*" strcmp 0 == {
-            tok free ;
-            @tok ctx asmctx_get_token = ;
-            $scale
-            $endptr
-            @scale tok @endptr 0 strtol = ;
-            endptr **c 0 == "asmctx_parse_operand: illegal scale" assert_msg ;
-            $scalebits
-            if scale 1 == {
-              @scalebits 0 = ;
-            } else {
-              if scale 2 == {
-                @scalebits 1 = ;
-              } else {
-                if scale 4 == {
-                  @scalebits 2 = ;
-                } else {
-                  if scale 8 == {
-                    @scalebits 3 = ;
-                  } else {
-                    0 "asmctx_parse_operand: illegal scale" assert_msg ;
-                  }
-                }
-              }
-            }
-            op OPERAND_INDEX_REG take_addr reg = ;
-            op OPERAND_SCALE take_addr scalebits = ;
-            tok free ;
-            @tok ctx asmctx_get_token = ;
-            tok "+" strcmp 0 == tok "]" strcmp 0 == || "asmctx_parse_operand: \'+\' expected" assert_msg ;
-            if tok "]" strcmp 0 == {
-              @cont 0 = ;
-            } else {
-              tok free ;
-              @tok ctx asmctx_get_token = ;
-            }
-          } else {
-            0 "asmctx_parse_operand: unexpected character while scanning indirect operand" assert_msg ;
-          }
         }
       } else {
         $value
         @value ctx tok asmctx_parse_number = ;
-        op OPERAND_OFFSET take_addr op OPERAND_OFFSET take value + = ;
+        op OPERAND_OFFSET take_addr op OPERAND_OFFSET take value sign * + = ;
         tok free ;
-        @tok ctx asmctx_get_token = ;
-        tok "+" strcmp 0 == tok "]" strcmp 0 == || "asmctx_parse_operand: \'+\' expected" assert_msg ;
-        if tok "]" strcmp 0 == {
-          @cont 0 = ;
-        } else {
+      }
+      @tok ctx asmctx_get_token = ;
+      if tok "]" strcmp 0 == {
+        tok free ;
+        @cont 0 = ;
+      } else {
+        if tok "+" strcmp 0 == {
           tok free ;
           @tok ctx asmctx_get_token = ;
+          @sign 1 = ;
+        } else {
+          if tok "-" strcmp 0 == {
+            tok free ;
+            @tok ctx asmctx_get_token = ;
+            @sign 0 1 -  = ;
+          } else {
+            0 "asmctx_parse_operand: illegal character while scanning an indirect operand" assert_msg ;
+          }
         }
       }
     }
