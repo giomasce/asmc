@@ -50,6 +50,14 @@ third:
   inc ebx
   dec ah
 
+  stc
+  std
+  sti
+  cmc
+  clc
+  cld
+  cli
+
   dd 0x11223344
   rw 2
 
