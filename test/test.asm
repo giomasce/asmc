@@ -52,9 +52,9 @@ third:
   inc bx
 
   movzx eax, byte [ebx]
-  movzx eax, word [ebx]
+  movsx eax, word [ebx]
   movzx eax, cx
-  movzx eax, ch
+  movsx eax, ch
 
   inc ebx
   dec ah
