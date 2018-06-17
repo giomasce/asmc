@@ -190,6 +190,27 @@ fun asmctx_parse_operand 1 {
           op OPERAND_TYPE take_addr 2 = ;
           $opvalue
           @opvalue ctx tok asmctx_parse_number = ;
+          tok free ;
+          @tok ctx asmctx_get_token = ;
+          if tok "shl" strcmp 0 == {
+            tok free ;
+            @tok ctx asmctx_get_token = ;
+            $shift
+            @shift ctx tok asmctx_parse_number = ;
+            @opvalue opvalue shift << = ;
+            tok free ;
+            @tok ctx asmctx_get_token = ;
+          } else {
+            if tok "shr" strcmp 0 == {
+              tok free ;
+              @tok ctx asmctx_get_token = ;
+              $shift
+              @shift ctx tok asmctx_parse_number = ;
+              @opvalue opvalue shift << = ;
+              tok free ;
+              @tok ctx asmctx_get_token = ;
+            }
+          }
           if sign 0 == {
             @value value opvalue + = ;
           } else {
@@ -203,8 +224,6 @@ fun asmctx_parse_operand 1 {
               }
             }
           }
-          tok free ;
-          @tok ctx asmctx_get_token = ;
         }
         if tok "+" strcmp 0 == {
           tok free ;
