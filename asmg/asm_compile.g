@@ -362,6 +362,38 @@ fun asmctx_parse_data 1 {
   1 ret ;
 }
 
+fun asmctx_parse_operands 1 {
+  $ctx
+  @ctx 0 param = ;
+
+  $ops
+  @ops 4 vector_init = ;
+  $cont
+  @cont 1 = ;
+  while cont {
+    $tok
+    @tok ctx asmctx_get_token = ;
+    if tok "\n" strcmp 0 == {
+      @cont 0 = ;
+      ctx asmctx_give_back_token ;
+    } else {
+      ctx asmctx_give_back_token ;
+      $op
+      @op ctx asmctx_parse_operand = ;
+      ops op vector_push_back ;
+      @tok ctx asmctx_get_token = ;
+      if tok "," strcmp 0 != {
+        @cont 0 = ;
+        ctx asmctx_give_back_token ;
+      } else {
+        tok free ;
+      }
+    }
+  }
+
+  ops ret ;
+}
+
 fun asmctx_parse_line 1 {
   $ctx
   @ctx 0 param = ;
@@ -399,20 +431,8 @@ fun asmctx_parse_line 1 {
     @cont 1 = ;
     while cont {
       $ops
-      @ops 4 vector_init = ;
-      if arg_num 0 != {
-        $op
-        while i arg_num 1 - < {
-          @op ctx asmctx_parse_operand = ;
-          ops op vector_push_back ;
-          @tok ctx asmctx_get_token = ;
-          tok "," strcmp 0 == "parse_asm_line: expected comma" assert_msg ;
-          tok free ;
-          @i i 1 + = ;
-        }
-        @op ctx asmctx_parse_operand = ;
-        ops op vector_push_back ;
-      }
+      @ops ctx asmctx_parse_operands = ;
+      arg_num 0xff == arg_num ops vector_size == || "asmctx_parse_line: wrong number of operands" assert_msg ;
       ctx opcode ops opcode OPCODE_HANDLER take \3 ;
       ops free_vect_of_ptrs ;
       if can_repeat ! {

@@ -38,7 +38,8 @@ const OPCODE_M16 92
 const OPCODE_M32 96
 const OPCODE_RM32M 100
 const OPCODE_DEFAULT_32 104
-const SIZEOF_OPCODE 108
+const OPCODE_R32RM32IMM32 108
+const SIZEOF_OPCODE 112
 
 fun assemble_modrm 3 {
   $mod
@@ -471,6 +472,101 @@ fun jmp_like_handler 3 {
     ctx op opbytes opcode_to_reg op_to_modrm emit_multibyte ;
     if op OPERAND_TYPE take 0 == {
       ctx op OPERAND_OFFSET take asmctx_emit32 ;
+    }
+  }
+}
+
+fun imul_like_handler 3 {
+  $ctx
+  $opcode
+  $ops
+  @ctx 2 param = ;
+  @opcode 1 param = ;
+  @ops 0 param = ;
+
+  # Check that the size is acceptable
+  ops vector_size 1 >= ops vector_size 3 <= && "imul_like_handler: illegal number of operands" assert_msg ;
+
+  if ops vector_size 1 == {
+    # Unpack the operand
+    $op
+    @op ops 0 vector_at = ;
+
+    # Determine the operation size
+    $size
+    @size op OPERAND_SIZE take = ;
+    # FIXME
+    if size 0 == {
+      @size 3 = ;
+    }
+    size 0 != "imul_like_handler: unspecified operand size" assert_msg ;
+    size 1 == size 3 == || "imul_like_handler: 16 bits not supported" assert_msg ;
+
+    op OPERAND_TYPE take 2 != "imul_like_handler: operand cannot be immediate" assert_msg ;
+
+    $opbytes
+    if size 1 == {
+      # r/m8
+      @opbytes opcode OPCODE_RM8 take = ;
+    } else {
+      # r/m32
+      @opbytes opcode OPCODE_RM32 take = ;
+    }
+    ctx opbytes emit_multibyte ;
+    ctx op opbytes opcode_to_reg op_to_modrm emit_multibyte ;
+    if op OPERAND_TYPE take 0 == {
+      ctx op OPERAND_OFFSET take asmctx_emit32 ;
+    }
+  } else {
+    # Unpack the operands
+    $op1
+    $op2
+    $op3
+    @op1 ops 0 vector_at = ;
+    @op2 ops 1 vector_at = ;
+    $three_ops
+    @three_ops 0 = ;
+
+    # If there are two operands, but the second is an immediate, then the first must be repeated twice
+    if ops vector_size 2 == op2 OPERAND_TYPE take 2 == && {
+      @op3 op2 = ;
+      @op2 op1 = ;
+      @three_ops 1 = ;
+    } else {
+      if ops vector_size 3 == {
+        @op3 ops 2 vector_at = ;
+        @three_ops 1 = ;
+      }
+    }
+
+    # Some checks
+    op1 OPERAND_TYPE take 1 == "imul_like_handler: destination must be a register" assert_msg ;
+    op1 OPERAND_SIZE take 3 == op1 OPERAND_SIZE take 0 == || "imul_like_handler: destination must be 32 bits" assert_msg ;
+    op2 OPERAND_TYPE take 2 != "imul_like_handler: first souce cannot be an immediate" assert_msg ;
+    op2 OPERAND_SIZE take 3 == op2 OPERAND_SIZE take 0 == || "imul_like_handler: first source must be 32 bits" assert_msg ;
+
+    if three_ops ! {
+      $opbytes
+      # r32, r/m32
+      @opbytes opcode OPCODE_R32RM32 take = ;
+      ctx opbytes emit_multibyte ;
+      ctx op2 op1 op_to_reg op_to_modrm emit_multibyte ;
+      if op2 OPERAND_TYPE take 0 == {
+        ctx op2 OPERAND_OFFSET take asmctx_emit32 ;
+      }
+    } else {
+      # Missing checks
+      op3 OPERAND_TYPE take 2 == "imul_like_handler: second source must be an immediate" assert_msg ;
+      op3 OPERAND_SIZE take 3 == op3 OPERAND_SIZE take 0 == || "imul_like_handler: second source must be 32 bits" assert_msg ;
+      $opbytes
+      # r32, r/m32
+      @opbytes opcode OPCODE_R32RM32IMM32 take = ;
+      ctx opbytes emit_multibyte ;
+      ctx op2 op1 op_to_reg op_to_modrm emit_multibyte ;
+      if op2 OPERAND_TYPE take 0 == {
+        ctx op2 OPERAND_OFFSET take asmctx_emit32 ;
+      }
+      ctx op3 OPERAND_OFFSET take asmctx_emit32 ;
     }
   }
 }
@@ -1435,14 +1531,12 @@ fun build_opcode_map 0 {
 
   @name "imul" = ;
   @opcode SIZEOF_OPCODE malloc = ;
-  opcode OPCODE_ARG_NUM take_addr 1 = ;
-  opcode OPCODE_HANDLER take_addr @jmp_like_handler = ;
+  opcode OPCODE_ARG_NUM take_addr 0xff = ;
+  opcode OPCODE_HANDLER take_addr @imul_like_handler = ;
   opcode OPCODE_RM8 take_addr 0x0500f601 = ;
   opcode OPCODE_RM32 take_addr 0x0500f701 = ;
-  opcode OPCODE_ALLOW_IMM take_addr 0 = ;
-  opcode OPCODE_ALLOW_RM take_addr 1 = ;
-  opcode OPCODE_FORCE_8 take_addr 0 = ;
-  opcode OPCODE_FORCE_32 take_addr 0 = ;
+  opcode OPCODE_R32RM32 take_addr 0x00af0f02 = ;
+  opcode OPCODE_R32RM32IMM32 take_addr 0x00006901 = ;
   opcode_map name opcode map_set ;
 
   @name "div" = ;

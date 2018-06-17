@@ -103,6 +103,12 @@ there:
   mov eax, not 1
   mov ebx, 'fas'+1Ah shl 24
 
+  push eax ebx ecx
+
+  imul ecx
+  imul ecx, [edx]
+  imul ebx, [edx], 0x10
+
   dd 0x11223344
   rw 2
 
