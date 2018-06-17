@@ -39,7 +39,9 @@ const OPCODE_M32 96
 const OPCODE_RM32M 100
 const OPCODE_DEFAULT_32 104
 const OPCODE_R32RM32IMM32 108
-const SIZEOF_OPCODE 112
+const OPCODE_RM32R32IMM8 112
+const OPCODE_RM32R32CL 116
+const SIZEOF_OPCODE 120
 
 fun assemble_modrm 3 {
   $mod
@@ -223,10 +225,13 @@ fun stos_like_handler 3 {
   # Determine the operation size
   $size
   @size op OPERAND_SIZE take = ;
-  size 0 != "stos_like_handler: unspecified operand size" assert_msg ;
   if opcode OPCODE_FORCE_8 take {
+    if size 0 == {
+      @size 1 = ;
+    }
     size 1 == "stos_like_handler: operand must be 8 bits" assert_msg ;
   }
+  size 0 != "stos_like_handler: unspecified operand size" assert_msg ;
 
   $opbytes
   if size 1 == {
@@ -473,6 +478,56 @@ fun jmp_like_handler 3 {
     if op OPERAND_TYPE take 0 == {
       ctx op OPERAND_OFFSET take asmctx_emit32 ;
     }
+  }
+}
+
+fun shld_like_handler 3 {
+  $ctx
+  $opcode
+  $ops
+  @ctx 2 param = ;
+  @opcode 1 param = ;
+  @ops 0 param = ;
+
+  # Unpack operands
+  $op1
+  $op2
+  $op3
+  ops vector_size 3 == "shld_like_handler: error 1" assert_msg ;
+  @op1 ops 0 vector_at = ;
+  @op2 ops 1 vector_at = ;
+  @op3 ops 2 vector_at = ;
+
+  # Check operands types and sizes
+  op1 OPERAND_TYPE take 2 != "shld_like_handler: destination cannot be an immediate" assert_msg ;
+  op1 OPERAND_SIZE take 3 == op1 OPERAND_SIZE take 0 == || "shld_like_handler: destination must be 32 bits" assert_msg ;
+  op2 OPERAND_TYPE take 1 == "shld_like_handler: source must be a register" assert_msg ;
+  op2 OPERAND_SIZE take 3 == op2 OPERAND_SIZE take 0 == || "shld_like_handler: source must be 32 bits" assert_msg ;
+  op3 OPERAND_SIZE take 1 == op3 OPERAND_SIZE take 0 == || "shld_like_handler: count must be 8 bits" assert_msg ;
+
+  # Check which variant we are using
+  $with_cl
+  if op3 OPERAND_TYPE take 2 == {
+    @with_cl 0 = ;
+  } else {
+    op3 OPERAND_TYPE take 1 == "shld_like_handler: count must be immediate or register" assert_msg ;
+    op3 OPERAND_REG take 1 == "shld_like_handler: if count is a register, it must be CL" assert_msg ;
+    @with_cl 1 = ;
+  }
+
+  $opbytes
+  if with_cl {
+    @opbytes opcode OPCODE_RM32R32CL take = ;
+  } else {
+    @opbytes opcode OPCODE_RM32R32IMM8 take = ;
+  }
+  ctx opbytes emit_multibyte ;
+  ctx op1 op2 op_to_reg op_to_modrm emit_multibyte ;
+  if op1 OPERAND_TYPE take 0 == {
+    ctx op1 OPERAND_OFFSET take asmctx_emit32 ;
+  }
+  if with_cl ! {
+    ctx op3 OPERAND_OFFSET take asmctx_emit ;
   }
 }
 
@@ -1989,6 +2044,22 @@ fun build_opcode_map 0 {
   opcode OPCODE_M16 take_addr 0x00a76602 = ;
   opcode OPCODE_M32 take_addr 0x0000a701 = ;
   opcode OPCODE_FORCE_8 take_addr 0 = ;
+  opcode_map name opcode map_set ;
+
+  @name "shld" = ;
+  @opcode SIZEOF_OPCODE malloc = ;
+  opcode OPCODE_ARG_NUM take_addr 3 = ;
+  opcode OPCODE_HANDLER take_addr @shld_like_handler = ;
+  opcode OPCODE_RM32R32IMM8 take_addr 0x00a40f02 = ;
+  opcode OPCODE_RM32R32CL take_addr 0x00a50f02 = ;
+  opcode_map name opcode map_set ;
+
+  @name "shrd" = ;
+  @opcode SIZEOF_OPCODE malloc = ;
+  opcode OPCODE_ARG_NUM take_addr 3 = ;
+  opcode OPCODE_HANDLER take_addr @shld_like_handler = ;
+  opcode OPCODE_RM32R32IMM8 take_addr 0x00ac0f02 = ;
+  opcode OPCODE_RM32R32CL take_addr 0x00ad0f02 = ;
   opcode_map name opcode map_set ;
 
   @_opcode_map opcode_map = ;

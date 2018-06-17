@@ -109,6 +109,11 @@ there:
   imul ecx, [edx]
   imul ebx, [edx], 0x10
 
+  shld edx, eax, 2
+  shld [edx], eax, cl
+  shrd edx, eax, 2
+  shrd [edx], eax, cl
+
   dd 0x11223344
   rw 2
 
