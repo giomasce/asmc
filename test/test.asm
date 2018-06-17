@@ -118,6 +118,9 @@ there:
   imul ecx, [edx]
   imul ebx, [edx], 0x10
 
+  cbw
+  cwde
+
   dd 0x11223344
   rw 2
 
