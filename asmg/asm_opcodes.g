@@ -202,6 +202,10 @@ fun sal_like_handler 3 {
     }
     size 3 == "sal_like_handler: operand must be 32 bits" assert_msg ;
   }
+  # FIXME
+  if size 0 == {
+    @size 3 = ;
+  }
   size 0 != "sal_like_handler: unspecified operand size" assert_msg ;
   if size 2 == {
     ctx 0x66 asmctx_emit ;
@@ -1879,7 +1883,7 @@ fun build_opcode_map 0 {
   @opcode SIZEOF_OPCODE malloc = ;
   opcode OPCODE_ARG_NUM take_addr 2 = ;
   opcode OPCODE_HANDLER take_addr @sal_like_handler = ;
-  opcode OPCODE_FORCE_32 take_addr 1 = ;
+  opcode OPCODE_FORCE_32 take_addr 0 = ;
   opcode OPCODE_ALLOW_CL take_addr 0 = ;
   opcode OPCODE_RM32IMM8 take_addr 0x04ba0f02 = ;
   opcode_map name opcode map_set ;
@@ -1888,7 +1892,7 @@ fun build_opcode_map 0 {
   @opcode SIZEOF_OPCODE malloc = ;
   opcode OPCODE_ARG_NUM take_addr 2 = ;
   opcode OPCODE_HANDLER take_addr @sal_like_handler = ;
-  opcode OPCODE_FORCE_32 take_addr 1 = ;
+  opcode OPCODE_FORCE_32 take_addr 0 = ;
   opcode OPCODE_ALLOW_CL take_addr 0 = ;
   opcode OPCODE_RM32IMM8 take_addr 0x07ba0f02 = ;
   opcode_map name opcode map_set ;
@@ -1897,7 +1901,7 @@ fun build_opcode_map 0 {
   @opcode SIZEOF_OPCODE malloc = ;
   opcode OPCODE_ARG_NUM take_addr 2 = ;
   opcode OPCODE_HANDLER take_addr @sal_like_handler = ;
-  opcode OPCODE_FORCE_32 take_addr 1 = ;
+  opcode OPCODE_FORCE_32 take_addr 0 = ;
   opcode OPCODE_ALLOW_CL take_addr 0 = ;
   opcode OPCODE_RM32IMM8 take_addr 0x06ba0f02 = ;
   opcode_map name opcode map_set ;
@@ -1906,7 +1910,7 @@ fun build_opcode_map 0 {
   @opcode SIZEOF_OPCODE malloc = ;
   opcode OPCODE_ARG_NUM take_addr 2 = ;
   opcode OPCODE_HANDLER take_addr @sal_like_handler = ;
-  opcode OPCODE_FORCE_32 take_addr 1 = ;
+  opcode OPCODE_FORCE_32 take_addr 0 = ;
   opcode OPCODE_ALLOW_CL take_addr 0 = ;
   opcode OPCODE_RM32IMM8 take_addr 0x05ba0f02 = ;
   opcode_map name opcode map_set ;

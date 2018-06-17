@@ -106,6 +106,7 @@ there:
   btc [0x345], 4
   btr eax, 5
   bts [ebx+ecx*8+0x1234], 6
+  bt ax, 10
 
   mov eax, 1 + 1 shl 8
   mov eax, -1
