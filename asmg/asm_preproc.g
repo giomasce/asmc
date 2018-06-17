@@ -81,7 +81,12 @@ fun emit_size 3 {
       if size 3 == {
         ctx data asmctx_emit32 ;
       } else {
-        0 "emit_size: invalid size" assert_msg ;
+        if size 4 == {
+          ctx data asmctx_emit32 ;
+          ctx 0 asmctx_emit32 ;
+        } else {
+          0 "emit_size: invalid size" assert_msg ;
+        }
       }
     }
   }

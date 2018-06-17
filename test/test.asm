@@ -128,7 +128,8 @@ there:
   bsr eax, [edi]
 
   dd there-here
+  dw there-here,10,11,there-here
   dd 0x11223344
   rw 2
 
-  db 'Hello world!',0xa,0
+  db 'Hello world!',0xa,0,-1

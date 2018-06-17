@@ -264,10 +264,17 @@ fun asmctx_parse_db 1 {
     @tok ctx asmctx_get_token = ;
     if tok **c '\'' == {
       ctx tok emit_string ;
+      tok free ;
     } else {
-      ctx ctx tok asmctx_parse_number asmctx_emit ;
+      ctx asmctx_give_back_token ;
+      $op
+      @op ctx asmctx_parse_operand = ;
+      op OPERAND_TYPE take 2 == "asmctx_parse_db: immediate operand expected" assert_msg ;
+      $value
+      @value op OPERAND_OFFSET take = ;
+      op free ;
+      ctx value asmctx_emit ;
     }
-    tok free ;
     @tok ctx asmctx_get_token = ;
     if tok "\n" strcmp 0 == {
       ctx asmctx_give_back_token ;
@@ -324,44 +331,46 @@ fun asmctx_parse_data 1 {
     ctx asmctx_give_back_token ;
     0 ret ;
   }
-
   tok free ;
-  @tok ctx asmctx_get_token = ;
-  $value
-  if tok "?" strcmp 0 == {
-    type 1 == "asmctx_parse_data: reservation size must be specified" assert_msg ;
-    @value 0 = ;
-    tok free ;
+
+  if type 1 == {
+    @tok ctx asmctx_get_token = ;
+    $value
+    if tok "?" strcmp 0 == {
+      tok free ;
+      ctx 0 size emit_size ;
+    } else {
+      ctx asmctx_give_back_token ;
+      $cont
+      @cont 1 = ;
+      while cont {
+        $op
+        @op ctx asmctx_parse_operand = ;
+        op OPERAND_TYPE take 2 == "asmctx_parse_data: immediate operand expected" assert_msg ;
+        $value
+        @value op OPERAND_OFFSET take = ;
+        op free ;
+        ctx value size emit_size ;
+        @tok ctx asmctx_get_token = ;
+        if tok "," strcmp 0 == {
+          tok free ;
+        } else {
+          @cont 0 = ;
+          ctx asmctx_give_back_token ;
+        }
+      }
+    }
   } else {
-    ctx asmctx_give_back_token ;
     $op
     @op ctx asmctx_parse_operand = ;
     op OPERAND_TYPE take 2 == "asmctx_parse_data: immediate operand expected" assert_msg ;
-    @value op OPERAND_OFFSET take = ;
+    $reps
+    @reps op OPERAND_OFFSET take = ;
     op free ;
-  }
-  $reps
-  @reps 1 = ;
-  if type 2 == {
-    @reps value = ;
-    @value 0 = ;
-  }
-
-  while reps 0 > {
-    if size 1 == {
-      ctx value asmctx_emit ;
+    while reps 0 > {
+      ctx 0 size emit_size ;
+      @reps reps 1 - = ;
     }
-    if size 2 == {
-      ctx value asmctx_emit16 ;
-    }
-    if size 3 == {
-      ctx value asmctx_emit32 ;
-    }
-    if size 4 == {
-      ctx value asmctx_emit32 ;
-      ctx 0 asmctx_emit32 ;
-    }
-    @reps reps 1 - = ;
   }
 
   1 ret ;
