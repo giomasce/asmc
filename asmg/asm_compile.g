@@ -33,19 +33,25 @@ fun asmctx_parse_number 2 {
   }
 
   if str len + 1 - **c 'b' == str len + 1 - **c 'B' == || {
+    $stolen
+    @stolen str len + 1 - **c = ;
     str len + 1 - 0 =c ;
     @value str @endptr 2 strtol = ;
     if endptr **c 0 == {
       value ret ;
     }
+    str len + 1 - stolen =c ;
   }
 
   if str len + 1 - **c 'h' == str len + 1 - **c 'H' == || {
+    $stolen
+    @stolen str len + 1 - **c = ;
     str len + 1 - 0 =c ;
     @value str @endptr 16 strtol = ;
     if endptr **c 0 == {
       value ret ;
     }
+    str len + 1 - stolen =c ;
   }
 
   @value ctx str asmctx_get_symbol = ;
@@ -266,14 +272,18 @@ fun asmctx_parse_db 1 {
       ctx tok emit_string ;
       tok free ;
     } else {
-      ctx asmctx_give_back_token ;
-      $op
-      @op ctx asmctx_parse_operand = ;
-      op OPERAND_TYPE take 2 == "asmctx_parse_db: immediate operand expected" assert_msg ;
-      $value
-      @value op OPERAND_OFFSET take = ;
-      op free ;
-      ctx value asmctx_emit ;
+      if tok "?" strcmp 0 == {
+        ctx 0 asmctx_emit ;
+      } else {
+        ctx asmctx_give_back_token ;
+        $op
+        @op ctx asmctx_parse_operand = ;
+        op OPERAND_TYPE take 2 == "asmctx_parse_db: immediate operand expected" assert_msg ;
+        $value
+        @value op OPERAND_OFFSET take = ;
+        op free ;
+        ctx value asmctx_emit ;
+      }
     }
     @tok ctx asmctx_get_token = ;
     if tok "\n" strcmp 0 == {
@@ -536,6 +546,8 @@ fun asmctx_compile 1 {
   @start_loc 0 = ;
   $size
   while ctx ASMCTX_STAGE take 3 < {
+    "Compilation stage " 1 platform_log ;
+    ctx ASMCTX_STAGE take 1 + itoa 1 platform_log ;
     $line_num
     @line_num 1 = ;
     ctx ASMCTX_FDIN take platform_reset_file ;
@@ -543,10 +555,14 @@ fun asmctx_compile 1 {
     $cont
     @cont 1 = ;
     while cont {
+      if line_num 1000 % 0 == {
+        "." 1 platform_log ;
+      }
       line_num set_assert_pos ;
       @cont ctx asmctx_parse_line = ;
       @line_num line_num 1 + = ;
     }
+    "\n" 1 platform_log ;
     if ctx ASMCTX_STAGE take 0 == {
       @size ctx ASMCTX_CURRENT_LOC take start_loc - = ;
       @start_loc size malloc = ;
