@@ -552,6 +552,8 @@ fun asmctx_compile 1 {
     @line_num 1 = ;
     ctx ASMCTX_FDIN take platform_reset_file ;
     ctx ASMCTX_CURRENT_LOC take_addr start_loc = ;
+    ctx ASMCTX_TOKEN_GIVEN_BACK take_addr 0 = ;
+    ctx ASMCTX_CHAR_GIVEN_BACK take_addr 0 = ;
     $cont
     @cont 1 = ;
     while cont {
@@ -589,20 +591,19 @@ fun parse_asm 1 {
   $cont
   @cont 1 = ;
   ctx filename platform_open_file asmctx_set_fd ;
+  # while cont {
+  #   $tok
+  #   @tok ctx asmctx_get_token = ;
+  #   @cont tok **c 0 != = ;
+  #   if tok **c '\n' == {
+  #     "NL" 1 platform_log ;
+  #   } else {
+  #     tok 1 platform_log ;
+  #   }
+  #   "#" 1 platform_log ;
+  #   tok free ;
+  # }
+  # "\n" 1 platform_log ;
   ctx asmctx_compile ;
-  #while cont {
-    #$tok
-    #@tok ctx asmctx_get_token = ;
-    #@cont tok **c 0 != = ;
-    #if tok **c '\n' == {
-    #  "NL" 1 platform_log ;
-    #} else {
-    #  tok 1 platform_log ;
-    #}
-    #"#" 1 platform_log ;
-    #tok free ;
-    @cont ctx asmctx_parse_line = ;
-  #}
-  #"\n" 1 platform_log ;
   ctx asmctx_destroy ;
 }
