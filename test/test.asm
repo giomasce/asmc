@@ -48,6 +48,9 @@ third:
   shrd edx, eax, 2
   shrd [edx], eax, cl
 
+  shl bx, 15
+  inc bx
+
   movzx eax, byte [ebx]
   movzx eax, word [ebx]
   movzx eax, cx

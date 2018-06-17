@@ -158,7 +158,10 @@ fun sal_like_handler 3 {
     size 3 == "sal_like_handler: operand must be 32 bits" assert_msg ;
   }
   size 0 != "sal_like_handler: unspecified operand size" assert_msg ;
-  size 1 == size 3 == || "sal_like_handler: 16 bits not supported" assert_msg ;
+  if size 2 == {
+    ctx 0x66 asmctx_emit ;
+    @size 3 = ;
+  }
 
   # Check that the destination is not an immediate
   op1 OPERAND_TYPE take 2 != "sal_like_handler: destination is immediate" assert_msg ;
@@ -453,7 +456,12 @@ fun jmp_like_handler 3 {
     @size 3 = ;
   }
   size 0 != "jmp_like_handler: unspecified operand size" assert_msg ;
-  size 1 == size 3 == || "jmp_like_handler: 16 bits not supported" assert_msg ;
+  $actual_size
+  @actual_size size = ;
+  if size 2 == {
+    ctx 0x66 asmctx_emit ;
+    @size 3 = ;
+  }
 
   if opcode OPCODE_ALLOW_IMM take ! {
     op OPERAND_TYPE take 2 != "jmp_like_handler: operand cannot be immediate" assert_msg ;
@@ -488,11 +496,7 @@ fun jmp_like_handler 3 {
         @off off current_loc - 4 - = ;
       }
     }
-    if size 1 == {
-      ctx off asmctx_emit ;
-    } else {
-      ctx off asmctx_emit32 ;
-    }
+    ctx off actual_size emit_size ;
   } else {
     $opbytes
     if size 1 == {
@@ -1613,16 +1617,6 @@ fun build_opcode_map 0 {
   opcode OPCODE_FORCE_32 take_addr 0 = ;
   opcode_map name opcode map_set ;
 
-  @name "imul" = ;
-  @opcode SIZEOF_OPCODE malloc = ;
-  opcode OPCODE_ARG_NUM take_addr 0xff = ;
-  opcode OPCODE_HANDLER take_addr @imul_like_handler = ;
-  opcode OPCODE_RM8 take_addr 0x0500f601 = ;
-  opcode OPCODE_RM32 take_addr 0x0500f701 = ;
-  opcode OPCODE_R32RM32 take_addr 0x00af0f02 = ;
-  opcode OPCODE_R32RM32IMM32 take_addr 0x00006901 = ;
-  opcode_map name opcode map_set ;
-
   @name "div" = ;
   @opcode SIZEOF_OPCODE malloc = ;
   opcode OPCODE_ARG_NUM take_addr 1 = ;
@@ -1728,6 +1722,16 @@ fun build_opcode_map 0 {
   opcode OPCODE_ALLOW_RM take_addr 0 = ;
   opcode OPCODE_FORCE_8 take_addr 1 = ;
   opcode OPCODE_FORCE_32 take_addr 0 = ;
+  opcode_map name opcode map_set ;
+
+  @name "imul" = ;
+  @opcode SIZEOF_OPCODE malloc = ;
+  opcode OPCODE_ARG_NUM take_addr 0xff = ;
+  opcode OPCODE_HANDLER take_addr @imul_like_handler = ;
+  opcode OPCODE_RM8 take_addr 0x0500f601 = ;
+  opcode OPCODE_RM32 take_addr 0x0500f701 = ;
+  opcode OPCODE_R32RM32 take_addr 0x00af0f02 = ;
+  opcode OPCODE_R32RM32IMM32 take_addr 0x00006901 = ;
   opcode_map name opcode map_set ;
 
   @name "sal" = ;
