@@ -12,13 +12,13 @@ fun main 0 {
   "utils.g" platform_g_compile ;
   "done!\n" 1 platform_log ;
 
-  #"Compiling triv_malloc.g... " 1 platform_log ;
-  #"triv_malloc.g" platform_g_compile ;
-  #"done!\n" 1 platform_log ;
-
-  "Compiling simple_malloc.g... " 1 platform_log ;
-  "simple_malloc.g" platform_g_compile ;
+  "Compiling triv_malloc.g... " 1 platform_log ;
+  "triv_malloc.g" platform_g_compile ;
   "done!\n" 1 platform_log ;
+
+  #"Compiling simple_malloc.g... " 1 platform_log ;
+  #"simple_malloc.g" platform_g_compile ;
+  #"done!\n" 1 platform_log ;
 
   "Compiling vector.g... " 1 platform_log ;
   "vector.g" platform_g_compile ;
