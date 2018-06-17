@@ -331,10 +331,15 @@ fun asmctx_parse_data 1 {
   if tok "?" strcmp 0 == {
     type 1 == "asmctx_parse_data: reservation size must be specified" assert_msg ;
     @value 0 = ;
+    tok free ;
   } else {
-    @value ctx tok asmctx_parse_number = ;
+    ctx asmctx_give_back_token ;
+    $op
+    @op ctx asmctx_parse_operand = ;
+    op OPERAND_TYPE take 2 == "asmctx_parse_data: immediate operand expected" assert_msg ;
+    @value op OPERAND_OFFSET take = ;
+    op free ;
   }
-  tok free ;
   $reps
   @reps 1 = ;
   if type 2 == {

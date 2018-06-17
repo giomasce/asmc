@@ -127,6 +127,7 @@ there:
   bsf eax, [edi]
   bsr eax, [edi]
 
+  dd there-here
   dd 0x11223344
   rw 2
 
