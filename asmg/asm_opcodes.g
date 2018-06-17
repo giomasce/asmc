@@ -265,6 +265,10 @@ fun movzx_like_handler 3 {
   size 3 == "movzx_like_handler: destination must be 32 bits" assert_msg ;
   $src_size
   @src_size op2 OPERAND_SIZE take = ;
+  # FIXME
+  if src_size 0 == {
+    @src_size 1 = ;
+  }
   src_size 0 != "movzx_like_handler: unspecified source size" assert_msg ;
   src_size 1 == src_size 2 == || "movzx_like_handler: source must be 8 or 16 bits" assert_msg ;
 
