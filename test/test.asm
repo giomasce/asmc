@@ -121,6 +121,9 @@ there:
   cbw
   cwde
 
+  bsf eax, [edi]
+  bsr eax, [edi]
+
   dd 0x11223344
   rw 2
 
