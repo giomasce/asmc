@@ -349,7 +349,7 @@ fun movzx_like_handler 3 {
   $size
   @size op1 OPERAND_SIZE take = ;
   size 0 != "movzx_like_handler: unspecified destination size" assert_msg ;
-  size 3 == "movzx_like_handler: destination must be 32 bits" assert_msg ;
+  size 3 == size 2 == || "movzx_like_handler: destination must be 16 or 32 bits" assert_msg ;
   $src_size
   @src_size op2 OPERAND_SIZE take = ;
   # FIXME
@@ -358,6 +358,10 @@ fun movzx_like_handler 3 {
   }
   src_size 0 != "movzx_like_handler: unspecified source size" assert_msg ;
   src_size 1 == src_size 2 == || "movzx_like_handler: source must be 8 or 16 bits" assert_msg ;
+  src_size 2 == size 2 == && ! "movzx_like_handler: the two operands cannot be 16 bits at the same time" assert_msg ;
+  if size 2 == {
+    ctx 0x66 asmctx_emit ;
+  }
 
   # Check that the the source is not an immediate and the destination is a register
   op1 OPERAND_TYPE take 1 == "sal_like_handler: destination is immediate" assert_msg ;
@@ -2118,6 +2122,13 @@ fun build_opcode_map 0 {
   opcode OPCODE_ARG_NUM take_addr 0 = ;
   opcode OPCODE_HANDLER take_addr @ret_like_handler = ;
   opcode OPCODE_NO_OPERAND take_addr 0x00009801 = ;
+  opcode_map name opcode map_set ;
+
+  @name "salc" = ;
+  @opcode SIZEOF_OPCODE malloc = ;
+  opcode OPCODE_ARG_NUM take_addr 0 = ;
+  opcode OPCODE_HANDLER take_addr @ret_like_handler = ;
+  opcode OPCODE_NO_OPERAND take_addr 0x0000d601 = ;
   opcode_map name opcode map_set ;
 
   @name "xlat" = ;

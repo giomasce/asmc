@@ -55,6 +55,7 @@ third:
   movsx eax, word [ebx]
   movzx eax, cx
   movsx eax, ch
+  movzx	ax,byte [esi]
 
   inc ebx
   dec ah
