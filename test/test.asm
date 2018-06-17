@@ -91,6 +91,7 @@ there:
 
   setne byte [ebp+eax*4+100H]
   jecxz here
+  jcxz here
   jmp here
   ;; jecxz first
   jmp first
