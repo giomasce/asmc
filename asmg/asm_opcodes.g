@@ -41,7 +41,10 @@ const OPCODE_DEFAULT_32 104
 const OPCODE_R32RM32IMM32 108
 const OPCODE_RM32R32IMM8 112
 const OPCODE_RM32R32CL 116
-const SIZEOF_OPCODE 120
+const OPCODE_RM8CL 120
+const OPCODE_RM32CL 124
+const OPCODE_ALLOW_CL 128
+const SIZEOF_OPCODE 132
 
 fun assemble_modrm 3 {
   $mod
@@ -157,24 +160,50 @@ fun sal_like_handler 3 {
   size 0 != "sal_like_handler: unspecified operand size" assert_msg ;
   size 1 == size 3 == || "sal_like_handler: 16 bits not supported" assert_msg ;
 
-  # Check that the the source is an immediate and the destination is not an immediate
+  # Check that the destination is not an immediate
   op1 OPERAND_TYPE take 2 != "sal_like_handler: destination is immediate" assert_msg ;
-  op2 OPERAND_TYPE take 2 == "sal_like_handler: source must be immediate" assert_msg ;
+
+  $with_cl
+  if opcode OPCODE_ALLOW_CL take {
+    if op2 OPERAND_TYPE take 2 == {
+      @with_cl 0 = ;
+    } else {
+      op2 OPERAND_TYPE take 1 == "sal_like_handler: count must be immediate or register" assert_msg ;
+      op2 OPERAND_SIZE take 1 == "sal_like_handler: count must be 8 bits" assert_msg ;
+      op2 OPERAND_REG take 1 == "sal_like_handler: if count is a register, it must be CL" assert_msg ;
+      @with_cl 1 = ;
+    }
+  } else {
+    @with_cl 0 = ;
+    op2 OPERAND_TYPE take 2 == "sal_like_handler: count must be immediate" assert_msg ;
+  }
 
   $opbytes
-  if size 1 == {
-    # r/m8, imm8
-    @opbytes opcode OPCODE_RM8IMM8 take = ;
+  if with_cl {
+    if size 1 == {
+      # r/m8, cl
+      @opbytes opcode OPCODE_RM8CL take = ;
+    } else {
+      # r/m32, cl
+      @opbytes opcode OPCODE_RM32CL take = ;
+    }
   } else {
-    # r/m32, imm8
-    @opbytes opcode OPCODE_RM32IMM8 take = ;
+    if size 1 == {
+      # r/m8, imm8
+      @opbytes opcode OPCODE_RM8IMM8 take = ;
+    } else {
+      # r/m32, imm8
+      @opbytes opcode OPCODE_RM32IMM8 take = ;
+    }
   }
   ctx opbytes emit_multibyte ;
   ctx op1 opbytes opcode_to_reg op_to_modrm emit_multibyte ;
   if op1 OPERAND_TYPE take 0 == {
     ctx op1 OPERAND_OFFSET take asmctx_emit32 ;
   }
-  ctx op2 OPERAND_OFFSET take asmctx_emit ;
+  if with_cl ! {
+    ctx op2 OPERAND_OFFSET take asmctx_emit ;
+  }
 }
 
 fun lea_like_handler 3 {
@@ -1706,8 +1735,11 @@ fun build_opcode_map 0 {
   opcode OPCODE_ARG_NUM take_addr 2 = ;
   opcode OPCODE_HANDLER take_addr @sal_like_handler = ;
   opcode OPCODE_FORCE_32 take_addr 0 = ;
+  opcode OPCODE_ALLOW_CL take_addr 1 = ;
   opcode OPCODE_RM8IMM8 take_addr 0x0400c001 = ;
   opcode OPCODE_RM32IMM8 take_addr 0x0400c101 = ;
+  opcode OPCODE_RM8CL take_addr 0x0400d201 = ;
+  opcode OPCODE_RM32CL take_addr 0x0400d301 = ;
   opcode_map name opcode map_set ;
 
   @name "shl" = ;
@@ -1715,8 +1747,11 @@ fun build_opcode_map 0 {
   opcode OPCODE_ARG_NUM take_addr 2 = ;
   opcode OPCODE_HANDLER take_addr @sal_like_handler = ;
   opcode OPCODE_FORCE_32 take_addr 0 = ;
+  opcode OPCODE_ALLOW_CL take_addr 1 = ;
   opcode OPCODE_RM8IMM8 take_addr 0x0400c001 = ;
   opcode OPCODE_RM32IMM8 take_addr 0x0400c101 = ;
+  opcode OPCODE_RM8CL take_addr 0x0400d201 = ;
+  opcode OPCODE_RM32CL take_addr 0x0400d301 = ;
   opcode_map name opcode map_set ;
 
   @name "sar" = ;
@@ -1724,8 +1759,11 @@ fun build_opcode_map 0 {
   opcode OPCODE_ARG_NUM take_addr 2 = ;
   opcode OPCODE_HANDLER take_addr @sal_like_handler = ;
   opcode OPCODE_FORCE_32 take_addr 0 = ;
+  opcode OPCODE_ALLOW_CL take_addr 1 = ;
   opcode OPCODE_RM8IMM8 take_addr 0x0700c001 = ;
   opcode OPCODE_RM32IMM8 take_addr 0x0700c101 = ;
+  opcode OPCODE_RM8CL take_addr 0x0700d201 = ;
+  opcode OPCODE_RM32CL take_addr 0x0700d301 = ;
   opcode_map name opcode map_set ;
 
   @name "shr" = ;
@@ -1733,8 +1771,11 @@ fun build_opcode_map 0 {
   opcode OPCODE_ARG_NUM take_addr 2 = ;
   opcode OPCODE_HANDLER take_addr @sal_like_handler = ;
   opcode OPCODE_FORCE_32 take_addr 0 = ;
+  opcode OPCODE_ALLOW_CL take_addr 1 = ;
   opcode OPCODE_RM8IMM8 take_addr 0x0500c001 = ;
   opcode OPCODE_RM32IMM8 take_addr 0x0500c101 = ;
+  opcode OPCODE_RM8CL take_addr 0x0500d201 = ;
+  opcode OPCODE_RM32CL take_addr 0x0500d301 = ;
   opcode_map name opcode map_set ;
 
   @name "rcl" = ;
@@ -1742,8 +1783,11 @@ fun build_opcode_map 0 {
   opcode OPCODE_ARG_NUM take_addr 2 = ;
   opcode OPCODE_HANDLER take_addr @sal_like_handler = ;
   opcode OPCODE_FORCE_32 take_addr 0 = ;
+  opcode OPCODE_ALLOW_CL take_addr 1 = ;
   opcode OPCODE_RM8IMM8 take_addr 0x0200c001 = ;
   opcode OPCODE_RM32IMM8 take_addr 0x0200c101 = ;
+  opcode OPCODE_RM8CL take_addr 0x0200d201 = ;
+  opcode OPCODE_RM32CL take_addr 0x0200d301 = ;
   opcode_map name opcode map_set ;
 
   @name "rcr" = ;
@@ -1751,8 +1795,11 @@ fun build_opcode_map 0 {
   opcode OPCODE_ARG_NUM take_addr 2 = ;
   opcode OPCODE_HANDLER take_addr @sal_like_handler = ;
   opcode OPCODE_FORCE_32 take_addr 0 = ;
+  opcode OPCODE_ALLOW_CL take_addr 1 = ;
   opcode OPCODE_RM8IMM8 take_addr 0x0300c001 = ;
   opcode OPCODE_RM32IMM8 take_addr 0x0300c101 = ;
+  opcode OPCODE_RM8CL take_addr 0x0300d201 = ;
+  opcode OPCODE_RM32CL take_addr 0x0300d301 = ;
   opcode_map name opcode map_set ;
 
   @name "rol" = ;
@@ -1760,8 +1807,11 @@ fun build_opcode_map 0 {
   opcode OPCODE_ARG_NUM take_addr 2 = ;
   opcode OPCODE_HANDLER take_addr @sal_like_handler = ;
   opcode OPCODE_FORCE_32 take_addr 0 = ;
+  opcode OPCODE_ALLOW_CL take_addr 1 = ;
   opcode OPCODE_RM8IMM8 take_addr 0x0000c001 = ;
   opcode OPCODE_RM32IMM8 take_addr 0x0000c101 = ;
+  opcode OPCODE_RM8CL take_addr 0x0000d201 = ;
+  opcode OPCODE_RM32CL take_addr 0x0000d301 = ;
   opcode_map name opcode map_set ;
 
   @name "ror" = ;
@@ -1769,8 +1819,11 @@ fun build_opcode_map 0 {
   opcode OPCODE_ARG_NUM take_addr 2 = ;
   opcode OPCODE_HANDLER take_addr @sal_like_handler = ;
   opcode OPCODE_FORCE_32 take_addr 0 = ;
+  opcode OPCODE_ALLOW_CL take_addr 1 = ;
   opcode OPCODE_RM8IMM8 take_addr 0x0100c001 = ;
   opcode OPCODE_RM32IMM8 take_addr 0x0100c101 = ;
+  opcode OPCODE_RM8CL take_addr 0x0100d201 = ;
+  opcode OPCODE_RM32CL take_addr 0x0100d301 = ;
   opcode_map name opcode map_set ;
 
   @name "bt" = ;
@@ -1778,6 +1831,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ARG_NUM take_addr 2 = ;
   opcode OPCODE_HANDLER take_addr @sal_like_handler = ;
   opcode OPCODE_FORCE_32 take_addr 1 = ;
+  opcode OPCODE_ALLOW_CL take_addr 0 = ;
   opcode OPCODE_RM32IMM8 take_addr 0x04ba0f02 = ;
   opcode_map name opcode map_set ;
 
@@ -1786,6 +1840,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ARG_NUM take_addr 2 = ;
   opcode OPCODE_HANDLER take_addr @sal_like_handler = ;
   opcode OPCODE_FORCE_32 take_addr 1 = ;
+  opcode OPCODE_ALLOW_CL take_addr 0 = ;
   opcode OPCODE_RM32IMM8 take_addr 0x07ba0f02 = ;
   opcode_map name opcode map_set ;
 
@@ -1794,6 +1849,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ARG_NUM take_addr 2 = ;
   opcode OPCODE_HANDLER take_addr @sal_like_handler = ;
   opcode OPCODE_FORCE_32 take_addr 1 = ;
+  opcode OPCODE_ALLOW_CL take_addr 0 = ;
   opcode OPCODE_RM32IMM8 take_addr 0x06ba0f02 = ;
   opcode_map name opcode map_set ;
 
@@ -1802,6 +1858,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_ARG_NUM take_addr 2 = ;
   opcode OPCODE_HANDLER take_addr @sal_like_handler = ;
   opcode OPCODE_FORCE_32 take_addr 1 = ;
+  opcode OPCODE_ALLOW_CL take_addr 0 = ;
   opcode OPCODE_RM32IMM8 take_addr 0x05ba0f02 = ;
   opcode_map name opcode map_set ;
 

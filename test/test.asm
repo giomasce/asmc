@@ -39,8 +39,14 @@ third:
   int 0x80
 
   sal al, 10
-  sal DWORD [eax], 12
-  sal BYTE [eax], 12
+  shl DWORD [eax], 12
+  sar BYTE [eax], cl
+  shr cl, cl
+
+  shld edx, eax, 2
+  shld [edx], eax, cl
+  shrd edx, eax, 2
+  shrd [edx], eax, cl
 
   movzx eax, byte [ebx]
   movzx eax, word [ebx]
@@ -108,11 +114,6 @@ there:
   imul ecx
   imul ecx, [edx]
   imul ebx, [edx], 0x10
-
-  shld edx, eax, 2
-  shld [edx], eax, cl
-  shrd edx, eax, 2
-  shrd [edx], eax, cl
 
   dd 0x11223344
   rw 2
