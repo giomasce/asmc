@@ -75,7 +75,7 @@ there:
   lods dword [edi]
 
   xchg eax, ebx
-  xchg ecx, [edx+'a']
+  xchg ecx, [edx+'abc']
 
   seta byte [ebp+10101110b]
 

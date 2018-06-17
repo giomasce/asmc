@@ -12,9 +12,17 @@ fun asmctx_parse_number 2 {
   $value
 
   if str **c '\'' == {
-    len 3 == "asmctx_parse_number: invalid length for an immediate character" assert_msg ;
-    str 2 + **c '\'' == "asmctx_parse_number: invalid immediate character" assert_msg ;
-    @value str 1 + **c = ;
+    @value 0 = ;
+    str len + 1 - **c '\'' == "asmctx_parse_number: invalid immediate character" assert_msg ;
+    str len + 1 - 0 =c ;
+    @str str 1 + = ;
+    $i
+    @i 0 = ;
+    while str i + **c 0 != {
+      @value value 8 << = ;
+      @value value str i + **c + = ;
+      @i i 1 + = ;
+    }
     value ret ;
   }
 
