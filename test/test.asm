@@ -98,6 +98,10 @@ there:
   btr eax, 5
   bts [ebx+ecx*8+0x1234], 6
 
+  mov eax, 1
+  mov eax, -1
+  mov eax, not 1
+
   dd 0x11223344
   rw 2
 

@@ -173,7 +173,7 @@ fun asmctx_parse_operand 1 {
     @value 0 = ;
     op OPERAND_TYPE take_addr 0 = ;
     $sign
-    @sign 1 = ;
+    @sign 0 = ;
     while cont {
       $reg
       @reg tok parse_register = ;
@@ -185,23 +185,45 @@ fun asmctx_parse_operand 1 {
         @cont 0 = ;
         tok free ;
       } else {
-        op OPERAND_TYPE take 0 == op OPERAND_TYPE take 2 == || "asmctx_parse_operand: invalid direct operand" assert_msg ;
-        op OPERAND_TYPE take_addr 2 = ;
-        @value value ctx tok asmctx_parse_number sign * + = ;
-        tok free ;
-        @tok ctx asmctx_get_token = ;
+        if tok "+" strcmp 0 == tok "-" strcmp 0 == || tok "not" strcmp 0 == || ! {
+          op OPERAND_TYPE take 0 == op OPERAND_TYPE take 2 == || "asmctx_parse_operand: invalid direct operand" assert_msg ;
+          op OPERAND_TYPE take_addr 2 = ;
+          $opvalue
+          @opvalue ctx tok asmctx_parse_number = ;
+          if sign 0 == {
+            @value value opvalue + = ;
+          } else {
+            if sign 1 == {
+              @value value opvalue - = ;
+            } else {
+              if sign 2 == {
+                @value value opvalue - 1 - = ;
+              } else {
+                0 "asmctx_parse_operand: error 1" assert_msg ;
+              }
+            }
+          }
+          tok free ;
+          @tok ctx asmctx_get_token = ;
+        }
         if tok "+" strcmp 0 == {
           tok free ;
           @tok ctx asmctx_get_token = ;
-          @sign 1 = ;
+          @sign 0 = ;
         } else {
           if tok "-" strcmp 0 == {
             tok free ;
             @tok ctx asmctx_get_token = ;
-            @sign 0 1 - = ;
+            @sign 1 = ;
           } else {
-            ctx asmctx_give_back_token ;
-            @cont 0 = ;
+            if tok "not" strcmp 0 == {
+              tok free ;
+              @tok ctx asmctx_get_token = ;
+              @sign 2 = ;
+            } else {
+              ctx asmctx_give_back_token ;
+              @cont 0 = ;
+            }
           }
         }
       }
