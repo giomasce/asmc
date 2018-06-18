@@ -6,6 +6,7 @@
   atapio_buf16 equ 0x500
   lba equ 0x504
   boot_disk equ 0x508
+  dap equ 0x50c
 
 	cli
   mov ax, 0
@@ -25,6 +26,15 @@ segments_set_up:
   mov si, str_hello
   call print_string16
 
+  ;; Check int 0x13 extensions
+  mov si, str_check_13_exts
+  call print_string16
+  mov ah, 0x41
+  mov bx, 0x55aa
+  mov dl, 0x80
+  int 0x13
+  jc error16
+
   mov si, str_boot_disk
   call print_string16
   mov al, [boot_disk]
@@ -41,10 +51,9 @@ segments_set_up:
 load_stage2:
   mov dl, [boot_disk]
   mov bx, [atapio_buf16]
-  mov al, [lba]
+  mov ax, [lba]
   call read_sector
-  cmp ax, 0
-  je error16
+  jc error16
 	mov si, str_dot
 	call print_string16
 
@@ -66,19 +75,20 @@ boot_stage2:
 
   jmp stage2
 
-  ;; Drive number in DL, sector number in AL, destination in ES:BX
+  ;; Drive number in DL, sector number in AX, destination in ES:BX
   ;; Set CF on error
-  ;; Use naive CHS internally, works only for the first 63 sectors
 read_sector:
-  mov cl, al
-  inc cl
-  mov ah, 0x2
-  mov al, 1
-  mov ch, 0x0
-  mov dh, 0x0
+  mov byte [dap], 16
+  mov byte [dap+1], 0
+  mov word [dap+2], 1
+  mov word [dap+4], bx
+  mov word [dap+6], es
+  mov word [dap+8], ax
+  mov word [dap+10], 0
+  mov dword [dap+12], 0
+  mov si, dap
+  mov ah, 0x42
   int 0x13
-  cmc
-  salc
   ret
 
   ;; Print character in AL
@@ -194,6 +204,8 @@ str_booting:
   db 'Booting stage2...', 0xa, 0xd, 0
 str_boot_disk:
   db 'Booting from BIOS disk: ', 0
+str_check_13_exts:
+  db 'Checking for int 0x13 extensions...', 0xa, 0xd, 0
 
 times 510 - ($ - $$) db 0
 dw 0xAA55
@@ -544,7 +556,6 @@ str_chainloading:
 db 'Chainloading payload, bye bye!', 0xa, 0
 str_ex:
 db 'X', 0
-
 
 align 512
 db 'stop'
