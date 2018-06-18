@@ -5,6 +5,7 @@
   SERIAL_PORT equ 0x3f8
   atapio_buf16 equ 0x500
   lba equ 0x504
+  boot_disk equ 0x508
 
 	cli
   mov ax, 0
@@ -17,9 +18,18 @@
 segments_set_up:
 	mov sp, 0x7c00
 
+  mov [boot_disk], dl
+
 	call serial_setup16
 
   mov si, str_hello
+  call print_string16
+
+  mov si, str_boot_disk
+  call print_string16
+  mov al, [boot_disk]
+  call print_hex_char
+  mov si, str_newline
   call print_string16
 
   mov si, str_loading
@@ -29,7 +39,10 @@ segments_set_up:
   mov DWORD [lba], 1
 
 load_stage2:
-  call atapio_read_sector16
+  mov dl, [boot_disk]
+  mov bx, [atapio_buf16]
+  mov al, [lba]
+  call read_sector
   cmp ax, 0
   je error16
 	mov si, str_dot
@@ -53,13 +66,27 @@ boot_stage2:
 
   jmp stage2
 
+  ;; Drive number in DL, sector number in AL, destination in ES:BX
+  ;; Set CF on error
+  ;; Use naive CHS internally, works only for the first 63 sectors
+read_sector:
+  mov cl, al
+  inc cl
+  mov ah, 0x2
+  mov al, 1
+  mov ch, 0x0
+  mov dh, 0x0
+  int 0x13
+  ret
+
   ;; Print character in AL
-;; print_char16:
-;;   mov ah, 0x0e
-;;   mov bx, 0x00
-;;   mov bl, 0x07
-;;   int 0x10
-;;   ret
+print_char16:
+  call serial_write_char16
+  mov ah, 0x0e
+  mov bx, 0x00
+  mov bl, 0x07
+  int 0x10
+  ret
 
 ;; Print string pointed by SI
 print_string16:
@@ -67,10 +94,29 @@ print_string16:
   inc si
   or al, al
   jz print_string16_ret
-  call serial_write_char16
-  ;; call print_char16
+  call print_char16
   jmp print_string16
 print_string16_ret:
+  ret
+
+print_hex_nibble:
+  and al, 0xf
+  cmp al, 0xa
+  jl print_hex_nibble_decimal
+  add al, 'a' - 10
+  jmp print_hex_nibble_print
+print_hex_nibble_decimal:
+  add al, '0'
+print_hex_nibble_print:
+  call print_char16
+  ret
+
+print_hex_char:
+  mov cl, al
+  shr al, 4
+  call print_hex_nibble
+  mov al, cl
+  call print_hex_nibble
   ret
 
 error16:
@@ -113,6 +159,7 @@ serial_setup16:
 
 
 	;; void serial_write_char16(al)
+  ;; AL is preserved
 serial_write_char16:
 	mov bl, al
 
@@ -131,95 +178,20 @@ serial_write_char16:
 	ret
 
 
-  ;; Read 512 bytes and store them in atapio_buf16
-atapio_in_sector16:
-  mov cx, 256
-  mov dx, ATAPIO_DATA
-  mov di, [atapio_buf16]
-  rep insw
-  ret
-
-
-  ;; bool atapio_poll16()
-atapio_poll16:
-  mov dx, ATAPIO_COMMAND
-  in al, dx
-
-  ;; Error if ERR or DF bit is set
-  test al, 0x21
-  jnz atapio_poll16_ret_false
-
-  ;; Reloop if BSY is set
-  test al, 0x80
-  jnz atapio_poll16
-
-  ;; Reloop if DRQ is not set
-  test al, 0x08
-  jz atapio_poll16
-
-  mov ax, 1
-  ret
-
-atapio_poll16_ret_false:
-  mov ax, 0
-  ret
-
-
-  ;; bool atapio_read_sector16()
-atapio_read_sector16:
-  ;; Send READ SECTORS EXT
-  mov dx, ATAPIO_DRIVE
-  mov al, 0x40
-  out dx, al
-  mov dx, ATAPIO_SECTOR_COUNT
-  mov al, 0
-  out dx, al
-  inc dx
-  out dx, al
-  inc dx
-  out dx, al
-  inc dx
-  out dx, al
-  mov dx, ATAPIO_SECTOR_COUNT
-  mov al, 1
-  out dx, al
-  inc dx
-  mov ax, [lba]
-  out dx, al
-  inc dx
-  mov al, ah
-  out dx, al
-  inc dx
-  mov al, 0
-  out dx, al
-  mov dx, ATAPIO_COMMAND
-  mov al, 0x24
-  out dx, al
-
-  ;; Poll and in
-  call atapio_poll16
-  cmp ax, 0
-  je atapio_read_sector16_ret_false
-  call atapio_in_sector16
-  mov ax, 1
-  ret
-
-atapio_read_sector16_ret_false:
-  mov ax, 0
-  ret
-
 str_hello:
-db 'Hello, entered stage1!', 0xa, 0
+  db 'Hello, entered stage1!', 0xa, 0xd, 0
 str_panic:
-db 'PANIC!', 0xa, 0
+  db 'PANIC!', 0xa, 0xd, 0
 str_loading:
-db 'Loading stage2', 0
+  db 'Loading stage2', 0
 str_dot:
-db '.', 0
+  db '.', 0
 str_newline:
-db 0xa, 0
+  db 0xa, 0xd, 0
 str_booting:
-db 'Booting stage2...', 0xa, 0
+  db 'Booting stage2...', 0xa, 0xd, 0
+str_boot_disk:
+  db 'Booting from BIOS disk: ', 0
 
 times 510 - ($ - $$) db 0
 dw 0xAA55
