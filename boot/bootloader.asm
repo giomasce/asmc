@@ -77,6 +77,8 @@ read_sector:
   mov ch, 0x0
   mov dh, 0x0
   int 0x13
+  cmc
+  salc
   ret
 
   ;; Print character in AL
