@@ -692,6 +692,19 @@ fun preproc_process_if 5 {
   0 "preproc_process_if: not implemented" assert_msg ;
 }
 
+fun preproc_process_error 4 {
+  $ctx
+  $tokens
+  $intoks
+  $iptr
+  @ctx 3 param = ;
+  @tokens 2 param = ;
+  @intoks 1 param = ;
+  @iptr 0 param = ;
+
+  0 "preproc_process_error: dying because of error" assert_msg ;
+}
+
 fun is_including 1 {
   $if_stack
   @if_stack 0 param = ;
@@ -762,6 +775,14 @@ fun preproc_file 3 {
       if tok "undef" strcmp 0 == processed ! && {
         if including {
           ctx tokens intoks @i preproc_process_undef ;
+        } else {
+          intoks @i discard_until_newline ;
+        }
+        @processed 1 = ;
+      }
+      if tok "error" strcmp 0 == processed ! && {
+        if including {
+          ctx tokens intoks @i preproc_process_error ;
         } else {
           intoks @i discard_until_newline ;
         }
