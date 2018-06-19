@@ -288,6 +288,22 @@ fun tokenize_file 1 {
   token_vect ret ;
 }
 
+fun discard_until_newline 2 {
+  $tokens
+  $iptr
+  @iptr 0 param = ;
+  @tokens 1 param = ;
+  $cont
+  @cont 1 = ;
+  while cont {
+    @cont tokens iptr ** vector_at "\n" strcmp 0 != = ;
+    if cont {
+      iptr iptr ** 1 + = ;
+      iptr ** tokens vector_size < "discard_white_token: stream end was found" assert_msg ;
+    }
+  }
+}
+
 fun discard_white_tokens 2 {
   $tokens
   $iptr
@@ -730,18 +746,24 @@ fun preproc_file 3 {
       if tok "include" strcmp 0 == processed ! && {
         if including {
           ctx tokens intoks @i preproc_process_include ;
+        } else {
+          intoks @i discard_until_newline ;
         }
         @processed 1 = ;
       }
       if tok "define" strcmp 0 == processed ! && {
         if including {
           ctx tokens intoks @i preproc_process_define ;
+        } else {
+          intoks @i discard_until_newline ;
         }
         @processed 1 = ;
       }
       if tok "undef" strcmp 0 == processed ! && {
         if including {
           ctx tokens intoks @i preproc_process_undef ;
+        } else {
+          intoks @i discard_until_newline ;
         }
         @processed 1 = ;
       }

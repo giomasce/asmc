@@ -19,6 +19,7 @@ TEST_TOK
 #undef NO
 
 #ifdef NO
+#define THREE 3
 not_included();
 #ifdef YES
 not_included();
