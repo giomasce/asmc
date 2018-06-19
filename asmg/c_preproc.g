@@ -297,7 +297,7 @@ fun discard_white_tokens 2 {
   @cont 1 = ;
   while cont {
     iptr iptr ** 1 + = ;
-    iptr ** tokens vector_size < assert ;
+    iptr ** tokens vector_size < "discard_white_token: stream end was found" assert_msg ;
     @cont tokens iptr ** vector_at " " strcmp 0 == = ;
   }
 }
@@ -415,9 +415,9 @@ fun preproc_process_define 4 {
 
   $ident
   @ident intoks iptr ** vector_at = ;
-  ident "\n" strcmp 0 != assert ;
+  ident "\n" strcmp 0 != "preproc_process_define: newline found" assert_msg ;
   iptr iptr ** 1 + = ;
-  iptr ** intoks vector_size < assert ;
+  iptr ** intoks vector_size < "preproc_process_define: end of stream found" assert_msg ;
 
   $tok
   @tok intoks iptr ** vector_at = ;
@@ -436,7 +436,7 @@ fun preproc_process_define 4 {
     while tok "\n" strcmp 0 != {
       subst SUBST_REPLACEMENT take tok strdup vector_push_back ;
       iptr iptr ** 1 + = ;
-      iptr ** intoks vector_size < assert ;
+      iptr ** intoks vector_size < "preproc_process_define: end of stream found" assert_msg ;
       @tok intoks iptr ** vector_at = ;
     }
   }
@@ -448,8 +448,6 @@ fun preproc_process_define 4 {
     ctx PPCTX_DEFINES take tok map_erase ;
   }
   ctx PPCTX_DEFINES take ident subst map_set ;
-
-  intoks iptr ** vector_at "\n" strcmp 0 == assert ;
 }
 
 fun preproc_process_undef 4 {
@@ -476,7 +474,6 @@ fun preproc_process_undef 4 {
   }
 
   intoks iptr discard_white_tokens ;
-  intoks iptr ** vector_at "\n" strcmp 0 == assert ;
 }
 
 ifun preproc_file 3
@@ -506,7 +503,7 @@ fun preproc_process_include 4 {
       @tok intoks iptr ** vector_at = ;
     }
   } else {
-    tok **c '"' == assert ;
+    tok **c '"' == "preproc_process_include: syntax error in inclusion directive" assert_msg ;
     filename free ;
     @filename tok 1 + strdup = ;
     filename filename strlen 1 - + '\0' =c ;
@@ -518,7 +515,6 @@ fun preproc_process_include 4 {
   filename free ;
 
   intoks iptr discard_white_tokens ;
-  intoks iptr ** vector_at "\n" strcmp 0 == assert ;
 }
 
 fun preproc_eval 2 {
@@ -546,21 +542,153 @@ fun preproc_eval 2 {
   }
 }
 
-fun preproc_process_if 4 {
+fun preproc_process_endif 5 {
   $ctx
   $tokens
   $intoks
   $iptr
-  @ctx 3 param = ;
-  @tokens 2 param = ;
-  @intoks 1 param = ;
-  @iptr 0 param = ;
+  $if_stack
+  @ctx 4 param = ;
+  @tokens 3 param = ;
+  @intoks 2 param = ;
+  @iptr 1 param = ;
+  @if_stack 0 param = ;
+
+  if_stack vector_size 1 > "preproc_process_endif: unmatched endif" assert_msg ;
+  if_stack vector_pop_back ;
+
+  intoks iptr discard_white_tokens ;
+}
+
+fun preproc_process_else 5 {
+  $ctx
+  $tokens
+  $intoks
+  $iptr
+  $if_stack
+  @ctx 4 param = ;
+  @tokens 3 param = ;
+  @intoks 2 param = ;
+  @iptr 1 param = ;
+  @if_stack 0 param = ;
+
+  $state
+  if_stack vector_size 1 > "preproc_process_endif: unmatched else" assert_msg ;
+  @state if_stack vector_pop_back = ;
+  @state state 1 + = ;
+  if state 2 > {
+    @state 2 = ;
+  }
+  if_stack state vector_push_back ;
+
+  intoks iptr discard_white_tokens ;
+}
+
+fun preproc_process_ifdef 5 {
+  $ctx
+  $tokens
+  $intoks
+  $iptr
+  $if_stack
+  @ctx 4 param = ;
+  @tokens 3 param = ;
+  @intoks 2 param = ;
+  @iptr 1 param = ;
+  @if_stack 0 param = ;
+
+  intoks iptr discard_white_tokens ;
+
+  $ident
+  @ident intoks iptr ** vector_at = ;
+  ident "\n" strcmp 0 != "preproc_process_ifdef: newline found" assert_msg ;
+
+  if ctx PPCTX_DEFINES take ident map_has {
+    if_stack 1 vector_push_back ;
+  } else {
+    if_stack 0 vector_push_back ;
+  }
+
+  intoks iptr discard_white_tokens ;
+}
+
+fun preproc_process_ifndef 5 {
+  $ctx
+  $tokens
+  $intoks
+  $iptr
+  $if_stack
+  @ctx 4 param = ;
+  @tokens 3 param = ;
+  @intoks 2 param = ;
+  @iptr 1 param = ;
+  @if_stack 0 param = ;
+
+  intoks iptr discard_white_tokens ;
+
+  $ident
+  @ident intoks iptr ** vector_at = ;
+  ident "\n" strcmp 0 != "preproc_process_ifndef: newline found" assert_msg ;
+
+  if ctx PPCTX_DEFINES take ident map_has {
+    if_stack 0 vector_push_back ;
+  } else {
+    if_stack 1 vector_push_back ;
+  }
+
+  intoks iptr discard_white_tokens ;
+}
+
+fun preproc_process_elif 5 {
+  $ctx
+  $tokens
+  $intoks
+  $iptr
+  $if_stack
+  @ctx 4 param = ;
+  @tokens 3 param = ;
+  @intoks 2 param = ;
+  @iptr 1 param = ;
+  @if_stack 0 param = ;
+
+  0 "preproc_process_elif: not implemented" assert_msg ;
+}
+
+fun preproc_process_if 5 {
+  $ctx
+  $tokens
+  $intoks
+  $iptr
+  $if_stack
+  @ctx 4 param = ;
+  @tokens 3 param = ;
+  @intoks 2 param = ;
+  @iptr 1 param = ;
+  @if_stack 0 param = ;
 
   $ast
   @ast intoks iptr "\n" ast_parse = ;
-  ast ast_dump ;
+  #ast ast_dump ;
   ctx ast preproc_eval ;
-  intoks iptr ** vector_at "\n" strcmp 0 == "Internal error" assert_msg ;
+
+  # FIXME
+  if_stack 0 vector_push_back ;
+
+  0 "preproc_process_if: not implemented" assert_msg ;
+}
+
+fun is_including 1 {
+  $if_stack
+  @if_stack 0 param = ;
+
+  $i
+  @i 0 = ;
+  while i if_stack vector_size < {
+    if if_stack i vector_at 1 != {
+      0 ret ;
+    }
+    @i i 1 + = ;
+  }
+  1 ret ;
 }
 
 fun preproc_file 3 {
@@ -572,12 +700,23 @@ fun preproc_file 3 {
   @tokens 2 param = ;
   $intoks
   @intoks filename tokenize_file = ;
+  # All incoming tokens are accumulated in ready_toks; before each
+  # preprocessor directive is processed (and at the end of the file),
+  # tokens in ready_tokens are expanded and flushed; this is probably
+  # not the correct algorithm, but it should work for sane programs.
   $ready_toks
   @ready_toks 4 vector_init = ;
   $i
   @i 0 = ;
   $at_newline
   @at_newline 1 = ;
+  # For each #if stack level, we store 0 if no if has matched yet, 1
+  # if we are including and 2 if we have already matched
+  $if_stack
+  @if_stack 4 vector_init = ;
+  if_stack 1 vector_push_back ;
+  $including
+  @including if_stack is_including = ;
   while i intoks vector_size < {
     $tok
     @tok intoks i vector_at = ;
@@ -589,27 +728,62 @@ fun preproc_file 3 {
       $processed
       @processed 0 = ;
       if tok "include" strcmp 0 == processed ! && {
-        ctx tokens intoks @i preproc_process_include ;
+        if including {
+          ctx tokens intoks @i preproc_process_include ;
+        }
         @processed 1 = ;
       }
       if tok "define" strcmp 0 == processed ! && {
-        ctx tokens intoks @i preproc_process_define ;
+        if including {
+          ctx tokens intoks @i preproc_process_define ;
+        }
         @processed 1 = ;
       }
       if tok "undef" strcmp 0 == processed ! && {
-        ctx tokens intoks @i preproc_process_undef ;
+        if including {
+          ctx tokens intoks @i preproc_process_undef ;
+        }
         @processed 1 = ;
       }
       if tok "if" strcmp 0 == processed ! && {
-        ctx tokens intoks @i preproc_process_if ;
+        ctx tokens intoks @i if_stack preproc_process_if ;
+        @including if_stack is_including = ;
+        @processed 1 = ;
+      }
+      if tok "endif" strcmp 0 == processed ! && {
+        ctx tokens intoks @i if_stack preproc_process_endif ;
+        @including if_stack is_including = ;
+        @processed 1 = ;
+      }
+      if tok "elif" strcmp 0 == processed ! && {
+        ctx tokens intoks @i if_stack preproc_process_elif ;
+        @including if_stack is_including = ;
+        @processed 1 = ;
+      }
+      if tok "else" strcmp 0 == processed ! && {
+        ctx tokens intoks @i if_stack preproc_process_else ;
+        @including if_stack is_including = ;
+        @processed 1 = ;
+      }
+      if tok "ifdef" strcmp 0 == processed ! && {
+        ctx tokens intoks @i if_stack preproc_process_ifdef ;
+        @including if_stack is_including = ;
+        @processed 1 = ;
+      }
+      if tok "ifndef" strcmp 0 == processed ! && {
+        ctx tokens intoks @i if_stack preproc_process_ifndef ;
+        @including if_stack is_including = ;
         @processed 1 = ;
       }
       if processed ! {
-        0 assert ;
+        0 "preproc_file: invalid preprocessor directive" assert_msg ;
       }
+      intoks i vector_at "\n" strcmp 0 == "preproc_file: error 1" assert_msg ;
     } else {
-      ready_toks tok vector_push_back ;
-      #ctx tokens intoks @i process_token ;
+      if including {
+        ready_toks tok vector_push_back ;
+        #ctx tokens intoks @i process_token ;
+      }
     }
     @tok intoks i vector_at = ;
     @at_newline tok "\n" strcmp 0 == = ;
@@ -618,6 +792,8 @@ fun preproc_file 3 {
   ctx ready_toks tokens preproc_expand ;
   ready_toks vector_clear ;
   ready_toks vector_destroy ;
+  if_stack vector_size 1 == "preproc_file: some #if was not closed" assert_msg ;
+  if_stack vector_destroy ;
   intoks free_vect_of_ptrs ;
 }
 

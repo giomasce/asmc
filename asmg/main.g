@@ -1,5 +1,5 @@
 
-const COMPILE_C 0
+const COMPILE_C 1
 
 fun main 0 {
   "Hello, G!\n" 1 platform_log ;

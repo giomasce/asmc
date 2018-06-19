@@ -1,14 +1,45 @@
 
-#if a * (b + c)
+/*#if a * (b + c)
 #if a + (b(c,d,e))
 #if a + (b((c,d),e))
 #if a + b[c]
+#endif
+#endif
+#endif
+#endif*/
 
+#define OTHER_TEST 22
 TEST_TOK
-#define TEST_TOK 22
+#define TEST_TOK OTHER_TEST
 TEST_TOK
 #undef TEST_TOK
 TEST_TOK
+
+#define YES
+#undef NO
+
+#ifdef NO
+not_included();
+#ifdef YES
+not_included();
+#endif
+#endif
+included();
+#ifdef NO
+not_included();
+#else
+included();
+#ifndef NO
+included();
+#else
+not_included();
+#endif
+#endif
+#ifdef YES
+included();
+#else
+not_included();
+#endif
 
 #include <first.h>
 #include \
