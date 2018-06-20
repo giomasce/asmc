@@ -65,7 +65,7 @@ const SIZEOF_CCTX 12
 
 fun cctx_init 0 {
   $ctx
-  ctx SIZEOF_CCTX malloc = ;
+  @ctx SIZEOF_CCTX malloc = ;
   ctx CCTX_TYPES take_addr 4 vector_init = ;
   ctx CCTX_TYPENAMES take_addr 4 vector_init = ;
   ctx CCTX_GLOBALS take_addr map_init = ;
@@ -124,7 +124,7 @@ fun parse_c 1 {
   $ctx
   @ctx ppctx_init = ;
   $cctx
-  #@cctx cctx_init = ;
+  @cctx cctx_init = ;
   $tokens
   @tokens 4 vector_init = ;
   tokens ctx 0 param preproc_file ;
@@ -146,5 +146,5 @@ fun parse_c 1 {
   "\n" 1 platform_log ;
   tokens free_vect_of_ptrs ;
   ctx ppctx_destroy ;
-  #cctx cctx_destroy ;
+  cctx cctx_destroy ;
 }
