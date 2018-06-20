@@ -145,6 +145,6 @@ fun parse_c 1 {
   }
   "\n" 1 platform_log ;
   tokens free_vect_of_ptrs ;
-  ctx ppctx_destroy ;
   cctx cctx_destroy ;
+  ctx ppctx_destroy ;
 }

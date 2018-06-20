@@ -283,6 +283,8 @@ fun tokenize_file 1 {
     @cont tok "" strcmp 0 != = ;
     if cont {
       token_vect tok vector_push_back ;
+    } else {
+      tok free ;
     }
   }
   token_vect ret ;
@@ -443,8 +445,6 @@ fun preproc_process_define 4 {
   $subst
   @subst subst_init = ;
   subst SUBST_IS_FUNCTION take_addr is_func = ;
-  subst SUBST_PARAMETERS take_addr 4 vector_init = ;
-  subst SUBST_REPLACEMENT take_addr 4 vector_init = ;
   if is_func {
     # TODO
     0 assert ;
@@ -684,6 +684,7 @@ fun preproc_process_if 5 {
   $ast
   @ast intoks iptr "\n" ast_parse = ;
   #ast ast_dump ;
+  ast ast_destroy ;
   ctx ast preproc_eval ;
 
   # FIXME
