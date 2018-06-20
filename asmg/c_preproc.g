@@ -48,7 +48,7 @@ fun ppctx_destroy 1 {
     }
     @i i 1 + = ;
   }
-  defs free ;
+  defs map_destroy ;
   ptr free ;
 }
 
@@ -840,27 +840,29 @@ fun preproc_file 3 {
   intoks free_vect_of_ptrs ;
 }
 
-fun parse_c 1 {
-  $ctx
-  @ctx ppctx_init = ;
-  $tokens
-  @tokens 4 vector_init = ;
-  tokens ctx 0 param preproc_file ;
-  "Finished preprocessing\n" 1 platform_log ;
+fun remove_whites 1 {
+  $intoks
+  @intoks 0 param = ;
+
+  $outtoks
+  @outtoks 4 vector_init = ;
   $i
   @i 0 = ;
-  while i tokens vector_size < {
+  while i intoks vector_size < {
     $tok
-    @tok tokens i vector_at = ;
-    if tok **c '\n' == {
-      "NL" 1 platform_log ;
+    @tok intoks i vector_at = ;
+    if tok " " strcmp 0 == {
+      tok free ;
     } else {
-      tok 1 platform_log ;
+      if tok "\n" strcmp 0 == {
+        tok free ;
+      } else {
+        outtoks tok vector_push_back ;
+      }
     }
-    "#" 1 platform_log ;
     @i i 1 + = ;
   }
-  "\n" 1 platform_log ;
-  tokens free_vect_of_ptrs ;
-  ctx ppctx_destroy ;
+
+  intoks vector_destroy ;
+  outtoks ret ;
 }

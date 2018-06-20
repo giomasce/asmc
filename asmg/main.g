@@ -41,6 +41,10 @@ fun main 0 {
     "c_preproc.g" platform_g_compile ;
     "done!\n" 1 platform_log ;
 
+    "Compiling c_compile.g... " 1 platform_log ;
+    "c_compile.g" platform_g_compile ;
+    "done!\n" 1 platform_log ;
+
     "Memory break after C compiler compilation: " 1 platform_log ;
     0 platform_allocate itoa 1 platform_log ;
     "\n" 1 platform_log ;
