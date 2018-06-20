@@ -172,29 +172,13 @@ fun free 1 {
   #check_fl ;
 }
 
-fun realloc 2 {
+fun _malloc_get_size 1 {
   $ptr
-  $newsize
   @ptr 0 param = ;
-  @newsize 1 param = ;
   $size
   @size ptr SIZEOF_MALLOC - MALLOC_SIZE take = ;
-  $newptr
-  @newptr newsize malloc = ;
-  $copysize
-  @copysize size newsize min = ;
-  copysize ptr newptr memcpy ;
-  ptr free ;
-  newptr ret ;
+  size ret ;
 }
 
-fun strdup 1 {
-  $s
-  @s 0 param = ;
-  $len
-  @len s strlen = ;
-  $ptr
-  @ptr len 1 + malloc = ;
-  s ptr strcpy ;
-  ptr ret ;
+fun malloc_stats 0 {
 }

@@ -1,6 +1,10 @@
 
 const COMPILE_C 1
 
+const USE_TRIVIAL_MALLOC 0
+const USE_SIMPLE_MALLOC 0
+const USE_CHECKED_MALLOC 1
+
 fun main 0 {
   "Hello, G!\n" 1 platform_log ;
 
@@ -12,12 +16,26 @@ fun main 0 {
   "utils.g" platform_g_compile ;
   "done!\n" 1 platform_log ;
 
-  #"Compiling triv_malloc.g... " 1 platform_log ;
-  #"triv_malloc.g" platform_g_compile ;
-  #"done!\n" 1 platform_log ;
+  if USE_TRIVIAL_MALLOC {
+    "Compiling triv_malloc.g... " 1 platform_log ;
+    "triv_malloc.g" platform_g_compile ;
+    "done!\n" 1 platform_log ;
+  }
 
-  "Compiling simple_malloc.g... " 1 platform_log ;
-  "simple_malloc.g" platform_g_compile ;
+  if USE_SIMPLE_MALLOC {
+    "Compiling simple_malloc.g... " 1 platform_log ;
+    "simple_malloc.g" platform_g_compile ;
+    "done!\n" 1 platform_log ;
+  }
+
+  if USE_CHECKED_MALLOC {
+    "Compiling check_malloc.g... " 1 platform_log ;
+    "check_malloc.g" platform_g_compile ;
+    "done!\n" 1 platform_log ;
+  }
+
+  "Compiling malloc_utils.g... " 1 platform_log ;
+  "malloc_utils.g" platform_g_compile ;
   "done!\n" 1 platform_log ;
 
   "Compiling vector.g... " 1 platform_log ;
@@ -77,4 +95,6 @@ fun main 0 {
   "Memory break before exiting main: " 1 platform_log ;
   0 platform_allocate itoa 1 platform_log ;
   "\n" 1 platform_log ;
+
+  0 "malloc_stats" platform_get_symbol \0 ;
 }

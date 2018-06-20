@@ -198,3 +198,38 @@ fun strtol 3 {
     @ptr ptr 1 + = ;
   }
 }
+
+fun memset 3 {
+  $s
+  $c
+  $n
+  @s 2 param = ;
+  @c 1 param = ;
+  @n 0 param = ;
+
+  $i
+  @i 0 = ;
+  while i n < {
+    s i + c =c ;
+    @i i 1 + = ;
+  }
+}
+
+fun memcheck 3 {
+  $s
+  $c
+  $n
+  @s 2 param = ;
+  @c 1 param = ;
+  @n 0 param = ;
+
+  $i
+  @i 0 = ;
+  while i n < {
+    if s i + **c c != {
+      0 ret ;
+    }
+    @i i 1 + = ;
+  }
+  1 ret ;
+}

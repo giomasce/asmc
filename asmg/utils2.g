@@ -21,9 +21,9 @@ fun free_vect_of_ptrs 1 {
   @vect 0 param = ;
   $i
   @i 0 = ;
-  "Freeing vector of length " 1 platform_log ;
-  vect vector_size itoa 1 platform_log ;
-  "\n" 1 platform_log ;
+  #"Freeing vector of length " 1 platform_log ;
+  #vect vector_size itoa 1 platform_log ;
+  #"\n" 1 platform_log ;
   while i vect vector_size < {
     #i itoa 1 platform_log ;
     #" " 1 platform_log ;

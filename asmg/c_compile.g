@@ -113,11 +113,18 @@ fun c_compile 2 {
 
 }
 
+fun test 0 {
+  $v
+  @v 4 malloc = ;
+  v 2 + 0x4c =c ;
+  v free ;
+}
+
 fun parse_c 1 {
   $ctx
   @ctx ppctx_init = ;
   $cctx
-  @cctx cctx_init = ;
+  #@cctx cctx_init = ;
   $tokens
   @tokens 4 vector_init = ;
   tokens ctx 0 param preproc_file ;
@@ -139,5 +146,5 @@ fun parse_c 1 {
   "\n" 1 platform_log ;
   tokens free_vect_of_ptrs ;
   ctx ppctx_destroy ;
-  cctx cctx_destroy ;
+  #cctx cctx_destroy ;
 }
