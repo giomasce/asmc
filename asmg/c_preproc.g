@@ -344,7 +344,7 @@ fun process_token 4 {
     @repl subst SUBST_REPLACEMENT take = ;
     if subst SUBST_IS_FUNCTION take {
       # TODO
-      0 "Not implemented yet" assert_msg ;
+      0 "process_token: not implemented yet" assert_msg ;
     } else {
       $j
       @j 0 = ;
