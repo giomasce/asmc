@@ -24,25 +24,6 @@ fun type_destroy 1 {
   type free ;
 }
 
-# Name is a vector of char*
-const TYPENAME_NAME 0
-const TYPENAME_TYPE 4
-const SIZEOF_TYPENAME 8
-
-fun typename_init 0 {
-  $typename
-  @typename SIZEOF_TYPENAME malloc = ;
-  typename TYPENAME_NAME take_addr 4 vector_init = ;
-  typename ret ;
-}
-
-fun typename_destroy 1 {
-  $typename
-  @typename 0 param = ;
-  typename TYPENAME_NAME take free_vect_of_ptrs ;
-  typename free ;
-}
-
 const GLOBAL_TYPE 0
 const SIZEOF_GLOBAL 4
 
@@ -61,14 +42,21 @@ fun global_destroy 1 {
 const CCTX_TYPES 0
 const CCTX_TYPENAMES 4
 const CCTX_GLOBALS 8
-const SIZEOF_CCTX 12
+const CCTX_TOKENS 12
+const CCTX_TOKENS_POS 16
+const SIZEOF_CCTX 20
 
-fun cctx_init 0 {
+fun cctx_init 1 {
+  $tokens
+  @tokens 0 param = ;
+
   $ctx
   @ctx SIZEOF_CCTX malloc = ;
   ctx CCTX_TYPES take_addr 4 vector_init = ;
-  ctx CCTX_TYPENAMES take_addr 4 vector_init = ;
+  ctx CCTX_TYPENAMES take_addr map_init = ;
   ctx CCTX_GLOBALS take_addr map_init = ;
+  ctx CCTX_TOKENS take_addr tokens = ;
+  ctx CCTX_TOKENS_POS take_addr 0 = ;
   ctx ret ;
 }
 
@@ -88,12 +76,7 @@ fun cctx_destroy 1 {
 
   $typenames
   @typenames ctx CCTX_TYPENAMES take = ;
-  @i 0 = ;
-  while i typenames vector_size < {
-    typenames i vector_at typename_destroy ;
-    @i i 1 + = ;
-  }
-  typenames vector_destroy ;
+  typenames map_destroy ;
 
   $globals
   @globals ctx CCTX_GLOBALS take = ;
@@ -109,8 +92,185 @@ fun cctx_destroy 1 {
   ctx free ;
 }
 
-fun c_compile 2 {
+fun cctx_init_data 1 {
+  $ctx
+  @ctx 0 param = ;
 
+  $types
+  $typenames
+  @types ctx CCTX_TYPES take = ;
+  @typenames ctx CCTX_TYPENAMES take = ;
+
+  $type
+  $idx
+  @idx 0 = ;
+
+  # int
+  @type type_init = ;
+  type TYPE_KIND take_addr TYPE_KIND_BASE = ;
+  type TYPE_BASE take_addr idx = ;
+  type TYPE_SIZE take_addr 4 = ;
+  types type vector_push_back ;
+  typenames "int" idx map_set ;
+
+  @idx idx 1 + = ;
+
+  # short
+  @type type_init = ;
+  type TYPE_KIND take_addr TYPE_KIND_BASE = ;
+  type TYPE_BASE take_addr idx = ;
+  type TYPE_SIZE take_addr 2 = ;
+  types type vector_push_back ;
+  typenames "short" idx map_set ;
+
+  @idx idx 1 + = ;
+
+  # char
+  @type type_init = ;
+  type TYPE_KIND take_addr TYPE_KIND_BASE = ;
+  type TYPE_BASE take_addr idx = ;
+  type TYPE_SIZE take_addr 1 = ;
+  types type vector_push_back ;
+  typenames "char" idx map_set ;
+
+  @idx idx 1 + = ;
+
+  # uint
+  @type type_init = ;
+  type TYPE_KIND take_addr TYPE_KIND_BASE = ;
+  type TYPE_BASE take_addr idx = ;
+  type TYPE_SIZE take_addr 4 = ;
+  types type vector_push_back ;
+  typenames "uint" idx map_set ;
+
+  @idx idx 1 + = ;
+
+  # ushort
+  @type type_init = ;
+  type TYPE_KIND take_addr TYPE_KIND_BASE = ;
+  type TYPE_BASE take_addr idx = ;
+  type TYPE_SIZE take_addr 2 = ;
+  types type vector_push_back ;
+  typenames "ushort" idx map_set ;
+
+  @idx idx 1 + = ;
+
+  # uchar
+  @type type_init = ;
+  type TYPE_KIND take_addr TYPE_KIND_BASE = ;
+  type TYPE_BASE take_addr idx = ;
+  type TYPE_SIZE take_addr 1 = ;
+  types type vector_push_back ;
+  typenames "uchar" idx map_set ;
+
+  @idx idx 1 + = ;
+}
+
+fun cctx_is_eof 1 {
+  $ctx
+  @ctx 0 param = ;
+
+  ctx CCTX_TOKENS_POS take ctx CCTX_TOKENS take vector_size == ret ;
+}
+
+fun cctx_get_token 1 {
+  $ctx
+  @ctx 0 param = ;
+
+  if ctx CCTX_TOKENS_POS take ctx CCTX_TOKENS take vector_size == {
+    0 ret ;
+  } else {
+    $tok
+    @tok ctx CCTX_TOKENS take ctx CCTX_TOKENS_POS take vector_at = ;
+    ctx CCTX_TOKENS_POS take_addr ctx CCTX_TOKENS_POS take 1 + = ;
+    tok ret ;
+  }
+}
+
+fun cctx_give_back_token 1 {
+  $ctx
+  @ctx 0 param = ;
+
+  ctx CCTX_TOKENS_POS take 0 > "cctx_give_back_token: error 1" assert_msg ;
+  ctx CCTX_TOKENS_POS take_addr ctx CCTX_TOKENS_POS take 1 - = ;
+}
+
+fun cctx_get_token_or_fail 1 {
+  $ctx
+  @ctx 0 param = ;
+
+  $tok
+  @tok ctx cctx_get_token = ;
+  tok 0 != "cctx_get_token_or_fail: unexpected end-of-file" assert_msg ;
+  tok ret ;
+}
+
+fun cctx_parse_type 1 {
+  $ctx
+  @ctx 0 param = ;
+
+  $tok
+  @tok ctx cctx_get_token_or_fail = ;
+
+  $typenames
+  @typenames ctx CCTX_TYPENAMES take = ;
+  if typenames tok map_has {
+    $idx
+    @idx typenames tok map_at = ;
+    idx ret ;
+  } else {
+    0xffffffff ret ;
+  }
+}
+
+fun cctx_parse_declarator 2 {
+  $ctx
+  $type_idx
+  $ret_type_idx
+  $ret_name
+  @ctx 3 param = ;
+  @type_idx 2 param = ;
+  @ret_type_idx 1 param = ;
+  @ret_name 0 param = ;
+
+  $tok
+  @tok ctx cctx_get_token_or_fail = ;
+  ret_name tok = ;
+  ret_type_idx type_idx = ;
+
+  1 ret ;
+}
+
+fun cctx_compile 1 {
+  $ctx
+  @ctx 0 param = ;
+
+  $i
+  @i 0 = ;
+  while ctx cctx_is_eof ! {
+    $type_idx
+    @type_idx ctx cctx_parse_type = ;
+    type_idx 0xffffffff != "cctx_compile: type expected" assert_msg ;
+    $cont
+    @cont 1 = ;
+    while cont {
+      $actual_type_idx
+      $name
+      $res
+      @res ctx type_idx @actual_type_idx @name cctx_parse_declarator = ;
+
+      # Allocate the global variable
+      
+
+      $tok
+      @tok ctx cctx_get_token_or_fail = ;
+      if tok ";" strcmp 0 == {
+        @cont 0 = ;
+      } else {
+        tok "," strcmp 0 == "cctx_compile: comma expected" assert_msg ;
+      }
+    }
+  }
 }
 
 fun test 0 {
@@ -121,10 +281,9 @@ fun test 0 {
 }
 
 fun parse_c 1 {
+  # Preprocessing
   $ctx
   @ctx ppctx_init = ;
-  $cctx
-  @cctx cctx_init = ;
   $tokens
   @tokens 4 vector_init = ;
   tokens ctx 0 param preproc_file ;
@@ -144,6 +303,14 @@ fun parse_c 1 {
     @i i 1 + = ;
   }
   "\n" 1 platform_log ;
+
+  # Compilation
+  $cctx
+  @cctx tokens cctx_init = ;
+  cctx cctx_init_data ;
+  cctx cctx_compile ;
+
+  # Cleanup
   tokens free_vect_of_ptrs ;
   cctx cctx_destroy ;
   ctx ppctx_destroy ;

@@ -67,7 +67,7 @@ fun main 0 {
     0 platform_allocate itoa 1 platform_log ;
     "\n" 1 platform_log ;
 
-    "test.c" 0 "parse_c" platform_get_symbol \1 ;
+    "test2.c" 0 "parse_c" platform_get_symbol \1 ;
   } else {
     "Compiling asm_regs.g... " 1 platform_log ;
     "asm_regs.g" platform_g_compile ;
