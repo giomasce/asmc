@@ -10,17 +10,21 @@ const TYPE_KIND_ENUM 6
 const TYPE_KIND 0
 const TYPE_BASE 4
 const TYPE_SIZE 8
-const SIZEOF_TYPE 12
+const TYPE_LENGTH 12
+const TYPE_ARGS 16
+const SIZEOF_TYPE 20
 
 fun type_init 0 {
   $type
   @type SIZEOF_TYPE malloc = ;
+  type TYPE_ARGS take_addr 4 vector_init = ;
   type ret ;
 }
 
 fun type_destroy 1 {
   $type
   @type 0 param = ;
+  type TYPE_ARGS take vector_destroy ;
   type free ;
 }
 
@@ -164,6 +168,73 @@ fun cctx_init_data 1 {
   typenames "uchar" idx map_set ;
 
   @idx idx 1 + = ;
+}
+
+ifun cctx_type_compare 3
+
+fun _cctx_type_compare 3 {
+  $ctx
+  $t1
+  $t2
+  @ctx 2 param = ;
+  @t1 1 param = ;
+  @t2 0 param = ;
+
+  if t1 TYPE_KIND take t2 TYPE_KIND take != { 0 ret ; }
+  if t1 TYPE_KIND take TYPE_KIND_BASE == {
+    if t1 TYPE_BASE take t2 TYPE_BASE take != { 0 ret ; }
+    1 ret ;
+  }
+  if t1 TYPE_KIND take TYPE_KIND_POINTER == {
+    if t1 TYPE_BASE take t2 TYPE_BASE take != { 0 ret ; }
+    1 ret ;
+  }
+  if t1 TYPE_KIND take TYPE_KIND_FUNCTION == {
+    if t1 TYPE_BASE take t2 TYPE_BASE take != { 0 ret ; }
+    if t1 TYPE_LENGTH take t2 TYPE_LENGTH take != { 0 ret ; }
+    $length
+    @length t1 TYPE_LENGTH take = ;
+    $args1
+    $args2
+    @args1 t1 TYPE_ARGS take = ;
+    @args2 t2 TYPE_ARGS take = ;
+    $i
+    @i 0 = ;
+    while i length < {
+      if ctx args1 i vector_at args2 i vector_at cctx_type_compare ! { 0 ret ; }
+      @i i 1 + = ;
+    }
+    1 ret ;
+  }
+  if t1 TYPE_KIND take TYPE_KIND_ARRAY == {
+    if t1 TYPE_BASE take t2 TYPE_BASE take != { 0 ret ; }
+    if t1 TYPE_LENGTH take t2 TYPE_LENGTH take != { 0 ret ; }
+    1 ret ;
+  }
+  0 "_type_compare: not yet implemented" assert_msg ;
+}
+
+fun cctx_type_compare 3 {
+  $ctx
+  $ti1
+  $ti2
+  @ctx 2 param = ;
+  @ti1 1 param = ;
+  @ti2 0 param = ;
+
+  if ti1 ti2 == { 1 ret ; }
+
+  $t1
+  $t2
+  @t1 ctx CCTX_TYPES take ti1 vector_at = ;
+  @t2 ctx CCTX_TYPES take ti2 vector_at = ;
+
+  $res
+  @res ctx t1 t2 _cctx_type_compare = ;
+  if res {
+    t1 TYPE_SIZE take t2 TYPE_SIZE take == "type_compare: type are equal, but have different size" assert_msg ;
+  }
+  res ret ;
 }
 
 fun cctx_is_eof 1 {
