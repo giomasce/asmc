@@ -233,3 +233,46 @@ fun memcheck 3 {
   }
   1 ret ;
 }
+
+fun dump_nibble 1 {
+  $x
+  @x 0 param = ;
+  @x x 0xf & = ;
+  if x 0 == { '0' 1 platform_write_char ; }
+  if x 1 == { '1' 1 platform_write_char ; }
+  if x 2 == { '2' 1 platform_write_char ; }
+  if x 3 == { '3' 1 platform_write_char ; }
+  if x 4 == { '4' 1 platform_write_char ; }
+  if x 5 == { '5' 1 platform_write_char ; }
+  if x 6 == { '6' 1 platform_write_char ; }
+  if x 7 == { '7' 1 platform_write_char ; }
+  if x 8 == { '8' 1 platform_write_char ; }
+  if x 9 == { '9' 1 platform_write_char ; }
+  if x 10 == { 'a' 1 platform_write_char ; }
+  if x 11 == { 'b' 1 platform_write_char ; }
+  if x 12 == { 'c' 1 platform_write_char ; }
+  if x 13 == { 'd' 1 platform_write_char ; }
+  if x 14 == { 'e' 1 platform_write_char ; }
+  if x 15 == { 'f' 1 platform_write_char ; }
+}
+
+fun dump_byte 1 {
+  $x
+  @x 0 param = ;
+  x 4 >> dump_nibble ;
+  x dump_nibble ;
+  ' ' 1 platform_write_char ;
+}
+
+fun dump_mem 2 {
+  $ptr
+  $size
+  @ptr 1 param = ;
+  @size 0 param = ;
+
+  @size size ptr + = ;
+  while ptr size < {
+    ptr **c dump_byte ;
+    @ptr ptr 1 + = ;
+  }
+}

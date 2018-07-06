@@ -28,8 +28,9 @@ fun type_destroy 1 {
   type free ;
 }
 
-const GLOBAL_TYPE 0
-const SIZEOF_GLOBAL 4
+const GLOBAL_TYPE_IDX 0
+const GLOBAL_LOC 4
+const SIZEOF_GLOBAL 8
 
 fun global_init 0 {
   $global
@@ -48,7 +49,17 @@ const CCTX_TYPENAMES 4
 const CCTX_GLOBALS 8
 const CCTX_TOKENS 12
 const CCTX_TOKENS_POS 16
-const SIZEOF_CCTX 20
+const CCTX_STAGE 20
+const CCTX_CURRENT_LOC 24
+const SIZEOF_CCTX 28
+
+fun cctx_init_types 1 {
+  $ctx
+  @ctx 0 param = ;
+
+  ctx CCTX_TYPES take_addr 4 vector_init = ;
+  ctx CCTX_TYPENAMES take_addr map_init = ;
+}
 
 fun cctx_init 1 {
   $tokens
@@ -56,15 +67,14 @@ fun cctx_init 1 {
 
   $ctx
   @ctx SIZEOF_CCTX malloc = ;
-  ctx CCTX_TYPES take_addr 4 vector_init = ;
-  ctx CCTX_TYPENAMES take_addr map_init = ;
+  ctx cctx_init_types ;
   ctx CCTX_GLOBALS take_addr map_init = ;
   ctx CCTX_TOKENS take_addr tokens = ;
   ctx CCTX_TOKENS_POS take_addr 0 = ;
   ctx ret ;
 }
 
-fun cctx_destroy 1 {
+fun cctx_destroy_types 1 {
   $ctx
   @ctx 0 param = ;
 
@@ -81,9 +91,17 @@ fun cctx_destroy 1 {
   $typenames
   @typenames ctx CCTX_TYPENAMES take = ;
   typenames map_destroy ;
+}
+
+fun cctx_destroy 1 {
+  $ctx
+  @ctx 0 param = ;
+
+  ctx cctx_destroy_types ;
 
   $globals
   @globals ctx CCTX_GLOBALS take = ;
+  $i
   @i 0 = ;
   while i globals map_size < {
     if globals i map_has_idx {
@@ -96,7 +114,15 @@ fun cctx_destroy 1 {
   ctx free ;
 }
 
-fun cctx_init_data 1 {
+fun cctx_reset_types 1 {
+  $ctx
+  @ctx 0 param = ;
+
+  ctx cctx_destroy_types ;
+  ctx cctx_init_types ;
+}
+
+fun cctx_create_basic_types 1 {
   $ctx
   @ctx 0 param = ;
 
@@ -237,6 +263,37 @@ fun cctx_type_compare 3 {
   res ret ;
 }
 
+fun cctx_add_global 4 {
+  $ctx
+  $name
+  $loc
+  $type_idx
+  @ctx 3 param = ;
+  @name 2 param = ;
+  @loc 1 param = ;
+  @type_idx 0 param = ;
+
+  $globals
+  @globals ctx CCTX_GLOBALS take = ;
+
+  if ctx CCTX_STAGE take 0 == {
+    globals name map_has ! "cctx_add_global: name already defined" assert_msg ;
+    $global
+    @global global_init = ;
+    global GLOBAL_TYPE_IDX take_addr type_idx = ;
+    global GLOBAL_LOC take_addr loc = ;
+    globals name global map_set ;
+  }
+  if ctx CCTX_STAGE take 1 == {
+    globals name map_has "cctx_add_global: error 1" assert_msg ;
+    $global
+    @global globals name map_at = ;
+    global GLOBAL_TYPE_IDX take type_idx == "cctx_add_global: error 2" assert_msg ;
+    #global GLOBAL_LOC take loc == "cctx_add_global: error 3" assert_msg ;
+  }
+}
+
+
 fun cctx_is_eof 1 {
   $ctx
   @ctx 0 param = ;
@@ -276,6 +333,32 @@ fun cctx_get_token_or_fail 1 {
   tok ret ;
 }
 
+fun cctx_emit 2 {
+  $ctx
+  $byte
+  @ctx 1 param = ;
+  @byte 0 param = ;
+
+  if ctx CCTX_STAGE take 1 == {
+    ctx CCTX_CURRENT_LOC take byte =c ;
+  }
+  ctx CCTX_CURRENT_LOC take_addr ctx CCTX_CURRENT_LOC take 1 + = ;
+}
+
+fun cctx_emit_zeros 2 {
+  $ctx
+  $num
+  @ctx 1 param = ;
+  @num 0 param = ;
+
+  $i
+  @i 0 = ;
+  while i num < {
+    ctx 0 cctx_emit ;
+    @i i 1 + = ;
+  }
+}
+
 fun cctx_parse_type 1 {
   $ctx
   @ctx 0 param = ;
@@ -312,36 +395,81 @@ fun cctx_parse_declarator 2 {
   1 ret ;
 }
 
+fun cctx_type_footprint 2 {
+  $ctx
+  $type_idx
+  @ctx 1 param = ;
+  @type_idx 0 param = ;
+
+  $type
+  @type ctx CCTX_TYPES take type_idx vector_at = ;
+  type TYPE_SIZE take 1 - 3 | 1 + ret ;
+}
+
+fun cctx_compile_line 1 {
+  $ctx
+  @ctx 0 param = ;
+
+  $type_idx
+  @type_idx ctx cctx_parse_type = ;
+  type_idx 0xffffffff != "cctx_compile: type expected" assert_msg ;
+  $cont
+  @cont 1 = ;
+  while cont {
+    $actual_type_idx
+    $name
+    $res
+    @res ctx type_idx @actual_type_idx @name cctx_parse_declarator = ;
+
+    # Register and allocate the global variable
+    ctx name ctx CCTX_CURRENT_LOC take actual_type_idx cctx_add_global ;
+    ctx ctx actual_type_idx cctx_type_footprint cctx_emit_zeros ;
+
+    $tok
+    @tok ctx cctx_get_token_or_fail = ;
+    if tok ";" strcmp 0 == {
+      @cont 0 = ;
+    } else {
+      tok "," strcmp 0 == "cctx_compile: comma expected" assert_msg ;
+    }
+  }
+}
+
 fun cctx_compile 1 {
   $ctx
   @ctx 0 param = ;
 
-  $i
-  @i 0 = ;
-  while ctx cctx_is_eof ! {
-    $type_idx
-    @type_idx ctx cctx_parse_type = ;
-    type_idx 0xffffffff != "cctx_compile: type expected" assert_msg ;
-    $cont
-    @cont 1 = ;
-    while cont {
-      $actual_type_idx
-      $name
-      $res
-      @res ctx type_idx @actual_type_idx @name cctx_parse_declarator = ;
-
-      # Allocate the global variable
-      
-
-      $tok
-      @tok ctx cctx_get_token_or_fail = ;
-      if tok ";" strcmp 0 == {
-        @cont 0 = ;
-      } else {
-        tok "," strcmp 0 == "cctx_compile: comma expected" assert_msg ;
-      }
+  ctx CCTX_STAGE take_addr 0 = ;
+  $start_loc
+  @start_loc 0 = ;
+  $size
+  while ctx CCTX_STAGE take 2 < {
+    "Compilation stage " 1 platform_log ;
+    ctx CCTX_STAGE take 1 + itoa 1 platform_log ;
+    ctx CCTX_CURRENT_LOC take_addr start_loc = ;
+    ctx CCTX_TOKENS_POS take_addr 0 = ;
+    ctx cctx_reset_types ;
+    ctx cctx_create_basic_types ;
+    while ctx cctx_is_eof ! {
+      ctx cctx_compile_line ;
     }
+    "\n" 1 platform_log ;
+    if ctx CCTX_STAGE take 0 == {
+      @size ctx CCTX_CURRENT_LOC take start_loc - = ;
+      @start_loc size platform_allocate = ;
+    } else {
+      ctx CCTX_CURRENT_LOC take start_loc - size == "cctx_compile: error 1" assert_msg ;
+    }
+    ctx CCTX_STAGE take_addr ctx CCTX_STAGE take 1 + = ;
   }
+  "Compiled program has size " 1 platform_log ;
+  size itoa 1 platform_log ;
+  " and starts at " 1 platform_log ;
+  start_loc itoa 1 platform_log ;
+  "\n" 1 platform_log ;
+  "Compiled dump:\n" 1 platform_log ;
+  start_loc size dump_mem ;
+  "\n" 1 platform_log ;
 }
 
 fun test 0 {
@@ -378,7 +506,6 @@ fun parse_c 1 {
   # Compilation
   $cctx
   @cctx tokens cctx_init = ;
-  cctx cctx_init_data ;
   cctx cctx_compile ;
 
   # Cleanup
