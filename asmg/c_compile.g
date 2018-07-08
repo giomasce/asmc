@@ -263,6 +263,80 @@ fun cctx_type_compare 3 {
   res ret ;
 }
 
+fun cctx_add_type 2 {
+  $ctx
+  $type
+  @ctx 1 param = ;
+  @type 0 param = ;
+
+  $types
+  $idx
+  @types ctx CCTX_TYPES take = ;
+  @idx types vector_size = ;
+  types type vector_push_back ;
+  idx ret ;
+}
+
+fun cctx_get_pointer_type 2 {
+  $ctx
+  $type_idx
+  @ctx 1 param = ;
+  @type_idx 0 param = ;
+
+  $type
+  @type type_init = ;
+  type TYPE_KIND take_addr TYPE_KIND_POINTER = ;
+  type TYPE_BASE take_addr type_idx = ;
+  type TYPE_SIZE take_addr 4 = ;
+
+  ctx type cctx_add_type ret ;
+}
+
+fun cctx_get_array_type 3 {
+  $ctx
+  $type_idx
+  $length
+  @ctx 2 param = ;
+  @type_idx 1 param = ;
+  @length 0 param = ;
+
+  $base_type
+  @base_type ctx CCTX_TYPES take type_idx vector_at = ;
+  base_type TYPE_SIZE take 0xffffffff != "cctx_get_array_type: base type is invalid size" assert_msg ;
+
+  $type
+  @type type_init = ;
+  type TYPE_KIND take_addr TYPE_KIND_ARRAY = ;
+  type TYPE_BASE take_addr type_idx = ;
+  type TYPE_LENGTH take_addr length = ;
+  type TYPE_SIZE take_addr length base_type TYPE_SIZE take * = ;
+  # -1 is used when length is not specified
+  if length 0xffffffff == {
+    type TYPE_SIZE take_addr 0xffffffff = ;
+  }
+
+  ctx type cctx_add_type ret ;
+}
+
+fun cctx_get_function_type 3 {
+  $ctx
+  $type_idx
+  $args
+  @ctx 2 param = ;
+  @type_idx 1 param = ;
+  @args 0 param = ;
+
+  $type
+  @type type_init = ;
+  type TYPE_KIND take_addr TYPE_KIND_FUNCTION = ;
+  type TYPE_BASE take_addr type_idx = ;
+  type TYPE_SIZE take_addr 0xffffffff = ;
+  type TYPE_ARGS take vector_destroy ;
+  type TYPE_ARGS take_addr args = ;
+
+  ctx type cctx_add_type ret ;
+}
+
 fun cctx_add_global 4 {
   $ctx
   $name
@@ -387,8 +461,14 @@ fun cctx_parse_declarator 2 {
   @ret_type_idx 1 param = ;
   @ret_name 0 param = ;
 
+  $pointer_num
+  @pointer_num 0 = ;
   $tok
   @tok ctx cctx_get_token_or_fail = ;
+  while tok "*" strcmp 0 == {
+    @pointer_num pointer_num 1 + = ;
+    @tok ctx cctx_get_token_or_fail = ;
+  }
   ret_name tok = ;
   ret_type_idx type_idx = ;
 
