@@ -1,5 +1,8 @@
 
+const COMPILE_ASM 1
 const COMPILE_C 1
+const RUN_ASM 0
+const RUN_C 1
 
 const USE_TRIVIAL_MALLOC 0
 const USE_SIMPLE_MALLOC 0
@@ -50,25 +53,11 @@ fun main 0 {
   "utils2.g" platform_g_compile ;
   "done!\n" 1 platform_log ;
 
-  if COMPILE_C {
-    "Compiling c_ast.g... " 1 platform_log ;
-    "c_ast.g" platform_g_compile ;
-    "done!\n" 1 platform_log ;
+  if COMPILE_ASM {
+    #"Memory break before ASM assembler compilation: " 1 platform_log ;
+    #0 platform_allocate itoa 1 platform_log ;
+    #"\n" 1 platform_log ;
 
-    "Compiling c_preproc.g... " 1 platform_log ;
-    "c_preproc.g" platform_g_compile ;
-    "done!\n" 1 platform_log ;
-
-    "Compiling c_compile.g... " 1 platform_log ;
-    "c_compile.g" platform_g_compile ;
-    "done!\n" 1 platform_log ;
-
-    "Memory break after C compiler compilation: " 1 platform_log ;
-    0 platform_allocate itoa 1 platform_log ;
-    "\n" 1 platform_log ;
-
-    "test2.c" 0 "parse_c" platform_get_symbol \1 ;
-  } else {
     "Compiling asm_regs.g... " 1 platform_log ;
     "asm_regs.g" platform_g_compile ;
     "done!\n" 1 platform_log ;
@@ -85,11 +74,35 @@ fun main 0 {
     "asm_compile.g" platform_g_compile ;
     "done!\n" 1 platform_log ;
 
-    "Memory break after ASM compiler compilation: " 1 platform_log ;
-    0 platform_allocate itoa 1 platform_log ;
-    "\n" 1 platform_log ;
+    #"Memory break after ASM assembler compilation: " 1 platform_log ;
+    #0 platform_allocate itoa 1 platform_log ;
+    #"\n" 1 platform_log ;
+  }
 
+  if COMPILE_C {
+    "Compiling c_ast.g... " 1 platform_log ;
+    "c_ast.g" platform_g_compile ;
+    "done!\n" 1 platform_log ;
+
+    "Compiling c_preproc.g... " 1 platform_log ;
+    "c_preproc.g" platform_g_compile ;
+    "done!\n" 1 platform_log ;
+
+    "Compiling c_compile.g... " 1 platform_log ;
+    "c_compile.g" platform_g_compile ;
+    "done!\n" 1 platform_log ;
+  }
+
+  "Memory break after compilers compilation: " 1 platform_log ;
+  0 platform_allocate itoa 1 platform_log ;
+  "\n" 1 platform_log ;
+
+  if RUN_ASM {
     "test.asm" 0 "parse_asm" platform_get_symbol \1 ;
+  }
+
+  if RUN_C {
+    "test2.c" 0 "parse_c" platform_get_symbol \1 ;
   }
 
   "Memory break before exiting main: " 1 platform_log ;
