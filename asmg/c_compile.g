@@ -122,6 +122,25 @@ fun cctx_reset_types 1 {
   ctx cctx_init_types ;
 }
 
+fun is_valid_identifier 1 {
+  $ident
+  @ident 0 param = ;
+
+  $len
+  @len ident strlen = ;
+  if len 0 == { 0 ret ; }
+  $i
+  @i 0 = ;
+  while i len < {
+    if ident i + **c get_char_type 3 != { 0 ret ; }
+    @i i 1 + = ;
+  }
+  $first
+  @first ident **c = ;
+  if first '0' >= first '9' <= && { 0 ret ; }
+  1 ret ;
+}
+
 fun cctx_create_basic_types 1 {
   $ctx
   @ctx 0 param = ;
@@ -451,7 +470,7 @@ fun cctx_parse_type 1 {
   }
 }
 
-fun cctx_parse_declarator 2 {
+fun _cctx_parse_declarator 4 {
   $ctx
   $type_idx
   $ret_type_idx
@@ -461,18 +480,66 @@ fun cctx_parse_declarator 2 {
   @ret_type_idx 1 param = ;
   @ret_name 0 param = ;
 
-  $pointer_num
-  @pointer_num 0 = ;
   $tok
   @tok ctx cctx_get_token_or_fail = ;
-  while tok "*" strcmp 0 == {
-    @pointer_num pointer_num 1 + = ;
-    @tok ctx cctx_get_token_or_fail = ;
+  $processed
+  @processed 0 = ;
+  if tok "*" strcmp 0 == {
+    @type_idx ctx type_idx cctx_get_pointer_type = ;
+    if ctx type_idx ret_type_idx ret_name _cctx_parse_declarator {
+      @processed 1 = ;
+    }
   }
-  ret_name tok = ;
-  ret_type_idx type_idx = ;
+  if tok "(" strcmp 0 == {
+    0 "_cctx_parse_declarator: not implemented" assert_msg ;
+    
+    #@processed 1 = ;
+  }
+  if tok "[" strcmp 0 == {
+    @tok ctx cctx_get_token_or_fail = ;
+    $length
+    if tok "]" strcmp 0 == {
+      @length 0xffffffff = ;
+    } else {
+      # FIXME Implement proper formula parsing
+      @length tok atoi = ;
+      @tok ctx cctx_get_token_or_fail = ;
+    }
+    tok "]" strcmp 0 == "_cctx_parse_declarator: wrong syntax for array subscripting" assert_msg ;
+    if ctx type_idx ret_type_idx ret_name _cctx_parse_declarator {
+      @type_idx ret_type_idx ** = ;
+    }
+    ret_type_idx ctx type_idx length cctx_get_array_type = ;
+    @processed 1 = ;
+  }
+  if tok is_valid_identifier {
+    if ctx type_idx ret_type_idx ret_name _cctx_parse_declarator ! {
+      ret_type_idx type_idx = ;
+    }
+    ret_name ** 0 == "_cctx_parse_declarator: more than one identifier found" assert_msg ;
+    ret_name tok = ;
+    @processed 1 = ;
+  }
+  if processed ! {
+    ctx cctx_give_back_token ;
+    0 ret ;
+  }
 
   1 ret ;
+}
+
+fun cctx_parse_declarator 4 {
+  $ctx
+  $type_idx
+  $ret_type_idx
+  $ret_name
+  @ctx 3 param = ;
+  @type_idx 2 param = ;
+  @ret_type_idx 1 param = ;
+  @ret_name 0 param = ;
+
+  ret_name 0 = ;
+  ctx type_idx ret_type_idx ret_name _cctx_parse_declarator ret ;
 }
 
 fun cctx_type_footprint 2 {
@@ -483,7 +550,10 @@ fun cctx_type_footprint 2 {
 
   $type
   @type ctx CCTX_TYPES take type_idx vector_at = ;
-  type TYPE_SIZE take 1 - 3 | 1 + ret ;
+  $size
+  @size type TYPE_SIZE take = ;
+  size 0xffffffff != "cctx_type_footprint: type cannot be instantiated" assert_msg ;
+  size 1 - 3 | 1 + ret ;
 }
 
 fun cctx_compile_line 1 {
