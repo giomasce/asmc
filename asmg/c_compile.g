@@ -159,6 +159,16 @@ fun cctx_create_basic_types 1 {
   $idx
   @idx 0 = ;
 
+  # void
+  @type type_init = ;
+  type TYPE_KIND take_addr TYPE_KIND_BASE = ;
+  type TYPE_BASE take_addr idx = ;
+  type TYPE_SIZE take_addr 0xffffffff = ;
+  types type vector_push_back ;
+  typenames "void" idx map_set ;
+
+  @idx idx 1 + = ;
+
   # int
   @type type_init = ;
   type TYPE_KIND take_addr TYPE_KIND_BASE = ;
@@ -390,7 +400,6 @@ fun cctx_add_global 4 {
     #global GLOBAL_LOC take loc == "cctx_add_global: error 3" assert_msg ;
   }
 }
-
 
 fun cctx_is_eof 1 {
   $ctx
