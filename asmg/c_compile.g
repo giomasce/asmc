@@ -126,6 +126,10 @@ fun is_valid_identifier 1 {
   $ident
   @ident 0 param = ;
 
+  #"is_valid_identifier for " 1 platform_log ;
+  #ident 1 platform_log ;
+  #"\n" 1 platform_log ;
+
   $len
   @len ident strlen = ;
   if len 0 == { 0 ret ; }
@@ -138,6 +142,7 @@ fun is_valid_identifier 1 {
   $first
   @first ident **c = ;
   if first '0' >= first '9' <= && { 0 ret ; }
+  #"is_valid_identifier: return true\n" 1 platform_log ;
   1 ret ;
 }
 
@@ -416,6 +421,22 @@ fun cctx_give_back_token 1 {
   ctx CCTX_TOKENS_POS take_addr ctx CCTX_TOKENS_POS take 1 - = ;
 }
 
+fun cctx_save_token_pos 1 {
+  $ctx
+  @ctx 0 param = ;
+
+  ctx CCTX_TOKENS_POS take ret ;
+}
+
+fun cctx_restore_token_pos 2 {
+  $ctx
+  $pos
+  @ctx 1 param = ;
+  @pos 0 param = ;
+
+  ctx CCTX_TOKENS_POS take_addr pos = ;
+}
+
 fun cctx_get_token_or_fail 1 {
   $ctx
   @ctx 0 param = ;
@@ -424,6 +445,37 @@ fun cctx_get_token_or_fail 1 {
   @tok ctx cctx_get_token = ;
   tok 0 != "cctx_get_token_or_fail: unexpected end-of-file" assert_msg ;
   tok ret ;
+}
+
+fun cctx_go_to_matching 3 {
+  $ctx
+  $open
+  $close
+  @ctx 2 param = ;
+  @open 1 param = ;
+  @close 0 param = ;
+
+  $level
+  @level 1 = ;
+  while level 0 > {
+    $tok
+    @tok ctx cctx_get_token_or_fail = ;
+    if tok open strcmp 0 == {
+      @level level 1 + = ;
+    }
+    if tok close strcmp 0 == {
+      @level level 1 - = ;
+    }
+  }
+}
+
+fun cctx_print_token_pos 1 {
+  $ctx
+  @ctx 0 param = ;
+
+  "Token pos: " 1 platform_log ;
+  ctx CCTX_TOKENS_POS take itoa 1 platform_log ;
+  "\n" 1 platform_log ;
 }
 
 fun cctx_emit 2 {
@@ -466,7 +518,41 @@ fun cctx_parse_type 1 {
     @idx typenames tok map_at = ;
     idx ret ;
   } else {
+    ctx cctx_give_back_token ;
     0xffffffff ret ;
+  }
+}
+
+ifun cctx_parse_declarator 4
+
+fun _cctx_parse_function_arguments 1 {
+  $ctx
+  @ctx 0 param = ;
+
+  $args
+  @args 4 vector_init = ;
+  while 1 {
+    $type_idx
+    @type_idx ctx cctx_parse_type = ;
+    if type_idx 0xffffffff == {
+      $tok
+      @tok ctx cctx_get_token_or_fail = ;
+      tok ")" strcmp 0 == "_cctx_parse_function_arguments: ) or type expected" assert_msg ;
+      args vector_size 0 == "_cctx_parse_function_arguments: unexpected )" assert_msg ;
+      args ret ;
+    }
+    $name
+    $actual_type_idx
+    if ctx type_idx @actual_type_idx @name cctx_parse_declarator ! {
+      @actual_type_idx type_idx = ;
+    }
+    args actual_type_idx vector_push_back ;
+    $tok
+    @tok ctx cctx_get_token_or_fail = ;
+    if tok ")" strcmp 0 == {
+      args ret ;
+    }
+    tok "," strcmp 0 == "_cctx_parse_function_arguments: ) or , expected" assert_msg ;
   }
 }
 
@@ -480,21 +566,84 @@ fun _cctx_parse_declarator 4 {
   @ret_type_idx 1 param = ;
   @ret_name 0 param = ;
 
+  #"_cctx_parse_declarator: entering\n" 1 platform_log ;
+  #ctx cctx_print_token_pos ;
+
   $tok
   @tok ctx cctx_get_token_or_fail = ;
   $processed
   @processed 0 = ;
+
+  #"_cctx_parse_declarator: token is " 1 platform_log ;
+  #tok 1 platform_log ;
+  #"\n" 1 platform_log ;
+
+  # Parse pointer declaration
   if tok "*" strcmp 0 == {
     @type_idx ctx type_idx cctx_get_pointer_type = ;
-    if ctx type_idx ret_type_idx ret_name _cctx_parse_declarator {
-      @processed 1 = ;
+    if ctx type_idx ret_type_idx ret_name _cctx_parse_declarator ! {
+      ret_type_idx type_idx = ;
     }
+    @processed 1 = ;
   }
+
+  # Parse function declaration and grouping parantheses
   if tok "(" strcmp 0 == {
-    0 "_cctx_parse_declarator: not implemented" assert_msg ;
-    
-    #@processed 1 = ;
+    # Here the first problem is decide whether this is a function or
+    # grouping parenthesis; if immediately after there is a type or a
+    # closing parenthesis, we are in the first case; otherwise, we are
+    # in the second case.
+    $pos
+    @pos ctx cctx_save_token_pos = ;
+    $type
+    @type ctx cctx_parse_type = ;
+    ctx pos cctx_restore_token_pos ;
+    $is_funct
+    @is_funct 0 = ;
+    if type 0xffffffff != {
+      @is_funct 1 = ;
+    }
+    @tok ctx cctx_get_token_or_fail = ;
+    if tok ")" strcmp 0 == {
+      @is_funct 1 = ;
+    }
+
+    # Restore the content of tok, so that the program does not get
+    # captured in later branches
+    @tok "(" = ;
+
+    ctx cctx_give_back_token ;
+    if is_funct {
+      # Function parenthesis
+      $args
+      @args ctx _cctx_parse_function_arguments = ;
+      if ctx type_idx ret_type_idx ret_name _cctx_parse_declarator {
+        @type_idx ret_type_idx ** = ;
+      }
+      ret_type_idx ctx type_idx args cctx_get_function_type = ;
+    } else {
+      # Grouping parenthesis
+      $inside_pos
+      $outside_pos
+      $end_pos
+      @inside_pos ctx cctx_save_token_pos = ;
+      ctx "(" ")" cctx_go_to_matching ;
+      @outside_pos ctx cctx_save_token_pos = ;
+      if ctx type_idx ret_type_idx ret_name _cctx_parse_declarator {
+        @type_idx ret_type_idx ** = ;
+      }
+      @end_pos ctx cctx_save_token_pos = ;
+      ctx inside_pos cctx_restore_token_pos ;
+      ctx type_idx ret_type_idx ret_name _cctx_parse_declarator "_cctx_parse_declarator: invalid syntax 1" assert_msg ;
+      @tok ctx cctx_get_token_or_fail = ;
+      tok ")" strcmp 0 == "_cctx_parse_declarator: error 1" assert_msg ;
+      outside_pos ctx cctx_save_token_pos == "_cctx_parse_declarator: invalid syntax 2" assert_msg ;
+      ctx end_pos cctx_restore_token_pos ;
+    }
+    @processed 1 = ;
   }
+
+  # Parse array declaration
   if tok "[" strcmp 0 == {
     @tok ctx cctx_get_token_or_fail = ;
     $length
@@ -505,13 +654,15 @@ fun _cctx_parse_declarator 4 {
       @length tok atoi = ;
       @tok ctx cctx_get_token_or_fail = ;
     }
-    tok "]" strcmp 0 == "_cctx_parse_declarator: wrong syntax for array subscripting" assert_msg ;
+    tok "]" strcmp 0 == "_cctx_parse_declarator: expected ] after array subscript" assert_msg ;
     if ctx type_idx ret_type_idx ret_name _cctx_parse_declarator {
       @type_idx ret_type_idx ** = ;
     }
     ret_type_idx ctx type_idx length cctx_get_array_type = ;
     @processed 1 = ;
   }
+
+  # Parse the actual declarator identifier
   if tok is_valid_identifier {
     if ctx type_idx ret_type_idx ret_name _cctx_parse_declarator ! {
       ret_type_idx type_idx = ;
@@ -520,11 +671,14 @@ fun _cctx_parse_declarator 4 {
     ret_name tok = ;
     @processed 1 = ;
   }
+
   if processed ! {
     ctx cctx_give_back_token ;
+    #"_cctx_parse_declarator: failed\n" 1 platform_log ;
     0 ret ;
   }
 
+  #"_cctx_parse_declarator: success\n" 1 platform_log ;
   1 ret ;
 }
 
@@ -572,6 +726,7 @@ fun cctx_compile_line 1 {
     @res ctx type_idx @actual_type_idx @name cctx_parse_declarator = ;
 
     # Register and allocate the global variable
+    name 0 != "cctx_compile_line: cannot instantiate variable without name" assert_msg ;
     ctx name ctx CCTX_CURRENT_LOC take actual_type_idx cctx_add_global ;
     ctx ctx actual_type_idx cctx_type_footprint cctx_emit_zeros ;
 
