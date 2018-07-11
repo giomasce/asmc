@@ -697,6 +697,26 @@ fun cctx_emit 2 {
   ctx CCTX_CURRENT_LOC take_addr ctx CCTX_CURRENT_LOC take 1 + = ;
 }
 
+fun cctx_emit16 2 {
+  $ctx
+  $word
+  @ctx 1 param = ;
+  @word 0 param = ;
+
+  ctx word cctx_emit ;
+  ctx word 8 >> cctx_emit ;
+}
+
+fun cctx_emit32 2 {
+  $ctx
+  $dword
+  @ctx 1 param = ;
+  @dword 0 param = ;
+
+  ctx dword cctx_emit16 ;
+  ctx dword 16 >> cctx_emit16 ;
+}
+
 fun cctx_emit_zeros 2 {
   $ctx
   $num
@@ -944,14 +964,12 @@ fun stack_elem_destroy 1 {
 }
 
 const LCTX_STACK 0
-const LCTX_STACK_SIZE 4
-const SIZEOF_LCTX 8
+const SIZEOF_LCTX 4
 
 fun lctx_init 0 {
   $lctx
   @lctx SIZEOF_LCTX malloc = ;
   lctx LCTX_STACK take_addr 4 vector_init = ;
-  lctx LCTX_STACK_SIZE take_addr 0 = ;
   lctx ret ;
 }
 
@@ -970,6 +988,83 @@ fun lctx_destroy 1 {
 
   lctx LCTX_STACK take vector_destroy ;
   lctx free ;
+}
+
+fun lctx_stack_pos 1 {
+  $lctx
+  @lctx 0 param = ;
+
+  $stack
+  @stack lctx LCTX_STACK take = ;
+  stack stack vector_size 1 - vector_at STACK_ELEM_LOC take ret ;
+}
+
+fun lctx_save_status 2 {
+  $lctx
+  $ctx
+  @lctx 1 param = ;
+  @ctx 0 param = ;
+  lctx LCTX_STACK take vector_size ret ;
+}
+
+fun lctx_restore_status 3 {
+  $lctx
+  $ctx
+  $status
+  @lctx 2 param = ;
+  @ctx 1 param = ;
+  @status 0 param = ;
+
+  $current_pos
+  @current_pos lctx lctx_stack_pos = ;
+  $stack
+  @stack lctx LCTX_STACK take = ;
+  status stack vector_size <= "lctx_restore_status: error 1" assert_msg ;
+  $new_pos
+  @new_pos stack status 1 - vector_at STACK_ELEM_LOC take = ;
+  $rewind
+  @rewind new_pos current_pos - = ;
+  rewind 0 >= "lctx_restore_status: error 2" assert_msg ;
+
+  # add esp, rewind
+  ctx 0x81 cctx_emit ;
+  ctx 0xc4 cctx_emit ;
+  ctx rewind cctx_emit32 ;
+
+  # Drop enough stack elements in excess
+  while stack vector_size status > {
+    $elem
+    @elem stack vector_pop_back = ;
+    elem stack_elem_destroy ;
+  }
+}
+
+fun lctx_push_var 3 {
+  $lctx
+  $ctx
+  $type_idx
+  $name
+  @lctx 3 param = ;
+  @ctx 2 param = ;
+  @type_idx 1 param = ;
+  @name 0 param = ;
+
+  $footprint
+  @footprint ctx type_idx cctx_type_footprint = ;
+  $new_pos
+  @new_pos lctx lctx_stack_pos footprint - = ;
+
+  $elem
+  @elem stack_elem_init = ;
+  elem STACK_ELEM_NAME take_addr name = ;
+  elem STACK_ELEM_TYPE_IDX take_addr type_idx = ;
+  elem STACK_ELEM_LOC take_addr new_pos = ;
+  lctx LCTX_STACK take elem vector_push_back ;
+
+  # sub esp, footprint
+  ctx 0x81 cctx_emit ;
+  ctx 0xec cctx_emit ;
+  ctx footprint cctx_emit32 ;
 }
 
 fun lctx_prime_stack 3 {
@@ -1018,6 +1113,42 @@ fun lctx_prime_stack 3 {
     @i i 1 - = ;
   }
   loc 8 == "lctx_prime_stack: error 2" assert_msg ;
+
+  # Add a fictious element to mark the beginning of local variables
+  $elem
+  @elem stack_elem_init = ;
+  elem STACK_ELEM_NAME take_addr "" = ;
+  elem STACK_ELEM_TYPE_IDX take_addr 0 = ;
+  elem STACK_ELEM_LOC take_addr 0 = ;
+  stack elem vector_push_back ;
+}
+
+fun lctx_gen_prologue 2 {
+  $lctx
+  $ctx
+  @lctx 1 param = ;
+  @ctx 0 param = ;
+
+  # push ebp; mov ebp, esp
+  ctx 0x55 cctx_emit ;
+  ctx 0x89 cctx_emit ;
+  ctx 0xe5 cctx_emit ;
+}
+
+fun lctx_gen_epilogue 2 {
+  $lctx
+  $ctx
+  @lctx 1 param = ;
+  @ctx 0 param = ;
+
+  # add esp, stack_pos
+  ctx 0x81 cctx_emit ;
+  ctx 0xc4 cctx_emit ;
+  ctx lctx lctx_stack_pos cctx_emit32 ;
+
+  # pop ebp; ret
+  ctx 0x5d cctx_emit ;
+  ctx 0xc3 cctx_emit ;
 }
 
 fun cctx_compile_block 2 {
@@ -1026,8 +1157,38 @@ fun cctx_compile_block 2 {
   @ctx 1 param = ;
   @lctx 0 param = ;
 
-  # FIXME
-  ctx "{" "}" cctx_go_to_matching ;
+  $saved_pos
+  @saved_pos lctx ctx lctx_save_status = ;
+
+  while 1 {
+    # Check if we found the closing brace
+    $tok
+    @tok ctx cctx_get_token_or_fail = ;
+    if tok "}" strcmp 0 == {
+      lctx ctx saved_pos lctx_restore_status ;
+      ret ;
+    }
+    ctx cctx_give_back_token ;
+
+    # Try to parse a type, in which case we have a variable declaration
+    $type_idx
+    @type_idx ctx cctx_parse_type = ;
+    if type_idx 0xffffffff != {
+      # There is a type, so we have a variable declaration
+      $actual_type_idx
+      $name
+      ctx type_idx @actual_type_idx @name 0 cctx_parse_declarator "cctx_compile_block: error 1" assert_msg ;
+      name 0 != "cctx_compile_block: cannot instantiate variable without name" assert_msg ;
+      lctx ctx actual_type_idx name lctx_push_var ;
+    } else {
+      # No type, so this is an expression
+      
+    }
+
+    # Expect and consume the semicolon
+    @tok ctx cctx_get_token_or_fail = ;
+    tok ";" strcmp 0 == "cctx_compile_block: ; expected" assert_msg ;
+  }
 }
 
 fun cctx_compile_function 3 {
@@ -1043,18 +1204,9 @@ fun cctx_compile_function 3 {
   @lctx lctx_init = ;
   lctx ctx type_idx arg_names lctx_prime_stack ;
 
-  # Emit function prologue
-  # push ebp; mov ebp, esp
-  ctx 0x55 cctx_emit ;
-  ctx 0x89 cctx_emit ;
-  ctx 0xe5 cctx_emit ;
-
+  lctx ctx lctx_gen_prologue ;
   ctx lctx cctx_compile_block ;
-
-  # Emit function epilogue
-  # pop ebp; ret
-  ctx 0x5d cctx_emit ;
-  ctx 0xc3 cctx_emit ;
+  lctx ctx lctx_gen_epilogue ;
 
   lctx lctx_destroy ;
 }
@@ -1071,10 +1223,9 @@ fun cctx_compile_line 1 {
   while cont {
     $actual_type_idx
     $name
-    $res
     $arg_names
     @arg_names 4 vector_init = ;
-    @res ctx type_idx @actual_type_idx @name arg_names cctx_parse_declarator = ;
+    ctx type_idx @actual_type_idx @name arg_names cctx_parse_declarator "cctx_compile_line: error 1" assert_msg ;
     $type
     @type ctx CCTX_TYPES take actual_type_idx vector_at = ;
     name 0 != "cctx_compile_line: cannot instantiate variable without name" assert_msg ;
@@ -1105,7 +1256,7 @@ fun cctx_compile_line 1 {
       if tok ";" strcmp 0 == {
         @cont 0 = ;
       } else {
-        tok "," strcmp 0 == "cctx_compile: comma expected" assert_msg ;
+        tok "," strcmp 0 == "cctx_compile_line: comma expected" assert_msg ;
       }
     }
   }

@@ -15,4 +15,8 @@ char *(*(**foo [0][8])())[];
 void main(int other_name, char **);
 
 void main(int argc, char **argv) {
+  int x;
+  char c;
+  int arr[10];
 }
+
