@@ -1144,7 +1144,7 @@ fun lctx_gen_epilogue 2 {
   # add esp, stack_pos
   ctx 0x81 cctx_emit ;
   ctx 0xc4 cctx_emit ;
-  ctx lctx lctx_stack_pos cctx_emit32 ;
+  ctx 0 lctx lctx_stack_pos - cctx_emit32 ;
 
   # pop ebp; ret
   ctx 0x5d cctx_emit ;
@@ -1161,28 +1161,41 @@ fun cctx_compile_block 2 {
   @saved_pos lctx ctx lctx_save_status = ;
 
   while 1 {
-    # Check if we found the closing brace
+    $processed
+    @processed 0 = ;
     $tok
     @tok ctx cctx_get_token_or_fail = ;
-    if tok "}" strcmp 0 == {
+
+    # Check if we found the closing brace
+    if tok "}" strcmp 0 == processed ! && {
       lctx ctx saved_pos lctx_restore_status ;
+      @processed 1 = ;
       ret ;
     }
-    ctx cctx_give_back_token ;
 
-    # Try to parse a type, in which case we have a variable declaration
-    $type_idx
-    @type_idx ctx cctx_parse_type = ;
-    if type_idx 0xffffffff != {
-      # There is a type, so we have a variable declaration
-      $actual_type_idx
-      $name
-      ctx type_idx @actual_type_idx @name 0 cctx_parse_declarator "cctx_compile_block: error 1" assert_msg ;
-      name 0 != "cctx_compile_block: cannot instantiate variable without name" assert_msg ;
-      lctx ctx actual_type_idx name lctx_push_var ;
-    } else {
-      # No type, so this is an expression
-      
+    # Check if this is a return statement
+    if tok "return" strcmp 0 == processed ! && {
+      lctx ctx lctx_gen_epilogue ;
+      @processed 1 = ;
+    }
+
+    if processed ! {
+      ctx cctx_give_back_token ;
+
+      # Try to parse a type, in which case we have a variable declaration
+      $type_idx
+      @type_idx ctx cctx_parse_type = ;
+      if type_idx 0xffffffff != {
+        # There is a type, so we have a variable declaration
+        $actual_type_idx
+        $name
+        ctx type_idx @actual_type_idx @name 0 cctx_parse_declarator "cctx_compile_block: error 1" assert_msg ;
+        name 0 != "cctx_compile_block: cannot instantiate variable without name" assert_msg ;
+        lctx ctx actual_type_idx name lctx_push_var ;
+      } else {
+        # No type, so this is an expression
+        
+      }
     }
 
     # Expect and consume the semicolon

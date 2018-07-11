@@ -17,6 +17,7 @@ void main(int other_name, char **);
 void main(int argc, char **argv) {
   int x;
   char c;
+  return;
   int arr[10];
 }
 
