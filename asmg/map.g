@@ -61,6 +61,17 @@ fun map_at_idx 2 {
   addr MAP_ELEM_VALUE take ret ;
 }
 
+fun map_key_at_idx 2 {
+  $map
+  $idx
+  @map 1 param = ;
+  @idx 0 param = ;
+  $addr
+  @addr map idx vector_at_addr = ;
+  addr MAP_ELEM_PRESENT take assert ;
+  addr MAP_ELEM_KEY take ret ;
+}
+
 fun map_has 2 {
   $map
   $key

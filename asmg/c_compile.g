@@ -28,6 +28,67 @@ fun type_destroy 1 {
   type free ;
 }
 
+fun type_dump 1 {
+  $type
+  @type 0 param = ;
+
+  $kind
+  @kind type TYPE_KIND take = ;
+  $base
+  @base type TYPE_BASE take = ;
+
+  if kind TYPE_KIND_BASE == {
+    "Base type #" 1 platform_log ;
+    base itoa 1 platform_log ;
+  }
+
+  if kind TYPE_KIND_POINTER == {
+    "Pointer type to #" 1 platform_log ;
+    base itoa 1 platform_log ;
+  }
+
+  if kind TYPE_KIND_FUNCTION == {
+    "Function type returning #" 1 platform_log ;
+    base itoa 1 platform_log ;
+    $args
+    @args type TYPE_ARGS take = ;
+    if args vector_size 0 == {
+      " taking no argument" 1 platform_log ;
+    } else {
+      " taking arguments" 1 platform_log ;
+      $i
+      @i 0 = ;
+      while i args vector_size < {
+        " #" 1 platform_log ;
+        args i vector_at itoa 1 platform_log ;
+        @i i 1 + = ;
+      }
+    }
+  }
+
+  if kind TYPE_KIND_ARRAY == {
+    "Array type of #" 1 platform_log ;
+    base itoa 1 platform_log ;
+    $length
+    @length type TYPE_LENGTH take = ;
+    if length 0xffffffff == {
+      " of unspecified length" 1 platform_log ;
+    } else {
+      " of length " 1 platform_log ;
+      length itoa 1 platform_log ;
+    }
+  }
+
+  $size
+  @size type TYPE_SIZE take = ;
+  if size 0xffffffff == {
+    ", of undertermined size" 1 platform_log ;
+  } else {
+    ", of size " 1 platform_log ;
+    size itoa 1 platform_log ;
+  }
+}
+
 const GLOBAL_TYPE_IDX 0
 const GLOBAL_LOC 4
 const SIZEOF_GLOBAL 8
@@ -42,6 +103,15 @@ fun global_destroy 1 {
   $global
   @global 0 param = ;
   global free ;
+}
+
+fun global_dump 1 {
+  $global
+  @global 0 param = ;
+  "has type #" 1 platform_log ;
+  global GLOBAL_TYPE_IDX take itoa 1 platform_log ;
+  " and is stored at " 1 platform_log ;
+  global GLOBAL_LOC take itoa 1 platform_log ;
 }
 
 const CCTX_TYPES 0
@@ -228,6 +298,66 @@ fun cctx_create_basic_types 1 {
   typenames "uchar" idx map_set ;
 
   @idx idx 1 + = ;
+}
+
+fun cctx_dump_types 1 {
+  $ctx
+  @ctx 0 param = ;
+
+  $i
+  @i 0 = ;
+  $types
+  @types ctx CCTX_TYPES take = ;
+  while i types vector_size < {
+    "#" 1 platform_log ;
+    i itoa 1 platform_log ;
+    ": " 1 platform_log ;
+    types i vector_at type_dump ;
+    "\n" 1 platform_log ;
+    @i i 1 + = ;
+  }
+}
+
+fun cctx_dump_typenames 1 {
+  $ctx
+  @ctx 0 param = ;
+
+  $i
+  @i 0 = ;
+  $typenames
+  @typenames ctx CCTX_TYPENAMES take = ;
+  while i typenames map_size < {
+    if typenames i map_has_idx {
+      "Typename " 1 platform_log ;
+      typenames i map_key_at_idx 1 platform_log ;
+      ": #" 1 platform_log ;
+      typenames i map_at_idx itoa 1 platform_log ;
+      "\n" 1 platform_log ;
+    }
+    @i i 1 + = ;
+  }
+}
+
+fun cctx_dump_globals 1 {
+  $ctx
+  @ctx 0 param = ;
+
+  $i
+  @i 0 = ;
+  $globals
+  @globals ctx CCTX_GLOBALS take = ;
+  while i globals map_size < {
+    if globals i map_has_idx {
+      "Global " 1 platform_log ;
+      globals i map_key_at_idx 1 platform_log ;
+      $global
+      @global globals i map_at_idx = ;
+      ": " 1 platform_log ;
+      global global_dump ;
+      "\n" 1 platform_log ;
+    }
+    @i i 1 + = ;
+  }
 }
 
 ifun cctx_type_compare 3
@@ -821,6 +951,14 @@ fun parse_c 1 {
   $cctx
   @cctx tokens cctx_init = ;
   cctx cctx_compile ;
+
+  # Debug output
+  "TYPES TABLE\n" 1 platform_log ;
+  cctx cctx_dump_types ;
+  "TYPE NAMES TABLE\n" 1 platform_log ;
+  cctx cctx_dump_typenames ;
+  "GLOBALS TABLE\n" 1 platform_log ;
+  cctx cctx_dump_globals ;
 
   # Cleanup
   tokens free_vect_of_ptrs ;
