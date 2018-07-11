@@ -216,88 +216,48 @@ fun is_valid_identifier 1 {
   1 ret ;
 }
 
+const TYPE_VOID 0
+const TYPE_CHAR 1
+const TYPE_SCHAR 2
+const TYPE_UCHAR 3
+const TYPE_SHORT 4
+const TYPE_INT 5
+const TYPE_USHORT 6
+const TYPE_UINT 7
+
+fun cctx_create_basic_type 3 {
+  $ctx
+  $idx
+  $size
+  @ctx 2 param = ;
+  @idx 1 param = ;
+  @size 0 param = ;
+
+  $types
+  @types ctx CCTX_TYPES take = ;
+
+  idx types vector_size == "cctx_create_basic_type: error 1" assert_msg ;
+
+  $type
+  @type type_init = ;
+  type TYPE_KIND take_addr TYPE_KIND_BASE = ;
+  type TYPE_BASE take_addr idx = ;
+  type TYPE_SIZE take_addr size = ;
+  types type vector_push_back ;
+}
+
 fun cctx_create_basic_types 1 {
   $ctx
   @ctx 0 param = ;
 
-  $types
-  $typenames
-  @types ctx CCTX_TYPES take = ;
-  @typenames ctx CCTX_TYPENAMES take = ;
-
-  $type
-  $idx
-  @idx 0 = ;
-
-  # void
-  @type type_init = ;
-  type TYPE_KIND take_addr TYPE_KIND_BASE = ;
-  type TYPE_BASE take_addr idx = ;
-  type TYPE_SIZE take_addr 0xffffffff = ;
-  types type vector_push_back ;
-  typenames "void" idx map_set ;
-
-  @idx idx 1 + = ;
-
-  # int
-  @type type_init = ;
-  type TYPE_KIND take_addr TYPE_KIND_BASE = ;
-  type TYPE_BASE take_addr idx = ;
-  type TYPE_SIZE take_addr 4 = ;
-  types type vector_push_back ;
-  typenames "int" idx map_set ;
-
-  @idx idx 1 + = ;
-
-  # short
-  @type type_init = ;
-  type TYPE_KIND take_addr TYPE_KIND_BASE = ;
-  type TYPE_BASE take_addr idx = ;
-  type TYPE_SIZE take_addr 2 = ;
-  types type vector_push_back ;
-  typenames "short" idx map_set ;
-
-  @idx idx 1 + = ;
-
-  # char
-  @type type_init = ;
-  type TYPE_KIND take_addr TYPE_KIND_BASE = ;
-  type TYPE_BASE take_addr idx = ;
-  type TYPE_SIZE take_addr 1 = ;
-  types type vector_push_back ;
-  typenames "char" idx map_set ;
-
-  @idx idx 1 + = ;
-
-  # uint
-  @type type_init = ;
-  type TYPE_KIND take_addr TYPE_KIND_BASE = ;
-  type TYPE_BASE take_addr idx = ;
-  type TYPE_SIZE take_addr 4 = ;
-  types type vector_push_back ;
-  typenames "uint" idx map_set ;
-
-  @idx idx 1 + = ;
-
-  # ushort
-  @type type_init = ;
-  type TYPE_KIND take_addr TYPE_KIND_BASE = ;
-  type TYPE_BASE take_addr idx = ;
-  type TYPE_SIZE take_addr 2 = ;
-  types type vector_push_back ;
-  typenames "ushort" idx map_set ;
-
-  @idx idx 1 + = ;
-
-  # uchar
-  @type type_init = ;
-  type TYPE_KIND take_addr TYPE_KIND_BASE = ;
-  type TYPE_BASE take_addr idx = ;
-  type TYPE_SIZE take_addr 1 = ;
-  types type vector_push_back ;
-  typenames "uchar" idx map_set ;
-
-  @idx idx 1 + = ;
+  ctx TYPE_VOID 0xffffffff cctx_create_basic_type ;
+  ctx TYPE_CHAR 1 cctx_create_basic_type ;
+  ctx TYPE_SCHAR 1 cctx_create_basic_type ;
+  ctx TYPE_UCHAR 1 cctx_create_basic_type ;
+  ctx TYPE_SHORT 2 cctx_create_basic_type ;
+  ctx TYPE_INT 4 cctx_create_basic_type ;
+  ctx TYPE_USHORT 2 cctx_create_basic_type ;
+  ctx TYPE_UINT 4 cctx_create_basic_type ;
 }
 
 fun cctx_get_type 2 {
@@ -751,6 +711,38 @@ fun cctx_parse_type 1 {
 
   $tok
   @tok ctx cctx_get_token_or_fail = ;
+
+  if tok "void" strcmp 0 == { TYPE_VOID ret ; }
+  if tok "char" strcmp 0 == { TYPE_CHAR ret ; }
+  if tok "short" strcmp 0 == { TYPE_SHORT ret ; }
+  if tok "int" strcmp 0 == { TYPE_INT ret ; }
+  if tok "signed" strcmp 0 == {
+    @tok ctx cctx_get_token_or_fail = ;
+    if tok "char" strcmp 0 == { TYPE_SCHAR ret ; }
+    if tok "short" strcmp 0 == { TYPE_SHORT ret ; }
+    if tok "int" strcmp 0 == { TYPE_INT ret ; }
+    0 "cctx_parse_type: unexpected token after signed" assert_msg ;
+  }
+  if tok "unsigned" strcmp 0 == {
+    @tok ctx cctx_get_token_or_fail = ;
+    if tok "char" strcmp 0 == { TYPE_UCHAR ret ; }
+    if tok "short" strcmp 0 == { TYPE_USHORT ret ; }
+    if tok "int" strcmp 0 == { TYPE_UINT ret ; }
+    0 "cctx_parse_type: unexpected token after unsigned" assert_msg ;
+  }
+
+  if tok "struct" strcmp 0 == {
+    @tok ctx cctx_get_token_or_fail = ;
+    0 "cctx_parse_type: unimplemented" assert_msg ;
+  }
+  if tok "enum" strcmp 0 == {
+    @tok ctx cctx_get_token_or_fail = ;
+    0 "cctx_parse_type: unimplemented" assert_msg ;
+  }
+  if tok "union" strcmp 0 == {
+    @tok ctx cctx_get_token_or_fail = ;
+    0 "cctx_parse_type: unimplemented" assert_msg ;
+  }
 
   $typenames
   @typenames ctx CCTX_TYPENAMES take = ;
@@ -1427,12 +1419,12 @@ fun parse_c 1 {
   cctx cctx_compile ;
 
   # Debug output
-  #"TYPES TABLE\n" 1 platform_log ;
-  #cctx cctx_dump_types ;
-  #"TYPE NAMES TABLE\n" 1 platform_log ;
-  #cctx cctx_dump_typenames ;
-  #"GLOBALS TABLE\n" 1 platform_log ;
-  #cctx cctx_dump_globals ;
+  "TYPES TABLE\n" 1 platform_log ;
+  cctx cctx_dump_types ;
+  "TYPE NAMES TABLE\n" 1 platform_log ;
+  cctx cctx_dump_typenames ;
+  "GLOBALS TABLE\n" 1 platform_log ;
+  cctx cctx_dump_globals ;
 
   # Cleanup
   tokens free_vect_of_ptrs ;
