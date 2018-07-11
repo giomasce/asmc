@@ -12,7 +12,7 @@ void (*main_ptr)(int argc, char *argv[], char*);
 // Test from http://www.unixwiz.net/techtips/reading-cdecl.html
 char *(*(**foo [0][8])())[];
 
-void main(int argc, char *argv[]);
+void main(int other_name, char **);
 
-void main(int argc, char *argv[]) {
+void main(int argc, char **argv) {
 }

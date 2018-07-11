@@ -300,6 +300,15 @@ fun cctx_create_basic_types 1 {
   @idx idx 1 + = ;
 }
 
+fun cctx_get_type 2 {
+  $ctx
+  $type_idx
+  @ctx 1 param = ;
+  @type_idx 0 param = ;
+
+  ctx CCTX_TYPES take type_idx vector_at ret ;
+}
+
 fun cctx_dump_types 1 {
   $ctx
   @ctx 0 param = ;
@@ -917,6 +926,110 @@ fun cctx_type_footprint 2 {
   size 1 - 3 | 1 + ret ;
 }
 
+const STACK_ELEM_NAME 0
+const STACK_ELEM_TYPE_IDX 4
+const STACK_ELEM_LOC 8
+const SIZEOF_STACK_ELEM 12
+
+fun stack_elem_init 0 {
+  $elem
+  @elem SIZEOF_STACK_ELEM malloc = ;
+  elem ret ;
+}
+
+fun stack_elem_destroy 1 {
+  $elem
+  @elem 0 param = ;
+  elem free ;
+}
+
+const LCTX_STACK 0
+const LCTX_STACK_SIZE 4
+const SIZEOF_LCTX 8
+
+fun lctx_init 0 {
+  $lctx
+  @lctx SIZEOF_LCTX malloc = ;
+  lctx LCTX_STACK take_addr 4 vector_init = ;
+  lctx LCTX_STACK_SIZE take_addr 0 = ;
+  lctx ret ;
+}
+
+fun lctx_destroy 1 {
+  $lctx
+  @lctx 0 param = ;
+
+  $stack
+  @stack lctx LCTX_STACK take = ;
+  $i
+  @i 0 = ;
+  while i stack vector_size < {
+    stack i vector_at stack_elem_destroy ;
+    @i i 1 + = ;
+  }
+
+  lctx LCTX_STACK take vector_destroy ;
+  lctx free ;
+}
+
+fun lctx_prime_stack 3 {
+  $lctx
+  $ctx
+  $type_idx
+  $arg_names
+  @lctx 3 param = ;
+  @ctx 2 param = ;
+  @type_idx 1 param = ;
+  @arg_names 0 param = ;
+
+  $type
+  @type ctx type_idx cctx_get_type = ;
+  type TYPE_KIND take TYPE_KIND_FUNCTION == "lctx_prime_stack: type is not a function" assert_msg ;
+  $args
+  @args type TYPE_ARGS take = ;
+  args vector_size arg_names vector_size == "lctx_prime_stack: error 1" assert_msg ;
+  $stack
+  @stack lctx LCTX_STACK take = ;
+
+  $i
+  @i 0 = ;
+  $total_footprint
+  @total_footprint 0 = ;
+  while i args vector_size < {
+    @total_footprint total_footprint ctx args i vector_at cctx_type_footprint + = ;
+    @i i 1 + = ;
+  }
+  $loc
+  @loc total_footprint 8 + = ;
+  @i args vector_size 1 - = ;
+  while i 0 >= {
+    $this_type_idx
+    @this_type_idx args i vector_at = ;
+    $name
+    @name arg_names i vector_at = ;
+    name 0 != "lctx_prime_stack: name cannot be empty" assert_msg ;
+    @loc loc ctx this_type_idx cctx_type_footprint - = ;
+    $elem
+    @elem stack_elem_init = ;
+    elem STACK_ELEM_NAME take_addr name = ;
+    elem STACK_ELEM_TYPE_IDX take_addr this_type_idx = ;
+    elem STACK_ELEM_LOC take_addr loc = ;
+    stack elem vector_push_back ;
+    @i i 1 - = ;
+  }
+  loc 8 == "lctx_prime_stack: error 2" assert_msg ;
+}
+
+fun cctx_compile_block 2 {
+  $ctx
+  $lctx
+  @ctx 1 param = ;
+  @lctx 0 param = ;
+
+  # FIXME
+  ctx "{" "}" cctx_go_to_matching ;
+}
+
 fun cctx_compile_function 3 {
   $ctx
   $type_idx
@@ -925,8 +1038,25 @@ fun cctx_compile_function 3 {
   @type_idx 1 param = ;
   @arg_names 0 param = ;
 
-  # FIXME
-  ctx "{" "}" cctx_go_to_matching ;
+  # Costruct the local context
+  $lctx
+  @lctx lctx_init = ;
+  lctx ctx type_idx arg_names lctx_prime_stack ;
+
+  # Emit function prologue
+  # push ebp; mov ebp, esp
+  ctx 0x55 cctx_emit ;
+  ctx 0x89 cctx_emit ;
+  ctx 0xe5 cctx_emit ;
+
+  ctx lctx cctx_compile_block ;
+
+  # Emit function epilogue
+  # pop ebp; ret
+  ctx 0x5d cctx_emit ;
+  ctx 0xc3 cctx_emit ;
+
+  lctx lctx_destroy ;
 }
 
 fun cctx_compile_line 1 {
@@ -1048,12 +1178,12 @@ fun parse_c 1 {
   cctx cctx_compile ;
 
   # Debug output
-  "TYPES TABLE\n" 1 platform_log ;
-  cctx cctx_dump_types ;
-  "TYPE NAMES TABLE\n" 1 platform_log ;
-  cctx cctx_dump_typenames ;
-  "GLOBALS TABLE\n" 1 platform_log ;
-  cctx cctx_dump_globals ;
+  #"TYPES TABLE\n" 1 platform_log ;
+  #cctx cctx_dump_types ;
+  #"TYPE NAMES TABLE\n" 1 platform_log ;
+  #cctx cctx_dump_typenames ;
+  #"GLOBALS TABLE\n" 1 platform_log ;
+  #cctx cctx_dump_globals ;
 
   # Cleanup
   tokens free_vect_of_ptrs ;
