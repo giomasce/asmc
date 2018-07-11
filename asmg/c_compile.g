@@ -513,21 +513,80 @@ fun cctx_add_global 4 {
 
   $globals
   @globals ctx CCTX_GLOBALS take = ;
-
-  if ctx CCTX_STAGE take 0 == {
-    globals name map_has ! "cctx_add_global: name already defined" assert_msg ;
-    $global
+  $present
+  @present globals name map_has = ;
+  $global
+  if present {
+    @global globals name map_at = ;
+    ctx global GLOBAL_TYPE_IDX take type_idx cctx_type_compare "cctx_add_global: types do not match" assert_msg ;
+  } else {
+    ctx CCTX_STAGE take 0 == "cctx_add_global: error 1" assert_msg ;
     @global global_init = ;
     global GLOBAL_TYPE_IDX take_addr type_idx = ;
     global GLOBAL_LOC take_addr loc = ;
     globals name global map_set ;
   }
+
+  if ctx CCTX_STAGE take 0 == {
+    global GLOBAL_LOC take_addr 0xffffffff = ;
+    present ! "cctx_add_global: error 4" assert_msg ;
+  } else {
+    present "cctx_add_global: error 2" assert_msg ;
+  }
+
   if ctx CCTX_STAGE take 1 == {
-    globals name map_has "cctx_add_global: error 1" assert_msg ;
-    $global
+    global GLOBAL_LOC take 0xffffffff == "cctx_add_global: error 5" assert_msg ;
+    global GLOBAL_LOC take_addr loc = ;
+  }
+
+  if ctx CCTX_STAGE take 2 == {
+    global GLOBAL_LOC take loc == "cctx_add_global: error 3" assert_msg ;
+  }
+}
+
+fun cctx_add_global_funct 4 {
+  $ctx
+  $name
+  $loc
+  $type_idx
+  @ctx 3 param = ;
+  @name 2 param = ;
+  @loc 1 param = ;
+  @type_idx 0 param = ;
+
+  $globals
+  @globals ctx CCTX_GLOBALS take = ;
+  $present
+  @present globals name map_has = ;
+  $global
+  if present {
     @global globals name map_at = ;
-    global GLOBAL_TYPE_IDX take type_idx == "cctx_add_global: error 2" assert_msg ;
-    #global GLOBAL_LOC take loc == "cctx_add_global: error 3" assert_msg ;
+    ctx global GLOBAL_TYPE_IDX take type_idx cctx_type_compare "cctx_add_global_funct: function types do not match" assert_msg ;
+  } else {
+    ctx CCTX_STAGE take 0 == "cctx_add_global_funct: error 1" assert_msg ;
+    @global global_init = ;
+    global GLOBAL_TYPE_IDX take_addr type_idx = ;
+    global GLOBAL_LOC take_addr loc = ;
+    globals name global map_set ;
+  }
+
+  if ctx CCTX_STAGE take 0 == {
+    global GLOBAL_LOC take_addr 0xffffffff = ;
+  } else {
+    present "cctx_add_global_funct: error 2" assert_msg ;
+  }
+
+  if ctx CCTX_STAGE take 1 == {
+    if loc 0xffffffff != {
+      global GLOBAL_LOC take 0xffffffff == "cctx_add_global_funct: function is defined more than once" assert_msg ;
+      global GLOBAL_LOC take_addr loc = ;
+    }
+  }
+
+  if ctx CCTX_STAGE take 2 == {
+    if loc 0xffffffff != {
+      global GLOBAL_LOC take loc == "cctx_add_global_funct: error 3" assert_msg ;
+    }
   }
 }
 
@@ -623,7 +682,7 @@ fun cctx_emit 2 {
   @ctx 1 param = ;
   @byte 0 param = ;
 
-  if ctx CCTX_STAGE take 1 == {
+  if ctx CCTX_STAGE take 2 == {
     ctx CCTX_CURRENT_LOC take byte =c ;
   }
   ctx CCTX_CURRENT_LOC take_addr ctx CCTX_CURRENT_LOC take 1 + = ;
@@ -662,11 +721,13 @@ fun cctx_parse_type 1 {
   }
 }
 
-ifun cctx_parse_declarator 4
+ifun cctx_parse_declarator 5
 
-fun _cctx_parse_function_arguments 1 {
+fun _cctx_parse_function_arguments 2 {
   $ctx
-  @ctx 0 param = ;
+  $ret_arg_names
+  @ctx 1 param = ;
+  @ret_arg_names 0 param = ;
 
   $args
   @args 4 vector_init = ;
@@ -682,10 +743,13 @@ fun _cctx_parse_function_arguments 1 {
     }
     $name
     $actual_type_idx
-    if ctx type_idx @actual_type_idx @name cctx_parse_declarator ! {
+    if ctx type_idx @actual_type_idx @name 0 cctx_parse_declarator ! {
       @actual_type_idx type_idx = ;
     }
     args actual_type_idx vector_push_back ;
+    if ret_arg_names 0 != {
+      ret_arg_names name vector_push_back ;
+    }
     $tok
     @tok ctx cctx_get_token_or_fail = ;
     if tok ")" strcmp 0 == {
@@ -695,15 +759,17 @@ fun _cctx_parse_function_arguments 1 {
   }
 }
 
-fun _cctx_parse_declarator 4 {
+fun _cctx_parse_declarator 5 {
   $ctx
   $type_idx
   $ret_type_idx
   $ret_name
-  @ctx 3 param = ;
-  @type_idx 2 param = ;
-  @ret_type_idx 1 param = ;
-  @ret_name 0 param = ;
+  $ret_arg_names
+  @ctx 4 param = ;
+  @type_idx 3 param = ;
+  @ret_type_idx 2 param = ;
+  @ret_name 1 param = ;
+  @ret_arg_names 0 param = ;
 
   #"_cctx_parse_declarator: entering\n" 1 platform_log ;
   #ctx cctx_print_token_pos ;
@@ -720,7 +786,7 @@ fun _cctx_parse_declarator 4 {
   # Parse pointer declaration
   if tok "*" strcmp 0 == {
     @type_idx ctx type_idx cctx_get_pointer_type = ;
-    if ctx type_idx ret_type_idx ret_name _cctx_parse_declarator ! {
+    if ctx type_idx ret_type_idx ret_name ret_arg_names _cctx_parse_declarator ! {
       ret_type_idx type_idx = ;
     }
     @processed 1 = ;
@@ -755,8 +821,8 @@ fun _cctx_parse_declarator 4 {
     if is_funct {
       # Function parenthesis
       $args
-      @args ctx _cctx_parse_function_arguments = ;
-      if ctx type_idx ret_type_idx ret_name _cctx_parse_declarator {
+      @args ctx ret_arg_names _cctx_parse_function_arguments = ;
+      if ctx type_idx ret_type_idx ret_name 0 _cctx_parse_declarator {
         @type_idx ret_type_idx ** = ;
       }
       ret_type_idx ctx type_idx args cctx_get_function_type = ;
@@ -768,12 +834,12 @@ fun _cctx_parse_declarator 4 {
       @inside_pos ctx cctx_save_token_pos = ;
       ctx "(" ")" cctx_go_to_matching ;
       @outside_pos ctx cctx_save_token_pos = ;
-      if ctx type_idx ret_type_idx ret_name _cctx_parse_declarator {
+      if ctx type_idx ret_type_idx ret_name 0 _cctx_parse_declarator {
         @type_idx ret_type_idx ** = ;
       }
       @end_pos ctx cctx_save_token_pos = ;
       ctx inside_pos cctx_restore_token_pos ;
-      ctx type_idx ret_type_idx ret_name _cctx_parse_declarator "_cctx_parse_declarator: invalid syntax 1" assert_msg ;
+      ctx type_idx ret_type_idx ret_name ret_arg_names _cctx_parse_declarator "_cctx_parse_declarator: invalid syntax 1" assert_msg ;
       @tok ctx cctx_get_token_or_fail = ;
       tok ")" strcmp 0 == "_cctx_parse_declarator: error 1" assert_msg ;
       outside_pos ctx cctx_save_token_pos == "_cctx_parse_declarator: invalid syntax 2" assert_msg ;
@@ -794,7 +860,7 @@ fun _cctx_parse_declarator 4 {
       @tok ctx cctx_get_token_or_fail = ;
     }
     tok "]" strcmp 0 == "_cctx_parse_declarator: expected ] after array subscript" assert_msg ;
-    if ctx type_idx ret_type_idx ret_name _cctx_parse_declarator {
+    if ctx type_idx ret_type_idx ret_name 0 _cctx_parse_declarator {
       @type_idx ret_type_idx ** = ;
     }
     ret_type_idx ctx type_idx length cctx_get_array_type = ;
@@ -803,7 +869,7 @@ fun _cctx_parse_declarator 4 {
 
   # Parse the actual declarator identifier
   if tok is_valid_identifier {
-    if ctx type_idx ret_type_idx ret_name _cctx_parse_declarator ! {
+    if ctx type_idx ret_type_idx ret_name ret_arg_names _cctx_parse_declarator ! {
       ret_type_idx type_idx = ;
     }
     ret_name ** 0 == "_cctx_parse_declarator: more than one identifier found" assert_msg ;
@@ -821,18 +887,20 @@ fun _cctx_parse_declarator 4 {
   1 ret ;
 }
 
-fun cctx_parse_declarator 4 {
+fun cctx_parse_declarator 5 {
   $ctx
   $type_idx
   $ret_type_idx
   $ret_name
-  @ctx 3 param = ;
-  @type_idx 2 param = ;
-  @ret_type_idx 1 param = ;
-  @ret_name 0 param = ;
+  $ret_arg_names
+  @ctx 4 param = ;
+  @type_idx 3 param = ;
+  @ret_type_idx 2 param = ;
+  @ret_name 1 param = ;
+  @ret_arg_names 0 param = ;
 
   ret_name 0 = ;
-  ctx type_idx ret_type_idx ret_name _cctx_parse_declarator ret ;
+  ctx type_idx ret_type_idx ret_name ret_arg_names _cctx_parse_declarator ret ;
 }
 
 fun cctx_type_footprint 2 {
@@ -849,6 +917,18 @@ fun cctx_type_footprint 2 {
   size 1 - 3 | 1 + ret ;
 }
 
+fun cctx_compile_function 3 {
+  $ctx
+  $type_idx
+  $arg_names
+  @ctx 2 param = ;
+  @type_idx 1 param = ;
+  @arg_names 0 param = ;
+
+  # FIXME
+  ctx "{" "}" cctx_go_to_matching ;
+}
+
 fun cctx_compile_line 1 {
   $ctx
   @ctx 0 param = ;
@@ -862,19 +942,41 @@ fun cctx_compile_line 1 {
     $actual_type_idx
     $name
     $res
-    @res ctx type_idx @actual_type_idx @name cctx_parse_declarator = ;
-
-    # Register and allocate the global variable
+    $arg_names
+    @arg_names 4 vector_init = ;
+    @res ctx type_idx @actual_type_idx @name arg_names cctx_parse_declarator = ;
+    $type
+    @type ctx CCTX_TYPES take actual_type_idx vector_at = ;
     name 0 != "cctx_compile_line: cannot instantiate variable without name" assert_msg ;
-    ctx name ctx CCTX_CURRENT_LOC take actual_type_idx cctx_add_global ;
-    ctx ctx actual_type_idx cctx_type_footprint cctx_emit_zeros ;
-
-    $tok
-    @tok ctx cctx_get_token_or_fail = ;
-    if tok ";" strcmp 0 == {
-      @cont 0 = ;
+    if type TYPE_KIND take TYPE_KIND_FUNCTION == {
+      # If it is a function, check if it has a body
+      $tok
+      @tok ctx cctx_get_token_or_fail = ;
+      if tok "{" strcmp 0 == {
+        # There is the body, register the global and compile the body
+        ctx name ctx CCTX_CURRENT_LOC take actual_type_idx cctx_add_global_funct ;
+        ctx actual_type_idx arg_names cctx_compile_function ;
+        @cont 0 = ;
+      } else {
+        # No body, register the global with a fictious location
+        ctx cctx_give_back_token ;
+        ctx name 0xffffffff actual_type_idx cctx_add_global_funct ;
+      }
     } else {
-      tok "," strcmp 0 == "cctx_compile: comma expected" assert_msg ;
+      # If it is anything else, register it and allocate its size
+      ctx name ctx CCTX_CURRENT_LOC take actual_type_idx cctx_add_global ;
+      ctx ctx actual_type_idx cctx_type_footprint cctx_emit_zeros ;
+    }
+    arg_names vector_destroy ;
+
+    if cont {
+      $tok
+      @tok ctx cctx_get_token_or_fail = ;
+      if tok ";" strcmp 0 == {
+        @cont 0 = ;
+      } else {
+        tok "," strcmp 0 == "cctx_compile: comma expected" assert_msg ;
+      }
     }
   }
 }
@@ -887,7 +989,7 @@ fun cctx_compile 1 {
   $start_loc
   @start_loc 0 = ;
   $size
-  while ctx CCTX_STAGE take 2 < {
+  while ctx CCTX_STAGE take 3 < {
     "Compilation stage " 1 platform_log ;
     ctx CCTX_STAGE take 1 + itoa 1 platform_log ;
     ctx CCTX_CURRENT_LOC take_addr start_loc = ;
@@ -914,13 +1016,6 @@ fun cctx_compile 1 {
   "Compiled dump:\n" 1 platform_log ;
   start_loc size dump_mem ;
   "\n" 1 platform_log ;
-}
-
-fun test 0 {
-  $v
-  @v 4 malloc = ;
-  v 2 + 0x4c =c ;
-  v free ;
 }
 
 fun parse_c 1 {

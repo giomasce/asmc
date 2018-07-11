@@ -7,7 +7,12 @@ char *arr3[10];
 char *(arr4[10]);
 char (*arr5)[10];
 
-void (*main)(int argc, char *argv[], char*);
+void (*main_ptr)(int argc, char *argv[], char*);
 
 // Test from http://www.unixwiz.net/techtips/reading-cdecl.html
 char *(*(**foo [0][8])())[];
+
+void main(int argc, char *argv[]);
+
+void main(int argc, char *argv[]) {
+}
