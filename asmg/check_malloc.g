@@ -73,12 +73,19 @@ fun _malloc_find_index 1 {
     @i i 1 + = ;
   }
 
+  "Unallocated address: " 1 platform_log ;
+  ptr itoa 1 platform_log ;
+  "\n" 1 platform_log ;
   0 "_malloc_find_index: requested memory region was not allocated" assert_msg ;
 }
 
 fun free 1 {
   $buf_begin
   @buf_begin 0 param = ;
+
+  if buf_begin 0 == {
+    ret ;
+  }
 
   # Find the allocation index
   $i

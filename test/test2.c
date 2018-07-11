@@ -19,5 +19,7 @@ void main(int argc, char **argv) {
   char c;
   return;
   int arr[10];
+
+  x;
 }
 

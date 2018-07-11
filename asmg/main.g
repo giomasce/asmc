@@ -1,5 +1,5 @@
 
-const COMPILE_ASM 1
+const COMPILE_ASM 0
 const COMPILE_C 1
 const RUN_ASM 0
 const RUN_C 1

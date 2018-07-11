@@ -3,7 +3,8 @@ const AST_TYPE 0      # 0 for operand, 1 for operator
 const AST_NAME 4      # char*
 const AST_LEFT 8      # AST*
 const AST_RIGHT 12    # AST*
-const SIZEOF_AST 16
+const AST_TYPE_IDX 16 # int
+const SIZEOF_AST 20
 
 fun ast_init 0 {
   $ptr
@@ -19,8 +20,12 @@ fun ast_destroy 1 {
   $ptr
   @ptr 0 param = ;
   ptr AST_NAME take free ;
-  ptr AST_LEFT take ast_destroy ;
-  ptr AST_RIGHT take ast_destroy ;
+  if ptr AST_LEFT take {
+    ptr AST_LEFT take ast_destroy ;
+  }
+  if ptr AST_RIGHT take {
+    ptr AST_RIGHT take ast_destroy ;
+  }
   ptr free ;
 }
 

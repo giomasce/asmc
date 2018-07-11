@@ -510,6 +510,20 @@ fun cctx_get_function_type 3 {
   ctx type cctx_add_type ret ;
 }
 
+fun cctx_get_global 2 {
+  $ctx
+  $name
+  @ctx 1 param = ;
+  @name 0 param = ;
+
+  $globals
+  @globals ctx CCTX_GLOBALS take = ;
+  globals name map_has "cctx_get_global: global does not exist" assert_msg ;
+  $global
+  @global globals name map_at = ;
+  global ret ;
+}
+
 fun cctx_add_global 4 {
   $ctx
   $name
@@ -990,6 +1004,30 @@ fun lctx_destroy 1 {
   lctx free ;
 }
 
+fun lctx_get_variable 2 {
+  $lctx
+  $name
+  @lctx 1 param = ;
+  @name 0 param = ;
+
+  # Begin scanning the stack from the end, so that inner variables
+  # mask outer ones
+  $stack
+  @stack lctx LCTX_STACK take = ;
+  $i
+  @i stack vector_size 1 - = ;
+  while i 0 >= {
+    $elem
+    @elem stack i vector_at = ;
+    if elem STACK_ELEM_NAME take name strcmp 0 == {
+      elem ret ;
+    }
+    @i i 1 - = ;
+  }
+
+  0 ret ;
+}
+
 fun lctx_stack_pos 1 {
   $lctx
   @lctx 0 param = ;
@@ -1151,6 +1189,47 @@ fun lctx_gen_epilogue 2 {
   ctx 0xc3 cctx_emit ;
 }
 
+fun ast_eval_type 3 {
+  $ast
+  $ctx
+  $lctx
+  @ast 2 param = ;
+  @ctx 1 param = ;
+  @lctx 0 param = ;
+
+  if ast AST_TYPE take 0 == {
+    # Operand
+    $name
+    @name ast AST_NAME take = ;
+
+    $type_idx
+    if name is_valid_identifier {
+      # Search in local stack and among globals
+      $elem
+      @elem lctx name lctx_get_variable ;
+      if elem {
+        @type_idx elem STACK_ELEM_TYPE_IDX take = ;
+      } else {
+        $global
+        @global ctx name cctx_get_global = ;
+        @type_idx global GLOBAL_TYPE_IDX take = ;
+      }
+    } else {
+      # FIXME
+      @type_idx 1 = ;
+    }
+
+    ast AST_TYPE_IDX take_addr type_idx = ;
+    type_idx ret ;
+  } else {
+    # Operator
+    $processed
+    @processed 0 = ;
+
+    processed "ast_eval_type: not implemented" assert_msg ;
+  }
+}
+
 fun cctx_compile_block 2 {
   $ctx
   $lctx
@@ -1194,7 +1273,13 @@ fun cctx_compile_block 2 {
         lctx ctx actual_type_idx name lctx_push_var ;
       } else {
         # No type, so this is an expression
-        
+	$ast
+	# Bad hack to fix ast_parse interface
+	ctx cctx_give_back_token ;
+        @ast ctx CCTX_TOKENS take ctx CCTX_TOKENS_POS take_addr ";" ast_parse = ;
+	#ast ast_dump ;
+	ast ctx lctx ast_eval_type ;
+	ast ast_destroy ;
       }
     }
 
