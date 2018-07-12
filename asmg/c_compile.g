@@ -1208,7 +1208,7 @@ fun ast_eval_type 3 {
       }
     } else {
       # FIXME
-      @type_idx 1 = ;
+      @type_idx TYPE_INT = ;
     }
 
     ast AST_TYPE_IDX take_addr type_idx = ;

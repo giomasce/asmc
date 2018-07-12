@@ -489,9 +489,6 @@ outq:
   out dx, eax
   ret
 
-str_atoi:
-  db 'atoi'
-  db 0
 str_itoa:
   db 'itoa'
   db 0
@@ -693,12 +690,6 @@ init_g_operations:
   push 1
   push derefc
   push str_derefc
-  call add_symbol
-  add esp, 12
-
-  push 1
-  push atoi
-  push str_atoi
   call add_symbol
   add esp, 12
 
