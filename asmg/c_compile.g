@@ -1184,6 +1184,50 @@ fun lctx_gen_epilogue 2 {
   ctx 0xc3 cctx_emit ;
 }
 
+ifun ast_eval_type 3
+
+fun ast_arith_conv 3 {
+  $ast
+  $ctx
+  $lctx
+  @ast 2 param = ;
+  @ctx 1 param = ;
+  @lctx 0 param = ;
+
+  $type1
+  $type2
+  @type1 ast AST_LEFT take ctx lctx ast_eval_type = ;
+  @type2 ast AST_RIGHT take ctx lctx ast_eval_type = ;
+
+  if type1 TYPE_CHAR ==
+     type1 TYPE_SCHAR == ||
+     type1 TYPE_UCHAR == ||
+     type1 TYPE_SHORT == ||
+     type1 TYPE_INT == ||
+     type1 TYPE_USHORT == || {
+    @type1 TYPE_INT = ;
+  } else {
+    type1 TYPE_UINT == "ast_arith_conv: left is not an integer type" assert_msg ;
+  }
+
+  if type2 TYPE_CHAR ==
+     type2 TYPE_SCHAR == ||
+     type2 TYPE_UCHAR == ||
+     type2 TYPE_SHORT == ||
+     type2 TYPE_INT == ||
+     type2 TYPE_USHORT == || {
+    @type2 TYPE_INT = ;
+  } else {
+    type2 TYPE_UINT == "ast_arith_conv: right is not an integer type" assert_msg ;
+  }
+
+  if type1 TYPE_UINT == type2 TYPE_UINT == || {
+    TYPE_UINT ret ;
+  } else {
+    TYPE_INT ret ;
+  }
+}
+
 fun ast_eval_type 3 {
   $ast
   $ctx
@@ -1192,16 +1236,19 @@ fun ast_eval_type 3 {
   @ctx 1 param = ;
   @lctx 0 param = ;
 
+  if ast AST_TYPE_IDX take 0xffffffff != {
+    ast AST_TYPE_IDX take ret ;
+  }
+
+  $name
+  @name ast AST_NAME take = ;
+  $type_idx
   if ast AST_TYPE take 0 == {
     # Operand
-    $name
-    @name ast AST_NAME take = ;
-
-    $type_idx
     if name is_valid_identifier {
       # Search in local stack and among globals
       $elem
-      @elem lctx name lctx_get_variable ;
+      @elem lctx name lctx_get_variable = ;
       if elem {
         @type_idx elem STACK_ELEM_TYPE_IDX take = ;
       } else {
@@ -1210,19 +1257,44 @@ fun ast_eval_type 3 {
         @type_idx global GLOBAL_TYPE_IDX take = ;
       }
     } else {
-      # FIXME
-      @type_idx TYPE_INT = ;
+      if name **c '\"' == {
+        @type_idx TYPE_CHAR_ARRAY = ;
+      } else {
+        if name **c '\'' == {
+          @type_idx TYPE_INT = ;
+        } else {
+          @type_idx TYPE_INT = ;
+        }
+      }
     }
-
-    ast AST_TYPE_IDX take_addr type_idx = ;
-    type_idx ret ;
   } else {
     # Operator
     $processed
     @processed 0 = ;
 
+    if name "*" strcmp 0 ==
+       name "/" strcmp 0 == ||
+       name "%" strcmp 0 == ||
+       name "+" strcmp 0 == ||
+       name "-" strcmp 0 == ||
+       name "<" strcmp 0 == ||
+       name ">" strcmp 0 == ||
+       name "<=" strcmp 0 == ||
+       name ">=" strcmp 0 == ||
+       name "==" strcmp 0 == ||
+       name "!=" strcmp 0 == ||
+       name "&" strcmp 0 == ||
+       name "^" strcmp 0 == ||
+       name "|" strcmp 0 == || {
+      @type_idx ast ctx lctx ast_arith_conv = ;
+      @processed 1 = ;
+    }
+
     processed "ast_eval_type: not implemented" assert_msg ;
   }
+
+  ast AST_TYPE_IDX take_addr type_idx = ;
+  type_idx ret ;
 }
 
 fun cctx_compile_block 2 {
@@ -1268,13 +1340,13 @@ fun cctx_compile_block 2 {
         lctx ctx actual_type_idx name lctx_push_var ;
       } else {
         # No type, so this is an expression
-	$ast
-	# Bad hack to fix ast_parse interface
-	ctx cctx_give_back_token ;
+        $ast
+        # Bad hack to fix ast_parse interface
+        ctx cctx_give_back_token ;
         @ast ctx CCTX_TOKENS take ctx CCTX_TOKENS_POS take_addr ";" ast_parse = ;
-	#ast ast_dump ;
-	ast ctx lctx ast_eval_type ;
-	ast ast_destroy ;
+        ast ctx lctx ast_eval_type ;
+        ast ast_dump ;
+        ast ast_destroy ;
       }
     }
 

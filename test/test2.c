@@ -15,11 +15,16 @@ char *(*(**foo [0][8])())[];
 void main(int other_name, char **);
 
 void main(int argc, char **argv) {
-  int x;
   char c;
+  int x1;
+  unsigned int x2;
   return;
   int arr[10];
 
-  x;
+  x1;
+  c;
+  c+x1+x2;
+  "hello";
+  main_ptr;
 }
 

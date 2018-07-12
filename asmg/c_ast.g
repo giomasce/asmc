@@ -13,6 +13,7 @@ fun ast_init 0 {
   ptr AST_NAME take_addr 0 = ;
   ptr AST_LEFT take_addr 0 = ;
   ptr AST_RIGHT take_addr 0 = ;
+  ptr AST_TYPE_IDX take_addr 0xffffffff = ;
   ptr ret ;
 }
 
@@ -388,12 +389,16 @@ fun ast_dump_int 2 {
     if ast AST_NAME take 0 == {
       "Placeholder operand" 1 platform_log ;
     } else {
-      "Operand: " 1 platform_log ;
+      "Operand of type #" 1 platform_log ;
+      ast AST_TYPE_IDX take itoa 1 platform_log ;
+      ": " 1 platform_log ;
       ast AST_NAME take 1 platform_log ;
     }
     "\n" 1 platform_log ;
   } else {
-    "Operator: " 1 platform_log ;
+    "Operator of type #" 1 platform_log ;
+    ast AST_TYPE_IDX take itoa 1 platform_log ;
+    ": " 1 platform_log ;
     ast AST_NAME take 1 platform_log ;
     "\n" 1 platform_log ;
     ast AST_LEFT take depth 1 + ast_dump_int ;
