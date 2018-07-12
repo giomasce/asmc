@@ -1958,6 +1958,20 @@ fun parse_c 1 {
   "GLOBALS TABLE\n" 1 platform_log ;
   cctx cctx_dump_globals ;
 
+  # Try to execute the code
+  "Executing compiled code...\n" 1 platform_log ;
+  $main_global
+  @main_global cctx "main" cctx_get_global = ;
+  $main_addr
+  @main_addr main_global GLOBAL_LOC take = ;
+  $arg
+  @arg "_main" = ;
+  $res
+  @res @arg 1 main_addr \2 = ;
+  "It returned " 1 platform_log ;
+  res itoa 1 platform_log ;
+  "\n" 1 platform_log ;
+
   # Cleanup
   tokens free_vect_of_ptrs ;
   cctx cctx_destroy ;
