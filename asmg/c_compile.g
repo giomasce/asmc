@@ -1297,6 +1297,49 @@ fun ast_eval_type 3 {
   type_idx ret ;
 }
 
+fun ast_push_addr 3 {
+  $ast
+  $ctx
+  $lctx
+  @ast 2 param = ;
+  @ctx 1 param = ;
+  @lctx 0 param = ;
+
+  $name
+  @name ast AST_NAME take = ;
+  $type_idx
+  @type_idx ast ctx lctx ast_eval_type = ;
+  if ast AST_TYPE take 0 == {
+    # Operand
+    if name is_valid_identifier {
+      # Search in local stack and among globals
+      $elem
+      @elem lctx name lctx_get_variable = ;
+      if elem {
+        # lea eax, [ebp+loc]; push eax
+        ctx 0x8d cctx_emit ;
+        ctx 0x85 cctx_emit ;
+        ctx elem STACK_ELEM_LOC take cctx_emit32 ;
+        ctx 0x50 cctx_emit ;
+      } else {
+        $global
+        @global ctx name cctx_get_global = ;
+        # push loc
+        ctx 0x68 cctx_emit ;
+        ctx global GLOBAL_LOC take cctx_emit32 ;
+      }
+    } else {
+      0 "ast_push_addr: cannot take the address of an immediate" assert_msg ;
+    }
+  } else {
+    # Operator
+    $processed
+    @processed 0 = ;
+
+    processed "ast_push_value: not implemented" assert_msg ;
+  }
+}
+
 fun ast_int_convert 5 {
   $ast
   $ctx
@@ -1599,6 +1642,29 @@ fun ast_push_value_arith 3 {
   ctx 0x50 cctx_emit ;
 }
 
+fun cctx_gen_push_data 2 {
+  $ctx
+  $size
+  @ctx 1 param = ;
+  @size 0 param = ;
+
+  size 4 % 0 == "cctx_gen_push_data: size is not multiple of 4" assert_msg ;
+
+  if size 0 == {
+    ret ;
+  }
+
+  $i
+  @i size 4 - = ;
+  while i 0 >= {
+    # push [eax+off]
+    ctx 0xff cctx_emit ;
+    ctx 0xb0 cctx_emit ;
+    ctx i cctx_emit32 ;
+    @i i 4 - = ;
+  }
+}
+
 fun ast_push_value 3 {
   $ast
   $ctx
@@ -1614,18 +1680,11 @@ fun ast_push_value 3 {
   if ast AST_TYPE take 0 == {
     # Operand
     if name is_valid_identifier {
-      # Search in local stack and among globals
-      $elem
-      @elem lctx name lctx_get_variable = ;
-      if elem {
-        0 assert ;
-        
-      } else {
-        $global
-        @global ctx name cctx_get_global = ;
-        0 assert ;
-        
-      }
+      # Push the address
+      ast ctx lctx ast_push_addr ;
+      # pop eax
+      ctx 0x58 cctx_emit ;
+      ctx ctx type_idx cctx_type_footprint cctx_gen_push_data ;
     } else {
       $value
       if name **c '\"' == {

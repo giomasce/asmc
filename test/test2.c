@@ -1,6 +1,6 @@
 
 int test, test2;
-char x, y, z;
+unsigned char x, y, z;
 char *ptr, arr[8];
 short arr2[3];
 char *arr3[10];
@@ -27,7 +27,9 @@ void main(int argc, char **argv) {
   2/2;
   2%2;*/
 
-  2 < (2+2/2);
+  //2 < (2+2/2);
+
+  2+x1+x;
 
   /*x1;
   c;
