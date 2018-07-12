@@ -1297,6 +1297,403 @@ fun ast_eval_type 3 {
   type_idx ret ;
 }
 
+fun ast_int_convert 5 {
+  $ast
+  $ctx
+  $lctx
+  $from_idx
+  $to_idx
+  @ast 4 param = ;
+  @ctx 3 param = ;
+  @lctx 2 param = ;
+  @from_idx 1 param = ;
+  @to_idx 0 param = ;
+
+  to_idx TYPE_INT == to_idx TYPE_UINT == || "ast_int_convert: unsupported target type" assert_msg ;
+
+  if from_idx TYPE_CHAR == from_idx TYPE_SCHAR == || {
+    # movsx eax, al
+    ctx 0x0f cctx_emit ;
+    ctx 0xbe cctx_emit ;
+    ctx 0xc0 cctx_emit ;
+  } else {
+    if from_idx TYPE_UCHAR == {
+      # movzx eax, al
+      ctx 0x0f cctx_emit ;
+      ctx 0xb6 cctx_emit ;
+      ctx 0xc0 cctx_emit ;
+    } else {
+      if from_idx TYPE_SHORT == {
+        # movsx eax, ax
+        ctx 0x0f cctx_emit ;
+        ctx 0xbf cctx_emit ;
+        ctx 0xc0 cctx_emit ;
+      } else {
+        if from_idx TYPE_USHORT == {
+          # movzx eax, ax
+          ctx 0x0f cctx_emit ;
+          ctx 0xb7 cctx_emit ;
+          ctx 0xc0 cctx_emit ;
+        } else {
+          from_idx TYPE_INT == from_idx TYPE_UINT == || "ast_int_convert: unsupported source type" assert_msg ;
+        }
+      }
+    }
+  }
+}
+
+ifun ast_push_value 3
+
+fun ast_push_value_arith 3 {
+  $ast
+  $ctx
+  $lctx
+  @ast 2 param = ;
+  @ctx 1 param = ;
+  @lctx 0 param = ;
+
+  $type1
+  $type2
+  $type_idx
+  $name
+  @type1 ast AST_LEFT take ctx lctx ast_eval_type = ;
+  @type2 ast AST_RIGHT take ctx lctx ast_eval_type = ;
+  @type_idx ast ctx lctx ast_eval_type = ;
+  @name ast AST_NAME take = ;
+
+  # Sanity check: both operands must fit in 4 bytes
+  ctx type1 cctx_type_footprint 4 == "ast_push_value_arith: error 1" assert_msg ;
+  ctx type2 cctx_type_footprint 4 == "ast_push_value_arith: error 2" assert_msg ;
+
+  # Recursively evalute both operands
+  ast AST_LEFT take ctx lctx ast_push_value ;
+  ast AST_RIGHT take ctx lctx ast_push_value ;
+
+  # Pop right result, promote it and store in ECX
+  # pop eax; ast_int_convert; mov ecx, eax
+  ctx 0x58 cctx_emit ;
+  ast ctx lctx type2 type_idx ast_int_convert ;
+  ctx 0x89 cctx_emit ;
+  ctx 0xc1 cctx_emit ;
+
+  # Pop left result, promote it and store in EAX
+  # pop eax, ast_int_convert
+  ctx 0x58 cctx_emit ;
+  ast ctx lctx type1 type_idx ast_int_convert ;
+
+  # Invoke the operation specific operation
+  $processed
+  @processed 0 = ;
+
+  if name "+" strcmp 0 == {
+    # add eax, ecx
+    ctx 0x01 cctx_emit ;
+    ctx 0xc8 cctx_emit ;
+    @processed 1 = ;
+  }
+
+  if name "-" strcmp 0 == {
+    # sub eax, ecx
+    ctx 0x29 cctx_emit ;
+    ctx 0xc8 cctx_emit ;
+    @processed 1 = ;
+  }
+
+  if name "&" strcmp 0 == {
+    # and eax, ecx
+    ctx 0x21 cctx_emit ;
+    ctx 0xc8 cctx_emit ;
+    @processed 1 = ;
+  }
+
+  if name "|" strcmp 0 == {
+    # or eax, ecx
+    ctx 0x09 cctx_emit ;
+    ctx 0xc8 cctx_emit ;
+    @processed 1 = ;
+  }
+
+  if name "^" strcmp 0 == {
+    # xor eax, ecx
+    ctx 0x01 cctx_emit ;
+    ctx 0x31 cctx_emit ;
+    @processed 1 = ;
+  }
+
+  if name "*" strcmp 0 == type_idx TYPE_UINT == && {
+    # mul ecx
+    ctx 0xf7 cctx_emit ;
+    ctx 0xe1 cctx_emit ;
+    @processed 1 = ;
+  }
+
+  if name "*" strcmp 0 == type_idx TYPE_INT == && {
+    # imul ecx
+    ctx 0xf7 cctx_emit ;
+    ctx 0xe9 cctx_emit ;
+    @processed 1 = ;
+  }
+
+  if name "/" strcmp 0 == type_idx TYPE_UINT == && {
+    # xor edx, edx; div ecx
+    ctx 0x31 cctx_emit ;
+    ctx 0xd2 cctx_emit ;
+    ctx 0xf7 cctx_emit ;
+    ctx 0xf1 cctx_emit ;
+    @processed 1 = ;
+  }
+
+  if name "/" strcmp 0 == type_idx TYPE_INT == && {
+    # cdq; idiv ecx
+    ctx 0x99 cctx_emit ;
+    ctx 0xf7 cctx_emit ;
+    ctx 0xf9 cctx_emit ;
+    @processed 1 = ;
+  }
+
+  if name "%" strcmp 0 == type_idx TYPE_UINT == && {
+    # xor edx, edx; div ecx; mov eax, edx
+    ctx 0x31 cctx_emit ;
+    ctx 0xd2 cctx_emit ;
+    ctx 0xf7 cctx_emit ;
+    ctx 0xf1 cctx_emit ;
+    ctx 0x89 cctx_emit ;
+    ctx 0xd0 cctx_emit ;
+    @processed 1 = ;
+  }
+
+  if name "%" strcmp 0 == type_idx TYPE_INT == && {
+    # cdq; idiv ecx; mov eax, edx
+    ctx 0x99 cctx_emit ;
+    ctx 0xf7 cctx_emit ;
+    ctx 0xf9 cctx_emit ;
+    ctx 0x89 cctx_emit ;
+    ctx 0xd0 cctx_emit ;
+    @processed 1 = ;
+  }
+
+  if name "==" strcmp 0 == {
+    # cmp eax, edx; xor eax, eax; sete al
+    ctx 0x39 cctx_emit ;
+    ctx 0xd0 cctx_emit ;
+    ctx 0x31 cctx_emit ;
+    ctx 0xc0 cctx_emit ;
+    ctx 0x0f cctx_emit ;
+    ctx 0x94 cctx_emit ;
+    ctx 0xc0 cctx_emit ;
+    @processed 1 = ;
+  }
+
+  if name "!=" strcmp 0 == {
+    # cmp eax, edx; xor eax, eax; setne al
+    ctx 0x39 cctx_emit ;
+    ctx 0xd0 cctx_emit ;
+    ctx 0x31 cctx_emit ;
+    ctx 0xc0 cctx_emit ;
+    ctx 0x0f cctx_emit ;
+    ctx 0x95 cctx_emit ;
+    ctx 0xc0 cctx_emit ;
+    @processed 1 = ;
+  }
+
+  if name "<" strcmp 0 == type_idx TYPE_UINT == && {
+    # cmp eax, edx; xor eax, eax; setb al
+    ctx 0x39 cctx_emit ;
+    ctx 0xd0 cctx_emit ;
+    ctx 0x31 cctx_emit ;
+    ctx 0xc0 cctx_emit ;
+    ctx 0x0f cctx_emit ;
+    ctx 0x92 cctx_emit ;
+    ctx 0xc0 cctx_emit ;
+    @processed 1 = ;
+  }
+
+  if name "<=" strcmp 0 == type_idx TYPE_UINT == && {
+    # cmp eax, edx; xor eax, eax; setbe al
+    ctx 0x39 cctx_emit ;
+    ctx 0xd0 cctx_emit ;
+    ctx 0x31 cctx_emit ;
+    ctx 0xc0 cctx_emit ;
+    ctx 0x0f cctx_emit ;
+    ctx 0x96 cctx_emit ;
+    ctx 0xc0 cctx_emit ;
+    @processed 1 = ;
+  }
+
+  if name ">" strcmp 0 == type_idx TYPE_UINT == && {
+    # cmp eax, edx; xor eax, eax; seta al
+    ctx 0x39 cctx_emit ;
+    ctx 0xd0 cctx_emit ;
+    ctx 0x31 cctx_emit ;
+    ctx 0xc0 cctx_emit ;
+    ctx 0x0f cctx_emit ;
+    ctx 0x97 cctx_emit ;
+    ctx 0xc0 cctx_emit ;
+    @processed 1 = ;
+  }
+
+  if name ">=" strcmp 0 == type_idx TYPE_UINT == && {
+    # cmp eax, edx; xor eax, eax; setae al
+    ctx 0x39 cctx_emit ;
+    ctx 0xd0 cctx_emit ;
+    ctx 0x31 cctx_emit ;
+    ctx 0xc0 cctx_emit ;
+    ctx 0x0f cctx_emit ;
+    ctx 0x93 cctx_emit ;
+    ctx 0xc0 cctx_emit ;
+    @processed 1 = ;
+  }
+
+  if name "<" strcmp 0 == type_idx TYPE_INT == && {
+    # cmp eax, edx; xor eax, eax; setl al
+    ctx 0x39 cctx_emit ;
+    ctx 0xd0 cctx_emit ;
+    ctx 0x31 cctx_emit ;
+    ctx 0xc0 cctx_emit ;
+    ctx 0x0f cctx_emit ;
+    ctx 0x9c cctx_emit ;
+    ctx 0xc0 cctx_emit ;
+    @processed 1 = ;
+  }
+
+  if name "<=" strcmp 0 == type_idx TYPE_INT == && {
+    # cmp eax, edx; xor eax, eax; setle al
+    ctx 0x39 cctx_emit ;
+    ctx 0xd0 cctx_emit ;
+    ctx 0x31 cctx_emit ;
+    ctx 0xc0 cctx_emit ;
+    ctx 0x0f cctx_emit ;
+    ctx 0x9e cctx_emit ;
+    ctx 0xc0 cctx_emit ;
+    @processed 1 = ;
+  }
+
+  if name ">" strcmp 0 == type_idx TYPE_INT == && {
+    # cmp eax, edx; xor eax, eax; setg al
+    ctx 0x39 cctx_emit ;
+    ctx 0xd0 cctx_emit ;
+    ctx 0x31 cctx_emit ;
+    ctx 0xc0 cctx_emit ;
+    ctx 0x0f cctx_emit ;
+    ctx 0x9f cctx_emit ;
+    ctx 0xc0 cctx_emit ;
+    @processed 1 = ;
+  }
+
+  if name ">=" strcmp 0 == type_idx TYPE_INT == && {
+    # cmp eax, edx; xor eax, eax; setge al
+    ctx 0x39 cctx_emit ;
+    ctx 0xd0 cctx_emit ;
+    ctx 0x31 cctx_emit ;
+    ctx 0xc0 cctx_emit ;
+    ctx 0x0f cctx_emit ;
+    ctx 0x9d cctx_emit ;
+    ctx 0xc0 cctx_emit ;
+    @processed 1 = ;
+  }
+
+  processed "ast_push_value_arith: not implemented" assert_msg ;
+
+  # Push result stored in EAX
+  # push eax
+  ctx 0x50 cctx_emit ;
+}
+
+fun ast_push_value 3 {
+  $ast
+  $ctx
+  $lctx
+  @ast 2 param = ;
+  @ctx 1 param = ;
+  @lctx 0 param = ;
+
+  $name
+  @name ast AST_NAME take = ;
+  $type_idx
+  @type_idx ast ctx lctx ast_eval_type = ;
+  if ast AST_TYPE take 0 == {
+    # Operand
+    if name is_valid_identifier {
+      # Search in local stack and among globals
+      $elem
+      @elem lctx name lctx_get_variable = ;
+      if elem {
+        0 assert ;
+        
+      } else {
+        $global
+        @global ctx name cctx_get_global = ;
+        0 assert ;
+        
+      }
+    } else {
+      $value
+      if name **c '\"' == {
+        0 assert ;
+        
+      } else {
+        if name **c '\'' == {
+          0 assert ;
+          
+        } else {
+          @value name atoi = ;
+        }
+      }
+
+      # push value
+      ctx 0x68 cctx_emit ;
+      ctx value cctx_emit32 ;
+    }
+  } else {
+    # Operator
+    $processed
+    @processed 0 = ;
+
+    if name "*" strcmp 0 ==
+       name "/" strcmp 0 == ||
+       name "%" strcmp 0 == ||
+       name "+" strcmp 0 == ||
+       name "-" strcmp 0 == ||
+       name "<" strcmp 0 == ||
+       name ">" strcmp 0 == ||
+       name "<=" strcmp 0 == ||
+       name ">=" strcmp 0 == ||
+       name "==" strcmp 0 == ||
+       name "!=" strcmp 0 == ||
+       name "&" strcmp 0 == ||
+       name "^" strcmp 0 == ||
+       name "|" strcmp 0 == || {
+      ast ctx lctx ast_push_value_arith ;
+      @processed 1 = ;
+    }
+
+    processed "ast_push_value: not implemented" assert_msg ;
+  }
+}
+
+fun ast_eval 3 {
+  $ast
+  $ctx
+  $lctx
+  @ast 2 param = ;
+  @ctx 1 param = ;
+  @lctx 0 param = ;
+
+  # First push value
+  ast ctx lctx ast_push_value ;
+
+  # Then pop and discard it
+  $type_idx
+  @type_idx ast ctx lctx ast_eval_type = ;
+  $footprint
+  @footprint ctx type_idx cctx_type_footprint = ;
+
+  # add esp, footprint
+  ctx 0x81 cctx_emit ;
+  ctx 0xc4 cctx_emit ;
+  ctx footprint cctx_emit32 ;
+}
+
 fun cctx_compile_block 2 {
   $ctx
   $lctx
@@ -1346,6 +1743,7 @@ fun cctx_compile_block 2 {
         @ast ctx CCTX_TOKENS take ctx CCTX_TOKENS_POS take_addr ";" ast_parse = ;
         ast ctx lctx ast_eval_type ;
         ast ast_dump ;
+        ast ctx lctx ast_eval ;
         ast ast_destroy ;
       }
     }

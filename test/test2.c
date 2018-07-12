@@ -21,10 +21,17 @@ void main(int argc, char **argv) {
   return;
   int arr[10];
 
-  x1;
+  /*2+2;
+  2-2;
+  2*2;
+  2/2;
+  2%2;*/
+
+  2 < (2+2/2);
+
+  /*x1;
   c;
   c+x1+x2;
-  "hello";
-  main_ptr;
+  //"hello";
+  main_ptr;*/
 }
-
