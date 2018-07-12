@@ -216,50 +216,6 @@ fun is_valid_identifier 1 {
   1 ret ;
 }
 
-const TYPE_VOID 0
-const TYPE_CHAR 1
-const TYPE_SCHAR 2
-const TYPE_UCHAR 3
-const TYPE_SHORT 4
-const TYPE_INT 5
-const TYPE_USHORT 6
-const TYPE_UINT 7
-
-fun cctx_create_basic_type 3 {
-  $ctx
-  $idx
-  $size
-  @ctx 2 param = ;
-  @idx 1 param = ;
-  @size 0 param = ;
-
-  $types
-  @types ctx CCTX_TYPES take = ;
-
-  idx types vector_size == "cctx_create_basic_type: error 1" assert_msg ;
-
-  $type
-  @type type_init = ;
-  type TYPE_KIND take_addr TYPE_KIND_BASE = ;
-  type TYPE_BASE take_addr idx = ;
-  type TYPE_SIZE take_addr size = ;
-  types type vector_push_back ;
-}
-
-fun cctx_create_basic_types 1 {
-  $ctx
-  @ctx 0 param = ;
-
-  ctx TYPE_VOID 0xffffffff cctx_create_basic_type ;
-  ctx TYPE_CHAR 1 cctx_create_basic_type ;
-  ctx TYPE_SCHAR 1 cctx_create_basic_type ;
-  ctx TYPE_UCHAR 1 cctx_create_basic_type ;
-  ctx TYPE_SHORT 2 cctx_create_basic_type ;
-  ctx TYPE_INT 4 cctx_create_basic_type ;
-  ctx TYPE_USHORT 2 cctx_create_basic_type ;
-  ctx TYPE_UINT 4 cctx_create_basic_type ;
-}
-
 fun cctx_get_type 2 {
   $ctx
   $type_idx
@@ -468,6 +424,53 @@ fun cctx_get_function_type 3 {
   type TYPE_ARGS take_addr args = ;
 
   ctx type cctx_add_type ret ;
+}
+
+const TYPE_VOID 0
+const TYPE_CHAR 1
+const TYPE_SCHAR 2
+const TYPE_UCHAR 3
+const TYPE_SHORT 4
+const TYPE_INT 5
+const TYPE_USHORT 6
+const TYPE_UINT 7
+const TYPE_CHAR_ARRAY 8
+
+fun cctx_create_basic_type 3 {
+  $ctx
+  $idx
+  $size
+  @ctx 2 param = ;
+  @idx 1 param = ;
+  @size 0 param = ;
+
+  $types
+  @types ctx CCTX_TYPES take = ;
+
+  idx types vector_size == "cctx_create_basic_type: error 1" assert_msg ;
+
+  $type
+  @type type_init = ;
+  type TYPE_KIND take_addr TYPE_KIND_BASE = ;
+  type TYPE_BASE take_addr idx = ;
+  type TYPE_SIZE take_addr size = ;
+  types type vector_push_back ;
+}
+
+fun cctx_create_basic_types 1 {
+  $ctx
+  @ctx 0 param = ;
+
+  ctx TYPE_VOID 0xffffffff cctx_create_basic_type ;
+  ctx TYPE_CHAR 1 cctx_create_basic_type ;
+  ctx TYPE_SCHAR 1 cctx_create_basic_type ;
+  ctx TYPE_UCHAR 1 cctx_create_basic_type ;
+  ctx TYPE_SHORT 2 cctx_create_basic_type ;
+  ctx TYPE_INT 4 cctx_create_basic_type ;
+  ctx TYPE_USHORT 2 cctx_create_basic_type ;
+  ctx TYPE_UINT 4 cctx_create_basic_type ;
+
+  ctx TYPE_CHAR 0xffffffff cctx_get_array_type TYPE_CHAR_ARRAY == "cctx_create_basic_types: error 1" assert_msg ;
 }
 
 fun cctx_get_global 2 {
