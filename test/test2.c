@@ -1,4 +1,17 @@
 
+int main(int x, char** y) {
+  int i;
+  int sum;
+  i = 0;
+  sum = 0;
+  while (i < 100) {
+    i = i + 1;
+    sum = sum + i;
+  }
+  return sum;
+}
+
+#ifdef __UNDEF
 int test, test2;
 unsigned char x, y, z;
 char *ptr, arr[8];
@@ -14,16 +27,18 @@ char *(*(**foo [0][8])())[];
 
 int main(int other_name, char **);
 
-int main(int argc, char **argv) {
+int main3(int argc, char **argv) {
   char c;
   int x1;
   unsigned int x2;
 
+  c = 4;
+
   while (0) {
-    3;
+    30;
   }
 
-  if (0) x2;
+  if (1) x2;
   else {
     if (2) {
       return 3;
@@ -59,3 +74,4 @@ int main2() {
   short x;
   return x;
 }
+#endif
