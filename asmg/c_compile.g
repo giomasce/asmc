@@ -445,6 +445,12 @@ const TYPE_USHORT 6
 const TYPE_UINT 7
 const TYPE_CHAR_ARRAY 8
 
+fun is_integer_type 1 {
+  $idx
+  @idx 0 param = ;
+  TYPE_CHAR idx <= TYPE_UINT idx >= && ret ;
+}
+
 fun cctx_create_basic_type 3 {
   $ctx
   $idx
@@ -1497,19 +1503,18 @@ fun ast_push_addr 3 {
   }
 }
 
-fun ast_int_convert 5 {
-  $ast
-  $ctx
+fun lctx_int_convert 4 {
   $lctx
+  $ctx
   $from_idx
   $to_idx
-  @ast 4 param = ;
-  @ctx 3 param = ;
-  @lctx 2 param = ;
+  @lctx 3 param = ;
+  @ctx 2 param = ;
   @from_idx 1 param = ;
   @to_idx 0 param = ;
 
-  to_idx TYPE_INT == to_idx TYPE_UINT == || "ast_int_convert: unsupported target type" assert_msg ;
+  to_idx is_integer_type "lctx_int_convert: target is not an integer type" assert_msg ;
+  from_idx is_integer_type "lctx_int_convert: source is not an integer type" assert_msg ;
 
   if from_idx TYPE_CHAR == from_idx TYPE_SCHAR == || {
     # movsx eax, al
@@ -1535,10 +1540,34 @@ fun ast_int_convert 5 {
           ctx 0xb7 cctx_emit ;
           ctx 0xc0 cctx_emit ;
         } else {
-          from_idx TYPE_INT == from_idx TYPE_UINT == || "ast_int_convert: unsupported source type" assert_msg ;
+          from_idx TYPE_INT == from_idx TYPE_UINT == || "lctx_int_convert: error 1" assert_msg ;
         }
       }
     }
+  }
+}
+
+fun lctx_convert_stack 4 {
+  $lctx
+  $ctx
+  $from_idx
+  $to_idx
+  @lctx 3 param = ;
+  @ctx 2 param = ;
+  @from_idx 1 param = ;
+  @to_idx 0 param = ;
+
+  if ctx from_idx to_idx cctx_type_compare {
+    ret ;
+  }
+
+  if from_idx is_integer_type to_idx is_integer_type && {
+    ctx from_idx cctx_type_footprint 4 == "lctx_convert_stack: error 1" assert_msg ;
+    ctx to_idx cctx_type_footprint 4 == "lctx_convert_stack: error 2" assert_msg ;
+    # pop eax; lctx_int_convert; push eax
+    ctx 0x58 cctx_emit ;
+    lctx ctx from_idx to_idx lctx_int_convert ;
+    ctx 0x50 cctx_emit ;
   }
 }
 
@@ -1570,16 +1599,16 @@ fun ast_push_value_arith 3 {
   ast AST_RIGHT take ctx lctx ast_push_value ;
 
   # Pop right result, promote it and store in ECX
-  # pop eax; ast_int_convert; mov ecx, eax
+  # pop eax; lctx_int_convert; mov ecx, eax
   ctx 0x58 cctx_emit ;
-  ast ctx lctx type2 type_idx ast_int_convert ;
+  lctx ctx type2 type_idx lctx_int_convert ;
   ctx 0x89 cctx_emit ;
   ctx 0xc1 cctx_emit ;
 
   # Pop left result, promote it and store in EAX
-  # pop eax, ast_int_convert
+  # pop eax, lctx_int_convert
   ctx 0x58 cctx_emit ;
-  ast ctx lctx type1 type_idx ast_int_convert ;
+  lctx ctx type1 type_idx lctx_int_convert ;
 
   # Invoke the operation specific operation
   $processed
@@ -1915,11 +1944,11 @@ fun ast_eval 3 {
 fun cctx_compile_expression 2 {
   $ctx
   $lctx
-  $eval
+  $target_type_idx
   $end_tok
   @ctx 3 param = ;
   @lctx 2 param = ;
-  @eval 1 param = ;
+  @target_type_idx 1 param = ;
   @end_tok 0 param = ;
 
   $ast
@@ -1928,10 +1957,11 @@ fun cctx_compile_expression 2 {
   @ast ctx CCTX_TOKENS take ctx CCTX_TOKENS_POS take_addr end_tok ast_parse = ;
   #ast ctx lctx ast_eval_type ;
   #ast ast_dump ;
-  if eval {
+  if target_type_idx TYPE_VOID == {
     ast ctx lctx ast_eval ;
   } else {
     ast ctx lctx ast_push_value ;
+    lctx ctx ast AST_TYPE_IDX take target_type_idx lctx_convert_stack ;
   }
   ast ast_destroy ;
 }
@@ -1958,8 +1988,16 @@ fun cctx_compile_block 2 {
       ret ;
     }
 
-    # Check if this is a return statement
+    # Parse return
     if tok "return" strcmp 0 == processed ! && {
+      $ret_type
+      @ret_type lctx LCTX_RETURN_TYPE_IDX take = ;
+      if ret_type TYPE_VOID != {
+        ctx ret_type cctx_type_footprint 4 == "cctx_compile_block: only returned scalar types are supported" assert_msg ;
+        ctx lctx ret_type ";" cctx_compile_expression ;
+        # pop eax
+        ctx 0x58 cctx_emit ;
+      }
       ctx lctx lctx LCTX_RETURN_LABEL take cctx_gen_label_jump ;
       @processed 1 = ;
     }
@@ -1979,7 +2017,7 @@ fun cctx_compile_block 2 {
         lctx ctx actual_type_idx name lctx_push_var ;
       } else {
         # No type, so this is an expression
-        ctx lctx 1 ";" cctx_compile_expression ;
+        ctx lctx TYPE_VOID ";" cctx_compile_expression ;
       }
     }
 

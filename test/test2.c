@@ -29,8 +29,6 @@ int main(int argc, char **argv) {
 
   2+x1+x;
 
-  return;
-
   int arr[10];
 
   /*x1;
@@ -39,7 +37,12 @@ int main(int argc, char **argv) {
   //"hello";
   main_ptr;*/
 
-  0+0;
+  return 20+1+1;
 }
 
 int main(int, char**);
+
+int main2() {
+  short x;
+  return x;
+}
