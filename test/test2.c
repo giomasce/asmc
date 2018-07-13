@@ -19,6 +19,10 @@ int main(int argc, char **argv) {
   int x1;
   unsigned int x2;
 
+  while (0) {
+    3;
+  }
+
   if (0) x2;
   else {
     if (2) {
