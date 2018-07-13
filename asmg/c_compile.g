@@ -121,9 +121,10 @@ const CCTX_TOKENS 12
 const CCTX_TOKENS_POS 16
 const CCTX_STAGE 20
 const CCTX_CURRENT_LOC 24
-const CCTX_LABEL_NUM 28
+const CCTX_LABEL_POS 28
 const CCTX_LABEL_BUF 32
-const SIZEOF_CCTX 36
+const CCTX_LABEL_NUM 36
+const SIZEOF_CCTX 40
 
 fun cctx_init_types 1 {
   $ctx
@@ -145,6 +146,7 @@ fun cctx_init 1 {
   ctx CCTX_TOKENS_POS take_addr 0 = ;
   ctx CCTX_LABEL_NUM take_addr 0 = ;
   ctx CCTX_LABEL_BUF take_addr 32 malloc = ;
+  ctx CCTX_LABEL_POS take_addr 4 vector_init = ;
   ctx ret ;
 }
 
@@ -185,6 +187,7 @@ fun cctx_destroy 1 {
   }
   globals map_destroy ;
 
+  ctx CCTX_LABEL_POS take vector_destroy ;
   ctx CCTX_LABEL_BUF take free ;
 
   ctx free ;
@@ -582,61 +585,56 @@ fun cctx_add_global_funct 4 {
   }
 }
 
-fun cctx_write_label 2 {
+fun cctx_emit 2 {
   $ctx
-  $idx
+  $byte
   @ctx 1 param = ;
-  @idx 0 param = ;
+  @byte 0 param = ;
 
-  $buf
-  @buf ctx CCTX_LABEL_BUF take = ;
-  buf '.' =c ;
-  buf 1 + 'L' =c ;
-  idx itoa buf 2 + strcpy ;
-
-  buf ret ;
+  if ctx CCTX_STAGE take 2 == {
+    ctx CCTX_CURRENT_LOC take byte =c ;
+  }
+  ctx CCTX_CURRENT_LOC take_addr ctx CCTX_CURRENT_LOC take 1 + = ;
 }
 
-fun cctx_gen_label 2 {
+fun cctx_emit16 2 {
   $ctx
-  $loc
+  $word
   @ctx 1 param = ;
-  @loc 0 param = ;
+  @word 0 param = ;
 
-  $idx
-  @idx ctx CCTX_LABEL_NUM take = ;
-  ctx CCTX_LABEL_NUM take_addr idx 1 + = ;
-  $name
-  @name ctx idx cctx_write_label = ;
-  ctx name loc TYPE_VOID cctx_add_global_funct ;
-  idx ret ;
+  ctx word cctx_emit ;
+  ctx word 8 >> cctx_emit ;
 }
 
-fun cctx_fix_label 3 {
+fun cctx_emit32 2 {
   $ctx
-  $idx
-  $loc
-  @ctx 2 param = ;
-  @idx 1 param = ;
-  @loc 0 param = ;
-
-  $name
-  @name ctx idx cctx_write_label = ;
-  ctx name loc TYPE_VOID cctx_add_global_funct ;
-}
-
-fun cctx_get_label 2 {
-  $ctx
-  $idx
+  $dword
   @ctx 1 param = ;
-  @idx 0 param = ;
+  @dword 0 param = ;
 
-  $name
-  @name ctx idx cctx_write_label = ;
-  $global
-  @global ctx name cctx_get_global = ;
-  global GLOBAL_LOC take ret ;
+  ctx dword cctx_emit16 ;
+  ctx dword 16 >> cctx_emit16 ;
 }
+
+fun cctx_emit_zeros 2 {
+  $ctx
+  $num
+  @ctx 1 param = ;
+  @num 0 param = ;
+
+  $i
+  @i 0 = ;
+  while i num < {
+    ctx 0 cctx_emit ;
+    @i i 1 + = ;
+  }
+}
+
+ifun cctx_gen_label 3
+ifun cctx_fix_label 4
+ifun cctx_gen_jump 3
+ifun cctx_gen_label_jump 3
 
 fun cctx_is_eof 1 {
   $ctx
@@ -722,52 +720,6 @@ fun cctx_print_token_pos 1 {
   "Token pos: " 1 platform_log ;
   ctx CCTX_TOKENS_POS take itoa 1 platform_log ;
   "\n" 1 platform_log ;
-}
-
-fun cctx_emit 2 {
-  $ctx
-  $byte
-  @ctx 1 param = ;
-  @byte 0 param = ;
-
-  if ctx CCTX_STAGE take 2 == {
-    ctx CCTX_CURRENT_LOC take byte =c ;
-  }
-  ctx CCTX_CURRENT_LOC take_addr ctx CCTX_CURRENT_LOC take 1 + = ;
-}
-
-fun cctx_emit16 2 {
-  $ctx
-  $word
-  @ctx 1 param = ;
-  @word 0 param = ;
-
-  ctx word cctx_emit ;
-  ctx word 8 >> cctx_emit ;
-}
-
-fun cctx_emit32 2 {
-  $ctx
-  $dword
-  @ctx 1 param = ;
-  @dword 0 param = ;
-
-  ctx dword cctx_emit16 ;
-  ctx dword 16 >> cctx_emit16 ;
-}
-
-fun cctx_emit_zeros 2 {
-  $ctx
-  $num
-  @ctx 1 param = ;
-  @num 0 param = ;
-
-  $i
-  @i 0 = ;
-  while i num < {
-    ctx 0 cctx_emit ;
-    @i i 1 + = ;
-  }
 }
 
 fun cctx_parse_type 1 {
@@ -1245,6 +1197,123 @@ fun lctx_gen_epilogue 2 {
   # pop ebp; ret
   ctx 0x5d cctx_emit ;
   ctx 0xc3 cctx_emit ;
+}
+
+fun cctx_write_label 2 {
+  $ctx
+  $idx
+  @ctx 1 param = ;
+  @idx 0 param = ;
+
+  $buf
+  @buf ctx CCTX_LABEL_BUF take = ;
+  buf '.' =c ;
+  buf 1 + 'L' =c ;
+  idx itoa buf 2 + strcpy ;
+
+  buf ret ;
+}
+
+fun cctx_gen_label 3 {
+  $ctx
+  $loc
+  $pos
+  @ctx 2 param = ;
+  @loc 1 param = ;
+  @pos 0 param = ;
+
+  $label_pos
+  @label_pos ctx CCTX_LABEL_POS take = ;
+  $idx
+  @idx ctx CCTX_LABEL_NUM take = ;
+  $name
+  @name ctx idx cctx_write_label = ;
+  if ctx CCTX_STAGE take 0 == {
+    idx label_pos vector_size == "cctx_gen_label: error 2" assert_msg ;
+    label_pos pos vector_push_back ;
+    ctx name loc TYPE_VOID cctx_add_global_funct ;
+  } else {
+    idx label_pos vector_size < "cctx_gen_label: error 1" assert_msg ;
+    if pos 0xffffffff != {
+      label_pos idx vector_at pos == "cctx_gen_label: error 3" assert_msg ;
+    }
+    ctx name loc TYPE_VOID cctx_add_global_funct ;
+  }
+  ctx CCTX_LABEL_NUM take_addr idx 1 + = ;
+  idx ret ;
+}
+
+fun cctx_fix_label 4 {
+  $ctx
+  $idx
+  $loc
+  $pos
+  @ctx 3 param = ;
+  @idx 2 param = ;
+  @loc 1 param = ;
+  @pos 0 param = ;
+
+  $label_pos
+  @label_pos ctx CCTX_LABEL_POS take = ;
+  $name
+  @name ctx idx cctx_write_label = ;
+  ctx name loc TYPE_VOID cctx_add_global_funct ;
+  if ctx CCTX_STAGE take 0 == {
+    label_pos idx vector_at_addr pos = ;
+  } else {
+    label_pos idx vector_at pos == "cctx_fix_label: error 1" assert_msg ;
+  }
+}
+
+fun cctx_gen_jump 3 {
+  $ctx
+  $name
+  $is_call
+  @ctx 2 param = ;
+  @name 1 param = ;
+  @is_call 0 param = ;
+
+  if is_call {
+    # call rel
+    ctx 0xe8 cctx_emit ;
+  } else {
+    # jmp rel
+    ctx 0xe9 cctx_emit ;
+  }
+
+  $global
+  @global ctx name cctx_get_global = ;
+  $target_loc
+  @target_loc global GLOBAL_LOC take = ;
+  $current_loc
+  @current_loc ctx CCTX_CURRENT_LOC take 4 + = ;
+  $rel
+  @rel target_loc current_loc - = ;
+  ctx rel cctx_emit32 ;
+}
+
+fun cctx_gen_label_jump 3 {
+  $ctx
+  $lctx
+  $idx
+  @ctx 2 param = ;
+  @lctx 1 param = ;
+  @idx 0 param = ;
+
+  $current_pos
+  @current_pos lctx lctx_stack_pos = ;
+  $new_pos
+  @new_pos ctx CCTX_LABEL_POS take idx vector_at = ;
+  $pos_diff
+  @pos_diff new_pos current_pos - = ;
+  $name
+  @name ctx idx cctx_write_label = ;
+
+  # add esp, pos_diff; cctx_gen_jump
+  ctx 0x81 cctx_emit ;
+  ctx 0xc4 cctx_emit ;
+  ctx pos_diff cctx_emit32 ;
+  ctx name 0 cctx_gen_jump ;
 }
 
 ifun ast_eval_type 3
@@ -1809,16 +1878,18 @@ fun ast_eval 3 {
   # First push value
   ast ctx lctx ast_push_value ;
 
-  # Then pop and discard it
+  # Then pop and discard it (if it is not void)
   $type_idx
   @type_idx ast ctx lctx ast_eval_type = ;
-  $footprint
-  @footprint ctx type_idx cctx_type_footprint = ;
+  if type_idx TYPE_VOID != {
+    $footprint
+    @footprint ctx type_idx cctx_type_footprint = ;
 
-  # add esp, footprint
-  ctx 0x81 cctx_emit ;
-  ctx 0xc4 cctx_emit ;
-  ctx footprint cctx_emit32 ;
+    # add esp, footprint
+    ctx 0x81 cctx_emit ;
+    ctx 0xc4 cctx_emit ;
+    ctx footprint cctx_emit32 ;
+  }
 }
 
 fun cctx_compile_expression 2 {
