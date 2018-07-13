@@ -121,7 +121,9 @@ const CCTX_TOKENS 12
 const CCTX_TOKENS_POS 16
 const CCTX_STAGE 20
 const CCTX_CURRENT_LOC 24
-const SIZEOF_CCTX 28
+const CCTX_LABEL_NUM 28
+const CCTX_LABEL_BUF 32
+const SIZEOF_CCTX 36
 
 fun cctx_init_types 1 {
   $ctx
@@ -141,6 +143,8 @@ fun cctx_init 1 {
   ctx CCTX_GLOBALS take_addr map_init = ;
   ctx CCTX_TOKENS take_addr tokens = ;
   ctx CCTX_TOKENS_POS take_addr 0 = ;
+  ctx CCTX_LABEL_NUM take_addr 0 = ;
+  ctx CCTX_LABEL_BUF take_addr 32 malloc = ;
   ctx ret ;
 }
 
@@ -180,6 +184,8 @@ fun cctx_destroy 1 {
     @i i 1 + = ;
   }
   globals map_destroy ;
+
+  ctx CCTX_LABEL_BUF take free ;
 
   ctx free ;
 }
@@ -574,6 +580,62 @@ fun cctx_add_global_funct 4 {
       global GLOBAL_LOC take loc == "cctx_add_global_funct: error 3" assert_msg ;
     }
   }
+}
+
+fun cctx_write_label 2 {
+  $ctx
+  $idx
+  @ctx 1 param = ;
+  @idx 0 param = ;
+
+  $buf
+  @buf ctx CCTX_LABEL_BUF take = ;
+  buf '.' =c ;
+  buf 1 + 'L' =c ;
+  idx itoa buf 2 + strcpy ;
+
+  buf ret ;
+}
+
+fun cctx_gen_label 2 {
+  $ctx
+  $loc
+  @ctx 1 param = ;
+  @loc 0 param = ;
+
+  $idx
+  @idx ctx CCTX_LABEL_NUM take = ;
+  ctx CCTX_LABEL_NUM take_addr idx 1 + = ;
+  $name
+  @name ctx idx cctx_write_label = ;
+  ctx name loc TYPE_VOID cctx_add_global_funct ;
+  idx ret ;
+}
+
+fun cctx_fix_label 3 {
+  $ctx
+  $idx
+  $loc
+  @ctx 2 param = ;
+  @idx 1 param = ;
+  @loc 0 param = ;
+
+  $name
+  @name ctx idx cctx_write_label = ;
+  ctx name loc TYPE_VOID cctx_add_global_funct ;
+}
+
+fun cctx_get_label 2 {
+  $ctx
+  $idx
+  @ctx 1 param = ;
+  @idx 0 param = ;
+
+  $name
+  @name ctx idx cctx_write_label = ;
+  $global
+  @global ctx name cctx_get_global = ;
+  global GLOBAL_LOC take ret ;
 }
 
 fun cctx_is_eof 1 {
@@ -973,7 +1035,8 @@ fun stack_elem_destroy 1 {
 }
 
 const LCTX_STACK 0
-const SIZEOF_LCTX 4
+const LCTX_RETURN_TYPE_IDX 4
+const SIZEOF_LCTX 8
 
 fun lctx_init 0 {
   $lctx
@@ -1292,6 +1355,11 @@ fun ast_eval_type 3 {
 
     processed "ast_eval_type: not implemented" assert_msg ;
   }
+
+  # Sanity check
+  $type
+  @type ctx type_idx cctx_get_type = ;
+  type_idx TYPE_VOID == type TYPE_SIZE 0xffffffff != "ast_eval_type: invalid expression type" assert_msg ;
 
   ast AST_TYPE_IDX take_addr type_idx = ;
   type_idx ret ;
@@ -1753,6 +1821,30 @@ fun ast_eval 3 {
   ctx footprint cctx_emit32 ;
 }
 
+fun cctx_compile_expression 2 {
+  $ctx
+  $lctx
+  $eval
+  $end_tok
+  @ctx 3 param = ;
+  @lctx 2 param = ;
+  @eval 1 param = ;
+  @end_tok 0 param = ;
+
+  $ast
+  # Bad hack to fix ast_parse interface
+  ctx cctx_give_back_token ;
+  @ast ctx CCTX_TOKENS take ctx CCTX_TOKENS_POS take_addr end_tok ast_parse = ;
+  #ast ctx lctx ast_eval_type ;
+  #ast ast_dump ;
+  if eval {
+    ast ctx lctx ast_eval ;
+  } else {
+    ast ctx lctx ast_push_value ;
+  }
+  ast ast_destroy ;
+}
+
 fun cctx_compile_block 2 {
   $ctx
   $lctx
@@ -1796,14 +1888,7 @@ fun cctx_compile_block 2 {
         lctx ctx actual_type_idx name lctx_push_var ;
       } else {
         # No type, so this is an expression
-        $ast
-        # Bad hack to fix ast_parse interface
-        ctx cctx_give_back_token ;
-        @ast ctx CCTX_TOKENS take ctx CCTX_TOKENS_POS take_addr ";" ast_parse = ;
-        ast ctx lctx ast_eval_type ;
-        ast ast_dump ;
-        ast ctx lctx ast_eval ;
-        ast ast_destroy ;
+        ctx lctx 1 ";" cctx_compile_expression ;
       }
     }
 
@@ -1825,6 +1910,10 @@ fun cctx_compile_function 3 {
   $lctx
   @lctx lctx_init = ;
   lctx ctx type_idx arg_names lctx_prime_stack ;
+
+  $return_type_idx
+  @return_type_idx ctx type_idx cctx_get_type TYPE_BASE take = ;
+  lctx LCTX_RETURN_TYPE_IDX take_addr return_type_idx = ;
 
   lctx ctx lctx_gen_prologue ;
   ctx lctx cctx_compile_block ;
@@ -1897,6 +1986,7 @@ fun cctx_compile 1 {
     ctx CCTX_STAGE take 1 + itoa 1 platform_log ;
     ctx CCTX_CURRENT_LOC take_addr start_loc = ;
     ctx CCTX_TOKENS_POS take_addr 0 = ;
+    ctx CCTX_LABEL_NUM take_addr 0 = ;
     ctx cctx_reset_types ;
     ctx cctx_create_basic_types ;
     while ctx cctx_is_eof ! {
