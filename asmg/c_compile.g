@@ -640,7 +640,7 @@ fun cctx_emit_zeros 2 {
 ifun cctx_gen_label 3
 ifun cctx_fix_label 4
 ifun cctx_gen_jump 3
-ifun cctx_gen_label_jump 3
+ifun cctx_gen_label_jump 5
 
 fun cctx_is_eof 1 {
   $ctx
@@ -1291,20 +1291,34 @@ fun cctx_fix_label 4 {
   }
 }
 
+const JUMP_TYPE_JMP 0
+const JUMP_TYPE_CALL 1
+const JUMP_TYPE_JZ 2
+
 fun cctx_gen_jump 3 {
   $ctx
   $name
-  $is_call
+  $type
   @ctx 2 param = ;
   @name 1 param = ;
-  @is_call 0 param = ;
+  @type 0 param = ;
 
-  if is_call {
-    # call rel
-    ctx 0xe8 cctx_emit ;
-  } else {
+  if type JUMP_TYPE_JMP == {
     # jmp rel
     ctx 0xe9 cctx_emit ;
+  } else {
+    if type JUMP_TYPE_CALL == {
+      # call rel
+      ctx 0xe8 cctx_emit ;
+    } else {
+      if type JUMP_TYPE_JZ == {
+        # jz rel
+	ctx 0x0f cctx_emit ;
+	ctx 0x84 cctx_emit ;
+      } else {
+        0 "cctx_gen_dump: error 1" assert_msg ;
+      }
+    }
   }
 
   $global
@@ -1318,13 +1332,17 @@ fun cctx_gen_jump 3 {
   ctx rel cctx_emit32 ;
 }
 
-fun cctx_gen_label_jump 3 {
+fun cctx_gen_label_jump 5 {
   $ctx
   $lctx
   $idx
-  @ctx 2 param = ;
-  @lctx 1 param = ;
-  @idx 0 param = ;
+  $type
+  $rewind
+  @ctx 4 param = ;
+  @lctx 3 param = ;
+  @idx 2 param = ;
+  @type 1 param = ;
+  @rewind 0 param = ;
 
   $current_pos
   @current_pos lctx lctx_stack_pos = ;
@@ -1336,10 +1354,12 @@ fun cctx_gen_label_jump 3 {
   @name ctx idx cctx_write_label = ;
 
   # add esp, pos_diff; cctx_gen_jump
-  ctx 0x81 cctx_emit ;
-  ctx 0xc4 cctx_emit ;
-  ctx pos_diff cctx_emit32 ;
-  ctx name 0 cctx_gen_jump ;
+  if rewind {
+    ctx 0x81 cctx_emit ;
+    ctx 0xc4 cctx_emit ;
+    ctx pos_diff cctx_emit32 ;
+  }
+  ctx name type cctx_gen_jump ;
 }
 
 ifun ast_eval_type 3
@@ -1966,6 +1986,110 @@ fun cctx_compile_expression 2 {
   ast ast_destroy ;
 }
 
+ifun cctx_compile_statement_or_block 2
+
+fun cctx_compile_statement 2 {
+  $ctx
+  $lctx
+  @ctx 1 param = ;
+  @lctx 0 param = ;
+
+  $processed
+  @processed 0 = ;
+  $tok
+  @tok ctx cctx_get_token_or_fail = ;
+
+  # Check if we found the closing brace
+  if tok "}" strcmp 0 == processed ! && {
+    @processed 1 = ;
+    0 ret ;
+  }
+
+  $expect_semicolon
+  @expect_semicolon 0 = ;
+
+  # Parse return
+  if tok "return" strcmp 0 == processed ! && {
+    $ret_type
+    @ret_type lctx LCTX_RETURN_TYPE_IDX take = ;
+    if ret_type TYPE_VOID != {
+      ctx ret_type cctx_type_footprint 4 == "cctx_compile_statement: only returned scalar types are supported" assert_msg ;
+      ctx lctx ret_type ";" cctx_compile_expression ;
+      # pop eax
+      ctx 0x58 cctx_emit ;
+    }
+    ctx lctx lctx LCTX_RETURN_LABEL take JUMP_TYPE_JMP 1 cctx_gen_label_jump ;
+    @processed 1 = ;
+    @expect_semicolon 1 = ;
+  }
+
+  # Parse if
+  if tok "if" strcmp 0 == processed ! && {
+    $else_lab
+    $end_lab
+    @else_lab lctx ctx lctx_gen_label = ;
+    @end_lab lctx ctx lctx_gen_label = ;
+
+    # Compile guard expression
+    @tok ctx cctx_get_token_or_fail = ;
+    tok "(" strcmp 0 == "cctx_compile_statement: ( expected" assert_msg ;
+    ctx lctx TYPE_UINT ")" cctx_compile_expression ;
+    @tok ctx cctx_get_token_or_fail = ;
+    tok ")" strcmp 0 == "cctx_compile_statement: ) expected" assert_msg ;
+
+    # pop eax; test eax, eax; cctx_gen_label_jump
+    ctx 0x58 cctx_emit ;
+    ctx 0x85 cctx_emit ;
+    ctx 0xc0 cctx_emit ;
+    ctx lctx else_lab JUMP_TYPE_JZ 0 cctx_gen_label_jump ;
+
+    # Compile body
+    ctx lctx cctx_compile_statement_or_block ;
+
+    # cctx_gen_label_jump
+    ctx lctx end_lab JUMP_TYPE_JMP 0 cctx_gen_label_jump ;
+
+    # Compile else
+    lctx ctx else_lab lctx_fix_label ;
+    @tok ctx cctx_get_token_or_fail = ;
+    if tok "else" strcmp 0 == {
+      ctx lctx cctx_compile_statement_or_block ;
+    } else {
+      ctx cctx_give_back_token ;
+    }
+    lctx ctx end_lab lctx_fix_label ;
+    @processed 1 = ;
+  }
+
+  if processed ! {
+    ctx cctx_give_back_token ;
+
+    # Try to parse a type, in which case we have a variable declaration
+    $type_idx
+    @type_idx ctx cctx_parse_type = ;
+    if type_idx 0xffffffff != {
+      # There is a type, so we have a variable declaration
+      $actual_type_idx
+      $name
+      ctx type_idx @actual_type_idx @name 0 cctx_parse_declarator "cctx_compile_statement: error 1" assert_msg ;
+      name 0 != "cctx_compile_statement: cannot instantiate variable without name" assert_msg ;
+      lctx ctx actual_type_idx name lctx_push_var ;
+    } else {
+      # No type, so this is an expression
+      ctx lctx TYPE_VOID ";" cctx_compile_expression ;
+    }
+    @expect_semicolon 1 = ;
+  }
+
+  # Expect and consume the semicolon
+  if expect_semicolon {
+    @tok ctx cctx_get_token_or_fail = ;
+    tok ";" strcmp 0 == "cctx_compile_statement: ; expected" assert_msg ;
+  }
+
+  1 ret ;
+}
+
 fun cctx_compile_block 2 {
   $ctx
   $lctx
@@ -1975,55 +2099,28 @@ fun cctx_compile_block 2 {
   $saved_pos
   @saved_pos lctx ctx lctx_save_status = ;
 
-  while 1 {
-    $processed
-    @processed 0 = ;
-    $tok
-    @tok ctx cctx_get_token_or_fail = ;
+  $cont
+  @cont 1 = ;
+  while cont {
+    @cont ctx lctx cctx_compile_statement = ;
+  }
 
-    # Check if we found the closing brace
-    if tok "}" strcmp 0 == processed ! && {
-      lctx ctx saved_pos lctx_restore_status ;
-      @processed 1 = ;
-      ret ;
-    }
+  lctx ctx saved_pos lctx_restore_status ;
+}
 
-    # Parse return
-    if tok "return" strcmp 0 == processed ! && {
-      $ret_type
-      @ret_type lctx LCTX_RETURN_TYPE_IDX take = ;
-      if ret_type TYPE_VOID != {
-        ctx ret_type cctx_type_footprint 4 == "cctx_compile_block: only returned scalar types are supported" assert_msg ;
-        ctx lctx ret_type ";" cctx_compile_expression ;
-        # pop eax
-        ctx 0x58 cctx_emit ;
-      }
-      ctx lctx lctx LCTX_RETURN_LABEL take cctx_gen_label_jump ;
-      @processed 1 = ;
-    }
+fun cctx_compile_statement_or_block 2 {
+  $ctx
+  $lctx
+  @ctx 1 param = ;
+  @lctx 0 param = ;
 
-    if processed ! {
-      ctx cctx_give_back_token ;
-
-      # Try to parse a type, in which case we have a variable declaration
-      $type_idx
-      @type_idx ctx cctx_parse_type = ;
-      if type_idx 0xffffffff != {
-        # There is a type, so we have a variable declaration
-        $actual_type_idx
-        $name
-        ctx type_idx @actual_type_idx @name 0 cctx_parse_declarator "cctx_compile_block: error 1" assert_msg ;
-        name 0 != "cctx_compile_block: cannot instantiate variable without name" assert_msg ;
-        lctx ctx actual_type_idx name lctx_push_var ;
-      } else {
-        # No type, so this is an expression
-        ctx lctx TYPE_VOID ";" cctx_compile_expression ;
-      }
-    }
-
-    # Expect and consume the semicolon
-    @tok ctx cctx_get_token_or_fail = ;
-    tok ";" strcmp 0 == "cctx_compile_block: ; expected" assert_msg ;
+  $tok
+  @tok ctx cctx_get_token_or_fail = ;
+  if tok "{" strcmp 0 == {
+    ctx lctx cctx_compile_block ;
+  } else {
+    ctx cctx_give_back_token ;
+    ctx lctx cctx_compile_statement ;
   }
 }
 
