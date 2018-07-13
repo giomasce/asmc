@@ -18,7 +18,6 @@ int main(int argc, char **argv) {
   char c;
   int x1;
   unsigned int x2;
-  int arr[10];
 
   /*2+2;
   2-2;
@@ -30,6 +29,10 @@ int main(int argc, char **argv) {
 
   2+x1+x;
 
+  return;
+
+  int arr[10];
+
   /*x1;
   c;
   c+x1+x2;
@@ -37,7 +40,6 @@ int main(int argc, char **argv) {
   main_ptr;*/
 
   0+0;
-  return;
 }
 
 int main(int, char**);

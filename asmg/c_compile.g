@@ -988,7 +988,8 @@ fun stack_elem_destroy 1 {
 
 const LCTX_STACK 0
 const LCTX_RETURN_TYPE_IDX 4
-const SIZEOF_LCTX 8
+const LCTX_RETURN_LABEL 8
+const SIZEOF_LCTX 12
 
 fun lctx_init 0 {
   $lctx
@@ -1014,6 +1015,39 @@ fun lctx_destroy 1 {
   lctx free ;
 }
 
+fun lctx_stack_pos 1 {
+  $lctx
+  @lctx 0 param = ;
+
+  $stack
+  @stack lctx LCTX_STACK take = ;
+  stack stack vector_size 1 - vector_at STACK_ELEM_LOC take ret ;
+}
+
+fun lctx_gen_label 2 {
+  $lctx
+  $ctx
+  @lctx 1 param = ;
+  @ctx 0 param = ;
+
+  ctx 0xffffffff 0xffffffff cctx_gen_label ret ;
+}
+
+fun lctx_fix_label 3 {
+  $lctx
+  $ctx
+  $idx
+  @lctx 2 param = ;
+  @ctx 1 param = ;
+  @idx 0 param = ;
+
+  $loc
+  $pos
+  @loc ctx CCTX_CURRENT_LOC take = ;
+  @pos lctx lctx_stack_pos = ;
+  ctx idx loc pos cctx_fix_label ;
+}
+
 fun lctx_get_variable 2 {
   $lctx
   $name
@@ -1036,15 +1070,6 @@ fun lctx_get_variable 2 {
   }
 
   0 ret ;
-}
-
-fun lctx_stack_pos 1 {
-  $lctx
-  @lctx 0 param = ;
-
-  $stack
-  @stack lctx LCTX_STACK take = ;
-  stack stack vector_size 1 - vector_at STACK_ELEM_LOC take ret ;
 }
 
 fun lctx_save_status 2 {
@@ -1188,11 +1213,6 @@ fun lctx_gen_epilogue 2 {
   $ctx
   @lctx 1 param = ;
   @ctx 0 param = ;
-
-  # add esp, stack_pos
-  ctx 0x81 cctx_emit ;
-  ctx 0xc4 cctx_emit ;
-  ctx 0 lctx lctx_stack_pos - cctx_emit32 ;
 
   # pop ebp; ret
   ctx 0x5d cctx_emit ;
@@ -1940,7 +1960,7 @@ fun cctx_compile_block 2 {
 
     # Check if this is a return statement
     if tok "return" strcmp 0 == processed ! && {
-      lctx ctx lctx_gen_epilogue ;
+      ctx lctx lctx LCTX_RETURN_LABEL take cctx_gen_label_jump ;
       @processed 1 = ;
     }
 
@@ -1980,6 +2000,7 @@ fun cctx_compile_function 3 {
   # Costruct the local context
   $lctx
   @lctx lctx_init = ;
+  lctx LCTX_RETURN_LABEL take_addr lctx ctx lctx_gen_label = ;
   lctx ctx type_idx arg_names lctx_prime_stack ;
 
   $return_type_idx
@@ -1988,6 +2009,7 @@ fun cctx_compile_function 3 {
 
   lctx ctx lctx_gen_prologue ;
   ctx lctx cctx_compile_block ;
+  lctx ctx lctx LCTX_RETURN_LABEL take lctx_fix_label ;
   lctx ctx lctx_gen_epilogue ;
 
   lctx lctx_destroy ;
