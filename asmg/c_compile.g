@@ -2299,14 +2299,14 @@ fun cctx_compile_expression 2 {
   # Bad hack to fix ast_parse interface
   ctx cctx_give_back_token ;
   @ast ctx CCTX_TOKENS take ctx CCTX_TOKENS_POS take_addr end_tok ast_parse = ;
-  ast ctx lctx ast_eval_type ;
+  #ast ctx lctx ast_eval_type ;
   if target_type_idx TYPE_VOID == {
     ast ctx lctx ast_eval ;
   } else {
     ast ctx lctx ast_push_value ;
     lctx ctx ast ctx lctx ast_eval_type target_type_idx lctx_convert_stack ;
   }
-  ast ast_dump ;
+  #ast ast_dump ;
   ast ast_destroy ;
 }
 
