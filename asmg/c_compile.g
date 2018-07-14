@@ -1,4 +1,63 @@
 
+fun escape_char 2 {
+  $from
+  $to
+  @from 1 param = ;
+  @to 0 param = ;
+
+  if from ** **c '\\' == {
+    from from ** 1 + = ;
+    $c
+    @c from ** **c = ;
+    $processed
+    @processed 0 = ;
+    if c '0' == {
+      to ** 0 =c ;
+      @processed 1 = ;
+    }
+    if c 'n' == {
+      to ** '\n' =c ;
+      @processed 1 = ;
+    }
+    if c 'r' == {
+      to ** '\r' =c ;
+      @processed 1 = ;
+    }
+    if c 't' == {
+      to ** '\t' =c ;
+      @processed 1 = ;
+    }
+    if c 'v' == {
+      to ** '\v' =c ;
+      @processed 1 = ;
+    }
+    if c 'f' == {
+      to ** '\f' =c ;
+      @processed 1 = ;
+    }
+    if c '\\' == {
+      to ** '\\' =c ;
+      @processed 1 = ;
+    }
+    if c '\'' == {
+      to ** '\'' =c ;
+      @processed 1 = ;
+    }
+    if c '\"' == {
+      to ** '\"' =c ;
+      @processed 1 = ;
+    }
+    processed "escape_char: unknown escape sequence" assert_msg ;
+    from from ** 1 + = ;
+    to to ** 1 + = ;
+  } else {
+    from ** **c 0 != "escape_char: unexpected null" assert_msg ;
+    to ** from ** **c =c ;
+    from from ** 1 + = ;
+    to to ** 1 + = ;
+  }
+}
+
 const TYPE_KIND_BASE 0
 const TYPE_KIND_POINTER 1
 const TYPE_KIND_FUNCTION 2
