@@ -3,12 +3,11 @@ int do_sum(int x, char y) {
   return x+y;
 }
 
-int main(int x, char *y[]) {
+int sum_numbers(int x) {
   int i;
   int sum;
   i = 0;
   sum = 0;
-  "test string";
   while (i < 200) {
     i = i + 1;
     if (i == 1) continue;
@@ -17,6 +16,12 @@ int main(int x, char *y[]) {
     if (i == 100) break;
   }
   return sum;
+}
+
+int main() {
+  "test string";
+  int a;
+  return sum_numbers(0);
 }
 
 #ifdef __UNDEF

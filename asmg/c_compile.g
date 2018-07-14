@@ -1,14 +1,30 @@
 
+ifun cctx_emit 2
+
 fun escape_char 2 {
   $from
   $to
-  @from 1 param = ;
-  @to 0 param = ;
+  $ctx
+  @from 2 param = ;
+  @to 1 param = ;
+  @ctx 0 param = ;
 
+  $emit
+  @emit to 0 == = ;
+  $data
+  @data 0 = ;
+  $data_ptr
+  @data_ptr @data = ;
+  if emit {
+    @to @data_ptr = ;
+  }
+
+  from ** **c 0 != "escape_char: unexpected null" assert_msg ;
   if from ** **c '\\' == {
     from from ** 1 + = ;
     $c
     @c from ** **c = ;
+    c 0 != "escape_char: unexpected null" assert_msg ;
     $processed
     @processed 0 = ;
     if c '0' == {
@@ -51,10 +67,14 @@ fun escape_char 2 {
     from from ** 1 + = ;
     to to ** 1 + = ;
   } else {
-    from ** **c 0 != "escape_char: unexpected null" assert_msg ;
     to ** from ** **c =c ;
     from from ** 1 + = ;
     to to ** 1 + = ;
+  }
+
+  if emit {
+    data_ptr @data 1 + == "escape_char: error 1" assert_msg ;
+    ctx data cctx_emit ;
   }
 }
 
@@ -1423,6 +1443,21 @@ fun cctx_gen_label_jump 5 {
   ctx name type cctx_gen_jump ;
 }
 
+fun cctx_get_label_addr 3 {
+  $ctx
+  $lctx
+  $idx
+  @ctx 2 param = ;
+  @lctx 1 param = ;
+  @idx 0 param = ;
+
+  $name
+  @name ctx idx cctx_write_label = ;
+  $global
+  @global ctx name cctx_get_global = ;
+  global GLOBAL_LOC take ret ;
+}
+
 ifun ast_eval_type 3
 
 fun ast_arith_conv 3 {
@@ -1555,12 +1590,16 @@ fun ast_eval_type 3 {
   # Process decaying
   $type
   @type ctx type_idx cctx_get_type = ;
+  $orig_type_idx
+  @orig_type_idx 0xffffffff = ;
   if type TYPE_KIND take TYPE_KIND_ARRAY == {
+    @orig_type_idx type_idx = ;
     $base_idx
     @base_idx type TYPE_BASE take = ;
     @type_idx ctx base_idx cctx_get_pointer_type = ;
   }
   if type TYPE_KIND take TYPE_KIND_FUNCTION == {
+    @orig_type_idx type_idx = ;
     @type_idx ctx type_idx cctx_get_pointer_type = ;
   }
   @type ctx type_idx cctx_get_type = ;
@@ -1569,6 +1608,7 @@ fun ast_eval_type 3 {
   type_idx TYPE_VOID == type TYPE_SIZE take 0xffffffff != || "ast_eval_type: invalid expression type" assert_msg ;
 
   ast AST_TYPE_IDX take_addr type_idx = ;
+  ast AST_ORIG_TYPE_IDX take_addr orig_type_idx = ;
   type_idx ret ;
 }
 
@@ -1604,7 +1644,27 @@ fun ast_push_addr 3 {
         ctx global GLOBAL_LOC take cctx_emit32 ;
       }
     } else {
-      0 "ast_push_addr: cannot take the address of an immediate" assert_msg ;
+      if name **c '\"' == {
+        $label
+	$str_label
+        @label lctx ctx lctx_gen_label = ;
+	@str_label lctx ctx lctx_gen_label = ;
+        ctx lctx label JUMP_TYPE_JMP 0 cctx_gen_label_jump ;
+	lctx ctx str_label lctx_fix_label ;
+        $from
+	@from name 1 + = ;
+	while from **c '\"' != {
+	  @from 0 ctx escape_char ;
+	}
+	from 1 + **c 0 == "ast_push_addr: illegal string literal" assert_msg ;
+	ctx 0 cctx_emit ;
+        lctx ctx label lctx_fix_label ;
+	# push str_label
+	ctx 0x68 cctx_emit ;
+	ctx ctx lctx label cctx_get_label_addr cctx_emit32 ;
+      } else {
+        0 "ast_push_addr: cannot take the address of an immediate" assert_msg ;
+      }
     }
   } else {
     # Operator
@@ -2071,8 +2131,8 @@ fun ast_gen_function_call 3 {
   }
 
   # Call function
-  # ast_push_addr; pop eax; call eax
-  left ctx lctx ast_push_addr ;
+  # ast_push_value; pop eax; call eax
+  left ctx lctx ast_push_value ;
   ctx 0x58 cctx_emit ;
   ctx 0xff cctx_emit ;
   ctx 0xd0 cctx_emit ;
@@ -2109,6 +2169,19 @@ fun ast_push_value 3 {
   @name ast AST_NAME take = ;
   $type_idx
   @type_idx ast ctx lctx ast_eval_type = ;
+
+  # In case of type decaying, return the address
+  $orig_type_idx
+  @orig_type_idx ast AST_ORIG_TYPE_IDX take = ;
+  $orig_type
+  @orig_type ctx orig_type_idx cctx_get_type = ;
+  $orig_kind
+  @orig_kind orig_type TYPE_KIND take = ;
+  if orig_kind TYPE_KIND_FUNCTION == orig_kind TYPE_KIND_ARRAY == || {
+    ast ctx lctx ast_push_addr ;
+    ret ;
+  }
+
   if ast AST_TYPE take 0 == {
     # Operand
     if name is_valid_identifier {
@@ -2120,11 +2193,7 @@ fun ast_push_value 3 {
     } else {
       $value
       if name **c '\"' == {
-        $label
-        @label lctx ctx lctx_gen_label = ;
-        ctx lctx label JUMP_TYPE_JMP 0 cctx_gen_label_jump ;
-        
-        lctx ctx label lctx_fix_label ;
+        0 "ast_push_value: error 1" assert_msg ;
       } else {
         if name **c '\'' == {
           $data
@@ -2133,10 +2202,10 @@ fun ast_push_value 3 {
           @data 0 = ;
           @from name 1 + = ;
           @to @data = ;
-          @from @to escape_char ;
-          to @data 1 + == "arg_push_value: invalid character literal 1" assert_msg ;
-          from **c '\'' == "arg_push_value: invalid character literal 2" assert_msg ;
-          from 1 + **c 0 == "arg_push_value: invalid character literal 3" assert_msg ;
+          @from @to 0 escape_char ;
+          to @data 1 + == "ast_push_value: invalid character literal 1" assert_msg ;
+          from **c '\'' == "ast_push_value: invalid character literal 2" assert_msg ;
+          from 1 + **c 0 == "ast_push_value: invalid character literal 3" assert_msg ;
           @value data = ;
         } else {
           @value name atoi = ;

@@ -1,10 +1,11 @@
 
-const AST_TYPE 0      # 0 for operand, 1 for operator
-const AST_NAME 4      # char*
-const AST_LEFT 8      # AST*
-const AST_RIGHT 12    # AST*
-const AST_TYPE_IDX 16 # int
-const SIZEOF_AST 20
+const AST_TYPE 0             # 0 for operand, 1 for operator
+const AST_NAME 4             # char*
+const AST_LEFT 8             # AST*
+const AST_RIGHT 12           # AST*
+const AST_TYPE_IDX 16        # int
+const AST_ORIG_TYPE_IDX 20   # int
+const SIZEOF_AST 24
 
 fun ast_init 0 {
   $ptr
@@ -14,6 +15,7 @@ fun ast_init 0 {
   ptr AST_LEFT take_addr 0 = ;
   ptr AST_RIGHT take_addr 0 = ;
   ptr AST_TYPE_IDX take_addr 0xffffffff = ;
+  ptr AST_ORIG_TYPE_IDX take_addr 0xffffffff = ;
   ptr ret ;
 }
 
