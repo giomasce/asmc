@@ -4,9 +4,12 @@ int main(int x, char** y) {
   int sum;
   i = 0;
   sum = 0;
-  while (i < 100) {
+  while (i < 200) {
     i = i + 1;
+    if (i == 1) continue;
     sum = sum + i;
+    int x;
+    if (i == 100) break;
   }
   return sum;
 }

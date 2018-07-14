@@ -995,7 +995,9 @@ fun stack_elem_destroy 1 {
 const LCTX_STACK 0
 const LCTX_RETURN_TYPE_IDX 4
 const LCTX_RETURN_LABEL 8
-const SIZEOF_LCTX 12
+const LCTX_BREAK_LABEL 12
+const LCTX_CONTINUE_LABEL 16
+const SIZEOF_LCTX 20
 
 fun lctx_init 0 {
   $lctx
@@ -2078,6 +2080,20 @@ fun cctx_compile_statement 2 {
     @expect_semicolon 1 = ;
   }
 
+  # Parse break
+  if tok "break" strcmp 0 == processed ! && {
+    ctx lctx lctx LCTX_BREAK_LABEL take JUMP_TYPE_JMP 1 cctx_gen_label_jump ;
+    @processed 1 = ;
+    @expect_semicolon 1 = ;
+  }
+
+  # Parse continue
+  if tok "continue" strcmp 0 == processed ! && {
+    ctx lctx lctx LCTX_CONTINUE_LABEL take JUMP_TYPE_JMP 1 cctx_gen_label_jump ;
+    @processed 1 = ;
+    @expect_semicolon 1 = ;
+  }
+
   # Parse if
   if tok "if" strcmp 0 == processed ! && {
     $else_lab
@@ -2118,6 +2134,7 @@ fun cctx_compile_statement 2 {
 
   # Parse while
   if tok "while" strcmp 0 == processed ! && {
+    # Set up labels
     $continue_lab
     $break_lab
     @continue_lab lctx ctx lctx_gen_label = ;
@@ -2138,7 +2155,15 @@ fun cctx_compile_statement 2 {
     ctx lctx break_lab JUMP_TYPE_JZ 0 cctx_gen_label_jump ;
 
     # Compile body
+    $old_break_lab
+    $old_continue_lab
+    @old_break_lab lctx LCTX_BREAK_LABEL take = ;
+    @old_continue_lab lctx LCTX_CONTINUE_LABEL take = ;
+    lctx LCTX_BREAK_LABEL take_addr break_lab = ;
+    lctx LCTX_CONTINUE_LABEL take_addr continue_lab = ;
     ctx lctx cctx_compile_statement_or_block ;
+    lctx LCTX_BREAK_LABEL take_addr old_break_lab = ;
+    lctx LCTX_CONTINUE_LABEL take_addr old_continue_lab = ;
 
     # cctx_gen_label_jump
     ctx lctx continue_lab JUMP_TYPE_JMP 0 cctx_gen_label_jump ;
@@ -2355,12 +2380,12 @@ fun parse_c 1 {
   cctx cctx_compile ;
 
   # Debug output
-  "TYPES TABLE\n" 1 platform_log ;
-  cctx cctx_dump_types ;
-  "TYPE NAMES TABLE\n" 1 platform_log ;
-  cctx cctx_dump_typenames ;
-  "GLOBALS TABLE\n" 1 platform_log ;
-  cctx cctx_dump_globals ;
+  #"TYPES TABLE\n" 1 platform_log ;
+  #cctx cctx_dump_types ;
+  #"TYPE NAMES TABLE\n" 1 platform_log ;
+  #cctx cctx_dump_typenames ;
+  #"GLOBALS TABLE\n" 1 platform_log ;
+  #cctx cctx_dump_globals ;
 
   # Try to execute the code
   "Executing compiled code...\n" 1 platform_log ;
