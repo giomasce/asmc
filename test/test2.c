@@ -8,6 +8,7 @@ int main(int x, char *y[]) {
   int sum;
   i = 0;
   sum = 0;
+  "test string";
   while (i < 200) {
     i = i + 1;
     if (i == 1) continue;

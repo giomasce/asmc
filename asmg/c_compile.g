@@ -1535,11 +1535,16 @@ fun ast_eval_type 3 {
     }
 
     if name "(" strcmp 0 == {
+      $fun_ptr_idx
+      $fun_ptr_type
       $fun_idx
-      @fun_idx ast AST_LEFT take ctx lctx ast_eval_type = ;
       $fun_type
+      @fun_ptr_idx ast AST_LEFT take ctx lctx ast_eval_type = ;
+      @fun_ptr_type ctx fun_ptr_idx cctx_get_type = ;
+      fun_ptr_type TYPE_KIND take TYPE_KIND_POINTER == "ast_eval_type: left is not a pointer" assert_msg ;
+      @fun_idx fun_ptr_type TYPE_BASE take = ;
       @fun_type ctx fun_idx cctx_get_type = ;
-      fun_type TYPE_KIND take TYPE_KIND_FUNCTION == "ast_eval_type: left is not a function" assert_msg ;
+      fun_type TYPE_KIND take TYPE_KIND_FUNCTION == "ast_eval_type: left is not a pointer to function" assert_msg ;
       @type_idx fun_type TYPE_BASE take = ;
       @processed 1 = ;
     }
@@ -1547,10 +1552,21 @@ fun ast_eval_type 3 {
     processed "ast_eval_type: not implemented" assert_msg ;
   }
 
-  # Sanity check
+  # Process decaying
   $type
   @type ctx type_idx cctx_get_type = ;
-  type_idx TYPE_VOID == type TYPE_SIZE 0xffffffff != "ast_eval_type: invalid expression type" assert_msg ;
+  if type TYPE_KIND take TYPE_KIND_ARRAY == {
+    $base_idx
+    @base_idx type TYPE_BASE take = ;
+    @type_idx ctx base_idx cctx_get_pointer_type = ;
+  }
+  if type TYPE_KIND take TYPE_KIND_FUNCTION == {
+    @type_idx ctx type_idx cctx_get_pointer_type = ;
+  }
+  @type ctx type_idx cctx_get_type = ;
+
+  # Sanity check
+  type_idx TYPE_VOID == type TYPE_SIZE take 0xffffffff != || "ast_eval_type: invalid expression type" assert_msg ;
 
   ast AST_TYPE_IDX take_addr type_idx = ;
   type_idx ret ;
@@ -2003,11 +2019,16 @@ fun ast_gen_function_call 3 {
 
   $type_idx
   @type_idx ast ctx lctx ast_eval_type = ;
+  $fun_ptr_idx
+  $fun_ptr_type
   $fun_idx
-  @fun_idx left ctx lctx ast_eval_type = ;
   $fun_type
+  @fun_ptr_idx ast AST_LEFT take ctx lctx ast_eval_type = ;
+  @fun_ptr_type ctx fun_ptr_idx cctx_get_type = ;
+  fun_ptr_type TYPE_KIND take TYPE_KIND_POINTER == "ast_gen_function_call: left is not a pointer" assert_msg ;
+  @fun_idx fun_ptr_type TYPE_BASE take = ;
   @fun_type ctx fun_idx cctx_get_type = ;
-  fun_type TYPE_KIND take TYPE_KIND_FUNCTION == "ast_push_value: left is not a function" assert_msg ;
+  fun_type TYPE_KIND take TYPE_KIND_FUNCTION == "ast_gen_function_call: left is not a pointer to function" assert_msg ;
   $args
   @args fun_type TYPE_ARGS take = ;
 
@@ -2099,12 +2120,24 @@ fun ast_push_value 3 {
     } else {
       $value
       if name **c '\"' == {
-        0 assert ;
+        $label
+        @label lctx ctx lctx_gen_label = ;
+        ctx lctx label JUMP_TYPE_JMP 0 cctx_gen_label_jump ;
         
+        lctx ctx label lctx_fix_label ;
       } else {
         if name **c '\'' == {
-          0 assert ;
-          
+          $data
+          $from
+          $to
+          @data 0 = ;
+          @from name 1 + = ;
+          @to @data = ;
+          @from @to escape_char ;
+          to @data 1 + == "arg_push_value: invalid character literal 1" assert_msg ;
+          from **c '\'' == "arg_push_value: invalid character literal 2" assert_msg ;
+          from 1 + **c 0 == "arg_push_value: invalid character literal 3" assert_msg ;
+          @value data = ;
         } else {
           @value name atoi = ;
         }
@@ -2139,12 +2172,12 @@ fun ast_push_value 3 {
 
     if name "=" strcmp 0 == {
       ast AST_RIGHT take ctx lctx ast_push_value ;
-      lctx ctx ast AST_RIGHT take AST_TYPE_IDX take ast AST_TYPE_IDX take lctx_convert_stack ;
+      lctx ctx ast AST_RIGHT take ctx lctx ast_eval_type ast ctx lctx ast_eval_type lctx_convert_stack ;
       ast AST_LEFT take ctx lctx ast_push_addr ;
 
       # pop eax; cctx_gen_move_data
       ctx 0x58 cctx_emit ;
-      ctx ctx ast AST_TYPE_IDX take cctx_type_footprint cctx_gen_move_data ;
+      ctx ctx ast ctx lctx ast_eval_type cctx_type_footprint cctx_gen_move_data ;
 
       @processed 1 = ;
     }
@@ -2198,13 +2231,13 @@ fun cctx_compile_expression 2 {
   ctx cctx_give_back_token ;
   @ast ctx CCTX_TOKENS take ctx CCTX_TOKENS_POS take_addr end_tok ast_parse = ;
   ast ctx lctx ast_eval_type ;
-  ast ast_dump ;
   if target_type_idx TYPE_VOID == {
     ast ctx lctx ast_eval ;
   } else {
     ast ctx lctx ast_push_value ;
-    lctx ctx ast AST_TYPE_IDX take target_type_idx lctx_convert_stack ;
+    lctx ctx ast ctx lctx ast_eval_type target_type_idx lctx_convert_stack ;
   }
+  ast ast_dump ;
   ast ast_destroy ;
 }
 
