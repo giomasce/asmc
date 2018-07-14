@@ -1,5 +1,5 @@
 
-int main(int x, char** y) {
+int main(int x, char *y[]) {
   int i;
   int sum;
   i = 0;
@@ -15,6 +15,10 @@ int main(int x, char** y) {
 }
 
 #ifdef __UNDEF
+int f(char g(unsigned int)) {
+  return 0;
+}
+
 int test, test2;
 unsigned char x, y, z;
 char *ptr, arr[8];

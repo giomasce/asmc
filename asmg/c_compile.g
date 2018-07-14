@@ -2261,6 +2261,47 @@ fun cctx_compile_function 3 {
   lctx lctx_destroy ;
 }
 
+fun cctx_mangle_function_type 2 {
+  $ctx
+  $type_idx
+  @ctx 1 param = ;
+  @type_idx 0 param = ;
+
+  $type
+  @type ctx type_idx cctx_get_type = ;
+  type TYPE_KIND take TYPE_KIND_FUNCTION == "cctx_mangle_function_type: not a function type" assert_msg ;
+  $base_idx
+  @base_idx type TYPE_BASE take = ;
+  $args
+  @args type TYPE_ARGS take = ;
+  $new_args
+  @new_args 4 vector_init = ;
+
+  $i
+  @i 0 = ;
+  while i args vector_size < {
+    $arg_idx
+    @arg_idx args i vector_at = ;
+    $arg_type
+    @arg_type ctx arg_idx cctx_get_type = ;
+
+    if arg_type TYPE_KIND take TYPE_KIND_ARRAY == {
+      $arg_base
+      @arg_base arg_type TYPE_BASE take = ;
+      @arg_idx ctx arg_base cctx_get_pointer_type = ;
+    }
+
+    if arg_type TYPE_KIND take TYPE_KIND_FUNCTION == {
+      @arg_idx ctx arg_idx cctx_get_pointer_type = ;
+    }
+
+    new_args arg_idx vector_push_back ;
+    @i i 1 + = ;
+  }
+
+  ctx base_idx new_args cctx_get_function_type ret ;
+}
+
 fun cctx_compile_line 1 {
   $ctx
   @ctx 0 param = ;
@@ -2277,10 +2318,13 @@ fun cctx_compile_line 1 {
     @arg_names 4 vector_init = ;
     ctx type_idx @actual_type_idx @name arg_names cctx_parse_declarator "cctx_compile_line: error 1" assert_msg ;
     $type
-    @type ctx CCTX_TYPES take actual_type_idx vector_at = ;
+    @type ctx actual_type_idx cctx_get_type = ;
     name 0 != "cctx_compile_line: cannot instantiate variable without name" assert_msg ;
     if type TYPE_KIND take TYPE_KIND_FUNCTION == {
-      # If it is a function, check if it has a body
+      # If it is a function, first mangle its parameters' types
+      @actual_type_idx ctx actual_type_idx cctx_mangle_function_type = ;
+      @type ctx actual_type_idx cctx_get_type = ;
+      # Then check if it has a body
       $tok
       @tok ctx cctx_get_token_or_fail = ;
       if tok "{" strcmp 0 == {
@@ -2380,12 +2424,12 @@ fun parse_c 1 {
   cctx cctx_compile ;
 
   # Debug output
-  #"TYPES TABLE\n" 1 platform_log ;
-  #cctx cctx_dump_types ;
-  #"TYPE NAMES TABLE\n" 1 platform_log ;
-  #cctx cctx_dump_typenames ;
-  #"GLOBALS TABLE\n" 1 platform_log ;
-  #cctx cctx_dump_globals ;
+  "TYPES TABLE\n" 1 platform_log ;
+  cctx cctx_dump_types ;
+  "TYPE NAMES TABLE\n" 1 platform_log ;
+  cctx cctx_dump_typenames ;
+  "GLOBALS TABLE\n" 1 platform_log ;
+  cctx cctx_dump_globals ;
 
   # Try to execute the code
   "Executing compiled code...\n" 1 platform_log ;
