@@ -279,7 +279,17 @@ fun ast_parse 3 {
             # it makes a((b,c),d) the same thing as a(b,c,d). However
             # we hope that no sane program relies on that.
             if tok "(" strcmp 0 == {
-              @ast intoks iptr ")" ast_parse = ;
+              $tok2
+              iptr iptr ** 1 + = ;
+              @tok2 intoks iptr ** vector_at = ;
+              if tok2 ")" strcmp 0 == {
+                # No arguments, push a placeholder
+                @ast ast_init = ;
+              } else {
+                # Roll back token and parse arguments
+                iptr iptr ** 1 - = ;
+                @ast intoks iptr ")" ast_parse = ;
+              }
               operator_stack tok strdup vector_push_back ;
               operator_stack operand_stack ast_rewind_stack ;
               operand_stack ast vector_push_back ;

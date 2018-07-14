@@ -1475,6 +1475,16 @@ fun ast_eval_type 3 {
       @processed 1 = ;
     }
 
+    if name "(" strcmp 0 == {
+      $fun_idx
+      @fun_idx ast AST_LEFT take ctx lctx ast_eval_type = ;
+      $fun_type
+      @fun_type ctx fun_idx cctx_get_type = ;
+      fun_type TYPE_KIND take TYPE_KIND_FUNCTION == "ast_eval_type: left is not a function" assert_msg ;
+      @type_idx fun_type TYPE_BASE take = ;
+      @processed 1 = ;
+    }
+
     processed "ast_eval_type: not implemented" assert_msg ;
   }
 
@@ -1595,7 +1605,10 @@ fun lctx_convert_stack 4 {
     ctx 0x58 cctx_emit ;
     lctx ctx from_idx to_idx lctx_int_convert ;
     ctx 0x50 cctx_emit ;
+    ret ;
   }
+
+  0 "lctx_convert_stack: not implemented" assert_msg ;
 }
 
 ifun ast_push_value 3
@@ -1916,6 +1929,94 @@ fun cctx_gen_move_data 2 {
   }
 }
 
+fun ast_gen_function_call 3 {
+  $ast
+  $ctx
+  $lctx
+  @ast 2 param = ;
+  @ctx 1 param = ;
+  @lctx 0 param = ;
+
+  $left
+  $right
+  @left ast AST_LEFT take = ;
+  @right ast AST_RIGHT take = ;
+
+  $type_idx
+  @type_idx ast ctx lctx ast_eval_type = ;
+  $fun_idx
+  @fun_idx left ctx lctx ast_eval_type = ;
+  $fun_type
+  @fun_type ctx fun_idx cctx_get_type = ;
+  fun_type TYPE_KIND take TYPE_KIND_FUNCTION == "ast_push_value: left is not a function" assert_msg ;
+  $args
+  @args fun_type TYPE_ARGS take = ;
+
+  # Passed arguments are stored in reverse order
+  $passed_args
+  @passed_args 4 vector_init = ;
+  if right AST_NAME take 0 != {
+    $cont
+    @cont 1 = ;
+    while cont {
+      if right AST_NAME take "," strcmp 0 == {
+        passed_args right AST_RIGHT take vector_push_back ;
+        @right right AST_LEFT take = ;
+      } else {
+        passed_args right vector_push_back ;
+        @cont 0 = ;
+      }
+    }
+  }
+
+  # Push arguments on the stack, right to left
+  passed_args vector_size args vector_size == "ast_gen_function_call: arguments number does not match" assert_msg ;
+  $i
+  @i 0 = ;
+  $rewind
+  @rewind 0 = ;
+  while i passed_args vector_size < {
+    $passed_arg
+    $arg
+    @passed_arg passed_args i vector_at = ;
+    @arg args args vector_size i - 1 - vector_at = ;
+    passed_arg ctx lctx ast_push_value ;
+    $from_type
+    $to_type
+    @from_type passed_arg ctx lctx ast_eval_type = ;
+    @to_type arg = ;
+    lctx ctx from_type to_type lctx_convert_stack ;
+    @rewind rewind ctx to_type cctx_type_footprint + = ;
+    @i i 1 + = ;
+  }
+
+  # Call function
+  # ast_push_addr; pop eax; call eax
+  left ctx lctx ast_push_addr ;
+  ctx 0x58 cctx_emit ;
+  ctx 0xff cctx_emit ;
+  ctx 0xd0 cctx_emit ;
+
+  # Clean up stack
+  # add esp, rewind
+  ctx 0x81 cctx_emit ;
+  ctx 0xc4 cctx_emit ;
+  ctx rewind cctx_emit32 ;
+
+  # Push result
+  if type_idx TYPE_VOID != {
+    $res_footprint
+    @res_footprint ctx ast ctx lctx ast_eval_type cctx_type_footprint = ;
+    res_footprint 4 == res_footprint 0 == || "ast_gen_function_call: return type is not scalar" assert_msg ;
+    if res_footprint 4 == {
+      # push eax
+      ctx 0x50 cctx_emit ;
+    }
+  }
+
+  passed_args vector_destroy ;
+}
+
 fun ast_push_value 3 {
   $ast
   $ctx
@@ -1989,6 +2090,11 @@ fun ast_push_value 3 {
       @processed 1 = ;
     }
 
+    if name "(" strcmp 0 == {
+      ast ctx lctx ast_gen_function_call ;
+      @processed 1 = ;
+    }
+
     processed "ast_push_value: not implemented" assert_msg ;
   }
 }
@@ -2032,8 +2138,8 @@ fun cctx_compile_expression 2 {
   # Bad hack to fix ast_parse interface
   ctx cctx_give_back_token ;
   @ast ctx CCTX_TOKENS take ctx CCTX_TOKENS_POS take_addr end_tok ast_parse = ;
-  #ast ctx lctx ast_eval_type ;
-  #ast ast_dump ;
+  ast ctx lctx ast_eval_type ;
+  ast ast_dump ;
   if target_type_idx TYPE_VOID == {
     ast ctx lctx ast_eval ;
   } else {

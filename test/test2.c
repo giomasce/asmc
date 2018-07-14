@@ -1,4 +1,8 @@
 
+int do_sum(int x, char y) {
+  return x+y;
+}
+
 int main(int x, char *y[]) {
   int i;
   int sum;
@@ -7,7 +11,7 @@ int main(int x, char *y[]) {
   while (i < 200) {
     i = i + 1;
     if (i == 1) continue;
-    sum = sum + i;
+    sum = do_sum(sum, i);
     int x;
     if (i == 100) break;
   }
