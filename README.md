@@ -25,6 +25,91 @@ to be very easy to compile); the G compiler is then use to produce a C
 compiler. Assembly is never directly used in this chain, although of
 course continuously behind the curtains.
 
+## Enough talking, show me the deal!
+
+You should use Linux to compile `asmc`, although some parts of it can
+also be built on macOS. If you use Debian, install the prerequisites
+with
+
+    sudo apt-get install build-essential nasm qemu-system-x86 grub-common
+
+Then just call `make` in the toplevel directory of the repository. A
+subdirectory named `build` will be created, with all compilation
+artifacts inside it. In particular `build/boot_asmg.x86` is a bootable
+disk image, which you can run with QEMU:
+
+   qemu-system-i386 -hda build/boot_asmg.x86 -serial stdio
+
+Unless I have broken something, this should run a little operating
+system that compiles a little (and still incomplete) C compiler, and
+later uses such compiler to compile a little test C
+program. Eventually it will compile a more complete C compiler and
+then actually useful C programs. Stay tuned for updates!
+
+When running QEMU, do not look at the emulated display window, but at
+the QEMU console output, where everything written on the display is
+replicate by mean of the serial port. It will be much easier to follow
+on a real terminal emulator rather than on QEMU 80x25 window!
+
+Together with `boot_asmg.x86`, there will be also `boot_empty.x86` and
+`boot_asmasm.x86` (see below for what they are) and `boot.iso`, which
+is a bootable ISO image with a GRUB menu where you can decide which of
+the three to run. Differently from `boot_*.x86`, `boot.iso` has some
+actual chance to run on a bare metal system, because it uses GRUB
+instead of my custom toy bootloader.
+
+WARNING! ATTENTION! Remember that you are giving full control over you
+hardware to an experimental program whose author is not an expert
+operating system programmer: it could have bugs and overwrite your
+disk, damage the hardware and whatever. I only run it on an old
+otherwise unused laptop that once belonged to my grandmother. No
+problem has ever become apparent, but I cannot vouch for yours!
+
+### How to interpret all the writings
+
+For the full story, read below and the code. However, just to have an
+idea of what is happening:
+
+ * The first log lines are written by the bootloader (if you are using
+   mine instead of GRUB). At this point it is mostly concerned with
+   loading to RAM the actual kernel and entering the CPU's protected
+   mode. GRUB does the same things, but it does them better and does
+   not write anything to the serial.
+
+ * At some point `asmc` kernel is finally ran, and it writes `Hello,
+   asmc!` to the log. There is where the `asmc` binary seed first
+   enters execution. It will just initialize some data structures and
+   then invoke its embedded G compiler to compile the file `main.g`
+   and then call the `main` routine.
+
+ * This is the point where for the first time code that has just been
+   compiled is fed to the CPU, so in a sense the binary seed is not in
+   control of the main program (but still gets called as a library,
+   for example to compile other G sources). The message `Hello, G!` is
+   written to the log and immediately after other G sources are
+   compiled, first to introduce some library code (like malloc/free,
+   code for handling dynamic vectors and maps and other utilities) and
+   then to compile the actual C compiler.
+
+ * The C preprocessor is first executed, and terminates by dumping in
+   the log the proprocessed tokens. The C compiler is then ran and the
+   compiled code is dumped in hexadecimal form. Also, a number of
+   internal compilation tables are dumped, mainly for debugging and
+   (why not?) to impress the casual bystander. There are useful online
+   disassemblers to check how horrible (while hopefully working) is
+   the generated code. This C compiler is definitely not an optimizing
+   compiler. Sometimes I am tempted to think it is a pessimizing
+   compiler (but see the design considerations below).
+
+ * At last the compiled C code is executed (`Executing compiled
+   code...`) and `main`'s return value is written in the log.
+
+ * If everything has gone well (in particular, the compiled C program
+   has not smashed the stack), the kernel will write a final farewell
+   message and will halt the CPU. Do not wait for surprises here: the
+   processor is stuck in a halt cycle with interrupts turned off. It
+   will never respond to any input except reset.
+
 ## What is inside this repository
 
  * `lib` contains a very small kernel, designed to run on a i386 CPU
@@ -308,7 +393,7 @@ moment). The function `itoa` convert a number to its decimal
 representation, written in a static buffer pointed by its return
 value.
 
-### How to do structured data types?
+### How to do structured data types in G?
 
 G's very simple type system, while allowing a very simple syntax and
 compiler, completely leaves the burden of organizing structured data

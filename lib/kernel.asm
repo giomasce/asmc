@@ -65,6 +65,10 @@ str_panic:
   db NEWLINE
   db 0
 
+str_hello_asmc:
+  db 'Hello, asmc!'
+  db NEWLINE
+  db 0
 str_started_multiboot:
   db 'Called from multiboot'
   db NEWLINE
@@ -125,6 +129,11 @@ start_from_raw:
   call serial_setup
 
   ;; Log
+  push str_hello_asmc
+  push 1
+  call platform_log
+  add esp, 8
+
   push str_started_raw
   push 1
   call platform_log
@@ -141,6 +150,11 @@ start_from_multiboot:
   call term_setup
 
   ;; Log
+  push str_hello_asmc
+  push 1
+  call platform_log
+  add esp, 8
+
   push str_started_multiboot
   push 1
   call platform_log
