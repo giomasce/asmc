@@ -101,8 +101,8 @@ idea of what is happening:
    compiler. Sometimes I am tempted to think it is a pessimizing
    compiler (but see the design considerations below).
 
- * At last the compiled C code is executed (`Executing compiled
-   code...`) and `main`'s return value is written in the log.
+ * At last the compiled C code is executed (`Executing compiled code...`)
+   and `main`'s return value is written in the log.
 
  * If everything has gone well (in particular, the compiled C program
    has not smashed the stack), the kernel will write a final farewell
