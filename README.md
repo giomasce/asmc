@@ -38,7 +38,7 @@ subdirectory named `build` will be created, with all compilation
 artifacts inside it. In particular `build/boot_asmg.x86` is a bootable
 disk image, which you can run with QEMU:
 
-   qemu-system-i386 -hda build/boot_asmg.x86 -serial stdio
+    qemu-system-i386 -hda build/boot_asmg.x86 -serial stdio
 
 Unless I have broken something, this should run a little operating
 system that compiles a little (and still incomplete) C compiler, and
@@ -81,8 +81,8 @@ idea of what is happening:
    mode. GRUB does the same things, but it does them better and does
    not write anything to the serial.
 
- * At some point `asmc` kernel is finally ran, and it writes `Hello,
-   asmc!` to the log. There is where the `asmc` binary seed first
+ * At some point `asmc` kernel is finally ran, and it writes `Hello, asmc!`
+   to the log. There is where the `asmc` binary seed first
    enters execution. It will just initialize some data structures and
    then invoke its embedded G compiler to compile the file `main.g`
    and then call the `main` routine.
