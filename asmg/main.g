@@ -16,9 +16,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 const COMPILE_ASM 0
-const COMPILE_C 1
+const COMPILE_C 0
+const COMPILE_MESCC 1
 const RUN_ASM 0
-const RUN_C 1
+const RUN_C 0
+const RUN_MESCC 1
 
 const USE_TRIVIAL_MALLOC 0
 const USE_SIMPLE_MALLOC 0
@@ -121,6 +123,12 @@ fun main 0 {
     "done!\n" 1 platform_log ;
   }
 
+  if COMPILE_MESCC {
+    "Compiling mescc_hex2.g... " 1 platform_log ;
+    "mescc_hex2.g" platform_g_compile ;
+    "done!\n" 1 platform_log ;
+  }
+
   "Memory break after compilers compilation: " 1 platform_log ;
   0 platform_allocate itoa 1 platform_log ;
   "\n" 1 platform_log ;
@@ -135,6 +143,10 @@ fun main 0 {
 
   if RUN_C {
     "/init/test2.c" 0 "parse_c" platform_get_symbol \1 ;
+  }
+
+  if RUN_MESCC {
+    0 "mescc_hex2_test" platform_get_symbol \0 ;
   }
 
   "Destroying Virtual File System... " 1 platform_log ;
