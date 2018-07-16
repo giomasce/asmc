@@ -1,0 +1,8 @@
+Most of the files inside this repository are copyrighted by Giovanni
+Mascellani <gio@debian.org> and distributed under the terms of the GNU
+General Public License, version 3 or later.
+
+The file asmg/simple_malloc.g is distributed under the terms of the
+MIT software license.
+
+Look at individual file headers for the details.
