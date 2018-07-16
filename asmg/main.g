@@ -77,6 +77,10 @@ fun main 0 {
   "vfs.g" platform_g_compile ;
   "done!\n" 1 platform_log ;
 
+  "Compiling vfs_utils.g... " 1 platform_log ;
+  "vfs_utils.g" platform_g_compile ;
+  "done!\n" 1 platform_log ;
+
   if COMPILE_ASM {
     #"Memory break before ASM assembler compilation: " 1 platform_log ;
     #0 platform_allocate itoa 1 platform_log ;
