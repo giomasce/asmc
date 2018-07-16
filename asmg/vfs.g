@@ -191,6 +191,7 @@ $vfs
 fun vfs_init 0 {
   @vfs vfsinst_init = ;
   vfs "init" initmount_init vfsinst_mount ;
+  vfs "ram" rammount_init vfsinst_mount ;
 }
 
 fun vfs_destroy 0 {
