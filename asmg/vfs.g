@@ -15,10 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-const FILE_DESTROY 0
-const FILE_READ 4
-const FILE_WRITE 8
-const FILE_TRUNCATE 12
+const FD_DESTROY 0
+const FD_READ 4
+const FD_WRITE 8
+const FD_TRUNCATE 12
+const FD_RESET 16
 
 const MOUNT_DESTROY 0
 const MOUNT_OPEN 4
@@ -27,8 +28,9 @@ const INITFD_DESTROY 0
 const INITFD_READ 4
 const INITFD_WRITE 8
 const INITFD_TRUNCATE 12
-const INITFD_FD 16
-const SIZEOF_INITFD 20
+const INITFD_RESET 16
+const INITFD_FD 20
+const SIZEOF_INITFD 24
 
 fun initfd_destroy 1 {
   $fd
@@ -36,18 +38,24 @@ fun initfd_destroy 1 {
   fd free ;
 }
 
-fun initfd_read 2 {
+fun initfd_read 1 {
   $fd
   @fd 0 param = ;
   fd INITFD_FD take platform_read_char ret ;
 }
 
-fun initfd_write 3 {
+fun initfd_write 2 {
   0 "initfd_write: not supported" assert_msg ;
 }
 
 fun initfd_truncate 1 {
   0 "initfd_truncate: not supported" assert_msg ;
+}
+
+fun initfd_reset 1 {
+  $fd
+  @fd 0 param = ;
+  fd INITFD_FD take platform_reset_file ;
 }
 
 fun initfd_init 1 {
@@ -60,6 +68,7 @@ fun initfd_init 1 {
   fd INITFD_READ take_addr @initfd_read = ;
   fd INITFD_WRITE take_addr @initfd_write = ;
   fd INITFD_TRUNCATE take_addr @initfd_truncate = ;
+  fd INITFD_RESET take_addr @initfd_reset = ;
   fd INITFD_FD take_addr name platform_open_file = ;
   fd ret ;
 }
@@ -135,6 +144,48 @@ fun vfsinst_mount 3 {
   mounts point mount map_set ;
 }
 
+fun find_slash 1 {
+  $s
+  @s 0 param = ;
+  $t
+  @t s = ;
+  while 1 {
+    $c
+    @c t **c = ;
+    if c 0 == c '/' == || {
+      t s - ret ;
+    }
+    @t t 1 + = ;
+  }
+}
+
+fun vfsinst_open 2 {
+  $vfsinst
+  $name
+  @vfsinst 1 param = ;
+  @name 0 param = ;
+
+  name **c '/' == "vfsinst_open: missing initial slash" assert_msg ;
+  @name name 1 + = ;
+  $mountname
+  @mountname name strdup = ;
+  $slash_pos
+  @slash_pos mountname find_slash = ;
+  mountname slash_pos + **c '/' == "vfsinst_open: missing mountpoint slash" assert_msg ;
+  mountname slash_pos + 0 =c ;
+  $mountpath
+  @mountpath mountname slash_pos + 1 + = ;
+
+  $mount
+  @mount vfsinst VFSINST_MOUNTS take mountname map_at = ;
+  $res
+  @res mount mountpath mount MOUNT_OPEN take \2 = ;
+
+  mountname free ;
+
+  res ret ;
+}
+
 $vfs
 
 fun vfs_init 0 {
@@ -144,4 +195,43 @@ fun vfs_init 0 {
 
 fun vfs_destroy 0 {
   vfs vfsinst_destroy ;
+}
+
+fun vfs_open 1 {
+  $name
+  @name 0 param = ;
+  vfs name vfsinst_open ret ;
+}
+
+fun vfs_close 1 {
+  $fd
+  @fd 0 param = ;
+  fd fd FD_DESTROY take \1 ;
+}
+
+fun vfs_read 1 {
+  $fd
+  @fd 0 param = ;
+  fd fd FD_READ take \1 ret ;
+}
+
+fun vfs_write 2 {
+  $fd
+  $c
+  @fd 1 param = ;
+  @c 0 param = ;
+
+  fd c fd FD_WRITE take \1 ;
+}
+
+fun vfs_truncate 1 {
+  $fd
+  @fd 0 param = ;
+  fd fd FD_TRUNCATE take \1 ;
+}
+
+fun vfs_reset 1 {
+  $fd
+  @fd 0 param = ;
+  fd fd FD_RESET take \1 ;
 }
