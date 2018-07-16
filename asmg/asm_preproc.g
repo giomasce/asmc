@@ -210,7 +210,7 @@ fun asmctx_get_char 1 {
   if ctx ASMCTX_CHAR_GIVEN_BACK take {
     ctx ASMCTX_CHAR_GIVEN_BACK take_addr 0 = ;
   } else {
-    ctx ASMCTX_READ_CHAR take_addr ctx ASMCTX_FDIN take platform_read_char = ;
+    ctx ASMCTX_READ_CHAR take_addr ctx ASMCTX_FDIN take vfs_read = ;
   }
   ctx ASMCTX_READ_CHAR take ret ;
 }

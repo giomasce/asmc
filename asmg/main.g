@@ -126,11 +126,11 @@ fun main 0 {
   "done!\n" 1 platform_log ;
 
   if RUN_ASM {
-    "test.asm" 0 "parse_asm" platform_get_symbol \1 ;
+    "/init/test.asm" 0 "parse_asm" platform_get_symbol \1 ;
   }
 
   if RUN_C {
-    "test2.c" 0 "parse_c" platform_get_symbol \1 ;
+    "/init/test2.c" 0 "parse_c" platform_get_symbol \1 ;
   }
 
   "Destroying Virtual File System... " 1 platform_log ;

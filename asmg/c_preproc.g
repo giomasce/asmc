@@ -76,7 +76,7 @@ fun get_char 0 {
   if char_given_back {
     @char_given_back 0 = ;
   } else {
-    @read_char fd_in platform_read_char = ;
+    @read_char fd_in vfs_read = ;
   }
   read_char ret
 }
@@ -279,7 +279,7 @@ fun get_token 0 {
 }
 
 fun tokenize_file 1 {
-  @fd_in 0 param platform_open_file = ;
+  @fd_in 0 param vfs_open = ;
   $tok
   $cont
   @cont 1 = ;
@@ -294,6 +294,7 @@ fun tokenize_file 1 {
       tok free ;
     }
   }
+  fd_in vfs_close ;
   token_vect ret ;
 }
 

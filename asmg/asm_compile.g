@@ -523,7 +523,7 @@ fun asmctx_compile 1 {
     ctx ASMCTX_STAGE take 1 + itoa 1 platform_log ;
     $line_num
     @line_num 1 = ;
-    ctx ASMCTX_FDIN take platform_reset_file ;
+    ctx ASMCTX_FDIN take vfs_reset ;
     ctx ASMCTX_CURRENT_LOC take_addr start_loc = ;
     ctx ASMCTX_TOKEN_GIVEN_BACK take_addr 0 = ;
     ctx ASMCTX_CHAR_GIVEN_BACK take_addr 0 = ;
@@ -563,7 +563,9 @@ fun parse_asm 1 {
   @ctx asmctx_init = ;
   $cont
   @cont 1 = ;
-  ctx filename platform_open_file asmctx_set_fd ;
+  $fd
+  @fd filename vfs_open = ;
+  ctx fd asmctx_set_fd ;
   # while cont {
   #   $tok
   #   @tok ctx asmctx_get_token = ;
@@ -578,5 +580,6 @@ fun parse_asm 1 {
   # }
   # "\n" 1 platform_log ;
   ctx asmctx_compile ;
+  fd vfs_close ;
   ctx asmctx_destroy ;
 }
