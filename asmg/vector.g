@@ -46,6 +46,12 @@ fun vector_clear 1 {
   vptr VECTOR_SIZE take_addr 0 = ;
 }
 
+fun vector_data 1 {
+  $vptr
+  @vptr 0 param = ;
+  vptr VECTOR_DATA take ret ;
+}
+
 fun vector_at_addr 2 {
   $vptr
   $idx

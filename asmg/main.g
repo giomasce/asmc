@@ -69,6 +69,14 @@ fun main 0 {
   "utils2.g" platform_g_compile ;
   "done!\n" 1 platform_log ;
 
+  "Compiling ramfs.g... " 1 platform_log ;
+  "ramfs.g" platform_g_compile ;
+  "done!\n" 1 platform_log ;
+
+  "Compiling vfs.g... " 1 platform_log ;
+  "vfs.g" platform_g_compile ;
+  "done!\n" 1 platform_log ;
+
   if COMPILE_ASM {
     #"Memory break before ASM assembler compilation: " 1 platform_log ;
     #0 platform_allocate itoa 1 platform_log ;
@@ -113,6 +121,10 @@ fun main 0 {
   0 platform_allocate itoa 1 platform_log ;
   "\n" 1 platform_log ;
 
+  "Initializing Virtual File System... " 1 platform_log ;
+  0 "vfs_init" platform_get_symbol \0 ;
+  "done!\n" 1 platform_log ;
+
   if RUN_ASM {
     "test.asm" 0 "parse_asm" platform_get_symbol \1 ;
   }
@@ -120,6 +132,10 @@ fun main 0 {
   if RUN_C {
     "test2.c" 0 "parse_c" platform_get_symbol \1 ;
   }
+
+  "Destroying Virtual File System... " 1 platform_log ;
+  0 "vfs_destroy" platform_get_symbol \0 ;
+  "done!\n" 1 platform_log ;
 
   "Memory break before exiting main: " 1 platform_log ;
   0 platform_allocate itoa 1 platform_log ;
