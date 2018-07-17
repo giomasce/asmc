@@ -266,7 +266,7 @@ str_times:
   db 0
 times_op:
   mov eax, [esp+8]
-  mul DWORD [esp+4]
+  imul DWORD [esp+4]
   ret
 
 str_over:
@@ -275,7 +275,7 @@ str_over:
 over:
   mov edx, 0
   mov eax, [esp+8]
-  div DWORD [esp+4]
+  idiv DWORD [esp+4]
   ret
 
 str_mod:
@@ -284,7 +284,7 @@ str_mod:
 mod:
   mov edx, 0
   mov eax, [esp+8]
-  div DWORD [esp+4]
+  idiv DWORD [esp+4]
   mov eax, edx
   ret
 
