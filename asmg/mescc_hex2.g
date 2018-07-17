@@ -20,13 +20,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-fun mescc_hex2_is_white 1 {
+fun hex2_is_white 1 {
   $c
   @c 0 param = ;
   c ' ' == c '\n' == || c '\t' == || c '\r' == || ret ;
 }
 
-fun mescc_hex2_is_alpha 1 {
+fun hex2_is_alpha 1 {
   $c
   @c 0 param = ;
   if 'a' c <= c 'z' <= && { 1 ret ; }
@@ -35,15 +35,15 @@ fun mescc_hex2_is_alpha 1 {
   0 ret ;
 }
 
-fun mescc_hex2_is_valid 1 {
+fun hex2_is_valid 1 {
   $c
   @c 0 param = ;
-  if c mescc_hex2_is_alpha { 1 ret ; }
+  if c hex2_is_alpha { 1 ret ; }
   if '!' c == '$' c == || '@' c == || '%' c == || '&' c == || ':' c == || '>' c == || { 1 ret ; }
   0 ret ;
 }
 
-fun mescc_hex2_discard_line 1 {
+fun hex2_discard_line 1 {
   $fd
   @fd 0 param = ;
 
@@ -56,7 +56,7 @@ fun mescc_hex2_discard_line 1 {
   }
 }
 
-fun mescc_hex2_read 2 {
+fun hex2_read 2 {
   $fd
   $accept_white
   @fd 1 param = ;
@@ -68,33 +68,33 @@ fun mescc_hex2_read 2 {
     if c 0xffffffff == {
       c ret ;
     }
-    if accept_white c mescc_hex2_is_white ! || {
+    if accept_white c hex2_is_white ! || {
       if c '#' == {
-        fd mescc_hex2_discard_line ;
+        fd hex2_discard_line ;
 	if accept_white {
 	  ' ' ret ;
 	}
       } else {
-        c mescc_hex2_is_valid c mescc_hex2_is_white || "mescc_hex2_read: illegal input char" assert_msg ;
+        c hex2_is_valid c hex2_is_white || "hex2_read: illegal input char" assert_msg ;
 	c ret ;
       }
     }
   }
 }
 
-fun mescc_hex2_read_or_fail 2 {
+fun hex2_read_or_fail 2 {
   $fd
   $accept_white
   @fd 1 param = ;
   @accept_white 0 param = ;
 
   $c
-  @c fd accept_white mescc_hex2_read = ;
-  c 0xffffffff != "mescc_hex2_read_or_fail: unexpected EOF" assert_msg ;
+  @c fd accept_white hex2_read = ;
+  c 0xffffffff != "hex2_read_or_fail: unexpected EOF" assert_msg ;
   c ret ;
 }
 
-fun mescc_hex2_read_token 2 {
+fun hex2_read_token 2 {
   $fd
   $term_ptr
   @fd 1 param = ;
@@ -113,15 +113,15 @@ fun mescc_hex2_read_token 2 {
       @res res cap realloc = ;
     }
     $c
-    @c fd 1 mescc_hex2_read_or_fail = ;
-    if c mescc_hex2_is_white c '>' == || {
+    @c fd 1 hex2_read_or_fail = ;
+    if c hex2_is_white c '>' == || {
       res size + 0 =c ;
       if term_ptr {
         term_ptr c =c ;
       }
       res ret ;
     }
-    c mescc_hex2_is_alpha "mescc_hex2_read_token: invalid character" assert_msg ;
+    c hex2_is_alpha "hex2_read_token: invalid character" assert_msg ;
     res size + c =c ;
     @size size 1 + = ;
   }
@@ -152,7 +152,7 @@ fun byte_from_hex 2 {
   c nibble_from_hex 4 << c2 nibble_from_hex + ret ;
 }
 
-fun mescc_hex2_process_reference 7 {
+fun hex2_process_reference 7 {
   $stage
   $fd
   $labels
@@ -173,18 +173,18 @@ fun mescc_hex2_process_reference 7 {
   $base
   $term
   @term 0 = ;
-  @label fd @term mescc_hex2_read_token = ;
+  @label fd @term hex2_read_token = ;
   if stage 2 == {
     @target labels label map_at = ;
   }
   label free ;
   if term '>' == {
-    @label fd @term mescc_hex2_read_token = ;
+    @label fd @term hex2_read_token = ;
     if stage 2 == {
       @base labels label map_at = ;
     }
     label free ;
-    term mescc_hex2_is_white "mescc_hex2_process_reference: invalid reference" assert_msg ;
+    term hex2_is_white "hex2_process_reference: invalid reference" assert_msg ;
   } else {
     @base ptrptr ** size + = ;
   }
@@ -196,10 +196,10 @@ fun mescc_hex2_process_reference 7 {
   }
   if stage 2 == {
     if size 1 == {
-      disp 0x80 + 0xffffff00 & 0 == "mescc_hex2_process_reference: displacement overflows 1 byte" assert_msg ;
+      disp 0x80 + 0xffffff00 & 0 == "hex2_process_reference: displacement overflows 1 byte" assert_msg ;
     }
     if size 2 == {
-      disp 0x8000 + 0xffff0000 & 0 == "mescc_hex2_process_reference: displacement overflows 2 bytes" assert_msg ;
+      disp 0x8000 + 0xffff0000 & 0 == "hex2_process_reference: displacement overflows 2 bytes" assert_msg ;
     }
   }
   while size 0 > {
@@ -211,7 +211,7 @@ fun mescc_hex2_process_reference 7 {
   }
 }
 
-fun mescc_hex2_link 1 {
+fun hex2_link 1 {
   $names
   @names 0 param = ;
 
@@ -243,7 +243,7 @@ fun mescc_hex2_link 1 {
       @cont 1 = ;
       while cont {
         $c
-	@c fd 0 mescc_hex2_read = ;
+	@c fd 0 hex2_read = ;
 	if c 0xffffffff == {
           @cont 0 = ;
 	} else {
@@ -252,42 +252,42 @@ fun mescc_hex2_link 1 {
           if c ':' == {
 	    $label
 	    $term
-	    @label fd @term mescc_hex2_read_token = ;
-	    term mescc_hex2_is_white "mescc_hex2_link: invalid realtive label definition" assert_msg ;
+	    @label fd @term hex2_read_token = ;
+	    term hex2_is_white "hex2_link: invalid realtive label definition" assert_msg ;
 	    if stage 1 == {
-	      labels label map_has ! "mescc_hex2_link: label already defined" assert_msg ;
+	      labels label map_has ! "hex2_link: label already defined" assert_msg ;
 	      labels label ptr map_set ;
 	    }
 	    if stage 2 == {
-	      labels label map_has "mescc_hex2_link: error 1" assert_msg ;
-	      labels label map_at ptr == "mescc_hex2_link: error 2" assert_msg ;
+	      labels label map_has "hex2_link: error 1" assert_msg ;
+	      labels label map_at ptr == "hex2_link: error 2" assert_msg ;
 	    }
 	    label free ;
 	    @processed 1 = ;
 	  }
 	  if c '!' == {
-	    stage fd labels @ptr @count 1 1 mescc_hex2_process_reference ;
+	    stage fd labels @ptr @count 1 1 hex2_process_reference ;
 	    @processed 1 = ;
 	  }
 	  if c '$' == {
-	    stage fd labels @ptr @count 2 0 mescc_hex2_process_reference ;
+	    stage fd labels @ptr @count 2 0 hex2_process_reference ;
 	    @processed 1 = ;
 	  }
 	  if c '@' == {
-	    stage fd labels @ptr @count 2 1 mescc_hex2_process_reference ;
+	    stage fd labels @ptr @count 2 1 hex2_process_reference ;
 	    @processed 1 = ;
 	  }
 	  if c '&' == {
-	    stage fd labels @ptr @count 4 0 mescc_hex2_process_reference ;
+	    stage fd labels @ptr @count 4 0 hex2_process_reference ;
 	    @processed 1 = ;
 	  }
 	  if c '%' == {
-	    stage fd labels @ptr @count 4 1 mescc_hex2_process_reference ;
+	    stage fd labels @ptr @count 4 1 hex2_process_reference ;
 	    @processed 1 = ;
 	  }
 	  if processed ! {
 	    $c2
-	    @c2 fd 0 mescc_hex2_read_or_fail = ;
+	    @c2 fd 0 hex2_read_or_fail = ;
 	    if ptr 0 != {
 	      ptr c c2 byte_from_hex =c ;
 	      @ptr ptr 1 + = ;
@@ -304,9 +304,9 @@ fun mescc_hex2_link 1 {
       @orig_ptr size malloc = ;
       @ptr orig_ptr = ;
     } else {
-      orig_ptr count + ptr == "mescc_hex2_link: error 3" assert_msg ;
+      orig_ptr count + ptr == "hex2_link: error 3" assert_msg ;
       @ptr orig_ptr = ;
-      size count == "mescc_hex2_link: error 4" assert_msg ;
+      size count == "hex2_link: error 4" assert_msg ;
     }
     @stage stage 1 + = ;
   }
@@ -322,10 +322,10 @@ fun mescc_hex2_link 1 {
   orig_ptr ret ;
 }
 
-fun mescc_hex2_test 0 {
+fun hex2_test 0 {
   $files
   @files 4 vector_init = ;
   files "/init/test.hex2" strdup vector_push_back ;
-  files mescc_hex2_link free ;
+  files hex2_link free ;
   files free_vect_of_ptrs ;
 }
