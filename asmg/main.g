@@ -127,6 +127,10 @@ fun main 0 {
     "Compiling mescc_hex2.g... " 1 platform_log ;
     "mescc_hex2.g" platform_g_compile ;
     "done!\n" 1 platform_log ;
+
+    "Compiling mescc_m1.g... " 1 platform_log ;
+    "mescc_m1.g" platform_g_compile ;
+    "done!\n" 1 platform_log ;
   }
 
   "Memory break after compilers compilation: " 1 platform_log ;

@@ -41,3 +41,15 @@ fun strdup 1 {
   s ptr strcpy ;
   ptr ret ;
 }
+
+fun calloc 2 {
+  $size
+  $count
+  @size 1 param = ;
+  @count 0 param = ;
+
+  $ptr
+  @ptr size count * malloc = ;
+  ptr 0 size count * memset ;
+  ptr ret ;
+}
