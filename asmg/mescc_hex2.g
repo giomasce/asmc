@@ -152,6 +152,65 @@ fun byte_from_hex 2 {
   c nibble_from_hex 4 << c2 nibble_from_hex + ret ;
 }
 
+fun mescc_hex2_process_reference 7 {
+  $stage
+  $fd
+  $labels
+  $ptrptr
+  $countptr
+  $size
+  $rel
+  @stage 6 param = ;
+  @fd 5 param = ;
+  @labels 4 param = ;
+  @ptrptr 3 param = ;
+  @countptr 2 param = ;
+  @size 1 param = ;
+  @rel 0 param = ;
+
+  $label
+  $target
+  $base
+  $term
+  @term 0 = ;
+  @label fd @term mescc_hex2_read_token = ;
+  if stage 2 == {
+    @target labels label map_at = ;
+  }
+  label free ;
+  if term '>' == {
+    @label fd @term mescc_hex2_read_token = ;
+    if stage 2 == {
+      @base labels label map_at = ;
+    }
+    label free ;
+    term mescc_hex2_is_white "mescc_hex2_process_reference: invalid reference" assert_msg ;
+  } else {
+    @base ptrptr ** size + = ;
+  }
+  $disp
+  if rel {
+    @disp target base - = ;
+  } else {
+    @disp target = ;
+  }
+  if stage 2 == {
+    if size 1 == {
+      disp 0x80 + 0xffffff00 & 0 == "mescc_hex2_process_reference: displacement overflows 1 byte" assert_msg ;
+    }
+    if size 2 == {
+      disp 0x8000 + 0xffff0000 & 0 == "mescc_hex2_process_reference: displacement overflows 2 bytes" assert_msg ;
+    }
+  }
+  while size 0 > {
+    ptrptr ** disp =c ;
+    ptrptr ptrptr ** 1 + = ;
+    countptr countptr ** 1 + = ;
+    @disp disp 8 >> = ;
+    @size size 1 - = ;
+  }
+}
+
 fun mescc_hex2_link 1 {
   $names
   @names 0 param = ;
@@ -162,6 +221,8 @@ fun mescc_hex2_link 1 {
   $stage
   @stage 0 = ;
   $size
+  $labels
+  @labels map_init = ;
   while stage 3 < {
     "Linking stage " 1 platform_log ;
     stage 1 + itoa 1 platform_log ;
@@ -192,24 +253,37 @@ fun mescc_hex2_link 1 {
 	    $label
 	    $term
 	    @label fd @term mescc_hex2_read_token = ;
-
+	    term mescc_hex2_is_white "mescc_hex2_link: invalid realtive label definition" assert_msg ;
+	    if stage 1 == {
+	      labels label map_has ! "mescc_hex2_link: label already defined" assert_msg ;
+	      labels label ptr map_set ;
+	    }
+	    if stage 2 == {
+	      labels label map_has "mescc_hex2_link: error 1" assert_msg ;
+	      labels label map_at ptr == "mescc_hex2_link: error 2" assert_msg ;
+	    }
 	    label free ;
 	    @processed 1 = ;
 	  }
 	  if c '!' == {
-	    
+	    stage fd labels @ptr @count 1 1 mescc_hex2_process_reference ;
+	    @processed 1 = ;
 	  }
 	  if c '$' == {
-	    
+	    stage fd labels @ptr @count 2 0 mescc_hex2_process_reference ;
+	    @processed 1 = ;
 	  }
 	  if c '@' == {
-	    
+	    stage fd labels @ptr @count 2 1 mescc_hex2_process_reference ;
+	    @processed 1 = ;
 	  }
 	  if c '&' == {
-	    
+	    stage fd labels @ptr @count 4 0 mescc_hex2_process_reference ;
+	    @processed 1 = ;
 	  }
 	  if c '%' == {
-	    
+	    stage fd labels @ptr @count 4 1 mescc_hex2_process_reference ;
+	    @processed 1 = ;
 	  }
 	  if processed ! {
 	    $c2
@@ -230,11 +304,13 @@ fun mescc_hex2_link 1 {
       @orig_ptr size malloc = ;
       @ptr orig_ptr = ;
     } else {
+      orig_ptr count + ptr == "mescc_hex2_link: error 3" assert_msg ;
       @ptr orig_ptr = ;
-      size count == "mescc_hex2_link: error 1" assert_msg ;
+      size count == "mescc_hex2_link: error 4" assert_msg ;
     }
     @stage stage 1 + = ;
   }
+  labels map_destroy ;
   "Linked program of size " 1 platform_log ;
   size itoa 1 platform_log ;
   " at address " 1 platform_log ;

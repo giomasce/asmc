@@ -1,3 +1,22 @@
 
+00 11
+
 :begin
-ab 10 fd
+
+ab 10 22 04
+
+33 44
+
+:end
+
+!end>begin
+#$end>begin
+@end>begin
+&end>begin
+%end>begin
+
+!end
+#$end
+@end
+&end
+%end
