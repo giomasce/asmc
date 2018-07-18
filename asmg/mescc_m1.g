@@ -557,18 +557,29 @@ fun m1_print_hex 2 {
 fun m1_dealloc_list 1 {
   $head
   @head 0 param = ;
-  ret ;
 
+  $ptrs
+  @ptrs 4 vector_init = ;
   $i
   @i head = ;
   while i 0 != {
     $tok
     @tok i = ;
     @i i M1TOKEN_NEXT take = ;
-    tok M1TOKEN_TEXT take free ;
-    tok M1TOKEN_EXPR take free ;
+    $ptr
+    @ptr tok M1TOKEN_TEXT take = ;
+    if ptrs ptr vector_has ! {
+      ptrs ptr vector_push_back ;
+      ptr free ;
+    }
+    @ptr tok M1TOKEN_EXPR take = ;
+    if ptrs ptr vector_has ! {
+      ptrs ptr vector_push_back ;
+      ptr free ;
+    }
     tok free ;
   }
+  ptrs vector_destroy ;
 }
 
 fun m1_assemble 2 {

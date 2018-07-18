@@ -100,6 +100,23 @@ fun vector_size 1 {
   vptr VECTOR_SIZE take ret ;
 }
 
+fun vector_has 2 {
+  $vptr
+  $elem
+  @vptr 1 param = ;
+  @elem 0 param = ;
+
+  $i
+  @i 0 = ;
+  while i vptr vector_size < {
+    if vptr i vector_at elem == {
+      1 ret ;
+    }
+    @i i 1 + = ;
+  }
+  0 ret ;
+}
+
 fun vector_test 0 {
   $v
   @v 4 vector_init = ;
