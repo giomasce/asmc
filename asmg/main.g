@@ -151,6 +151,7 @@ fun main 0 {
 
   if RUN_MESCC {
     0 "hex2_test" platform_get_symbol \0 ;
+    0 "m1_test" platform_get_symbol \0 ;
   }
 
   "Destroying Virtual File System... " 1 platform_log ;

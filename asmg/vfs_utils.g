@@ -48,3 +48,15 @@ fun dump_hex_file 1 {
     c dump_byte ;
   }  
 }
+
+fun vfs_write_string 2 {
+  $fd
+  $s
+  @fd 1 param = ;
+  @s 0 param = ;
+
+  while s **c 0 != {
+    fd s **c vfs_write ;
+    @s s 1 + = ;
+  }
+}

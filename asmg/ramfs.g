@@ -47,7 +47,10 @@ fun ramfile_read 2 {
   $pos
   @file 1 param = ;
   @pos 0 param = ;
-  pos file RAMFILE_SIZE take < "ramfile_read: invalid read position" assert_msg ;
+  pos file RAMFILE_SIZE take <= "ramfile_read: invalid read position" assert_msg ;
+  if pos file RAMFILE_SIZE take == {
+    0xffffffff ret ;
+  }
   pos file RAMFILE_DATA take vector_size 4 * < "ramfile_read: error 1" assert_msg ;
   file RAMFILE_DATA take vector_data pos + **c ret ;
 }
