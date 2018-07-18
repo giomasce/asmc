@@ -605,7 +605,7 @@ fun m1_assemble 2 {
   head m1_dealloc_list ;
   ctx free ;
   "Assembled dump:\n" 1 platform_log ;
-  outfile dump_hex_file ;
+  outfile dump_file ;
   "\n" 1 platform_log ;
 }
 
