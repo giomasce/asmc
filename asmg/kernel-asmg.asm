@@ -392,6 +392,14 @@ or:
   or eax, [esp+4]
   ret
 
+str_xor:
+  db '^'
+  db 0
+xor:
+  mov eax, [esp+8]
+  xor eax, [esp+4]
+  ret
+
 str_not:
   db '~'
   db 0
@@ -634,6 +642,12 @@ init_g_operations:
   push 2
   push or
   push str_or
+  call add_symbol
+  add esp, 12
+
+  push 2
+  push xor
+  push str_xor
   call add_symbol
   add esp, 12
 
