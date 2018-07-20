@@ -40,12 +40,19 @@ const M2TLIST_LOCALS 20   # M2TLIST*
 const M2TLIST_TEMPS 24    # int
 const SIZEOF_M2TLIST 28
 
-const M2CTX_TYPES 0       # M2TYPE*
-const M2CTX_TOKEN 4       # M2TLIST*
-const M2CTX_STRINGS 8     # M2TLIST*
-const M2CTX_GLOBALS 12    # M2TLIST*
-const M2CTX_MEMBER_SIZE 16 # int
-const SIZEOF_M2CTX 20
+# Globals defined in cc.h
+const M2CTX_GLOBAL_TYPES 0    # M2TYPE*
+const M2CTX_GLOBAL_TOKEN 4    # M2TLIST*
+const M2CTX_STRINGS 8         # M2TLIST*
+const M2CTX_GLOBALS 12        # M2TLIST*
+# Globals defined in cc_types.c
+const M2CTX_MEMBER_SIZE 16    # int
+# Globals defined in cc_reader.c
+const M2CTX_INPUT 20          # FILE*
+const M2CTX_TOKEN 24          # M2TLIST*
+const M2CTX_LINE 28           # int
+const M2CTX_FILE 32           # char*
+const SIZEOF_M2CTX 36
 
 const M2_MAX_STRING 4096
 const M2_LF 10
@@ -230,11 +237,11 @@ fun m2_initialize_types 1 {
   $ctx
   @ctx 0 param = ;
 
-  ctx M2CTX_TYPES take_addr 1 SIZEOF_M2TYPE calloc = ;
-  ctx M2CTX_TYPES take M2TYPE_NAME take_addr "void" = ;
-  ctx M2CTX_TYPES take M2TYPE_SIZE take_addr 4 = ;
-  ctx M2CTX_TYPES take M2TYPE_TYPE take_addr ctx M2CTX_TYPES take = ;
-  ctx M2CTX_TYPES take M2TYPE_INDIRECT take_addr ctx M2CTX_TYPES take = ;
+  ctx M2CTX_GLOBAL_TYPES take_addr 1 SIZEOF_M2TYPE calloc = ;
+  ctx M2CTX_GLOBAL_TYPES take M2TYPE_NAME take_addr "void" = ;
+  ctx M2CTX_GLOBAL_TYPES take M2TYPE_SIZE take_addr 4 = ;
+  ctx M2CTX_GLOBAL_TYPES take M2TYPE_TYPE take_addr ctx M2CTX_GLOBAL_TYPES take = ;
+  ctx M2CTX_GLOBAL_TYPES take M2TYPE_INDIRECT take_addr ctx M2CTX_GLOBAL_TYPES take = ;
 
   $a
   @a 1 SIZEOF_M2TYPE calloc = ;
@@ -283,7 +290,7 @@ fun m2_initialize_types 1 {
   d M2TYPE_NEXT take_addr e = ;
   c M2TYPE_NEXT take_addr d = ;
   a M2TYPE_NEXT take_addr c = ;
-  ctx M2CTX_TYPES take M2TYPE_NEXT take_addr a = ;
+  ctx M2CTX_GLOBAL_TYPES take M2TYPE_NEXT take_addr a = ;
 }
 
 fun m2_lookup_type 2 {
@@ -293,7 +300,7 @@ fun m2_lookup_type 2 {
   @s 0 param = ;
 
   $i
-  @i ctx M2CTX_TYPES take = ;
+  @i ctx M2CTX_GLOBAL_TYPES take = ;
   while i 0 != {
     if i M2TYPE_NAME take s strcmp 0 == {
       i ret ;
@@ -317,7 +324,7 @@ fun m2_build_member 3 {
   @member_type ctx m2_type_name = ;
   $i
   @i 1 SIZEOF_M2TYPE calloc = ;
-  i M2TYPE_NAME take_addr ctx M2CTX_TOKEN take M2TLIST_S take = ;
+  i M2TYPE_NAME take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take = ;
   i M2TYPE_MEMBERS take_addr last = ;
   i M2TYPE_SIZE take_addr member_type M2TYPE_SIZE take = ;
   ctx M2CTX_MEMBER_SIZE take_addr member_type M2TYPE_SIZE take = ;
@@ -338,14 +345,14 @@ fun m2_build_union 3 {
 
   $size
   @size 0 = ;
-  ctx M2CTX_TOKEN take_addr ctx M2CTX_TOKEN take M2TLIST_NEXT take = ;
+  ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
   ctx "m2_build_union: missing {" "{" m2_require_match ;
-  while '}' ctx M2CTX_TOKEN take M2TLIST_S take **c != {
+  while '}' ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take **c != {
     @last ctx last offset m2_build_member = ;
     if ctx M2CTX_MEMBER_SIZE take size > {
       @size ctx M2CTX_MEMBER_SIZE take = ;
     }
-    ctx M2CTX_TOKEN take_addr ctx M2CTX_TOKEN take M2TLIST_NEXT take = ;
+    ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
     ctx "m2_build_token: missing ;" ";" m2_require_match ;
   }
   ctx M2CTX_MEMBER_SIZE take_addr size = ;
@@ -362,29 +369,29 @@ fun m2_create_struct 1 {
   @head 1 SIZEOF_M2TYPE calloc = ;
   $i
   @i 1 SIZEOF_M2TYPE calloc = ;
-  head M2TYPE_NAME take_addr ctx M2CTX_TOKEN take M2TLIST_S take = ;
-  i M2TYPE_NAME take_addr ctx M2CTX_TOKEN take M2TLIST_S take = ;
+  head M2TYPE_NAME take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take = ;
+  i M2TYPE_NAME take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take = ;
   head M2TYPE_INDIRECT take_addr i = ;
   i M2TYPE_INDIRECT take_addr head = ;
-  head M2TYPE_NEXT take_addr ctx M2CTX_TYPES take = ;
-  ctx M2CTX_TYPES take_addr head = ;
-  ctx M2CTX_TOKEN take_addr ctx M2CTX_TOKEN take M2TLIST_NEXT take = ;
+  head M2TYPE_NEXT take_addr ctx M2CTX_GLOBAL_TYPES take = ;
+  ctx M2CTX_GLOBAL_TYPES take_addr head = ;
+  ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
   i M2TYPE_SIZE take_addr 4 = ;
   ctx "m2_create_struct: missing {" "{" m2_require_match ;
 
   $last
   @last 0 = ;
-  while '}' ctx M2CTX_TOKEN take M2TLIST_S take **c != {
-    if ctx M2CTX_TOKEN take M2TLIST_S take "union" strcmp 0 == {
+  while '}' ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take **c != {
+    if ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take "union" strcmp 0 == {
       @last ctx last offset m2_build_union = ;
     } else {
       @last ctx last offset m2_build_member = ;
     }
     @offset offset ctx M2CTX_MEMBER_SIZE take + = ;
-    ctx M2CTX_TOKEN take_addr ctx M2CTX_TOKEN take M2TLIST_NEXT take = ;
+    ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
     ctx "m2_create_struct: missing ;" ";" m2_require_match ;
   }
-  ctx M2CTX_TOKEN take_addr ctx M2CTX_TOKEN take M2TLIST_NEXT take = ;
+  ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
   ctx "m2_create_struct: missing ; at the end" ";" m2_require_match ;
   head M2TYPE_SIZE take_addr offset = ;
   head M2TYPE_MEMBERS take_addr last = ;
@@ -397,21 +404,21 @@ fun m2_type_name 1 {
 
   $structure
   @structure 0 = ;
-  if ctx M2CTX_TOKEN take M2TLIST_S take "struct" strcmp 0 == {
+  if ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take "struct" strcmp 0 == {
     @structure 1 = ;
-    ctx M2CTX_TOKEN take_addr ctx M2CTX_TOKEN take M2TLIST_NEXT take = ;
+    ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
   }
   $r
-  @r ctx ctx M2CTX_TOKEN take M2TLIST_S take m2_lookup_type = ;
+  @r ctx ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take m2_lookup_type = ;
   r 0 == structure ! && ! "m2_type_name: unknown type" assert_msg ;
   if r 0 == {
     ctx m2_create_struct ;
     0 ret ;
   }
-  ctx M2CTX_TOKEN take_addr ctx M2CTX_TOKEN take M2TLIST_NEXT take = ;
-  while ctx M2CTX_TOKEN take M2TLIST_S take **c '*' == {
+  ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
+  while ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take **c '*' == {
     @r r M2TYPE_INDIRECT take = ;
-    ctx M2CTX_TOKEN take_addr ctx M2CTX_TOKEN take M2TLIST_NEXT take = ;
+    ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
   }
   r ret ;
 }
@@ -424,6 +431,6 @@ fun m2_require_match 3 {
   @message 1 param = ;
   @required 0 param = ;
 
-  ctx M2CTX_TOKEN take M2TLIST_S take required strcmp 0 == message assert_msg ;
-  ctx M2CTX_TOKEN take_addr ctx M2CTX_TOKEN take M2TLIST_NEXT take = ;
+  ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take required strcmp 0 == message assert_msg ;
+  ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
 }
