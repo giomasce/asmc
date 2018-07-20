@@ -3,7 +3,7 @@
 # https://gitlab.com/giomasce/asmc
 
 # This file was ported from files in M2-Planet,
-# which has the following copyright notices:
+# which have the following copyright notices:
 # Copyright (C) 2016 Jeremiah Orians
 
 # This program is free software: you can redistribute it and/or modify
