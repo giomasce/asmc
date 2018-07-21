@@ -52,7 +52,8 @@ const M2CTX_INPUT 20          # FILE*
 const M2CTX_TOKEN 24          # M2TLIST*
 const M2CTX_LINE 28           # int
 const M2CTX_FILE 32           # char*
-const SIZEOF_M2CTX 36
+const M2CTX_STRING_INDEX 36   # int
+const SIZEOF_M2CTX 40
 
 const M2_MAX_STRING 4096
 const M2_LF 10
@@ -433,4 +434,245 @@ fun m2_require_match 3 {
 
   ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take required strcmp 0 == message assert_msg ;
   ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
+}
+
+fun m2_clear_white_space 2 {
+  $ctx
+  $c
+  @ctx 1 param = ;
+  @c 0 param = ;
+
+  if 32 c == 9 c == || {
+    ctx ctx M2CTX_INPUT take vfs_read m2_clear_white_space ret ;
+  }
+  if 10 c == {
+    ctx M2CTX_LINE take_addr ctx M2CTX_LINE take 1 + = ;
+    ctx ctx M2CTX_INPUT take vfs_read m2_clear_white_space ret ;
+  }
+  c ret ;
+}
+
+fun m2_consume_byte 3 {
+  $ctx
+  $current
+  $c
+  @ctx 2 param = ;
+  @current 1 param = ;
+  @c 0 param = ;
+
+  current M2TLIST_S take ctx M2CTX_STRING_INDEX take + c =c ;
+  ctx M2CTX_STRING_INDEX take_addr ctx M2CTX_STRING_INDEX take 1 + = ;
+  ctx M2CTX_INPUT take vfs_read ret ;
+}
+
+fun m2_consume_word 4 {
+  $ctx
+  $current
+  $c
+  $frequent
+  @ctx 3 param = ;
+  @current 2 param = ;
+  @c 1 param = ;
+  @frequent 0 param = ;
+
+  $escape
+  @escape 0 = ;
+  $cont
+  @cont 1 = ;
+  while cont {
+    if escape ! '\\' c == && {
+      @escape 1 = ;
+    } else {
+      @escape 0 = ;
+    }
+    @c ctx current c m2_consume_byte = ;
+    @cont escape c frequent != || = ;
+  }
+  ctx M2CTX_INPUT take vfs_read ret ;
+}
+
+fun m2_fixup_label 2 {
+  $ctx
+  $current
+  @ctx 1 param = ;
+  @current 0 param = ;
+
+  $hold
+  @hold ':' = ;
+  $prev
+  $i
+  @i 0 = ;
+  $cont
+  @cont 1 = ;
+  while cont {
+    @prev hold = ;
+    @hold current M2TLIST_S take i + **c = ;
+    current M2TLIST_S take i + prev =c ;
+    @i i 1 + = ;
+    @cont 0 hold != = ;
+  }
+}
+
+fun m2_preserve_keyword 3 {
+  $ctx
+  $current
+  $c
+  @ctx 2 param = ;
+  @current 1 param = ;
+  @c 0 param = ;
+
+  while 'a' c <= c 'z' <= & 'A' c <= c 'Z' <= & | '0' c <= c '9' <= & | c '_' == | {
+    @c ctx current c m2_consume_byte = ;
+  }
+  if c ':' == {
+    ctx current m2_fixup_label ;
+    32 ret ;
+  }
+  c ret ;
+}
+
+fun m2_preserve_symbol 3 {
+  $ctx
+  $current
+  $c
+  @ctx 2 param = ;
+  @current 1 param = ;
+  @c 0 param = ;
+
+  while c '<' == c '=' == | c '>' == | c '|' == | c '&' == | c '!' == | c '-' == | {
+    @c ctx current c m2_consume_byte = ;
+  }
+  c ret ;
+}
+
+fun m2_purge_macro 2 {
+  $ctx
+  $ch
+  @ctx 1 param = ;
+  @ch 0 param = ;
+
+  while 10 ch != {
+    @ch ctx M2CTX_INPUT take vfs_read = ;
+  }
+  ch ret ;
+}
+
+fun m2_get_token 2 {
+  $ctx
+  $c
+  @ctx 1 param = ;
+  @c 0 param = ;
+
+  $current
+  @current 1 SIZEOF_M2TLIST calloc = ;
+  current M2TLIST_S take_addr 1 M2_MAX_STRING calloc = ;
+
+  $cont
+  @cont 1 = ;
+  while cont {
+    @cont 0 = ;
+    $processed
+    @processed 0 = ;
+    ctx M2CTX_STRING_INDEX take_addr 0 = ;
+    @c ctx c m2_clear_white_space = ;
+    if c '#' == processed ! && {
+      @c ctx c m2_purge_macro = ;
+      @cont 1 = ;
+      @processed 1 = ;
+    }
+    if 'a' c <= c 'z' <= & 'A' c <= c 'Z' <= & | '0' c <= c '9' <= & | c '_' == | processed ! && {
+      @c ctx current c m2_preserve_keyword = ;
+      @processed 1 = ;
+    }
+    if c '<' == c '=' == | c '>' == | c '|' == | c '&' == | c '!' == | c '-' == | processed ! && {
+      @c ctx current c m2_preserve_symbol = ;
+      @processed 1 = ; 
+    }
+    if c 39 == processed ! && {
+      @c ctx current c 39 m2_consume_word = ;
+      @processed 1 = ; 
+    }
+    if c '"' == processed ! && {
+      @c ctx current c '"' m2_consume_word = ;
+      @processed 1 = ;
+    }
+    if c '/' == processed ! && {
+      @c ctx current c m2_consume_byte = ;
+      if c '*' == {
+        @c ctx M2CTX_INPUT take vfs_read = ;
+        while c '/' != {
+          while c '*' != {
+    	    @c ctx M2CTX_INPUT take vfs_read = ;
+    	    if c 10 == {
+    	      ctx M2CTX_LINE take_addr ctx M2CTX_LINE take 1 + = ;
+    	    }
+    	  }
+    	  @c ctx M2CTX_INPUT take vfs_read = ;
+    	  if c 10 == {
+    	    ctx M2CTX_LINE take_addr ctx M2CTX_LINE take 1 + = ;
+    	  }
+        }
+    	@c ctx M2CTX_INPUT take vfs_read = ;
+    	@cont 1 = ;
+      } else {
+        if c '/' == {
+          @c ctx M2CTX_INPUT take vfs_read = ;
+    	  @cont 1 = ;
+    	}
+      }
+      @processed 1 = ;
+    }
+    if c 0 < processed ! && {
+      current free ;
+      c ret ;
+    }
+    if processed ! {
+      @c ctx current c m2_consume_byte = ;
+    }
+  }
+
+  current M2TLIST_PREV take_addr ctx M2CTX_TOKEN take = ;
+  current M2TLIST_NEXT take_addr ctx M2CTX_TOKEN take = ;
+  current M2TLIST_LINENUM take_addr ctx M2CTX_LINE take = ;
+  current M2TLIST_FILENAME take_addr ctx M2CTX_FILE take = ;
+  ctx M2CTX_TOKEN take_addr current = ;
+  c ret ;
+}
+
+fun m2_reverse_list 1 {
+  $head
+  @head 0 param = ;
+
+  $root
+  @root 0 = ;
+  while head 0 != {
+    $next
+    @next head M2TLIST_NEXT take = ;
+    head M2TLIST_NEXT take_addr root = ;
+    @root head = ;
+    @head next = ;
+  }
+  root ret ;
+}
+
+fun m2_read_all_tokens 4 {
+  $ctx
+  $a
+  $current
+  $filename
+  @ctx 3 param = ;
+  @a 2 param = ;
+  @current 1 param = ;
+  @filename 0 param = ;
+
+  ctx M2CTX_INPUT take_addr a = ;
+  ctx M2CTX_LINE take_addr 1 = ;
+  ctx M2CTX_FILE take_addr filename = ;
+  ctx M2CTX_TOKEN take_addr current = ;
+  $ch
+  @ch ctx M2CTX_INPUT take vfs_read = ;
+  while 0xffffffff ch != {
+    @ch ctx ch m2_get_token = ;
+  }
+  ctx M2CTX_TOKEN take ret ;
 }
