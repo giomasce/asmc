@@ -665,7 +665,16 @@ term_put_char_finish:
   ret
 
 
+  ;; Try to shutdown a qemu host invoked with "-device isa-debug-exit"
+qemu_shutdown:
+  mov eax, 0
+  mov edx, 0x501
+  out dx, al
+  ret
+
+
 loop_forever:
+  call qemu_shutdown
   hlt
   jmp loop_forever
 
