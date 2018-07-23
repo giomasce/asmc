@@ -64,7 +64,8 @@ const M2CTX_BREAK_TARGET_FUNC 64     # char*
 const M2CTX_BREAK_TARGET_NUM 68      # char*
 const M2CTX_CURRENT_FUNCTION 72      # char*
 const M2CTX_CURRENT_COUNT    76      # int
-const SIZEOF_M2CTX 80
+const M2CTX_LAST_TYPE 80             # M2TYPE*
+const SIZEOF_M2CTX 84
 
 const M2_MAX_STRING 4096
 const M2_LF 10
@@ -1037,6 +1038,155 @@ fun m2_primary_expr 3 {
   }
 
   processed "m2_primary_expr: invalid token" assert_msg ;
+}
+
+fun m2_pre_recursion 3 {
+  $ctx
+  $out
+  $func
+  @ctx 2 param = ;
+  @out 1 param = ;
+  @func 0 param = ;
+
+  ctx M2CTX_LAST_TYPE take_addr ctx M2CTX_CURRENT_TARGET take = ;
+  ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
+  @out ctx "PUSH_eax\t#_common_recursion\n" out m2_emit = ;
+  func M2TLIST_TEMPS take_addr func M2TLIST_TEMPS take 1 + = ;
+  out ret ;
+}
+
+fun m2_promote_type 3 {
+  $ctx
+  $a
+  $b
+  @ctx 2 param = ;
+  @a 1 param = ;
+  @b 0 param = ;
+
+  if a 0 == {
+    b ret ;
+  }
+  if b 0 == {
+    a ret ;
+  }
+  $i
+  @i ctx M2CTX_GLOBAL_TYPES take = ;
+  while i 0 != {
+    if a M2TYPE_NAME take i M2TYPE_NAME take == {
+      a ret ;
+    }
+    if b M2TYPE_NAME take i M2TYPE_NAME take == {
+      b ret ;
+    }
+    if a M2TYPE_NAME take i M2TYPE_INDIRECT take M2TYPE_NAME take == {
+      a ret ;
+    }
+    if b M2TYPE_NAME take i M2TYPE_INDIRECT take M2TYPE_NAME take == {
+      b ret ;
+    }
+    @i i M2TYPE_NEXT take = ;
+  }
+  0 ret ;
+}
+
+fun m2_post_recursion 3 {
+  $ctx
+  $out
+  $func
+  @ctx 2 param = ;
+  @out 1 param = ;
+  @func 0 param = ;
+
+  ctx M2CTX_CURRENT_TARGET take_addr ctx ctx M2CTX_CURRENT_TARGET take ctx M2CTX_LAST_TYPE take m2_promote_type = ;
+  func M2TLIST_TEMPS take_addr func M2TLIST_TEMPS take 1 - = ;
+  @out ctx "POP_ebx\t#_common_recursion\n" out m2_emit = ;
+  out ret ;
+}
+
+fun m2_ceil_log2 1 {
+  $a
+  @a 0 param = ;
+
+  $result
+  @result 0 = ;
+  if a a 1 - & 0 == {
+    @result 0 1 - = ;
+  }
+  while a 0 > {
+    @result result 1 + = ;
+    @a a 1 >> = ;
+  }
+  result ret ;
+}
+
+fun m2_postfix_expr 3 {
+  $ctx
+  $out
+  $function
+  @ctx 2 param = ;
+  @out 1 param = ;
+  @function 0 param = ;
+
+  @out ctx out function m2_primary_expr = ;
+  while 1 {
+    if ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take **c '[' == {
+      $target
+      @target ctx M2CTX_CURRENT_TARGET take = ;
+      $a
+      @a ctx M2CTX_CURRENT_TARGET take = ;
+      @out ctx out function m2_pre_recursion = ;
+      @out ctx out function m2_expression = ;
+      @out ctx out function m2_post_recursion = ;
+
+      if 1 a M2TYPE_INDIRECT take M2TYPE_SIZE take != {
+        @out ctx "SAL_eax_Immediate8 !" out m2_emit = ;
+	@out ctx a M2TYPE_INDIRECT take M2TYPE_SIZE take m2_ceil_log2 m2_numerate_number out m2_emit = ;
+	@out ctx "\n" out m2_emit = ;
+      }
+
+      @out ctx "ADD_ebx_to_eax\n" out m2_emit = ;
+      ctx M2CTX_CURRENT_TARGET take_addr target = ;
+
+      if "=" ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take M2TLIST_S take strcmp 0 == ! {
+        if 4 a M2TYPE_INDIRECT take M2TYPE_SIZE take == {
+	  @out ctx "LOAD_INTEGER\n" out m2_emit = ;
+	} else {
+	  @out ctx "LOAD_BYTE\n" out m2_emit = ;
+	}
+      }
+      ctx "m2_postfix_expr: missing ]" "]" m2_require_match ;
+    } else {
+      if "->" ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take strcmp 0 == {
+        @out ctx "# looking up offset\n" out m2_emit = ;
+	ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
+	$i
+	@i ctx M2CTX_CURRENT_TARGET take M2TYPE_MEMBERS take = ;
+	$cont
+	@cont 1 = ;
+	while i 0 != cont && {
+	  if i M2TYPE_NAME take ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take strcmp 0 == {
+	    @cont 0 = ;
+	  } else {
+	    @i i M2TYPE_MEMBERS take = ;
+	  }
+	}
+	i 0 != "m2_postfix_expr: field does not exist" assert_msg ;
+	if 0 i M2TYPE_OFFSET take != {
+	  @out ctx "# -> offset calculation\n" out m2_emit = ;
+	  @out ctx "LOAD_IMMEDIATE_ebx %" out m2_emit = ;
+	  @out ctx i M2TYPE_OFFSET take m2_numerate_number out m2_emit = ;
+	  @out ctx "\nADD_ebx_to_eax\n" out m2_emit = ;
+	}
+	if "=" ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take M2TLIST_S take strcmp 0 == ! {
+	  @out ctx "LOAD_INTEGER\n" out m2_emit = ;
+	}
+	ctx M2CTX_CURRENT_TARGET take_addr i M2TYPE_TYPE take = ;
+	ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
+      } else {
+        out ret ;
+      }
+    }
+  }
 }
 
 fun m2_expression 3 {
