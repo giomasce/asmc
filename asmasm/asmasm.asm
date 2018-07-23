@@ -55,6 +55,7 @@
   OP_NOT equ 37
   OP_XOR equ 38
   OP_TEST equ 39
+  OP_HLT equ 40
 
   section .data
 
@@ -139,6 +140,8 @@ opcode_names:
   db 0
   db 'test'
   db 0
+  db 'hlt'
+  db 0
   db 0
 
 opcode_funcs:
@@ -182,6 +185,7 @@ opcode_funcs:
   dd process_jmp_like    ; OP_NOT
   dd process_add_like    ; OP_XOR
   dd process_add_like    ; OP_TEST
+  dd process_hlt         ; OP_HLT
 
 rm32_opcode:
   dd 0x06ff  ; OP_PUSH
@@ -224,6 +228,7 @@ rm32_opcode:
   dd 0x02f7  ; OP_NOT
   dd 0xf0    ; OP_XOR
   dd 0xf0    ; OP_TEST
+  dd 0xf0    ; OP_HLT
 
 imm32_opcode:
   dd 0xf0    ; OP_PUSH
@@ -266,6 +271,7 @@ imm32_opcode:
   dd 0xf0    ; OP_NOT
   dd 0xf0    ; OP_XOR
   dd 0xf0    ; OP_TEST
+  dd 0xf0    ; OP_HLT
 
 r8rm8_opcode:
   dd 0xf0    ; OP_PUSH
@@ -308,6 +314,7 @@ r8rm8_opcode:
   dd 0xf0    ; OP_NOT
   dd 0x32    ; OP_XOR
   dd 0x84    ; OP_TEST
+  dd 0xf0    ; OP_HLT
 
 r32rm32_opcode:
   dd 0xf0    ; OP_PUSH
@@ -350,6 +357,7 @@ r32rm32_opcode:
   dd 0xf0    ; OP_NOT
   dd 0x33    ; OP_XOR
   dd 0x85    ; OP_TEST
+  dd 0xf0    ; OP_HLT
 
 rm8r8_opcode:
   dd 0xf0    ; OP_PUSH
@@ -392,6 +400,7 @@ rm8r8_opcode:
   dd 0xf0    ; OP_NOT
   dd 0x30    ; OP_XOR
   dd 0x84    ; OP_TEST
+  dd 0xf0    ; OP_HLT
 
 rm32r32_opcode:
   dd 0xf0    ; OP_PUSH
@@ -434,6 +443,7 @@ rm32r32_opcode:
   dd 0xf0    ; OP_NOT
   dd 0x31    ; OP_XOR
   dd 0x85    ; OP_TEST
+  dd 0xf0    ; OP_HLT
 
 rm8imm8_opcode:
   dd 0xf0    ; OP_PUSH
@@ -476,6 +486,7 @@ rm8imm8_opcode:
   dd 0xf0    ; OP_NOT
   dd 0x0680  ; OP_XOR
   dd 0x00f6  ; OP_TEST
+  dd 0xf0    ; OP_HLT
 
 rm32imm32_opcode:
   dd 0xf0    ; OP_PUSH
@@ -518,6 +529,7 @@ rm32imm32_opcode:
   dd 0xf0    ; OP_NOT
   dd 0x0681  ; OP_XOR
   dd 0x00f7  ; OP_TEST
+  dd 0xf0    ; OP_HLT
 
 
 reg_eax:
@@ -2191,6 +2203,25 @@ process_ret:
 
   ;; Call emit
   push 0xc3
+  call emit
+  add esp, 4
+
+  ret
+
+
+  global process_hlt
+process_hlt:
+  ;; Check the operation is actually a ret
+  cmp DWORD [esp+4], OP_HLT
+  jne platform_panic
+
+  ;; Check that data is empty
+  mov edx, [esp+8]
+  cmp BYTE [edx], 0
+  jne platform_panic
+
+  ;; Call emit
+  push 0xf4
   call emit
   add esp, 4
 

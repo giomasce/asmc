@@ -666,6 +666,7 @@ term_put_char_finish:
 
 
 loop_forever:
+  hlt
   jmp loop_forever
 
 
