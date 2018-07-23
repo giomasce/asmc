@@ -1189,6 +1189,288 @@ fun m2_postfix_expr 3 {
   }
 }
 
+fun m2_unary_expr 3 {
+  $ctx
+  $out
+  $function
+  @ctx 2 param = ;
+  @out 1 param = ;
+  @function 0 param = ;
+
+  $processed
+  @processed 0 = ;
+
+  if "-" ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take strcmp 0 == processed ! && {
+    @out ctx "LOAD_IMMEDIATE_eax %0\n" out m2_emit = ;
+    @out ctx out function m2_pre_recursion = ;
+    @out ctx out function m2_postfix_expr = ;
+    @out ctx out function m2_post_recursion = ;
+    @out ctx "SUBTRACT_eax_from_ebx_into_ebx\nMOVE_ebx_to_eax\n" out m2_emit = ;
+    @processed 1 = ;
+  }
+
+  if "!" ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take strcmp 0 == processed ! && {
+    @out ctx "LOAD_IMMEDIATE_eax %1\n" out m2_emit = ;
+    @out ctx out function m2_pre_recursion = ;
+    @out ctx out function m2_postfix_expr = ;
+    @out ctx out function m2_post_recursion = ;
+    @out ctx "XOR_ebx_eax_into_eax\n" out m2_emit = ;
+    @processed 1 = ;
+  }
+
+  if "sizeof" ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take strcmp 0 == processed ! && {
+    ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
+    ctx "m2_unary_expr: missing (" "(" m2_require_match ;
+    $a
+    @a ctx m2_type_name = ;
+    ctx "m2_uniary_expr: missing )" ")" m2_require_match ;
+    @out ctx "LOAD_IMMEDIATE_eax %" out m2_emit = ;
+    @out ctx a M2TYPE_SIZE take m2_numerate_number out m2_emit = ;
+    @out ctx "\n" out m2_emit = ;
+    @processed 1 = ;
+  }
+
+  if processed ! {
+    @out ctx out function m2_postfix_expr = ;
+  }
+
+  out ret ;
+}
+
+fun m2_additive_expr 3 {
+  $ctx
+  $out
+  $function
+  @ctx 2 param = ;
+  @out 1 param = ;
+  @function 0 param = ;
+
+  @out ctx out function m2_unary_expr = ;
+
+  while 1 {
+    $processed
+    @processed 0 = ;
+
+    if "+" ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take strcmp 0 == processed ! && {
+      @out ctx out function m2_pre_recursion = ;
+      @out ctx out function m2_unary_expr = ;
+      @out ctx out function m2_post_recursion = ;
+      @out ctx "ADD_ebx_to_eax\n" out m2_emit = ;
+      @processed 1 = ;
+    }
+
+    if "-" ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take strcmp 0 == processed ! && {
+      @out ctx out function m2_pre_recursion = ;
+      @out ctx out function m2_unary_expr = ;
+      @out ctx out function m2_post_recursion = ;
+      @out ctx "SUBTRACT_eax_from_ebx_into_ebx\nMOVE_ebx_to_eax\n" out m2_emit = ;
+      @processed 1 = ;
+    }
+
+    if "*" ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take strcmp 0 == processed ! && {
+      @out ctx out function m2_pre_recursion = ;
+      @out ctx out function m2_unary_expr = ;
+      @out ctx out function m2_post_recursion = ;
+      @out ctx "MULTIPLY_eax_by_ebx_into_eax\n" out m2_emit = ;
+      @processed 1 = ;
+    }
+
+    if "/" ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take strcmp 0 == processed ! && {
+      @out ctx out function m2_pre_recursion = ;
+      @out ctx out function m2_unary_expr = ;
+      @out ctx out function m2_post_recursion = ;
+      @out ctx "XCHG_eax_ebx\nLOAD_IMMEDIATE_edx %0\nDIVIDE_eax_by_ebx_into_eax\n" out m2_emit = ;
+      @processed 1 = ;
+    }
+
+    if "%" ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take strcmp 0 == processed ! && {
+      @out ctx out function m2_pre_recursion = ;
+      @out ctx out function m2_unary_expr = ;
+      @out ctx out function m2_post_recursion = ;
+      @out ctx "XCHG_eax_ebx\nLOAD_IMMEDIATE_edx %0\nMODULUS_eax_from_ebx_into_ebx\nMOVE_edx_to_eax\n" out m2_emit = ;
+      @processed 1 = ;
+    }
+
+    if processed ! {
+      out ret ;
+    }
+  }
+}
+
+fun m2_shift_expr 3 {
+  $ctx
+  $out
+  $function
+  @ctx 2 param = ;
+  @out 1 param = ;
+  @function 0 param = ;
+
+  @out ctx out function m2_additive_expr = ;
+
+  while 1 {
+    $processed
+    @processed 0 = ;
+
+    if "<<" ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take strcmp 0 == processed ! && {
+      @out ctx out function m2_pre_recursion = ;
+      @out ctx out function m2_additive_expr = ;
+      @out ctx out function m2_post_recursion = ;
+      $old
+      @old out M2TLIST_NEXT take = ;
+      out free ;
+      @out ctx "COPY_eax_to_ecx\nPOP_eax\nSAL_eax_cl\n" old m2_emit = ;
+      @processed 1 = ;
+    }
+
+    if ">>" ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take strcmp 0 == processed ! && {
+      @out ctx out function m2_pre_recursion = ;
+      @out ctx out function m2_additive_expr = ;
+      @out ctx out function m2_post_recursion = ;
+      $old
+      @old out M2TLIST_NEXT take = ;
+      out free ;
+      @out ctx "COPY_eax_to_ecx\nPOP_eax\nSAR_eax_cl\n" old m2_emit = ;
+      @processed 1 = ;
+    }
+
+    if processed ! {
+      out ret ;
+    }
+  }
+}
+
+fun m2_relational_expr 3 {
+  $ctx
+  $out
+  $function
+  @ctx 2 param = ;
+  @out 1 param = ;
+  @function 0 param = ;
+
+  @out ctx out function m2_shift_expr = ;
+
+  while 1 {
+    $processed
+    @processed 0 = ;
+
+    if "<" ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take strcmp 0 == processed ! && {
+      @out ctx out function m2_pre_recursion = ;
+      @out ctx out function m2_shift_expr = ;
+      @out ctx out function m2_post_recursion = ;
+      @out ctx "CMP\nSETL\nMOVEZBL\n" out m2_emit = ;
+      @processed 1 = ;
+    }
+
+    if "<=" ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take strcmp 0 == processed ! && {
+      @out ctx out function m2_pre_recursion = ;
+      @out ctx out function m2_shift_expr = ;
+      @out ctx out function m2_post_recursion = ;
+      @out ctx "CMP\nSETLE\nMOVEZBL\n" out m2_emit = ;
+      @processed 1 = ;
+    }
+
+    if ">=" ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take strcmp 0 == processed ! && {
+      @out ctx out function m2_pre_recursion = ;
+      @out ctx out function m2_shift_expr = ;
+      @out ctx out function m2_post_recursion = ;
+      @out ctx "CMP\nSETGE\nMOVEZBL\n" out m2_emit = ;
+      @processed 1 = ;
+    }
+
+    if ">" ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take strcmp 0 == processed ! && {
+      @out ctx out function m2_pre_recursion = ;
+      @out ctx out function m2_shift_expr = ;
+      @out ctx out function m2_post_recursion = ;
+      @out ctx "CMP\nSETG\nMOVEZBL\n" out m2_emit = ;
+      @processed 1 = ;
+    }
+
+    if processed ! {
+      out ret ;
+    }
+  }
+}
+
+fun m2_equality_expr 3 {
+  $ctx
+  $out
+  $function
+  @ctx 2 param = ;
+  @out 1 param = ;
+  @function 0 param = ;
+
+  @out ctx out function m2_relational_expr = ;
+
+  while 1 {
+    $processed
+    @processed 0 = ;
+
+    if "==" ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take strcmp 0 == processed ! && {
+      @out ctx out function m2_pre_recursion = ;
+      @out ctx out function m2_shift_expr = ;
+      @out ctx out function m2_post_recursion = ;
+      @out ctx "CMP\nSETE\nMOVEZBL\n" out m2_emit = ;
+      @processed 1 = ;
+    }
+
+    if "!=" ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take strcmp 0 == processed ! && {
+      @out ctx out function m2_pre_recursion = ;
+      @out ctx out function m2_shift_expr = ;
+      @out ctx out function m2_post_recursion = ;
+      @out ctx "CMP\nSETNE\nMOVEZBL\n" out m2_emit = ;
+      @processed 1 = ;
+    }
+
+    if processed ! {
+      out ret ;
+    }
+  }
+}
+
+fun m2_bitwise 3 {
+  $ctx
+  $out
+  $function
+  @ctx 2 param = ;
+  @out 1 param = ;
+  @function 0 param = ;
+
+  @out ctx out function m2_equality_expr = ;
+
+  while 1 {
+    $processed
+    @processed 0 = ;
+
+    if '&' ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take **c == processed ! && {
+      @out ctx out function m2_pre_recursion = ;
+      @out ctx out function m2_equality_expr = ;
+      @out ctx out function m2_post_recursion = ;
+      @out ctx "AND_eax_ebx\n" out m2_emit = ;
+      @processed 1 = ;
+    }
+
+    if '|' ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take **c == processed ! && {
+      @out ctx out function m2_pre_recursion = ;
+      @out ctx out function m2_equality_expr = ;
+      @out ctx out function m2_post_recursion = ;
+      @out ctx "OR_eax_ebx\n" out m2_emit = ;
+      @processed 1 = ;
+    }
+
+    if '^' ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take **c == processed ! && {
+      @out ctx out function m2_pre_recursion = ;
+      @out ctx out function m2_equality_expr = ;
+      @out ctx out function m2_post_recursion = ;
+      @out ctx "XOR_eax_ebx\n" out m2_emit = ;
+      @processed 1 = ;
+    }
+
+    if processed ! {
+      out ret ;
+    }
+  }
+}
+
 fun m2_expression 3 {
   $ctx
   $out
@@ -1197,4 +1479,132 @@ fun m2_expression 3 {
   @out 1 param = ;
   @function 0 param = ;
 
+  @out ctx out function m2_bitwise = ;
+
+  if ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take **c '=' == {
+    $target
+    @target ctx M2CTX_CURRENT_TARGET take = ;
+    $member
+    @member "]" ctx M2CTX_GLOBAL_TOKEN take M2TLIST_PREV take M2TLIST_S take strcmp 0 == = ;
+    @out ctx out function m2_pre_recursion = ;
+    @out ctx out function m2_expression = ;
+    @out ctx out function m2_post_recursion = ;
+
+    if member {
+      if 1 target M2TYPE_INDIRECT take M2TYPE_SIZE take == {
+        @out ctx "STORE_CHAR\n" out m2_emit = ;
+      } else {
+        if 4 target M2TYPE_INDIRECT take M2TYPE_SIZE take == {
+	  @out ctx "STORE_INTEGER\n" out m2_emit = ;
+	}
+      }
+    } else {
+      @out ctx "STORE_INTEGER\n" out m2_emit = ;
+    }
+  }
+
+  out ret ;
+}
+
+fun m2_collect_local 3 {
+  $ctx
+  $out
+  $function
+  @ctx 2 param = ;
+  @out 1 param = ;
+  @function 0 param = ;
+
+  $type_size
+  @type_size ctx m2_type_name = ;
+  @out ctx "# Defining local " out m2_emit = ;
+  @out ctx ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take out m2_emit = ;
+  @out ctx "\n" out m2_emit = ;
+
+  $a
+  @a ctx ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take type_size function M2TLIST_LOCALS take m2_sym_declare = ;
+  function M2TLIST_LOCALS take_addr a = ;
+  ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
+  function M2TLIST_TEMPS take_addr function M2TLIST_TEMPS take 1 - = ;
+
+  if ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take **c '=' == {
+    ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
+    @out ctx out function m2_expression = ;
+  }
+  function M2TLIST_TEMPS take_addr function M2TLIST_TEMPS take 1 + = ;
+
+  ctx "m2_collect_local: missing ;" ";" m2_require_match ;
+
+  @out ctx "PUSH_eax\t#" out m2_emit = ;
+  @out ctx a M2TLIST_S take out m2_emit = ;
+  @out ctx "\n" out m2_emit = ;
+
+  out ret ;
+}
+
+ifun m2_statement 3
+
+fun m2_process_if 3 {
+  $ctx
+  $out
+  $function
+  @ctx 2 param = ;
+  @out 1 param = ;
+  @function 0 param = ;
+
+  $number_string
+  @number_string ctx M2CTX_CURRENT_COUNT take m2_numerate_number = ;
+  ctx M2CTX_CURRENT_COUNT take_addr ctx M2CTX_CURRENT_COUNT take 1 + = ;
+
+  @out ctx "# IF_" out m2_emit = ;
+  @out ctx ctx M2CTX_CURRENT_FUNCTION take out m2_emit = ;
+  @out ctx "_" out m2_emit = ;
+  @out ctx number_string out m2_emit = ;
+  @out ctx "\n" out m2_emit = ;
+
+  ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
+  ctx "m2_process_if: missing (" "(" m2_require_match ;
+  @out ctx out function m2_expression = ;
+
+  @out ctx "TEST\nJUMP_EQ %ELSE_" out m2_emit = ;
+  @out ctx ctx M2CTX_CURRENT_FUNCTION take out m2_emit = ;
+  @out ctx "_" out m2_emit = ;
+  @out ctx number_string out m2_emit = ;
+  @out ctx "\n" out m2_emit = ;
+
+  ctx "m2_process_if: missing )" ")" m2_require_match ;
+  @out ctx out function m2_statement = ;
+
+  @out ctx "JUMP %_END_IF_" out m2_emit = ;
+  @out ctx ctx M2CTX_CURRENT_FUNCTION take out m2_emit = ;
+  @out ctx "_" out m2_emit = ;
+  @out ctx number_string out m2_emit = ;
+  @out ctx "\n:ELSE_" out m2_emit = ;
+  @out ctx ctx M2CTX_CURRENT_FUNCTION take out m2_emit = ;
+  @out ctx "_" out m2_emit = ;
+  @out ctx number_string out m2_emit = ;
+  @out ctx "\n" out m2_emit = ;
+
+  if "else" ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take strcmp 0 == {
+    ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
+    @out ctx out function m2_statement = ;
+  }
+
+  @out ctx ":_END_IF_" out m2_emit = ;
+  @out ctx ctx M2CTX_CURRENT_FUNCTION take out m2_emit = ;
+  @out ctx "_" out m2_emit = ;
+  @out ctx number_string out m2_emit = ;
+  @out ctx "\n" out m2_emit = ;
+
+  out ret ;
+}
+
+fun m2_statement 3 {
+  $ctx
+  $out
+  $function
+  @ctx 2 param = ;
+  @out 1 param = ;
+  @function 0 param = ;
+
+  
 }
