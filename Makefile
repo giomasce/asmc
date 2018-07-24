@@ -6,14 +6,14 @@ ifeq ($(UNAME),Linux)
 FOUND := 1
 AR=ar
 USE_NASM=0
-all: build build/asmasm_linux build/boot_asmasm.x86 build/boot_empty.x86 build/boot_asmg.x86 build/boot.iso
+all: build build/asmasm_linux build/boot_asmasm.x86 build/boot_empty.x86 build/boot_asmg.x86 build/boot_asmg0.x86 build/boot.iso
 endif
 
 ifeq ($(UNAME),Darwin)
 FOUND := 1
 AR=gar
 USE_NASM=1
-all: build build/boot_asmasm.x86 build/boot_empty.x86 build/boot_asmg.x86
+all: build build/boot_asmasm.x86 build/boot_empty.x86 build/boot_asmg.x86 build/boot_asmg0.x86
 endif
 
 ifeq ($(FOUND),0)
@@ -52,7 +52,7 @@ build/boot_asmasm.x86: build/bootloader.x86.exe build/asmasm.x86 build/zero_sect
 	cat $^ > $@
 
 # Asmasm kernel
-build/full-asmasm.asm: lib/multiboot.asm lib/kernel.asm lib/ar.asm lib/library.asm asmasm/asmasm.asm asmasm/kernel-asmasm.asm lib/top.asm
+build/full-asmasm.asm: lib/multiboot.asm lib/kernel.asm lib/shutdown.asm lib/ar.asm lib/library.asm asmasm/asmasm.asm asmasm/kernel-asmasm.asm lib/top.asm
 	cat $^ | grep -v "^ *section " > $@
 
 build/initrd-asmasm.ar: asmasm/main.asm lib/atapio.asm asmasm/atapio_test.asm build/END
@@ -71,7 +71,7 @@ build/asmasm.x86: build/asmasm.x86.exe build/initrd-asmasm.ar
 	cat $^ > $@
 
 # Empty kernel
-build/full-empty.asm: lib/multiboot.asm lib/kernel.asm lib/ar.asm lib/library.asm empty/kernel-empty.asm lib/top.asm
+build/full-empty.asm: lib/multiboot.asm lib/kernel.asm lib/shutdown.asm lib/ar.asm lib/library.asm empty/kernel-empty.asm lib/top.asm
 	cat $^ | grep -v "^ *section " > $@
 
 build/initrd-empty.ar: build/END
@@ -93,7 +93,7 @@ build/boot_empty.x86: build/bootloader.x86.exe build/empty.x86 build/zero_sect.b
 	cat $^ > $@
 
 # Asmg kernel
-build/full-asmg.asm: lib/multiboot.asm lib/kernel.asm lib/ar.asm lib/library.asm asmg/asmg.asm asmg/kernel-asmg.asm lib/top.asm
+build/full-asmg.asm: lib/multiboot.asm lib/kernel.asm lib/shutdown.asm lib/ar.asm lib/library.asm asmg/asmg.asm asmg/kernel-asmg.asm lib/top.asm
 	cat $^ | grep -v "^ *section " > $@
 
 build/initrd-asmg.ar: asmg/*.g test/test.hex2 test/test.m1 test/test.c test/test2.c test/first.h test/other.h test/test.asm build/END
@@ -114,6 +114,24 @@ build/asmg.x86: build/asmg.x86.exe build/initrd-asmg.ar
 build/boot_asmg.x86: build/bootloader.x86.exe build/asmg.x86 build/zero_sect.bin
 	cat $^ > $@
 
+# Asmg0 kernel
+build/full-asmg0.asm: lib/multiboot.asm asmg0/asmg0.asm lib/shutdown.asm lib/top.asm
+	cat $^ | grep -v "^ *section " > $@
+
+ifeq ($(USE_NASM),1)
+build/asmg0.x86.exe: build/full-asmg0.asm
+	nasm -f bin -o $@ $<
+else
+build/asmg0.x86.exe: build/full-asmg0.asm build/asmasm_linux
+	./build/asmasm_linux $< > $@
+endif
+
+build/asmg0.x86: build/asmg0.x86.exe asmg0/main.g0
+	cat $^ > $@
+
+build/boot_asmg0.x86: build/bootloader.x86.exe build/asmg0.x86 build/zero_sect.bin
+	cat $^ > $@
+
 # GRUB ISO image
 build/boot/boot/grub/grub.cfg: boot/grub.cfg
 	mkdir -p build/boot/boot/grub
@@ -131,5 +149,9 @@ build/boot/boot/asmg.x86: build/asmg.x86
 	mkdir -p build/boot/boot
 	cp $^ $@
 
-build/boot.iso: build/boot/boot/grub/grub.cfg build/boot/boot/asmasm.x86 build/boot/boot/empty.x86 build/boot/boot/asmg.x86
+build/boot/boot/asmg0.x86: build/asmg0.x86
+	mkdir -p build/boot/boot
+	cp $^ $@
+
+build/boot.iso: build/boot/boot/grub/grub.cfg build/boot/boot/asmasm.x86 build/boot/boot/empty.x86 build/boot/boot/asmg.x86 build/boot/boot/asmg0.x86
 	cd build && grub-mkrescue -o boot.iso boot
