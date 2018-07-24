@@ -52,7 +52,7 @@ build/boot_asmasm.x86: build/bootloader.x86.exe build/asmasm.x86 build/zero_sect
 	cat $^ > $@
 
 # Asmasm kernel
-build/full-asmasm.asm: lib/kernel.asm lib/ar.asm lib/library.asm asmasm/asmasm.asm asmasm/kernel-asmasm.asm lib/top.asm
+build/full-asmasm.asm: lib/multiboot.asm lib/kernel.asm lib/ar.asm lib/library.asm asmasm/asmasm.asm asmasm/kernel-asmasm.asm lib/top.asm
 	cat $^ | grep -v "^ *section " > $@
 
 build/initrd-asmasm.ar: asmasm/main.asm lib/atapio.asm asmasm/atapio_test.asm build/END
@@ -71,7 +71,7 @@ build/asmasm.x86: build/asmasm.x86.exe build/initrd-asmasm.ar
 	cat $^ > $@
 
 # Empty kernel
-build/full-empty.asm: lib/kernel.asm lib/ar.asm lib/library.asm empty/kernel-empty.asm lib/top.asm
+build/full-empty.asm: lib/multiboot.asm lib/kernel.asm lib/ar.asm lib/library.asm empty/kernel-empty.asm lib/top.asm
 	cat $^ | grep -v "^ *section " > $@
 
 build/initrd-empty.ar: build/END
@@ -93,7 +93,7 @@ build/boot_empty.x86: build/bootloader.x86.exe build/empty.x86 build/zero_sect.b
 	cat $^ > $@
 
 # Asmg kernel
-build/full-asmg.asm: lib/kernel.asm lib/ar.asm lib/library.asm asmg/asmg.asm asmg/kernel-asmg.asm lib/top.asm
+build/full-asmg.asm: lib/multiboot.asm lib/kernel.asm lib/ar.asm lib/library.asm asmg/asmg.asm asmg/kernel-asmg.asm lib/top.asm
 	cat $^ | grep -v "^ *section " > $@
 
 build/initrd-asmg.ar: asmg/*.g test/test.hex2 test/test.m1 test/test.c test/test2.c test/first.h test/other.h test/test.asm build/END

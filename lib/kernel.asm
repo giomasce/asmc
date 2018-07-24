@@ -15,9 +15,6 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-  bits 32
-  org 0x100000
-
   STACK_SIZE equ 65536
   ;; STACK_SIZE equ 8388608
 
@@ -26,33 +23,6 @@
   TERM_BASE_ADDR equ 0xb8000
 
   MAX_OPEN_FILE_NUM equ 1024
-
-  MBMAGIC equ 0x1badb002
-  ;; Set flags for alignment, memory map and load adds
-  MBFLAGS equ 0x10003
-  ;; 0x100000000 - MBMAGIC - MBFLAGS
-  MBCHECKSUM equ 0xe4514ffb
-
-  ;; MB_ENTRY_ADDR equ _start
-
-  jmp start_from_raw
-
-  align 4
-
-  jmp start_from_multiboot
-
-  align 4
-
-  ;; Multiboot header
-  dd MBMAGIC
-  dd MBFLAGS
-  dd MBCHECKSUM
-
-  dd 0x100010
-  dd 0x100000
-  dd 0x0
-  dd 0x0
-  dd 0x100008
 
 term_row:
   resd 1
