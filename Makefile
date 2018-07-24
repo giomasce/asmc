@@ -115,7 +115,7 @@ build/boot_asmg.x86: build/bootloader.x86.exe build/asmg.x86 build/zero_sect.bin
 	cat $^ > $@
 
 # Asmg0 kernel
-build/full-asmg0.asm: lib/multiboot.asm asmg0/asmg0.asm lib/shutdown.asm lib/top.asm
+build/full-asmg0.asm: lib/multiboot.asm asmg0/asmg0.asm lib/shutdown.asm asmg0/debug.asm lib/top.asm
 	cat $^ | grep -v "^ *section " > $@
 
 ifeq ($(USE_NASM),1)

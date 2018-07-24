@@ -1,4 +1,40 @@
 
- zSD
- z200F
- s
+# Emit code to setup the serial port
+z3f9P
+z00P
+o
+z3fbP
+z80P
+o
+z3f8P
+z03P
+o
+z3f9P
+z00P
+o
+z3fbP
+z03P
+o
+z3faP
+zc7P
+o
+z3fcP
+z0bP
+o
+
+# Call "write a test character"
+z80Cp
+
+# Return zero
+zPp
+R
+
+# 0x80: write a test character
+z80S
+z3f8P
+z70P
+o
+R
+
+# Exit the compilation script
+zs
