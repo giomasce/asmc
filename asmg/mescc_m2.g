@@ -1693,6 +1693,207 @@ fun m2_process_for 3 {
   out ret ;
 }
 
+fun m2_process_asm 2 {
+  $ctx
+  $out
+  @ctx 1 param = ;
+  @out 0 param = ;
+
+  ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
+  ctx "m2_process_asm: missing (" "(" m2_require_match ;
+  while 34 ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take **c == {
+    @out ctx ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take 1 + out m2_emit = ;
+    @out ctx "\n" out m2_emit = ;
+    ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
+  }
+  ctx "m2_process_asm: missing )" ")" m2_require_match ;
+  ctx "m2_process_asm: missing ;" ";" m2_require_match ;
+  out ret ;
+}
+
+fun m2_process_do 3 {
+  $ctx
+  $out
+  $function
+  @ctx 2 param = ;
+  @out 1 param = ;
+  @function 0 param = ;
+
+  $number_string
+  @number_string ctx M2CTX_CURRENT_COUNT take m2_numerate_number = ;
+  ctx M2CTX_CURRENT_COUNT take_addr ctx M2CTX_CURRENT_COUNT take 1 + = ;
+
+  $nested_break_head
+  @nested_break_head ctx M2CTX_BREAK_TARGET_HEAD take = ;
+  $nested_break_func
+  @nested_break_func ctx M2CTX_BREAK_TARGET_FUNC take = ;
+  $nested_break_num
+  @nested_break_num ctx M2CTX_BREAK_TARGET_NUM take = ;
+  $nested_locals
+  @nested_locals ctx M2CTX_BREAK_LOCALS take = ;
+  ctx M2CTX_BREAK_LOCALS take_addr function M2TLIST_LOCALS take = ;
+  ctx M2CTX_BREAK_TARGET_HEAD take_addr "DO_END_" = ;
+  ctx M2CTX_BREAK_TARGET_FUNC take_addr ctx M2CTX_CURRENT_FUNCTION take = ;
+  ctx M2CTX_BREAK_TARGET_NUM take_addr number_string = ;
+
+  @out ctx ":DO_" out m2_emit = ;
+  @out ctx ctx M2CTX_CURRENT_FUNCTION take out m2_emit = ;
+  @out ctx "_" out m2_emit = ;
+  @out ctx number_string out m2_emit = ;
+  @out ctx "\n" out m2_emit = ;
+
+  ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
+  @out ctx out function m2_statement = ;
+
+  ctx "m2_process_do: missing while" "while" m2_require_match ;
+  ctx "m2_process_do: missing (" "(" m2_require_match ;
+  @out ctx out function m2_expression = ;
+  ctx "m2_process_do: )" ")" m2_require_match ;
+  ctx "m2_process_do: ;" ";" m2_require_match ;
+
+  @out ctx "TEST\nJUMP_NE %DO_" out m2_emit = ;
+  @out ctx ctx M2CTX_CURRENT_FUNCTION take out m2_emit = ;
+  @out ctx "_" out m2_emit = ;
+  @out ctx number_string out m2_emit = ;
+  @out ctx "\n:DO_END_" out m2_emit = ;
+  @out ctx ctx M2CTX_CURRENT_FUNCTION take out m2_emit = ;
+  @out ctx "_" out m2_emit = ;
+  @out ctx number_string out m2_emit = ;
+  @out ctx "\n" out m2_emit = ;
+
+  ctx M2CTX_BREAK_LOCALS take_addr nested_locals = ;
+  ctx M2CTX_BREAK_TARGET_HEAD take_addr nested_break_head = ;
+  ctx M2CTX_BREAK_TARGET_FUNC take_addr nested_break_func = ;
+  ctx M2CTX_BREAK_TARGET_NUM take_addr nested_break_num = ;
+
+  out ret ;
+}
+
+fun m2_process_while 3 {
+  $ctx
+  $out
+  $function
+  @ctx 2 param = ;
+  @out 1 param = ;
+  @function 0 param = ;
+
+  $number_string
+  @number_string ctx M2CTX_CURRENT_COUNT take m2_numerate_number = ;
+  ctx M2CTX_CURRENT_COUNT take_addr ctx M2CTX_CURRENT_COUNT take 1 + = ;
+
+  $nested_break_head
+  @nested_break_head ctx M2CTX_BREAK_TARGET_HEAD take = ;
+  $nested_break_func
+  @nested_break_func ctx M2CTX_BREAK_TARGET_FUNC take = ;
+  $nested_break_num
+  @nested_break_num ctx M2CTX_BREAK_TARGET_NUM take = ;
+  $nested_locals
+  @nested_locals ctx M2CTX_BREAK_LOCALS take = ;
+  ctx M2CTX_BREAK_LOCALS take_addr function M2TLIST_LOCALS take = ;
+  ctx M2CTX_BREAK_TARGET_HEAD take_addr "END_WHILE_" = ;
+  ctx M2CTX_BREAK_TARGET_FUNC take_addr ctx M2CTX_CURRENT_FUNCTION take = ;
+  ctx M2CTX_BREAK_TARGET_NUM take_addr number_string = ;
+
+  @out ctx ":WHILE_" out m2_emit = ;
+  @out ctx ctx M2CTX_CURRENT_FUNCTION take out m2_emit = ;
+  @out ctx "_" out m2_emit = ;
+  @out ctx number_string out m2_emit = ;
+  @out ctx "\n" out m2_emit = ;
+
+  ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
+  ctx "m2_process_while: missing (" "(" m2_require_match ;
+  @out ctx out function m2_expression = ;
+
+  @out ctx "TEST\nJUMP_EQ %END_WHILE_" out m2_emit = ;
+  @out ctx ctx M2CTX_CURRENT_FUNCTION take out m2_emit = ;
+  @out ctx "_" out m2_emit = ;
+  @out ctx number_string out m2_emit = ;
+  @out ctx "\n# THEN_while_" out m2_emit = ;
+  @out ctx ctx M2CTX_CURRENT_FUNCTION take out m2_emit = ;
+  @out ctx "_" out m2_emit = ;
+  @out ctx number_string out m2_emit = ;
+  @out ctx "\n" out m2_emit = ;
+
+  ctx "m2_process_while: missing )" ")" m2_require_match ;
+  @out ctx out function m2_statement = ;
+
+  @out ctx "JUMP %WHILE_" out m2_emit = ;
+  @out ctx ctx M2CTX_CURRENT_FUNCTION take out m2_emit = ;
+  @out ctx "_" out m2_emit = ;
+  @out ctx number_string out m2_emit = ;
+  @out ctx "\n:END_WHILE_" out m2_emit = ;
+  @out ctx ctx M2CTX_CURRENT_FUNCTION take out m2_emit = ;
+  @out ctx "_" out m2_emit = ;
+  @out ctx number_string out m2_emit = ;
+  @out ctx "\n" out m2_emit = ;
+
+  ctx M2CTX_BREAK_LOCALS take_addr nested_locals = ;
+  ctx M2CTX_BREAK_TARGET_HEAD take_addr nested_break_head = ;
+  ctx M2CTX_BREAK_TARGET_FUNC take_addr nested_break_func = ;
+  ctx M2CTX_BREAK_TARGET_NUM take_addr nested_break_num = ;
+
+  out ret ;
+}
+
+fun m2_return_result 3 {
+  $ctx
+  $out
+  $function
+  @ctx 2 param = ;
+  @out 1 param = ;
+  @function 0 param = ;
+
+  ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
+  if ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take **c ';' != {
+    @out ctx out function m2_expression = ;
+  }
+
+  ctx "m2_return_result: missing ;" ";" m2_require_match ;
+
+  $i
+  @i function M2TLIST_LOCALS take = ;
+  while i 0 != {
+    @out ctx "POP_ebx\t# _return_result_locals\n" out m2_emit = ;
+    @i i M2TLIST_NEXT take = ;
+  }
+
+  @out ctx "RETURN\n" out m2_emit = ;
+
+  out ret ;
+}
+
+fun m2_recursive_statement 3 {
+  $ctx
+  $out
+  $function
+  @ctx 2 param = ;
+  @out 1 param = ;
+  @function 0 param = ;
+
+  ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
+  $frame
+  @frame function M2TLIST_LOCALS take = ;
+
+  while "}" ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take strcmp 0 == ! {
+    @out ctx out function m2_statement = ;
+  }
+  ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
+
+  if 0 ctx M2CTX_GLOBAL_TOKEN take M2TLIST_LOCALS take != {
+    $i
+    @i function M2TLIST_LOCALS take = ;
+    while frame i != {
+      if "RETURN\n" out M2TLIST_S take strcmp 0 == ! {
+        @out ctx "POP_ebx\t# _recursive_statement_locals\n" out m2_emit = ;
+      }
+      function M2TLIST_LOCALS take_addr function M2TLIST_LOCALS take M2TLIST_NEXT take = ;
+      @i i M2TLIST_NEXT take = ;
+    }
+  }
+
+  out ret ;
+}
+
 fun m2_statement 3 {
   $ctx
   $out
@@ -1700,4 +1901,79 @@ fun m2_statement 3 {
   @ctx 2 param = ;
   @out 1 param = ;
   @function 0 param = ;
+
+  if ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take **c '{' == {
+    @out ctx out function m2_recursive_statement = ;
+    out ret ;
+  }
+  if ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take **c ':' == {
+    @out ctx ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take out m2_emit = ;
+    @out ctx "\t#C goto label\n" out m2_emit = ;
+    ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
+    out ret ;
+  }
+  if 0 ctx ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take function M2TLIST_LOCALS take m2_sym_lookup == 0 ctx ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take function M2TLIST_ARGS take m2_sym_lookup == && 0 ctx ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take m2_lookup_type != && "struct" ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take strcmp 0 == || {
+    @out ctx out function m2_collect_local = ;
+    out ret ;
+  }
+  if "if" ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take strcmp 0 == {
+    @out ctx out function m2_process_if = ;
+    out ret ;
+  }
+  if "do" ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take strcmp 0 == {
+    @out ctx out function m2_process_do = ;
+    out ret ;
+  }
+  if "while" ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take strcmp 0 == {
+    @out ctx out function m2_process_while = ;
+    out ret ;
+  }
+  if "for" ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take strcmp 0 == {
+    @out ctx out function m2_process_for = ;
+    out ret ;
+  }
+  if "asm" ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take strcmp 0 == {
+    @out ctx out m2_process_asm = ;
+    out ret ;
+  }
+  if "goto" ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take strcmp 0 == {
+    ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
+    @out ctx "JUMP %" out m2_emit = ;
+    @out ctx ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take out m2_emit = ;
+    @out ctx "\n" out m2_emit = ;
+    ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
+    ctx "m2_statement: missing ;" ";" m2_require_match ;
+    out ret ;
+  }
+  if "return" ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take strcmp 0 == {
+    @out ctx out function m2_return_result = ;
+    out ret ;
+  }
+  if "break" ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take strcmp 0 == {
+    0 ctx M2CTX_BREAK_TARGET_HEAD take != "m2_statement: not inside a loop or case statement" assert_msg ;
+    $i
+    @i function M2TLIST_LOCALS take = ;
+    while i 0 != i ctx M2CTX_BREAK_LOCALS take != && {
+      @out ctx "POP_ebx\t# break_cleanup_locals\n" out m2_emit = ;
+      @i i M2TLIST_NEXT take = ;
+    }
+    ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
+    @out ctx "JUMP %" out m2_emit = ;
+    @out ctx ctx M2CTX_BREAK_TARGET_HEAD take out m2_emit = ;
+    @out ctx ctx M2CTX_BREAK_TARGET_FUNC take out m2_emit = ;
+    @out ctx "_" out m2_emit = ;
+    @out ctx ctx M2CTX_BREAK_TARGET_NUM take out m2_emit = ;
+    @out ctx "\n" out m2_emit = ;
+    ctx "m2_statement: missing ;" ";" m2_require_match ;
+    out ret ;
+  }
+  if "continue" ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take strcmp 0 == {
+    ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
+    @out ctx "\n#continue statement\n" out m2_emit = ;
+    ctx "m2_statement: missing ;" ";" m2_require_match ;
+    out ret ;
+  }
+  @out ctx out function m2_expression = ;
+  ctx "m2_statement: missing ;" ";" m2_require_match ;
+  out ret ;
 }
