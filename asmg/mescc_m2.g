@@ -1038,6 +1038,8 @@ fun m2_primary_expr 3 {
   }
 
   processed "m2_primary_expr: invalid token" assert_msg ;
+
+  out ret ;
 }
 
 fun m2_pre_recursion 3 {
@@ -2137,7 +2139,7 @@ fun m2_compile 2 {
   ctx m2_initialize_types ;
   $output_list
   @output_list ctx 0 m2_program = ;
-  destination_file "\n#Core program\n" vfs_write_string ;
+  destination_file "\n# Core program\n" vfs_write_string ;
   output_list destination_file m2_recursive_output ;
   destination_file "\n:ELF_data\n" vfs_write_string ;
   destination_file "\n# Program global variables\n" vfs_write_string ;
@@ -2146,6 +2148,8 @@ fun m2_compile 2 {
   ctx M2CTX_STRINGS_LIST take destination_file m2_recursive_output ;
   destination_file "\n:ELF_end\n" vfs_write_string ;
   destination_file vfs_close ;
+  "Compiled program:\n" 1 platform_log ;
+  outfile dump_file ;
   ctx free ;
 }
 
