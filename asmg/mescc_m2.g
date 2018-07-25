@@ -2141,7 +2141,7 @@ fun m2_compile 2 {
   @output_list ctx 0 m2_program = ;
   destination_file "\n# Core program\n" vfs_write_string ;
   output_list destination_file m2_recursive_output ;
-  destination_file "\n:ELF_data\n" vfs_write_string ;
+  #destination_file "\n:ELF_data\n" vfs_write_string ;
   destination_file "\n# Program global variables\n" vfs_write_string ;
   ctx M2CTX_GLOBALS_LIST take destination_file m2_recursive_output ;
   destination_file "\n# Program strings\n" vfs_write_string ;
@@ -2159,4 +2159,6 @@ fun m2_test 0 {
   files "/init/test3.c" strdup vector_push_back ;
   files "/ram/compiled.m1" m2_compile ;
   files free_vect_of_ptrs ;
+
+  "/ram/compiled.m1" dump_debug ;
 }

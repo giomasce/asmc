@@ -49,6 +49,17 @@ fun dump_hex_file 1 {
   }  
 }
 
+fun dump_debug 1 {
+  $name
+  @name 0 param = ;
+
+  "--DUMP-- " 1 platform_log ;
+  name 1 platform_log ;
+  "\n" 1 platform_log ;
+  name dump_hex_file ;
+  "\n--END_DUMP--\n" 1 platform_log ;
+}
+
 fun vfs_write_string 2 {
   $fd
   $s
