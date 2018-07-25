@@ -145,18 +145,35 @@ fun main 0 {
   0 "vfs_init" platform_get_symbol \0 ;
   "done!\n" 1 platform_log ;
 
-  if RUN_ASM {
-    "/init/test.asm" 0 "parse_asm" platform_get_symbol \1 ;
-  }
+  # Determine if there is an actual script
+  $script_file
+  @script_file "/init/script.g" 0 "vfs_open" platform_get_symbol \1 = ;
+  $have_script
+  @have_script script_file 0 "vfs_read" platform_get_symbol \1 0xffffffff != = ;
+  script_file 0 "vfs_close" platform_get_symbol \1 ;
 
-  if RUN_C {
-    "/init/test2.c" 0 "parse_c" platform_get_symbol \1 ;
-  }
+  if have_script {
+    "Compiling script.g... " 1 platform_log ;
+    "script.g" platform_g_compile ;
+    "done!\n" 1 platform_log ;
 
-  if RUN_MESCC {
-    0 "hex2_test" platform_get_symbol \0 ;
-    0 "m1_test" platform_get_symbol \0 ;
-    0 "m2_test" platform_get_symbol \0 ;
+    "Running the script...\n" 1 platform_log ;
+    0 "run_script" platform_get_symbol \0 ;
+  } else {
+    "No script, running the usual payload...\n" 1 platform_log ;
+    if RUN_ASM {
+      "/init/test.asm" 0 "parse_asm" platform_get_symbol \1 ;
+    }
+
+    if RUN_C {
+      "/init/test2.c" 0 "parse_c" platform_get_symbol \1 ;
+    }
+
+    if RUN_MESCC {
+      0 "hex2_test" platform_get_symbol \0 ;
+      0 "m1_test" platform_get_symbol \0 ;
+      0 "m2_test" platform_get_symbol \0 ;
+    }
   }
 
   "Destroying Virtual File System... " 1 platform_log ;

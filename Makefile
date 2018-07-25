@@ -93,10 +93,13 @@ build/boot_empty.x86: build/bootloader.x86.exe build/empty.x86 build/zero_sect.b
 	cat $^ > $@
 
 # Asmg kernel
+build/script.g:
+	bash -c "echo -n" > $@
+
 build/full-asmg.asm: lib/multiboot.asm lib/kernel.asm lib/shutdown.asm lib/ar.asm lib/library.asm asmg/asmg.asm asmg/kernel-asmg.asm lib/top.asm
 	cat $^ | grep -v "^ *section " > $@
 
-build/initrd-asmg.ar: asmg/*.g test/test.hex2 test/test.m1 test/test.c test/test2.c test/test3.c test/first.h test/other.h test/test.asm build/END
+build/initrd-asmg.ar: asmg/*.g build/script.g test/test.hex2 test/test.m1 test/test.c test/test2.c test/test3.c test/first.h test/other.h test/test.asm build/END
 	-rm $@
 	$(AR) rcs $@ $^
 
