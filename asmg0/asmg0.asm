@@ -15,6 +15,8 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+	PROGRAM_SIZE equ 0x100000
+	SKIP_SIZE equ 0x1000000
 
 start_from_raw:
 start_from_multiboot:
@@ -22,36 +24,16 @@ start_from_multiboot:
 	;; Store the address of the script in ESI
 	mov esi, initrd
 
-	;; Delete comments and find the final "s"
-	mov ecx, esi
-find_s:
-	cmp BYTE [ecx], 0x23
-	je remove_comment
-	cmp BYTE [ecx], 0x73
-	je found_s
-	add ecx, 1
-	jmp find_s
-
-remove_comment:
-	mov BYTE [ecx], 0x20
-	add ecx, 1
-	cmp BYTE [ecx], 0x0a
-	jne remove_comment
-	jmp find_s
-
-	;; Store the position after the final "s" in EDI
-found_s:
-	add ecx, 1
-	mov edi, ecx
-
-	;; Allocate 64kB for the stack and align to 4 bytes
-	add edi, 0x10000
-	and edi, 0xfffffff0
+	;; Skip some space in order not to touch other data; align to
+	;; 4 and set the stack pointer
+	mov edi, esi
+	add edi, SKIP_SIZE
+	and edi, 0xffffff0
 	mov esp, edi
 
-	;; Fill 1MB of space with 0x90 (NOPs)
+	;; Fill the program with 0x90 (NOPs)
 	mov edx, edi
-	mov ecx, 0x100000
+	mov ecx, PROGRAM_SIZE
 nops_fill:
 	cmp ecx, 0
 	je nops_filled
@@ -59,8 +41,8 @@ nops_fill:
 	mov BYTE [edx], 0x90
 	add edx, 1
 	jmp nops_fill
-nops_filled:
 
+nops_filled:
 	;; Initialize the accumulator (EAX) to 0
 	mov eax, 0
 
@@ -79,6 +61,9 @@ compile_char:
 	je compile_loop
 	cmp bl, 0x20
 	je compile_loop
+
+	cmp bl, 0x23
+	je skip_comment
 
 	cmp bl, 0x43
 	je code_C
@@ -121,6 +106,13 @@ compile_loop:
 	jmp compile_char
 
 
+skip_comment:
+	cmp BYTE [esi], 0xa
+	je compile_loop
+	add esi, 1
+	jmp skip_comment
+
+
 	;; Process a digit into the accumulator
 code_hex_digit:
 	add bl, 10
@@ -147,9 +139,12 @@ code_S:
 code_s:
 	;; Check that we did not overflow the allocated 1MB
 	mov edx, ecx
-	add edx, 0x100000
+	add edx, PROGRAM_SIZE
 	cmp edi, edx
 	ja failure
+	;; Push the source end
+	add esi, 1
+	push esi
 	;; Call the compiled code
 	call ecx
 	;; call dump_code_and_die
