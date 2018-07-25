@@ -82,6 +82,10 @@ compile_char:
 
 	cmp bl, 0x43
 	je code_C
+	cmp bl, 0x47
+	je code_G
+	cmp bl, 0x4d
+	je code_M
 	cmp bl, 0x50
 	je code_P
 	cmp bl, 0x52
@@ -141,6 +145,12 @@ code_S:
 
 	;; Stop interpreting and call the code
 code_s:
+	;; Check that we did not overflow the allocated 1MB
+	mov edx, ecx
+	add edx, 0x100000
+	cmp edi, edx
+	ja failure
+	;; Call the compiled code
 	call ecx
 	;; call dump_code_and_die
 	jmp loop_forever
@@ -187,7 +197,7 @@ code_o:
 
 	;; Emit CALL
 code_C:
-	;; call target; push eax
+	;; call target
 	mov bl, 0xe8
 	call emit
 	mov ebx, eax
@@ -195,13 +205,40 @@ code_C:
 	sub ebx, edi
 	sub ebx, 4
 	call emit32
-	mov bl, 0x50
+	jmp compile_loop
+
+	;; Emit function prologue
+code_G:
+	;; push ebp; mov ebp, esp
+	mov bl, 0x55
+	call emit
+	mov bl, 0x89
+	call emit
+	mov bl, 0xe5
 	call emit
 	jmp compile_loop
 
-	;; Emit RET
+	;; Emit function epilogue
 code_R:
+	;; pop ebp; ret
+	mov bl, 0x5d
+	call emit
 	mov bl, 0xc3
+	call emit
+	jmp compile_loop
+
+	;; Retrieve function parameter
+code_M:
+	;; pop eax; push DWORD [ebp+eax*4+8]
+	mov bl, 0x58
+	call emit
+	mov bl, 0xff
+	call emit
+	mov bl, 0x74
+	call emit
+	mov bl, 0x85
+	call emit
+	mov bl, 0x08
 	call emit
 	jmp compile_loop
 

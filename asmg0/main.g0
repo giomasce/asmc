@@ -1,39 +1,32 @@
 
-# Emit code to setup the serial port
-z3f9P
-z00P
-o
-z3fbP
-z80P
-o
-z3f8P
-z03P
-o
-z3f9P
-z00P
-o
-z3fbP
-z03P
-o
-z3faP
-zc7P
-o
-z3fcP
-z0bP
-o
+# Emit the prologue for the main function
+G
 
-# Call "write a test character"
-z80Cp
+# Setup the serial port
+zff000 C
+
+# Write a couple of test characters
+z47P zfe000 C p
+z48P zfe000 C p
 
 # Return zero
 zPp
 R
 
-# 0x80: write a test character
-z80S
-z3f8P
-z70P
-o
+# 0xfe000: write a character to the serial port
+zfe000SG
+z3f8P z0P M o
+R
+
+# 0xff000: setup the serial port
+zff000SG
+z3f9P z00P o
+z3fbP z80P o
+z3f8P z03P o
+z3f9P z00P o
+z3fbP z03P o
+z3faP zc7P o
+z3fcP z0bP o
 R
 
 # Exit the compilation script
