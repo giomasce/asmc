@@ -2109,3 +2109,50 @@ fun m2_recursive_output 2 {
   i M2TLIST_NEXT take out m2_recursive_output ;
   out i M2TLIST_S take vfs_write_string ;
 }
+
+fun m2_compile 2 {
+  $files
+  $outfile
+  @files 1 param = ;
+  @outfile 0 param = ;
+
+  $ctx
+  @ctx 1 SIZEOF_M2CTX calloc = ;
+  $destination_file
+  @destination_file outfile vfs_open = ;
+  destination_file vfs_truncate ;
+  $i
+  @i 0 = ;
+  while i files vector_size < {
+    $name
+    @name files i vector_at = ;
+    $in
+    @in name vfs_open = ;
+    ctx M2CTX_GLOBAL_TOKEN take_addr ctx in ctx M2CTX_GLOBAL_TOKEN take name m2_read_all_tokens = ;
+    in vfs_close ;
+    @i i 1 + = ;
+  }
+  0 ctx M2CTX_GLOBAL_TOKEN take != "m2_compile: no or empty input file" assert_msg ;
+  ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take m2_reverse_list = ;
+  ctx m2_initialize_types ;
+  $output_list
+  @output_list ctx 0 m2_program = ;
+  destination_file "\n#Core program\n" vfs_write_string ;
+  output_list destination_file m2_recursive_output ;
+  destination_file "\n:ELF_data\n" vfs_write_string ;
+  destination_file "\n# Program global variables\n" vfs_write_string ;
+  ctx M2CTX_GLOBALS_LIST take destination_file m2_recursive_output ;
+  destination_file "\n# Program strings\n" vfs_write_string ;
+  ctx M2CTX_STRINGS_LIST take destination_file m2_recursive_output ;
+  destination_file "\n:ELF_end\n" vfs_write_string ;
+  destination_file vfs_close ;
+  ctx free ;
+}
+
+fun m2_test 0 {
+  $files
+  @files 4 vector_init = ;
+  files "/init/test3.c" strdup vector_push_back ;
+  files "/ram/compiled.m1" m2_compile ;
+  files free_vect_of_ptrs ;
+}
