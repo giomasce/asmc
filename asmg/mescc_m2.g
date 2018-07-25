@@ -1598,7 +1598,7 @@ fun m2_process_if 3 {
   out ret ;
 }
 
-fun m2_statement 3 {
+fun m2_process_for 3 {
   $ctx
   $out
   $function
@@ -1606,5 +1606,98 @@ fun m2_statement 3 {
   @out 1 param = ;
   @function 0 param = ;
 
-  
+  $number_string
+  @number_string ctx M2CTX_CURRENT_COUNT take m2_numerate_number = ;
+  ctx M2CTX_CURRENT_COUNT take_addr ctx M2CTX_CURRENT_COUNT take 1 + = ;
+
+  $nested_break_head
+  @nested_break_head ctx M2CTX_BREAK_TARGET_HEAD take = ;
+  $nested_break_func
+  @nested_break_func ctx M2CTX_BREAK_TARGET_FUNC take = ;
+  $nested_break_num
+  @nested_break_num ctx M2CTX_BREAK_TARGET_NUM take = ;
+  $nested_locals
+  @nested_locals ctx M2CTX_BREAK_LOCALS take = ;
+  ctx M2CTX_BREAK_LOCALS take_addr function M2TLIST_LOCALS take = ;
+  ctx M2CTX_BREAK_TARGET_HEAD take_addr "FOR_END_" = ;
+  ctx M2CTX_BREAK_TARGET_FUNC take_addr ctx M2CTX_CURRENT_FUNCTION take = ;
+  ctx M2CTX_BREAK_TARGET_NUM take_addr number_string = ;
+
+  @out ctx "# FOR_initialization_" out m2_emit = ;
+  @out ctx ctx M2CTX_CURRENT_FUNCTION take out m2_emit = ;
+  @out ctx "_" out m2_emit = ;
+  @out ctx number_string out m2_emit = ;
+  @out ctx "\n" out m2_emit = ;
+
+  ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
+
+  ctx "m2_process_for: missing (" "(" m2_require_match ;
+  if ";" ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take strcmp 0 == ! {
+    @out ctx out function m2_expression = ;
+  }
+
+  @out ctx ":FOR_" out m2_emit = ;
+  @out ctx ctx M2CTX_CURRENT_FUNCTION take out m2_emit = ;
+  @out ctx "_" out m2_emit = ;
+  @out ctx number_string out m2_emit = ;
+  @out ctx "\n" out m2_emit = ;
+
+  ctx "m2_process_for: missing first ;" ";" m2_require_match ;
+  @out ctx out function m2_expression = ;
+
+  @out ctx "TEST\nJUMP_EQ %FOR_END_" out m2_emit = ;
+  @out ctx ctx M2CTX_CURRENT_FUNCTION take out m2_emit = ;
+  @out ctx "_" out m2_emit = ;
+  @out ctx number_string out m2_emit = ;
+  @out ctx "\nJUMP %FOR_THEN_" out m2_emit = ;
+  @out ctx ctx M2CTX_CURRENT_FUNCTION take out m2_emit = ;
+  @out ctx "_" out m2_emit = ;
+  @out ctx number_string out m2_emit = ;
+  @out ctx "\n:FOR_ITER_" out m2_emit = ;
+  @out ctx ctx M2CTX_CURRENT_FUNCTION take out m2_emit = ;
+  @out ctx "_" out m2_emit = ;
+  @out ctx number_string out m2_emit = ;
+  @out ctx "\n" out m2_emit = ;
+
+  ctx "m2_process_for: missing second ;" ";" m2_require_match ;
+  @out ctx out function m2_expression = ;
+
+  @out ctx "JUMP %FOR_" out m2_emit = ;
+  @out ctx ctx M2CTX_CURRENT_FUNCTION take out m2_emit = ;
+  @out ctx "_" out m2_emit = ;
+  @out ctx number_string out m2_emit = ;
+  @out ctx "\n:FOR_THEN_" out m2_emit = ;
+  @out ctx ctx M2CTX_CURRENT_FUNCTION take out m2_emit = ;
+  @out ctx "_" out m2_emit = ;
+  @out ctx number_string out m2_emit = ;
+  @out ctx "\n" out m2_emit = ;
+
+  ctx "m2_process_for: missing )" ")" m2_require_match ;
+  @out ctx out function m2_statement = ;
+
+  @out ctx "JUMP %FOR_ITER_" out m2_emit = ;
+  @out ctx ctx M2CTX_CURRENT_FUNCTION take out m2_emit = ;
+  @out ctx "_" out m2_emit = ;
+  @out ctx number_string out m2_emit = ;
+  @out ctx "\n:FOR_END_" out m2_emit = ;
+  @out ctx ctx M2CTX_CURRENT_FUNCTION take out m2_emit = ;
+  @out ctx "_" out m2_emit = ;
+  @out ctx number_string out m2_emit = ;
+  @out ctx "\n" out m2_emit = ;
+
+  ctx M2CTX_BREAK_TARGET_HEAD take_addr nested_break_head = ;
+  ctx M2CTX_BREAK_TARGET_FUNC take_addr nested_break_func = ;
+  ctx M2CTX_BREAK_TARGET_NUM take_addr nested_break_num = ;
+  ctx M2CTX_BREAK_LOCALS take_addr nested_locals = ;
+
+  out ret ;
+}
+
+fun m2_statement 3 {
+  $ctx
+  $out
+  $function
+  @ctx 2 param = ;
+  @out 1 param = ;
+  @function 0 param = ;
 }
