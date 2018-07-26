@@ -32,7 +32,7 @@ qemu-system-i386 -hda build/boot_asmg.x86 -serial stdio -device isa-debug-exit |
 
 $M2_CMD
 
-if diff -u dump/ram/compiled.m1 m2_output.m1 ; then
+if colordiff -u dump/ram/compiled.m1 m2_output.m1 ; then
     echo "TEST SUCCESSFUL!"
 else
     echo "TEST FAILED..."
