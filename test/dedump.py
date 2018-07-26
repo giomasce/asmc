@@ -31,7 +31,7 @@ def main():
         line = line.strip()
         if line.startswith("--DUMP--"):
             filename = line.split(' ', 1)[1]
-            print("> {} dumped".format(filename))
+            print("> dumping {}".format(filename))
             assert filename[0] == '/'
             filename = filename[1:]
             line = sys.stdin.readline().strip()

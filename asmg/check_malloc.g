@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-const MALLOC_MAX_NUM 10000
+const MALLOC_MAX_NUM 100000
 const MALLOC_GUARD_SIZE 32
 const MALLOC_GUARD_BYTE 0x4d
 
@@ -52,7 +52,7 @@ fun malloc 1 {
   @ptr_end buf_end MALLOC_GUARD_SIZE + = ;
 
   # Bookkeeping
-  malloc_num MALLOC_MAX_NUM < "malloc: too much mallocations" assert_msg ;
+  malloc_num MALLOC_MAX_NUM < "malloc: too many mallocations" assert_msg ;
   malloc_data malloc_num 12 * + size = ;
   malloc_data malloc_num 12 * + 4 + buf_begin = ;
   malloc_data malloc_num 12 * + 8 + 0 = ;

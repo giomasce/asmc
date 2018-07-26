@@ -183,6 +183,7 @@ fun m2_collect_regular_string 1 {
 	@j j 2 + = ;
       } else {
         message i + string j + **c =c ;
+	@j j 1 + = ;
       }
     }
     @i i 1 + = ;
@@ -224,8 +225,8 @@ fun m2_collect_weird_string 1 {
 	hold k + 2 + table string j + **c 15 & + **c =c ;
 	@j j 1 + = ;
       }
-      @k k 3 + = ;
     }
+    @k k 3 + = ;
   }
   hold k + ' ' =c ;
   hold k + 1 + '0' =c ;
@@ -1008,7 +1009,7 @@ fun m2_primary_expr 3 {
     if '\\' ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take 1 + **c == {
       @out ctx ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take 1 + m2_escape_lookup m2_numerate_number out m2_emit = ;
     } else {
-      @out ctx ctx M2CTX_GLOBAL_TOKEN take 1 + **c m2_numerate_number out m2_emit = ;
+      @out ctx ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take 1 + **c m2_numerate_number out m2_emit = ;
     }
     @out ctx "\n" out m2_emit = ;
     ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
@@ -1463,7 +1464,7 @@ fun m2_bitwise 3 {
       @out ctx out function m2_pre_recursion = ;
       @out ctx out function m2_equality_expr = ;
       @out ctx out function m2_post_recursion = ;
-      @out ctx "XOR_eax_ebx\n" out m2_emit = ;
+      @out ctx "XOR_ebx_eax_into_eax\n" out m2_emit = ;
       @processed 1 = ;
     }
 
@@ -1881,7 +1882,7 @@ fun m2_recursive_statement 3 {
   }
   ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
 
-  if 0 ctx M2CTX_GLOBAL_TOKEN take M2TLIST_LOCALS take != {
+  if 0 function M2TLIST_LOCALS take != {
     $i
     @i function M2TLIST_LOCALS take = ;
     while frame i != {
@@ -2148,8 +2149,8 @@ fun m2_compile 2 {
   ctx M2CTX_STRINGS_LIST take destination_file m2_recursive_output ;
   destination_file "\n:ELF_end\n" vfs_write_string ;
   destination_file vfs_close ;
-  "Compiled program:\n" 1 platform_log ;
-  outfile dump_file ;
+  #"Compiled program:\n" 1 platform_log ;
+  #outfile dump_file ;
   ctx free ;
 }
 
