@@ -1101,7 +1101,7 @@ fun m2_post_recursion 3 {
 
   ctx M2CTX_CURRENT_TARGET take_addr ctx ctx M2CTX_CURRENT_TARGET take ctx M2CTX_LAST_TYPE take m2_promote_type = ;
   func M2TLIST_TEMPS take_addr func M2TLIST_TEMPS take 1 - = ;
-  @out ctx "POP_ebx\t#_common_recursion\n" out m2_emit = ;
+  @out ctx "POP_ebx\t# _common_recursion\n" out m2_emit = ;
   out ret ;
 }
 
