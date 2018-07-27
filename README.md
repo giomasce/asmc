@@ -511,3 +511,19 @@ maintaining the offset tables for all structures (be careful not to
 get confused between multiples of 4 and feel free to use hexadecimal
 if it makes things easier for you), but all in all if you know how to
 do things in C, converting to G is rather straightforward.
+
+## Ported programs
+
+This repository contains the following code ported to G:
+
+ * `mescc_hex2.g` is ported from `hex2_linker.c` in repository
+   <https://github.com/oriansj/mescc-tools>. It is synchronized with
+   commit `7ca979f660f53050cc34eb9930b9dc64ca7bd9c2`.
+
+ * `mescc_m1.g` is ported from `M1-macro.c` in repository
+   <https://github.com/oriansj/mescc-tools>. It is synchronized with
+   commit `7ca979f660f53050cc34eb9930b9dc64ca7bd9c2`.
+
+ * `mescc_m2.g` is ported from many files in repository
+   <https://github.com/oriansj/M2-Planet>. It is synchronized with
+   commit `64531def3b83992280349efd4876ff881e42d78a`.
