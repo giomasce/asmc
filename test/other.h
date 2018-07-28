@@ -15,16 +15,17 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-hello(bye) {
-  bye = 10 + 20 + 30;
-}
-
-empty() {
-  return sum(100, 200);
-}
-
-in_place_sum(x, y, z) {
-  *z = x + y;
-  char *z = x + '\n';
-  return &y;
+int sum_numbers(int x) {
+  int i;
+  int sum;
+  i = 0;
+  sum = 0;
+  while (i < 200) {
+    i = i + 1;
+    if (i == 1) continue;
+    sum = do_sum(sum, i);
+    int x;
+    if (i == 100) break;
+  }
+  return sum;
 }

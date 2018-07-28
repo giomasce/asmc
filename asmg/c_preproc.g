@@ -42,12 +42,14 @@ fun subst_destroy 1 {
 }
 
 const PPCTX_DEFINES 0
-const SIZEOF_PPCTX 4
+const PPCTX_BASE_PATH 4
+const SIZEOF_PPCTX 8
 
 fun ppctx_init 0 {
   $ptr
   @ptr SIZEOF_PPCTX malloc = ;
   ptr PPCTX_DEFINES take_addr map_init = ;
+  ptr PPCTX_BASE_PATH take_addr 0 = ;
   ptr ret ;
 }
 
@@ -65,7 +67,26 @@ fun ppctx_destroy 1 {
     @i i 1 + = ;
   }
   defs map_destroy ;
+  ptr PPCTX_BASE_PATH take free ;
   ptr free ;
+}
+
+fun ppctx_set_base_filename 2 {
+  $ctx
+  $filename
+  @ctx 1 param = ;
+  @filename 0 param = ;
+
+  @filename filename strdup = ;
+  # Take the dirname
+  $i
+  @i filename strlen = ;
+  filename **c '/' == "ppctx_set_base_filename: missing initial slash" assert_msg ;
+  while filename i + **c '/' != {
+    @i i 1 - = ;
+  }
+  filename i + 1 + 0 =c ;
+  ctx PPCTX_BASE_PATH take_addr filename = ;
 }
 
 fun give_back_char 0 {
@@ -532,6 +553,7 @@ fun preproc_process_include 4 {
     @filename tok 1 + strdup = ;
     filename filename strlen 1 - + '\0' =c ;
   }
+  @filename filename ctx PPCTX_BASE_PATH take prepend_to_str = ;
   "Including file " 1 platform_log ;
   filename 1 platform_log ;
   "\n" 1 platform_log ;

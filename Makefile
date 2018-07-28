@@ -99,7 +99,7 @@ build/script.g:
 build/full-asmg.asm: lib/multiboot.asm lib/kernel.asm lib/shutdown.asm lib/ar.asm lib/library.asm asmg/asmg.asm asmg/kernel-asmg.asm lib/top.asm
 	cat $^ | grep -v "^ *section " > $@
 
-build/initrd-asmg.ar: asmg/*.g build/script.g test/test.hex2 test/test.m1 test/test.c test/test2.c test/test3.c test/first.h test/other.h test/test.asm script-data/* build/END
+build/initrd-asmg.ar: asmg/*.g build/script.g test/test.hex2 test/test.m1 test/test.c test/first.h test/other.h test/test.asm script-data/* build/END
 	-rm $@
 	$(AR) rcs $@ $^
 

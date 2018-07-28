@@ -15,14 +15,6 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-test(x) {
-  int y;
-  y = x;
-  return x;
-}
-
-sum(x, y) {
-  int z;
-  z = x + y;
-  return z;
+int do_sum(int x, char y) {
+  return x+y;
 }

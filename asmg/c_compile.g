@@ -2678,12 +2678,16 @@ fun cctx_compile 1 {
 }
 
 fun parse_c 1 {
+  $filename
+  @filename 0 param = ;
+
   # Preprocessing
   $ctx
   @ctx ppctx_init = ;
+  ctx filename ppctx_set_base_filename ;
   $tokens
   @tokens 4 vector_init = ;
-  tokens ctx 0 param preproc_file ;
+  tokens ctx filename preproc_file ;
   @tokens tokens remove_whites = ;
   "Finished preprocessing\n" 1 platform_log ;
   $i

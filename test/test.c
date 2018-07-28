@@ -15,14 +15,87 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-/*#if a * (b + c)
-#if a + (b(c,d,e))
-#if a + (b((c,d),e))
-#if a + b[c]
-#endif
-#endif
-#endif
-#endif*/
+// C++ comment
+int glob2;   \
+int glob; /* C comment */
+
+#include <first.h>
+#include \
+"other.h"
+
+int main() {
+  "test string";
+  int a;
+  return sum_numbers(0);
+}
+
+#ifdef __UNDEF
+int f(char g(unsigned int)) {
+  return 0;
+}
+
+int test, test2;
+unsigned char x, y, z;
+char *ptr, arr[8];
+short arr2[3];
+char *arr3[10];
+char *(arr4[10]);
+char (*arr5)[10];
+
+void (*main_ptr)(int argc, char *argv[], char*);
+
+// Test from http://www.unixwiz.net/techtips/reading-cdecl.html
+char *(*(**foo [0][8])())[];
+
+int main(int other_name, char **);
+
+int main3(int argc, char **argv) {
+  char c;
+  int x1;
+  unsigned int x2;
+
+  c = 4;
+
+  while (0) {
+    30;
+  }
+
+  if (1) x2;
+  else {
+    if (2) {
+      return 3;
+    } else {
+      return 4;
+    }
+  }
+
+  /*2+2;
+  2-2;
+  2*2;
+  2/2;
+  2%2;*/
+
+  //2 < (2+2/2);
+
+  2+x1+x;
+
+  int arr[10];
+
+  /*x1;
+  c;
+  c+x1+x2;
+  //"hello";
+  main_ptr;*/
+
+  return 20+1+1;
+}
+
+int main(int, char**);
+
+int main2() {
+  short x;
+  return x;
+}
 
 #define OTHER_TEST 22
 TEST_TOK
@@ -58,40 +131,4 @@ included();
 not_included();
 #endif
 
-#include <first.h>
-#include \
-"other.h"
-
-main(argc, argv) {
-  int a1;
-  int aA;
-  int a_a;
-  int a;
-  a = glob + argc + 1;
-  int b;
-  b = argv || a;
-  int c;
-  c = "{hello}[there](world)";
-  if (b != 0) {
-    b = c + a * a;
-  }
-  return b;
-  int d;
-  d = 1;
-  return d;
-}
-
-test_if() {
-  int x;
-  if (x == 0) {
-    x = 1;
-  } else if (x != 2) {
-    x = 3;
-  } else {
-    x = 2;
-  }
-}
-
-// C++ comment
-int glob2;   \
-int glob; /* C comment */
+#endif

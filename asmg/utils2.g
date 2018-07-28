@@ -32,6 +32,25 @@ fun append_to_str 2 {
   news ret ;
 }
 
+fun prepend_to_str 2 {
+  $s1
+  $s2
+  @s1 0 param = ;
+  @s2 1 param = ;
+  $len1
+  $len2
+  @len1 s1 strlen = ;
+  @len2 s2 strlen = ;
+  $newlen
+  @newlen len1 len2 + 1 + = ;
+  $news
+  @news newlen malloc = ;
+  s1 news strcpy ;
+  s2 news len1 + strcpy ;
+  s2 free ;
+  news ret ;
+}
+
 fun free_vect_of_ptrs 1 {
   $vect
   @vect 0 param = ;
