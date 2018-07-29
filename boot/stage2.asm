@@ -21,61 +21,65 @@
   ;; their inclusion in a GPL-3+ project should be ok.
 
 stage2:
-mov si, str_stage2
-call print_string16
+  ;; Check if A20 is enabled and try a few methods to enable it
+  mov si, str_stage2
+  call print_string16
 
-mov si, str_test_a20
-call print_string16
-call check_a20
-cmp ax, 1
-je a20_is_enabled
-mov si, str_failed
-call print_string16
+  mov si, str_test_a20
+  call print_string16
+  call check_a20
+  cmp ax, 1
+  je a20_is_enabled
+  mov si, str_failed
+  call print_string16
 
-mov si, str_enabling_bios
-call print_string16
-call enable_a20_bios
+  mov si, str_enabling_bios
+  call print_string16
+  call enable_a20_bios
 
-mov si, str_test_a20
-call print_string16
-call check_a20
-cmp ax, 1
-je a20_is_enabled
-mov si, str_failed
-call print_string16
+  mov si, str_test_a20
+  call print_string16
+  call check_a20
+  cmp ax, 1
+  je a20_is_enabled
+  mov si, str_failed
+  call print_string16
 
-mov si, str_enabling_kbd
-call print_string16
-call enable_a20_kbd
+  mov si, str_enabling_kbd
+  call print_string16
+  call enable_a20_kbd
 
-mov si, str_test_a20
-call print_string16
-call check_a20
-cmp ax, 1
-je a20_is_enabled
-mov si, str_failed
-call print_string16
+  mov si, str_test_a20
+  call print_string16
+  call check_a20
+  cmp ax, 1
+  je a20_is_enabled
+  mov si, str_failed
+  call print_string16
 
-jmp error16
+  jmp error16
 
 a20_is_enabled:
-mov si, str_ok
-call print_string16
+  ;; A20 is enabled at last! Now let us tackle protected mode
+  mov si, str_ok
+  call print_string16
 
-mov si, str_enabling_protected
-call print_string16
+  mov si, str_enabling_protected
+  call print_string16
 
-mov si, gdt_size
-mov WORD [si], gdt_end
-sub WORD [si], gdt
-mov si, gdt_offset
-mov DWORD [si], gdt
-lgdt [gdt_desc]
+  ;; Prepare and load a very simple GDT
+  mov si, gdt_size
+  mov WORD [si], gdt_end
+  sub WORD [si], gdt
+  mov si, gdt_offset
+  mov DWORD [si], gdt
+  lgdt [gdt_desc]
 
-mov eax, cr0
-or al, 1
-mov cr0, eax
-jmp 0x8:enter_protected
+  ;; Enable protected mode (but not pagination)
+  mov eax, cr0
+  or al, 1
+  mov cr0, eax
+  jmp 0x8:enter_protected
 
   ;; The following snippet is taken from https://wiki.osdev.org/A20
 
@@ -216,40 +220,43 @@ ret
 bits 32
 
 enter_protected:
-mov ax, 0x10
-mov ds, ax
-mov es, ax
-mov fs, ax
-mov gs, ax
-mov ss, ax
+  ;; We are finally in protected mode, we just need to reload the other segments
+  mov ax, 0x10
+  mov ds, ax
+  mov es, ax
+  mov fs, ax
+  mov gs, ax
+  mov ss, ax
 
 	mov esi, str_other_side
 	call print_string
 
+  ;; Check the hard disk
 	call atapio_identify
 
 	mov esi, str_reading_payload
 	call print_string
 
-mov DWORD [atapio_buf], 0x100000
+  ;; And load the actual payload
+  mov DWORD [atapio_buf], 0x100000
 
 load_payload_loop:
-push DWORD [lba]
-call atapio_read_sector
-add esp, 4
-cmp eax, 0
-je payload_failed
+  push DWORD [lba]
+  call atapio_read_sector
+  add esp, 4
+  cmp eax, 0
+  je payload_failed
 
 	mov esi, str_dot
 	call print_string
 
-add DWORD [lba], 1
-add DWORD [atapio_buf], 512
+  add DWORD [lba], 1
+  add DWORD [atapio_buf], 512
 
-cmp DWORD [atapio_buf], 0x200000
-ja payload_loaded
+  cmp DWORD [atapio_buf], 0x200000
+  ja payload_loaded
 
-jmp load_payload_loop
+  jmp load_payload_loop
 
 payload_failed:
 	mov esi, str_ex
@@ -262,6 +269,7 @@ payload_failed:
 	call print_string
 
 payload_loaded:
+  ;; The payload is finally loaded and we can jump into it!
 	mov esi, str_newline
 	call print_string
 
@@ -272,19 +280,21 @@ payload_loaded:
 
 ;; Print string pointed by ESI
 print_string:
-mov al, [esi]
-inc esi
-or al, al
-jz print_string_ret
-call serial_write_char
-jmp print_string
+  mov al, [esi]
+  inc esi
+  or al, al
+  jz print_string_ret
+  call serial_write_char
+  jmp print_string
 print_string_ret:
-ret
+  ret
 
 error:
 	mov si, str_panic
-        call print_string
-        jmp $
+  call print_string
+error_loop:
+  hlt
+  jmp error_loop
 
 
 	;; void serial_write_char(al)
