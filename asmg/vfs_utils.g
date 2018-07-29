@@ -46,7 +46,7 @@ fun dump_hex_file 1 {
       ret ;
     }
     c dump_byte ;
-  }  
+  }
 }
 
 fun dump_debug 1 {

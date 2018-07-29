@@ -75,6 +75,10 @@ fun main 0 {
   "ramfs.g" platform_g_compile ;
   "done!\n" 1 platform_log ;
 
+  "Compiling atapio.g... " 1 platform_log ;
+  "atapio.g" platform_g_compile ;
+  "done!\n" 1 platform_log ;
+
   "Compiling vfs.g... " 1 platform_log ;
   "vfs.g" platform_g_compile ;
   "done!\n" 1 platform_log ;
