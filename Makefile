@@ -32,7 +32,10 @@ build/END:
 	touch $@
 
 # Bootloader
-build/bootloader.x86.exe: boot/bootloader.asm lib/atapio.asm
+build/bootloader.asm: boot/stage1.asm boot/stage2.asm lib/atapio.asm boot/boot_top.asm
+	cat $^ > $@
+
+build/bootloader.x86.exe: build/bootloader.asm
 	nasm -f bin -I lib/ -o $@ $<
 
 # Asmasm executable
