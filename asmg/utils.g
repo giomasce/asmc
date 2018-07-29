@@ -133,6 +133,69 @@ fun isspace 1 {
   0 ret ;
 }
 
+fun strlen 1 {
+  $ptr
+  @ptr 0 param = ;
+
+  $len
+  @len 0 = ;
+  while ptr **c 0 != {
+    @len len 1 + = ;
+    @ptr ptr 1 + = ;
+  }
+  len ret ;
+}
+
+fun strcmp 2 {
+  $a
+  $b
+  @a 1 param = ;
+  @b 0 param = ;
+
+  while a **c b **c == {
+    if a **c 0 == {
+      0 ret ;
+    }
+    @a a 1 + = ;
+    @b b 1 + = ;
+  }
+  if a **c b **c < {
+    1 ret ;
+  } else {
+    0 1 - ret ;
+  }
+}
+
+fun strcpy 2 {
+  $src
+  $dest
+  @src 1 param = ;
+  @dest 0 param = ;
+
+  while src **c 0 != {
+    dest src **c =c ;
+    @src src 1 + = ;
+    @dest dest 1 + = ;
+  }
+  dest 0 =c ;
+}
+
+fun memcpy 3 {
+  $n
+  $src
+  $dest
+  @n 2 param = ;
+  @src 1 param = ;
+  @dest 0 param = ;
+
+  while n 0 > {
+    dest src **c =c ;
+    @src src 1 + = ;
+    @dest dest 1 + = ;
+    @n n 1 - = ;
+  }
+}
+
 fun strtol 3 {
   $ptr
   $endptr

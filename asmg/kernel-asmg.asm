@@ -477,10 +477,10 @@ inw:
   in ax, dx
   ret
 
-str_inq:
-  db 'inq'
+str_ind:
+  db 'ind'
   db 0
-inq:
+ind:
   mov edx, [esp+4]
   mov eax, 0
   in eax, dx
@@ -504,10 +504,10 @@ outw:
   out dx, ax
   ret
 
-str_outq:
-  db 'outq'
+str_outd:
+  db 'outd'
   db 0
-outq:
+outd:
   mov eax, [esp+4]
   mov edx, [esp+8]
   out dx, eax
@@ -515,18 +515,6 @@ outq:
 
 str_itoa:
   db 'itoa'
-  db 0
-str_strcmp:
-  db 'strcmp'
-  db 0
-str_strcpy:
-  db 'strcpy'
-  db 0
-str_memcpy:
-  db 'memcpy'
-  db 0
-str_strlen:
-  db 'strlen'
   db 0
 
 
@@ -688,8 +676,8 @@ init_g_operations:
   add esp, 12
 
   push 1
-  push inq
-  push str_inq
+  push ind
+  push str_ind
   call add_symbol
   add esp, 12
 
@@ -706,8 +694,8 @@ init_g_operations:
   add esp, 12
 
   push 2
-  push outq
-  push str_outq
+  push outd
+  push str_outd
   call add_symbol
   add esp, 12
 
@@ -726,30 +714,6 @@ init_g_operations:
   push 1
   push itoa
   push str_itoa
-  call add_symbol
-  add esp, 12
-
-  push 2
-  push strcmp
-  push str_strcmp
-  call add_symbol
-  add esp, 12
-
-  push 2
-  push strcpy
-  push str_strcpy
-  call add_symbol
-  add esp, 12
-
-  push 3
-  push memcpy
-  push str_memcpy
-  call add_symbol
-  add esp, 12
-
-  push 1
-  push strlen
-  push str_strlen
   call add_symbol
   add esp, 12
 
