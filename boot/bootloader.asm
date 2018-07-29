@@ -212,11 +212,11 @@ serial_write_char16:
 
 
 str_hello:
-  db 'Hello, entered stage1!', 0xa, 0xd, 0
+  db 'Into stage1!', 0xa, 0xd, 0
 str_panic:
   db 'PANIC!', 0xa, 0xd, 0
 str_loading:
-  db 'Loading stage2', 0
+  db 'Loading', 0
 str_dot:
   db '.', 0
 str_newline:
@@ -224,9 +224,9 @@ str_newline:
 str_booting:
   db 'Booting stage2...', 0xa, 0xd, 0
 str_boot_disk:
-  db 'Booting from BIOS disk: ', 0
+  db 'Boot disk: ', 0
 str_check_13_exts:
-  db 'Checking for int 0x13 extensions...', 0xa, 0xd, 0
+  db 'Check int 0x13 exts...', 0xa, 0xd, 0
 
 times 510 - ($ - $$) db 0
 dw 0xAA55
@@ -555,7 +555,7 @@ db 0x00
 gdt_end:
 
 str_stage2:
-db 'Entered stage2!', 0xa, 0xd, 0
+db 'Into stage2!', 0xa, 0xd, 0
 str_test_a20:
 db 'Testing whether A20 is enabled... ', 0
 str_ok:
