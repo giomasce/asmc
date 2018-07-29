@@ -18,7 +18,7 @@
   ;; This file includes snippets taken from http://wiki.osdev.org; by
   ;; https://wiki.osdev.org/OSDev_Wiki:Copyrights they are to be
   ;; considered in the public domain, or that the CC0 license applies, so
-  ;; their inclusion in a GPL-3+ should be ok.
+  ;; their inclusion in a GPL-3+ project should be ok.
 
   bits 16
   org 0x7c00
