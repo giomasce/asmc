@@ -77,7 +77,7 @@ atapio_identify_loop:
   add dx, ATAPIO_PORT_COMMAND
   in al, dx
   cmp al, 0
-  je platform_panic
+  je atapio_identify_ret_false
   and al, 0x80
   cmp al, 0
   jne atapio_identify_loop
@@ -87,12 +87,12 @@ atapio_identify_loop:
   add dx, ATAPIO_PORT_LBA_MID
   in al, dx
   cmp al, 0
-  jne platform_panic
+  jne atapio_identify_ret_false
   mov dx, [atapio_base]
   add dx, ATAPIO_PORT_LBA_HI
   in al, dx
   cmp al, 0
-  jne platform_panic
+  jne atapio_identify_ret_false
 
   ;; Wait for drive to be ready
 atapio_identify_loop2:
@@ -109,6 +109,11 @@ atapio_identify_loop2:
 
   call atapio_in_sector
 
+  mov eax, 1
+  ret
+
+atapio_identify_ret_false:
+  mov eax, 0
   ret
 
 

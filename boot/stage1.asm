@@ -69,8 +69,8 @@ load_stage2:
   mov ah, 0x42
   int 0x13
   jc error16
-	mov si, str_dot
-	call print_string16
+  mov al, '.'
+	call print_char16
 
   mov di, [buf]
   add WORD [buf], 512
@@ -130,6 +130,7 @@ print_hex_char:
   call print_hex_nibble
   ret
 
+platform16_panic:
 error16:
 	mov si, str_panic
   call print_string16
@@ -199,15 +200,13 @@ lba:
   dd 0
 
 str_hello:
-  db 'Into stage1!', 0xa, 0xd, 0
+  db 'Into stage1!'
+str_newline:
+  db 0xa, 0xd, 0
 str_panic:
   db 'PANIC!', 0xa, 0xd, 0
 str_loading:
   db 'Loading stage2', 0
-str_dot:
-  db '.', 0
-str_newline:
-  db 0xa, 0xd, 0
 str_booting:
   db 'Booting stage2...', 0xa, 0xd, 0
 str_boot_disk:

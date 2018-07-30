@@ -20,11 +20,160 @@
   ;; considered in the public domain, or that the CC0 license applies, so
   ;; their inclusion in a GPL-3+ project should be ok.
 
+  ATAPIO_IDENTIFY_ADDR equ 0x700
+
+print_ata_string:
+  cmp si, bx
+  je print_ata_string_ret
+  push bx
+  mov al, [si+1]
+  call print_char16
+  mov al, [si]
+  call print_char16
+  add si, 2
+  pop bx
+  jmp print_ata_string
+
+compare_ata_string:
+  cmp si, bx
+  je compare_ata_string_ret_true
+  mov al, [si+1]
+  cmp al, [di]
+  jne compare_ata_string_ret_false
+  mov al, [si]
+  cmp al, [di+1]
+  jne compare_ata_string_ret_false
+  add si, 2
+  add di, 2
+  jmp compare_ata_string
+
+compare_ata_string_ret_true:
+  mov eax, 1
+  ret
+
+compare_ata_string_ret_false:
+  mov eax, 0
+  ret
+
+print_ata_string_ret:
+  ret
+
+identify_disk:
+  call atapio16_identify
+
+  cmp eax, 0
+  je identify_disk_not_found
+
+  ;; There is a disk!
+  mov si, str_found_disk
+  call print_string16
+
+  ;; Print the model number
+  mov si, str_model_number
+  call print_string16
+  mov si, ATAPIO_IDENTIFY_ADDR+2*27
+  mov bx, ATAPIO_IDENTIFY_ADDR+2*47
+  call print_ata_string
+  mov si, str_newline
+  call print_string16
+
+  ;; Print the serial number
+  mov si, str_serial_number
+  call print_string16
+  mov si, ATAPIO_IDENTIFY_ADDR+2*10
+  mov bx, ATAPIO_IDENTIFY_ADDR+2*20
+  call print_ata_string
+  mov si, str_newline
+  call print_string16
+
+  ;; Here we check that the model and serial number of the installed
+	;; disks (which should be unique for each disk ever manufactured) match
+	;; we an hardcoded one. In this way the content of the boot medium
+	;; (which may be, for example, a USB key, which cannot be read with the
+	;; simple ATA PIO driver) will be copied on the ATA hard disk only if
+	;; this is the actual intended test disk.
+
+  ;; Check the model number
+  mov si, ATAPIO_IDENTIFY_ADDR+2*27
+  mov bx, ATAPIO_IDENTIFY_ADDR+2*47
+  mov di, str_target_model
+  call compare_ata_string
+  push eax
+
+  ;; Check the serial number
+  mov si, ATAPIO_IDENTIFY_ADDR+2*10
+  mov bx, ATAPIO_IDENTIFY_ADDR+2*20
+  mov di, str_target_serial
+  call compare_ata_string
+
+  cmp eax, 0
+  pop eax
+  je identify_disk_ret
+  cmp eax, 0
+  je identify_disk_ret
+
+  ;; If we arrive here, that this is the target disk
+  mov si, str_target_disk
+  call print_string16
+
+identify_disk_ret:
+  ret
+
+identify_disk_not_found:
+  mov si, str_disk_not_found
+  call print_string16
+  ret
+
+str_found_disk:
+  db 'Found disk', 0xa, 0xd, 0
+str_model_number:
+  db 'Model number: ', 0
+str_serial_number:
+  db 'Serial number: ', 0
+str_disk_not_found:
+  db 'Disk not found', 0xa, 0xd, 0
+str_identifying_disks:
+  db 'Identifying disks...', 0xa, 0xd, 0
+str_target_disk:
+  db 'Target disk recognized!', 0xa, 0xd, 0
+str_target_model:
+  ;; db 'QEMU HARDDISK                           '
+  db 'TOSHIBA MK6034GAX                       '
+str_target_serial:
+  ;; db 'QM00001             '
+  db '           26B30592T'
+
+identify_disks:
+  mov DWORD [atapio16_buf], ATAPIO_IDENTIFY_ADDR
+
+  mov si, str_identifying_disks
+  call print_string16
+
+  mov WORD [atapio16_base], 0x1f0
+  mov BYTE [atapio16_master], 1
+  call identify_disk
+
+  mov WORD [atapio16_base], 0x1f0
+  mov BYTE [atapio16_master], 0
+  call identify_disk
+
+  mov WORD [atapio16_base], 0x170
+  mov BYTE [atapio16_master], 1
+  call identify_disk
+
+  mov WORD [atapio16_base], 0x170
+  mov BYTE [atapio16_master], 0
+  call identify_disk
+
+  ret
+
 stage2:
   mov si, str_stage2
   call print_string16
 
   call enable_a20
+
+  call identify_disks
 
   ;; Now let us tackle protected mode
   mov si, str_enabling_protected
@@ -66,6 +215,8 @@ enter_protected:
 
   ;; Check the hard disk
 	call atapio_identify
+  cmp eax, 0
+  je platform_panic
 
 	mov esi, str_reading_payload
 	call print_string
@@ -122,6 +273,7 @@ print_string:
 print_string_ret:
   ret
 
+platform_panic:
 error:
 	mov si, str_panic
   call print_string
@@ -148,10 +300,6 @@ serial_write_char:
 	out dx, al
 
 	ret
-
-
-platform_panic:
-	jmp error
 
 
 align 4
@@ -200,3 +348,5 @@ str_chainloading:
 db 'Chainloading payload, bye bye!', 0xa, 0
 str_ex:
 db 'X', 0
+str_dot:
+db '.', 0
