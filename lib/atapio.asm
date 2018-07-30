@@ -129,12 +129,39 @@ atapio_in_sector_loop:
   mov edx, atapio_buf
   mov edx, [edx]
   add edx, ecx
-  mov [edx], al
-  mov [edx+1], ah
+  mov [edx], ax
   add ecx, 2
   jmp atapio_in_sector_loop
 
 atapio_in_sector_ret:
+  ;; Discard four status reads
+  mov dx, [atapio_base]
+  add dx, ATAPIO_PORT_COMMAND
+  in al, dx
+  in al, dx
+  in al, dx
+  in al, dx
+
+  ret
+
+
+  ;; Write 512 bytes loading the from the buffer pointed by atapio_buf
+atapio_out_sector:
+  mov ecx, 0
+atapio_out_sector_loop:
+  cmp ecx, 512
+  je atapio_out_sector_ret
+  mov dx, [atapio_base]
+  add dx, ATAPIO_PORT_DATA
+  mov edx, atapio_buf
+  mov edx, [edx]
+  add edx, ecx
+  mov ax, [edx]
+  out dx, ax
+  add ecx, 2
+  jmp atapio_out_sector_loop
+
+atapio_out_sector_ret:
   ;; Discard four status reads
   mov dx, [atapio_base]
   add dx, ATAPIO_PORT_COMMAND
@@ -190,15 +217,14 @@ atapio_poll_ret_false:
   ret
 
 
-atapio_read_sector:
-  ;; Send READ SECTORS EXT
+atapio_out_lba48:
   mov dx, [atapio_base]
   add dx, ATAPIO_PORT_DRIVE
   mov ax, 0x40
   cmp BYTE [atapio_master], 0
-  jne atapio_read_sector_cont
+  jne atapio_out_lba48_cont
   mov ax, 0x50
-atapio_read_sector_cont:
+atapio_out_lba48_cont:
   out dx, al
   mov dx, [atapio_base]
   add dx, ATAPIO_PORT_SECTOR_COUNT
@@ -232,9 +258,14 @@ atapio_read_sector_cont:
   add dx, ATAPIO_PORT_LBA_HI
   mov al, [atapio_lba+2]
   out dx, al
+  ret
+
+atapio_read_sector:
+  call atapio_out_lba48
+
   mov dx, [atapio_base]
   add dx, ATAPIO_PORT_COMMAND
-  mov eax, 0x24
+  mov al, 0x24
   out dx, al
 
   ;; Poll and in
@@ -246,5 +277,26 @@ atapio_read_sector_cont:
   ret
 
 atapio_read_sector_ret_false:
+  mov eax, 0
+  ret
+
+
+atapio_write_sector:
+  call atapio_out_lba48
+
+  mov dx, [atapio_base]
+  add dx, ATAPIO_PORT_COMMAND
+  mov al, 0x34
+  out dx, al
+
+  ;; Poll and out
+  call atapio_poll
+  cmp eax, 0
+  je atapio_write_sector_ret_false
+  call atapio_out_sector
+  mov eax, 1
+  ret
+
+atapio_write_sector_ret_false:
   mov eax, 0
   ret
