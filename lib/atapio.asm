@@ -112,7 +112,7 @@ atapio_identify_loop2:
   ret
 
 
-  ;; Read 512 bytes and store them in atapio_buf
+  ;; Read 512 bytes and store them in the buffer pointed by atapio_buf
 atapio_in_sector:
   mov ecx, 0
 atapio_in_sector_loop:
@@ -141,7 +141,6 @@ atapio_in_sector_ret:
   ret
 
 
-  ;; bool atapio_poll()
 atapio_poll:
   mov dx, [atapio_base]
   add dx, ATAPIO_PORT_COMMAND
@@ -186,7 +185,6 @@ atapio_poll_ret_false:
   ret
 
 
-  ;; bool atapio_read_sector(int lba)
 atapio_read_sector:
   ;; Send READ SECTORS EXT
   mov dx, [atapio_base]
