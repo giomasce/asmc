@@ -24,10 +24,7 @@
   org 0x7c00
 
   SERIAL_PORT equ 0x3f8
-  atapio_buf16 equ 0x500
-  lba equ 0x504
-  boot_disk equ 0x508
-  dap equ 0x50c
+  boot_disk equ 0x500
 
 	cli
   mov ax, 0
@@ -66,20 +63,17 @@ segments_set_up:
   mov si, str_loading
   call print_string16
 
-  mov DWORD [atapio_buf16], 0x7e00
-  mov DWORD [lba], 1
-
 load_stage2:
   mov dl, [boot_disk]
-  mov bx, [atapio_buf16]
-  mov ax, [lba]
-  call read_sector
+  mov si, dap
+  mov ah, 0x42
+  int 0x13
   jc error16
 	mov si, str_dot
 	call print_string16
 
-  mov di, [atapio_buf16]
-  add WORD [atapio_buf16], 512
+  mov di, [buf]
+  add WORD [buf], 512
   add WORD [lba], 1
 
   ;; The constant 0x706f7473 ("stop" in little endian) is used
@@ -95,22 +89,6 @@ boot_stage2:
   call print_string16
 
   jmp stage2
-
-  ;; Drive number in DL, sector number in AX, destination in ES:BX
-  ;; Set CF on error
-read_sector:
-  mov byte [dap], 16
-  mov byte [dap+1], 0
-  mov word [dap+2], 1
-  mov word [dap+4], bx
-  mov word [dap+6], es
-  mov word [dap+8], ax
-  mov word [dap+10], 0
-  mov dword [dap+12], 0
-  mov si, dap
-  mov ah, 0x42
-  int 0x13
-  ret
 
   ;; Print character in AL
 print_char16:
@@ -210,13 +188,22 @@ serial_write_char16:
 
 	ret
 
+dap:
+  dd 0x00010010
+buf:
+  dw 0x7e00
+  dw 0
+lba:
+  dw 1
+  dw 0
+  dd 0
 
 str_hello:
   db 'Into stage1!', 0xa, 0xd, 0
 str_panic:
   db 'PANIC!', 0xa, 0xd, 0
 str_loading:
-  db 'Loading', 0
+  db 'Loading stage2', 0
 str_dot:
   db '.', 0
 str_newline:
