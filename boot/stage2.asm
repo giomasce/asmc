@@ -21,203 +21,32 @@
   ;; their inclusion in a GPL-3+ project should be ok.
 
 stage2:
-  ;; Check if A20 is enabled and try a few methods to enable it
   mov si, str_stage2
   call print_string16
 
-  mov si, str_test_a20
-  call print_string16
-  call check_a20
-  cmp ax, 1
-  je a20_is_enabled
-  mov si, str_failed
-  call print_string16
+  call enable_a20
 
-  mov si, str_enabling_bios
-  call print_string16
-  call enable_a20_bios
-
-  mov si, str_test_a20
-  call print_string16
-  call check_a20
-  cmp ax, 1
-  je a20_is_enabled
-  mov si, str_failed
-  call print_string16
-
-  mov si, str_enabling_kbd
-  call print_string16
-  call enable_a20_kbd
-
-  mov si, str_test_a20
-  call print_string16
-  call check_a20
-  cmp ax, 1
-  je a20_is_enabled
-  mov si, str_failed
-  call print_string16
-
-  jmp error16
-
-a20_is_enabled:
-  ;; A20 is enabled at last! Now let us tackle protected mode
-  mov si, str_ok
-  call print_string16
-
+  ;; Now let us tackle protected mode
   mov si, str_enabling_protected
   call print_string16
 
   ;; Prepare and load a very simple GDT
+  cli
   mov si, gdt_size
   mov WORD [si], gdt_end
   sub WORD [si], gdt
+  sub WORD [si], 1
   mov si, gdt_offset
   mov DWORD [si], gdt
   lgdt [gdt_desc]
 
   ;; Enable protected mode (but not pagination)
   mov eax, cr0
-  or al, 1
+  or eax, 1
   mov cr0, eax
   jmp 0x8:enter_protected
 
-  ;; The following snippet is taken from https://wiki.osdev.org/A20
-
-; Function: check_a20
-;
-; Purpose: to check the status of the a20 line in a completely self-contained state-preserving way.
-;          The function can be modified as necessary by removing push's at the beginning and their
-;          respective pop's at the end if complete self-containment is not required.
-;
-; Returns: 0 in ax if the a20 line is disabled (memory wraps around)
-;          1 in ax if the a20 line is enabled (memory does not wrap around)
-
-check_a20:
-    pushf
-    push ds
-    push es
-    push di
-    push si
-
-  ;; cli
-
-    xor ax, ax ; ax = 0
-    mov es, ax
-
-    not ax ; ax = 0xFFFF
-    mov ds, ax
-
-    mov di, 0x0500
-    mov si, 0x0510
-
-    mov al, byte [es:di]
-    push ax
-
-    mov al, byte [ds:si]
-    push ax
-
-    mov byte [es:di], 0x00
-    mov byte [ds:si], 0xFF
-
-    cmp byte [es:di], 0xFF
-
-    pop ax
-    mov byte [ds:si], al
-
-    pop ax
-    mov byte [es:di], al
-
-    mov ax, 0
-    je check_a20__exit
-
-    mov ax, 1
-
-check_a20__exit:
-    pop si
-    pop di
-    pop es
-    pop ds
-    popf
-
-    ret
-
-enable_a20_kbd:
-        ;cli
-
-        call    a20wait
-        mov     al,0xAD
-        out     0x64,al
-
-        call    a20wait
-        mov     al,0xD0
-        out     0x64,al
-
-        call    a20wait2
-        in      al,0x60
-        push    eax
-
-        call    a20wait
-        mov     al,0xD1
-        out     0x64,al
-
-        call    a20wait
-        pop     eax
-        or      al,2
-        out     0x60,al
-
-        call    a20wait
-        mov     al,0xAE
-        out     0x64,al
-
-        call    a20wait
-        ;sti
-        ret
-
-a20wait:
-        in      al,0x64
-        test    al,2
-        jnz     a20wait
-        ret
-
-
-a20wait2:
-        in      al,0x64
-        test    al,1
-        jz      a20wait2
-        ret
-
-enable_a20_bios:
-mov     ax,2403h                ;--- A20-Gate Support ---
-int     15h
-jb      a20_ns                  ;INT 15h is not supported
-cmp     ah,0
-jnz     a20_ns                  ;INT 15h is not supported
-
-mov     ax,2402h                ;--- A20-Gate Status ---
-int     15h
-jb      a20_failed              ;couldn't get status
-cmp     ah,0
-jnz     a20_failed              ;couldn't get status
-
-cmp     al,1
-jz      a20_activated           ;A20 is already activated
-
-mov     ax,2401h                ;--- A20-Gate Activate ---
-int     15h
-jb      a20_failed              ;couldn't activate the gate
-cmp     ah,0
-jnz     a20_failed              ;couldn't activate the gate
-
-a20_ns:
-a20_failed:
-mov al, 0
-ret
-
-a20_activated:
-mov al, 1
-ret
-
-bits 32
+  bits 32
 
 enter_protected:
   ;; We are finally in protected mode, we just need to reload the other segments
@@ -231,6 +60,10 @@ enter_protected:
 	mov esi, str_other_side
 	call print_string
 
+  ;; Setup the ATA PIO driver
+  mov WORD [atapio_base], 0x1f0
+  mov BYTE [atapio_master], 1
+
   ;; Check the hard disk
 	call atapio_identify
 
@@ -241,9 +74,9 @@ enter_protected:
   mov DWORD [atapio_buf], 0x100000
 
 load_payload_loop:
-  push DWORD [lba]
+  mov eax, [lba]
+  mov [atapio_lba], eax
   call atapio_read_sector
-  add esp, 4
   cmp eax, 0
   je payload_failed
 
@@ -353,21 +186,12 @@ gdt_end:
 
 str_stage2:
 db 'Into stage2!', 0xa, 0xd, 0
-str_test_a20:
-db 'Testing whether A20 is enabled... ', 0
-str_ok:
-db 'OK!', 0xa, 0xd, 0
-str_failed:
-db 'failed', 0xa, 0xd, 0
-str_enabling_bios:
-db 'Enabling A20 via BIOS...', 0xa, 0xd, 0
-str_enabling_kbd:
-db 'Enabling A20 via keyboard controller...', 0xa, 0xd, 0
+
 str_enabling_protected:
 db 'Enabling protected mode, see you on the other side!', 0xa, 0xd, 0
-
 str_other_side:
 db 'Hello there on the other side!', 0xa, 0
+
 str_reading_payload:
 db 'Loading payload', 0
 str_failed_payload:

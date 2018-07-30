@@ -32,7 +32,10 @@ build/END:
 	touch $@
 
 # Bootloader
-build/bootloader.asm: boot/stage1.asm boot/stage2.asm lib/atapio.asm boot/boot_top.asm
+build/atapio16.asm: lib/atapio.asm
+	cat $^ | sed -e 's|atapio_|atapio16_|g' -e 's|ATAPIO_|ATAPIO16_|g' > $@
+
+build/bootloader.asm: boot/stage1.asm boot/a20.asm boot/strings.asm build/atapio16.asm boot/stage2.asm lib/atapio.asm boot/boot_top.asm
 	cat $^ > $@
 
 build/bootloader.x86.exe: build/bootloader.asm

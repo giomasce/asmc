@@ -262,10 +262,10 @@ fun atapio_test_drive 2 {
   $a
   @a base master atapio_init = ;
   if a atapio_print_identify {
-    "First sector:\n" 1 platform_log ;
+    "First 16 bytes: " 1 platform_log ;
     $data
     @data a 0 atapio_read_sect = ;
-    data 512 dump_mem ;
+    data 16 dump_mem ;
     data free ;
     "\n" 1 platform_log ;
   }
