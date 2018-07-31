@@ -2157,7 +2157,7 @@ fun m2_compile 2 {
 fun m2_test 0 {
   $files
   @files 4 vector_init = ;
-  files "/init/test3.c" strdup vector_push_back ;
+  files "/init/test_mes.c" strdup vector_push_back ;
   files "/ram/compiled.m1" m2_compile ;
   files free_vect_of_ptrs ;
 
