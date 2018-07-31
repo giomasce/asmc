@@ -110,7 +110,7 @@ boot_stage2:
 print_char16:
   call serial_write_char16
   mov ah, 0x0e
-  mov bx, 0x00
+  mov bh, 0x00
   mov bl, 0x07
   int 0x10
   ret
