@@ -28,6 +28,8 @@
 
   PART1_START_LBA equ 0x7c00 + 0x1be + 8
   PART1_LENGTH equ 0x7c00 + 0x1be + 12
+  PART2_START_LBA equ 0x7c00 + 0x1ce + 8
+  PART2_LENGTH equ 0x7c00 + 0x1ce + 12
 
 	cli
   mov ax, 0

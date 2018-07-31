@@ -223,34 +223,25 @@ enter_protected:
 
   ;; And load the actual payload
   mov DWORD [atapio_buf], 0x100000
+  mov eax, [PART2_START_LBA]
+  mov [atapio_lba], eax
 
 load_payload_loop:
-  mov eax, [lba]
-  mov [atapio_lba], eax
+  cmp DWORD [PART2_LENGTH], 0
+  je payload_loaded
+  sub DWORD [PART2_LENGTH], 1
+
   call atapio_read_sector
   cmp eax, 0
-  je payload_failed
+  je platform_panic
 
 	mov esi, str_dot
 	call print_string
 
-  add DWORD [lba], 1
+  add DWORD [atapio_lba], 1
   add DWORD [atapio_buf], 512
 
-  cmp DWORD [atapio_buf], 0x200000
-  ja payload_loaded
-
   jmp load_payload_loop
-
-payload_failed:
-	mov esi, str_ex
-	call print_string
-
-	mov esi, str_newline
-	call print_string
-
-	mov esi, str_failed_payload
-	call print_string
 
 payload_loaded:
   ;; The payload is finally loaded and we can jump into it!
