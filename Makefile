@@ -25,9 +25,6 @@ endif
 build:
 	mkdir build
 
-build/zero_sect.bin:
-	dd if=/dev/zero bs=512 count=1 of=$@
-
 build/END:
 	touch $@
 
@@ -41,6 +38,12 @@ build/bootloader.asm: boot/stage1.asm boot/a20.asm boot/strings.asm build/atapio
 build/bootloader.x86.exe: build/bootloader.asm
 	nasm -f bin -I lib/ -o $@ $<
 
+build/bootloader.x86.mbr: build/bootloader.x86.exe
+	head -c 512 $< > $@
+
+build/bootloader.x86.stage2: build/bootloader.x86.exe
+	tail -c +513 $< > $@
+
 # Asmasm executable
 build/asmasm_linux.asm: asmasm/asmasm_linux.asm lib/library.asm asmasm/asmasm.asm
 	cat $^ > $@
@@ -53,9 +56,6 @@ build/platform_linux.o: lib/platform_linux.c lib/platform.h
 
 build/asmasm_linux: build/asmasm_linux.o build/platform_linux.o
 	gcc -m32 -Og -g -o $@ $^
-
-build/boot_asmasm.x86: build/bootloader.x86.exe build/asmasm.x86 build/zero_sect.bin
-	cat $^ > $@
 
 # Asmasm kernel
 build/full-asmasm.asm: lib/multiboot.asm lib/kernel.asm lib/shutdown.asm lib/ar.asm lib/library.asm asmasm/asmasm.asm asmasm/kernel-asmasm.asm lib/top.asm
@@ -76,6 +76,10 @@ endif
 build/asmasm.x86: build/asmasm.x86.exe build/initrd-asmasm.ar
 	cat $^ > $@
 
+build/boot_asmasm.x86: build/bootloader.x86.mbr build/bootloader.x86.stage2 build/asmasm.x86
+	./create_partition.py $^ > $@
+
+
 # Empty kernel
 build/full-empty.asm: lib/multiboot.asm lib/kernel.asm lib/shutdown.asm lib/ar.asm lib/library.asm empty/kernel-empty.asm lib/top.asm
 	cat $^ | grep -v "^ *section " > $@
@@ -95,8 +99,8 @@ endif
 build/empty.x86: build/empty.x86.exe build/initrd-empty.ar
 	cat $^ > $@
 
-build/boot_empty.x86: build/bootloader.x86.exe build/empty.x86 build/zero_sect.bin
-	cat $^ > $@
+build/boot_empty.x86: build/bootloader.x86.mbr build/bootloader.x86.stage2 build/empty.x86
+	./create_partition.py $^ > $@
 
 # Asmg kernel
 build/script.g:
@@ -120,8 +124,8 @@ endif
 build/asmg.x86: build/asmg.x86.exe build/initrd-asmg.ar
 	cat $^ > $@
 
-build/boot_asmg.x86: build/bootloader.x86.exe build/asmg.x86 build/zero_sect.bin
-	cat $^ > $@
+build/boot_asmg.x86: build/bootloader.x86.mbr build/bootloader.x86.stage2 build/asmg.x86
+	./create_partition.py $^ > $@
 
 # Asmg0 kernel
 build/full-asmg0.asm: lib/multiboot.asm asmg0/asmg0.asm lib/shutdown.asm asmg0/debug.asm lib/top.asm
@@ -138,8 +142,8 @@ endif
 build/asmg0.x86: build/asmg0.x86.exe asmg0/main.g0
 	cat $^ > $@
 
-build/boot_asmg0.x86: build/bootloader.x86.exe build/asmg0.x86 build/zero_sect.bin
-	cat $^ > $@
+build/boot_asmg0.x86: build/bootloader.x86.mbr build/bootloader.x86.stage2 build/asmg0.x86
+	./create_partition.py $^ > $@
 
 # GRUB ISO image
 build/boot/boot/grub/grub.cfg: boot/grub.cfg
