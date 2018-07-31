@@ -30,6 +30,10 @@
   PART1_LENGTH equ 0x7c00 + 0x1be + 12
   PART2_START_LBA equ 0x7c00 + 0x1ce + 8
   PART2_LENGTH equ 0x7c00 + 0x1ce + 12
+  PART3_START_LBA equ 0x7c00 + 0x1de + 8
+  PART3_LENGTH equ 0x7c00 + 0x1de + 12
+  PART4_START_LBA equ 0x7c00 + 0x1ee + 8
+  PART4_LENGTH equ 0x7c00 + 0x1ee + 12
 
 	cli
   mov ax, 0
@@ -76,10 +80,7 @@ load_stage2:
   je boot_stage2
   sub DWORD [PART1_LENGTH], 1
 
-  mov dl, [boot_disk]
-  mov si, dap
-  mov ah, 0x42
-  int 0x13
+  call read_sect
   jc error16
   mov al, '.'
 	call print_char16
@@ -89,6 +90,13 @@ load_stage2:
   add WORD [lba], 1
 
   jmp load_stage2
+
+read_sect:
+  mov dl, [boot_disk]
+  mov si, dap
+  mov ah, 0x42
+  int 0x13
+  ret
 
 boot_stage2:
 	mov si, str_newline

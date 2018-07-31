@@ -151,12 +151,12 @@ atapio_out_sector:
 atapio_out_sector_loop:
   cmp ecx, 512
   je atapio_out_sector_ret
-  mov dx, [atapio_base]
-  add dx, ATAPIO_PORT_DATA
   mov edx, atapio_buf
   mov edx, [edx]
   add edx, ecx
   mov ax, [edx]
+  mov dx, [atapio_base]
+  add dx, ATAPIO_PORT_DATA
   out dx, ax
   add ecx, 2
   jmp atapio_out_sector_loop
@@ -213,6 +213,44 @@ atapio_poll:
   ret
 
 atapio_poll_ret_false:
+  mov eax, 0
+  ret
+
+
+atapio_wait:
+  mov dx, [atapio_base]
+  add dx, ATAPIO_PORT_COMMAND
+
+  ;; Ignore the first four reads
+  in al, dx
+  in al, dx
+  in al, dx
+  in al, dx
+
+  in al, dx
+  mov cl, al
+
+  ;; Error if ERR bit is set
+  and al, 0x01
+  cmp al, 0
+  jne atapio_wait_ret_false
+
+  ;; Error if DF bit is set
+  mov al, cl
+  and al, 0x20
+  cmp al, 0
+  jne atapio_wait_ret_false
+
+  ;; Reloop if BSY is set
+  mov al, cl
+  and al, 0x80
+  cmp al, 0
+  jne atapio_wait
+
+  mov eax, 1
+  ret
+
+atapio_wait_ret_false:
   mov eax, 0
   ret
 
@@ -294,7 +332,14 @@ atapio_write_sector:
   cmp eax, 0
   je atapio_write_sector_ret_false
   call atapio_out_sector
-  mov eax, 1
+
+  ;; Flush cache
+  mov dx, [atapio_base]
+  add dx, ATAPIO_PORT_COMMAND
+  mov al, 0xea
+  out dx, al
+  call atapio_wait
+
   ret
 
 atapio_write_sector_ret_false:

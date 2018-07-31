@@ -21,6 +21,8 @@
   ;; their inclusion in a GPL-3+ project should be ok.
 
   ATAPIO_IDENTIFY_ADDR equ 0x700
+  MBR_BUF equ 0x7c00
+  COPY_BUF equ 0x900
 
 print_ata_string:
   cmp si, bx
@@ -33,6 +35,10 @@ print_ata_string:
   add si, 2
   pop bx
   jmp print_ata_string
+
+print_ata_string_ret:
+  ret
+
 
 compare_ata_string:
   cmp si, bx
@@ -55,8 +61,45 @@ compare_ata_string_ret_false:
   mov eax, 0
   ret
 
-print_ata_string_ret:
+
+copy_partition:
+  ;; If the partition starts at zero, ignore it (it is an unused slot)
+  mov ecx, [eax]
+  cmp ecx, 0
+  je copy_partition_ret
+
+  mov ebx, [eax+4]
+
+  ;; Set up pointers
+  mov [atapio16_lba], ecx
+  mov DWORD [atapio16_buf], COPY_BUF
+  mov [lba], ecx
+  mov WORD [buf], COPY_BUF
+
+copy_partition_loop:
+  ;; Check for termination
+  cmp ebx, 0
+  je copy_partition_ret
+  sub ebx, 1
+
+  ;; Copy one sector
+  push ebx
+  call read_sect
+  jc error16
+  call atapio16_write_sector
+  cmp eax, 0
+  je error16
+  pop ebx
+
+  ;; Update LBAs
+  add DWORD [atapio16_lba], 1
+  add DWORD [lba], 1
+
+  jmp copy_partition_loop
+
+copy_partition_ret:
   ret
+
 
 identify_disk:
   call atapio16_identify
@@ -116,6 +159,31 @@ identify_disk:
   mov si, str_target_disk
   call print_string16
 
+  ;; Re-read the boot MBR (because at some point we have modified it)
+  mov DWORD [lba], 0
+  mov WORD [buf], MBR_BUF
+  call read_sect
+
+  ;; Write it on the target disk
+  mov DWORD [atapio16_lba], 0
+  mov DWORD [atapio16_lba], MBR_BUF
+  call atapio16_write_sector
+  cmp eax, 0
+  je error16
+
+  mov eax, PART1_START_LBA
+  call copy_partition
+
+  mov eax, PART2_START_LBA
+  call copy_partition
+
+  mov eax, PART3_START_LBA
+  call copy_partition
+
+  mov eax, PART4_START_LBA
+  call copy_partition
+
+
 identify_disk_ret:
   ret
 
@@ -137,10 +205,10 @@ str_identifying_disks:
 str_target_disk:
   db 'Target disk recognized!', 0xa, 0xd, 0
 str_target_model:
-  ;; db 'QEMU HARDDISK                           '
+  ;;  db 'QEMU HARDDISK                           '
   db 'TOSHIBA MK6034GAX                       '
 str_target_serial:
-  ;; db 'QM00001             '
+  ;; db 'QM00002             '
   db '           26B30592T'
 
 identify_disks:
