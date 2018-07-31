@@ -177,6 +177,7 @@ fun main 0 {
       0 "hex2_test" platform_get_symbol \0 ;
       0 "m1_test" platform_get_symbol \0 ;
       0 "m2_test" platform_get_symbol \0 ;
+      0 "m2_test_full_compilation" platform_get_symbol \0 ;
     }
   }
 

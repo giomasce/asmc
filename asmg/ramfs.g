@@ -39,7 +39,7 @@ fun ramfile_truncate 1 {
   @file 0 param = ;
   file RAMFILE_DATA take vector_destroy ;
   file RAMFILE_DATA take_addr 4 vector_init = ;
-  file RAMFILE_SIZE take_addr 0 ;
+  file RAMFILE_SIZE take_addr 0 = ;
 }
 
 fun ramfile_read 2 {

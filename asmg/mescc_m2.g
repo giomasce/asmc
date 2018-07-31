@@ -2163,3 +2163,35 @@ fun m2_test 0 {
 
   "/ram/compiled.m1" dump_debug ;
 }
+
+fun m2_test_full_compilation 0 {
+  $files
+  @files 4 vector_init = ;
+  files "/init/test_mes.c" strdup vector_push_back ;
+  files "/ram/compiled.m1" m2_compile ;
+  files free_vect_of_ptrs ;
+  "/ram/compiled.m1" dump_file ;
+
+  @files 4 vector_init = ;
+  files "/init/defs.m1" strdup vector_push_back ;
+  files "/ram/compiled.m1" strdup vector_push_back ;
+  files "/ram/assembled.hex2" m1_assemble ;
+  files free_vect_of_ptrs ;
+
+  @files 4 vector_init = ;
+  files "/ram/assembled.hex2" strdup vector_push_back ;
+  $data
+  @data files hex2_link = ;
+
+  "Executing code compiled with M2-Planet...\n" 1 platform_log ;
+  $arg
+  @arg "_main" = ;
+  $res
+  @res @arg 1 data \2 = ;
+  "It returned " 1 platform_log ;
+  res itoa 1 platform_log ;
+  "\n" 1 platform_log ;
+
+  data free ;
+  files free_vect_of_ptrs ;
+}

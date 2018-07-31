@@ -32,6 +32,7 @@ fun hex2_is_alpha 1 {
   if 'a' c <= c 'z' <= && { 1 ret ; }
   if 'A' c <= c 'Z' <= && { 1 ret ; }
   if '0' c <= c '9' <= && { 1 ret ; }
+  if '_' c == { 1 ret ; }
   0 ret ;
 }
 
@@ -71,12 +72,12 @@ fun hex2_read 2 {
     if accept_white c hex2_is_white ! || {
       if c '#' == {
         fd hex2_discard_line ;
-	if accept_white {
-	  ' ' ret ;
-	}
+        if accept_white {
+          ' ' ret ;
+        }
       } else {
         c hex2_is_valid c hex2_is_white || "hex2_read: illegal input char" assert_msg ;
-	c ret ;
+        c ret ;
       }
     }
   }
@@ -106,11 +107,11 @@ fun hex2_read_token 2 {
   @size 0 = ;
   @cap 10 = ;
   @res cap malloc = ;
-  
+
   while 1 {
     if size cap == {
       @cap cap 2 * = ;
-      @res res cap realloc = ;
+      @res cap res realloc = ;
     }
     $c
     @c fd 1 hex2_read_or_fail = ;
