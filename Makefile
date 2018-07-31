@@ -6,14 +6,14 @@ ifeq ($(UNAME),Linux)
 FOUND := 1
 AR=ar
 USE_NASM=0
-all: build build/asmasm_linux build/boot_asmasm.x86 build/boot_empty.x86 build/boot_asmg.x86 build/boot_asmg0.x86 build/boot.iso
+all: build script-data/placeholder build/asmasm_linux build/boot_asmasm.x86 build/boot_empty.x86 build/boot_asmg.x86 build/boot_asmg0.x86 build/boot.iso
 endif
 
 ifeq ($(UNAME),Darwin)
 FOUND := 1
 AR=gar
 USE_NASM=1
-all: build build/boot_asmasm.x86 build/boot_empty.x86 build/boot_asmg.x86 build/boot_asmg0.x86
+all: build script-data/placeholder build/boot_asmasm.x86 build/boot_empty.x86 build/boot_asmg.x86 build/boot_asmg0.x86
 endif
 
 ifeq ($(FOUND),0)
@@ -23,7 +23,13 @@ endif
 
 # Trivial things
 build:
-	mkdir build
+	mkdir $@
+
+script-data:
+	mkdir $@
+
+script-data/placeholder: script-data
+	touch $@
 
 build/END:
 	touch $@
