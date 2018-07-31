@@ -26,6 +26,9 @@
   SERIAL_PORT equ 0x3f8
   boot_disk equ 0x500
 
+  PART1_START_LBA equ 0x7c00 + 0x1be + 8
+  PART1_LENGTH equ 0x7c00 + 0x1be + 12
+
 	cli
   mov ax, 0
   mov ds, ax
@@ -63,7 +66,14 @@ segments_set_up:
   mov si, str_loading
   call print_string16
 
+  mov eax, [PART1_START_LBA]
+  mov [lba], eax
+
 load_stage2:
+  cmp DWORD [PART1_LENGTH], 0
+  je boot_stage2
+  sub DWORD [PART1_LENGTH], 1
+
   mov dl, [boot_disk]
   mov si, dap
   mov ah, 0x42
@@ -76,10 +86,6 @@ load_stage2:
   add WORD [buf], 512
   add WORD [lba], 1
 
-  ;; The constant 0x706f7473 ("stop" in little endian) is used
-  ;; to mark when to stop loading
-  cmp DWORD [di], 0x706f7473
-  je boot_stage2
   jmp load_stage2
 
 boot_stage2:
@@ -190,13 +196,14 @@ serial_write_char16:
 	ret
 
 dap:
-  dd 0x00010010
+  db 16
+  db 0
+  dw 1
 buf:
   dw 0x7e00
   dw 0
 lba:
-  dw 1
-  dw 0
+  dd 0
   dd 0
 
 str_hello:
