@@ -529,10 +529,13 @@ fun preproc_process_define 4 {
   }
 
   if ctx PPCTX_DEFINES take ident map_has {
+    "Redefining " 1 platform_log ;
+    ident 1 platform_log ;
+    "\n" 1 platform_log ;
     $subst
-    @subst ctx PPCTX_DEFINES take tok map_at = ;
+    @subst ctx PPCTX_DEFINES take ident map_at = ;
     subst subst_destroy ;
-    ctx PPCTX_DEFINES take tok map_erase ;
+    ctx PPCTX_DEFINES take ident map_erase ;
   }
   ctx PPCTX_DEFINES take ident subst map_set ;
 }
