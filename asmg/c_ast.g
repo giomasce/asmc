@@ -55,6 +55,7 @@ fun ast_is_operator 1 {
     str "--" strcmp 0 == ||
     str "." strcmp 0 == ||
     str "->" strcmp 0 == ||
+    str "defined" strcmp 0 == ||
     str "+" strcmp 0 == ||
     str "-" strcmp 0 == ||
     str "!" strcmp 0 == ||
@@ -101,12 +102,13 @@ fun ast_get_priority 1 {
   if str "[" strcmp 0 == { 1 ret ; }
   if str "." strcmp 0 == { 1 ret ; }
   if str "->" strcmp 0 == { 1 ret ; }
+  if str "defined_PRE" strcmp 0 == { 2 ret ; }
   if str "++_PRE" strcmp 0 == { 2 ret ; }
   if str "--_PRE" strcmp 0 == { 2 ret ; }
   if str "+_PRE" strcmp 0 == { 2 ret ; }
   if str "-_PRE" strcmp 0 == { 2 ret ; }
-  if str "!" strcmp 0 == { 2 ret ; }
-  if str "~" strcmp 0 == { 2 ret ; }
+  if str "!_PRE" strcmp 0 == { 2 ret ; }
+  if str "~_PRE" strcmp 0 == { 2 ret ; }
   if str "*_PRE" strcmp 0 == { 2 ret ; }
   if str "&_PRE" strcmp 0 == { 2 ret ; }
   if str "sizeof" strcmp 0 == { 2 ret ; }
@@ -156,12 +158,13 @@ fun ast_get_ass_direction 1 {
   if str "[" strcmp 0 == { 1 ret ; }
   if str "." strcmp 0 == { 1 ret ; }
   if str "->" strcmp 0 == { 1 ret ; }
+  if str "defined_PRE" strcmp 0 == { 0 ret ; }
   if str "++_PRE" strcmp 0 == { 0 ret ; }
   if str "--_PRE" strcmp 0 == { 0 ret ; }
   if str "+_PRE" strcmp 0 == { 0 ret ; }
   if str "-_PRE" strcmp 0 == { 0 ret ; }
-  if str "!" strcmp 0 == { 0 ret ; }
-  if str "~" strcmp 0 == { 0 ret ; }
+  if str "!_PRE" strcmp 0 == { 0 ret ; }
+  if str "~_PRE" strcmp 0 == { 0 ret ; }
   if str "*_PRE" strcmp 0 == { 0 ret ; }
   if str "&_PRE" strcmp 0 == { 0 ret ; }
   if str "sizeof" strcmp 0 == { 0 ret ; }
@@ -330,6 +333,18 @@ fun ast_parse 3 {
             # and push a placeholder operand in the operand stack
             $found
             @found 0 = ;
+            if tok "defined" strcmp 0 == {
+              @tok "defined_PRE" = ;
+              @found 1 = ;
+            }
+            if tok "!" strcmp 0 == {
+              @tok "!_PRE" = ;
+              @found 1 = ;
+            }
+            if tok "~" strcmp 0 == {
+              @tok "~_PRE" = ;
+              @found 1 = ;
+            }
             if tok "++" strcmp 0 == {
               @tok "++_PRE" = ;
               @found 1 = ;
@@ -389,7 +404,7 @@ fun ast_parse 3 {
   operator_stack operand_stack ast_rewind_stack ;
   operand_stack vector_size 1 == "Internal error" assert_msg ;
   operator_stack vector_size 1 == "Internal error" assert_msg ;
-  operator_stack vector_pop_back tmp == assert ;
+  operator_stack vector_pop_back tmp == "Internal error" assert_msg ;
   tmp free ;
 
   $res

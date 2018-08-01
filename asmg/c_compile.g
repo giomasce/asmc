@@ -296,30 +296,6 @@ fun cctx_reset_types 1 {
   ctx cctx_init_types ;
 }
 
-fun is_valid_identifier 1 {
-  $ident
-  @ident 0 param = ;
-
-  #"is_valid_identifier for " 1 platform_log ;
-  #ident 1 platform_log ;
-  #"\n" 1 platform_log ;
-
-  $len
-  @len ident strlen = ;
-  if len 0 == { 0 ret ; }
-  $i
-  @i 0 = ;
-  while i len < {
-    if ident i + **c get_char_type 3 != { 0 ret ; }
-    @i i 1 + = ;
-  }
-  $first
-  @first ident **c = ;
-  if first '0' >= first '9' <= && { 0 ret ; }
-  #"is_valid_identifier: return true\n" 1 platform_log ;
-  1 ret ;
-}
-
 fun cctx_get_type 2 {
   $ctx
   $type_idx

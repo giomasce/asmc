@@ -19,6 +19,30 @@ $fd_in
 $read_char
 $char_given_back
 
+fun is_valid_identifier 1 {
+  $ident
+  @ident 0 param = ;
+
+  #"is_valid_identifier for " 1 platform_log ;
+  #ident 1 platform_log ;
+  #"\n" 1 platform_log ;
+
+  $len
+  @len ident strlen = ;
+  if len 0 == { 0 ret ; }
+  $i
+  @i 0 = ;
+  while i len < {
+    if ident i + **c get_char_type 3 != { 0 ret ; }
+    @i i 1 + = ;
+  }
+  $first
+  @first ident **c = ;
+  if first '0' >= first '9' <= && { 0 ret ; }
+  #"is_valid_identifier: return true\n" 1 platform_log ;
+  1 ret ;
+}
+
 const SUBST_IS_FUNCTION 0   # bool
 const SUBST_PARAMETERS 4    # vector of char*
 const SUBST_REPLACEMENT 8   # vector of char*
@@ -330,7 +354,7 @@ fun discard_until_newline 2 {
     @cont tokens iptr ** vector_at "\n" strcmp 0 != = ;
     if cont {
       iptr iptr ** 1 + = ;
-      iptr ** tokens vector_size < "discard_white_token: stream end was found" assert_msg ;
+      iptr ** tokens vector_size < "discard_until_newline: stream end was found" assert_msg ;
     }
   }
 }
@@ -475,15 +499,33 @@ fun preproc_process_define 4 {
   @subst subst_init = ;
   subst SUBST_IS_FUNCTION take_addr is_func = ;
   if is_func {
-    # TODO
-    0 assert ;
-  } else {
-    while tok "\n" strcmp 0 != {
-      subst SUBST_REPLACEMENT take tok strdup vector_push_back ;
-      iptr iptr ** 1 + = ;
-      iptr ** intoks vector_size < "preproc_process_define: end of stream found" assert_msg ;
+    intoks iptr discard_white_tokens ;
+    @tok intoks iptr ** vector_at = ;
+    if tok ")" strcmp 0 != {
+      $cont
+      @cont 1 = ;
+      while cont {
+        subst SUBST_PARAMETERS take tok strdup vector_push_back ;
+        intoks iptr discard_white_tokens ;
+        @tok intoks iptr ** vector_at = ;
+        if tok ")" strcmp 0 == {
+          @cont 0 = ;
+        } else {
+          tok "," strcmp 0 == "preproc_process_define: , or ) expected" assert_msg ;
+        }
+        intoks iptr discard_white_tokens ;
+        @tok intoks iptr ** vector_at = ;
+      }
+    } else {
+      intoks iptr discard_white_tokens ;
       @tok intoks iptr ** vector_at = ;
     }
+  }
+  while tok "\n" strcmp 0 != {
+    subst SUBST_REPLACEMENT take tok strdup vector_push_back ;
+    iptr iptr ** 1 + = ;
+    iptr ** intoks vector_size < "preproc_process_define: end of stream found" assert_msg ;
+    @tok intoks iptr ** vector_at = ;
   }
 
   if ctx PPCTX_DEFINES take ident map_has {
@@ -576,15 +618,49 @@ fun preproc_eval 2 {
 
   if ast AST_TYPE take 0 == {
     # Operand
-    if defs name map_has {
-      # TODO
+    if name is_valid_identifier {
+      if defs name map_has {
+        $subst
+        @subst defs name map_at = ;
+        subst SUBST_IS_FUNCTION take ! "preproc_eval: not supported 1" assert_msg ;
+        subst SUBST_REPLACEMENT take vector_size 1 == "preproc_eval: not supported 2" assert_msg ;
+        subst SUBST_REPLACEMENT take 1 vector_at atoi ret ;
+      } else {
+        0 ret ;
+      }
     } else {
-      0 ret ;
+      name atoi ret ;
     }
   } else {
     # Operator
-    ast AST_TYPE take 1 == assert ;
-    # TODO
+    ast AST_TYPE take 1 == "preproc_eval: error 1" assert_msg ;
+
+    if name "&&" strcmp 0 == {
+      ctx ast AST_LEFT take preproc_eval ctx ast AST_RIGHT take preproc_eval && ret ;
+    }
+
+    if name "||" strcmp 0 == {
+      ctx ast AST_LEFT take preproc_eval ctx ast AST_RIGHT take preproc_eval || ret ;
+    }
+
+    if name "==" strcmp 0 == {
+      ctx ast AST_LEFT take preproc_eval ctx ast AST_RIGHT take preproc_eval == ret ;
+    }
+
+    if name "defined_PRE" strcmp 0 == {
+      $child
+      @child ast AST_RIGHT take = ;
+      child AST_TYPE take 0 == "preproc_eval: not an identifier" assert_msg ;
+      $ident
+      @ident child AST_NAME take = ;
+      defs ident map_has ret ;
+    }
+
+    if name "!_PRE" strcmp 0 == {
+      ctx ast AST_RIGHT take preproc_eval ! ret ;
+    }
+
+    0 "preproc_eval: unsupported operation" assert_msg ;
   }
 }
 
@@ -696,7 +772,24 @@ fun preproc_process_elif 5 {
   @iptr 1 param = ;
   @if_stack 0 param = ;
 
-  0 "preproc_process_elif: not implemented" assert_msg ;
+  $ast
+  @ast intoks iptr "\n" ast_parse = ;
+  #ast ast_dump ;
+  $value
+  @value ctx ast preproc_eval ! ! = ;
+  ast ast_destroy ;
+
+  $state
+  if_stack vector_size 1 > "preproc_process_elif: unmatched else" assert_msg ;
+  @state if_stack vector_pop_back = ;
+  @state state 1 + = ;
+  if state 2 > {
+    @state 2 = ;
+  }
+  if state 1 == value ! && {
+    @state 0 = ;
+  }
+  if_stack state vector_push_back ;
 }
 
 fun preproc_process_if 5 {
@@ -714,13 +807,11 @@ fun preproc_process_if 5 {
   $ast
   @ast intoks iptr "\n" ast_parse = ;
   #ast ast_dump ;
+  $value
+  @value ctx ast preproc_eval ! ! = ;
   ast ast_destroy ;
-  ctx ast preproc_eval ;
 
-  # FIXME
-  if_stack 0 vector_push_back ;
-
-  0 "preproc_process_if: not implemented" assert_msg ;
+  if_stack value vector_push_back ;
 }
 
 fun preproc_process_error 4 {
