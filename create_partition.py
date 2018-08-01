@@ -5,10 +5,6 @@
 # Copyright (C) 2018 Giovanni Mascellani <gio@debian.org>
 # https://gitlab.com/giomasce/asmc
 
-# This file was ported from files in M2-Planet,
-# which have the following copyright notices:
-# Copyright (C) 2016 Jeremiah Orians
-
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or

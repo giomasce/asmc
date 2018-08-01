@@ -139,6 +139,10 @@ fun vfsinst_mount 3 {
   @point 1 param = ;
   @mount 0 param = ;
 
+  "Mounting file system /" 1 platform_log ;
+  point 1 platform_log ;
+  "\n" 1 platform_log ;
+
   $mounts
   @mounts vfsinst VFSINST_MOUNTS take = ;
   mounts point mount map_set ;
@@ -177,6 +181,7 @@ fun vfsinst_open 2 {
   @mountpath mountname slash_pos + 1 + = ;
 
   $mount
+  mount vfsinst VFSINST_MOUNTS take mountname map_has "vfsinst_open: mount point does not exist" assert_msg ;
   @mount vfsinst VFSINST_MOUNTS take mountname map_at = ;
   $res
   @res mount mountpath mount MOUNT_OPEN take \2 = ;
@@ -192,6 +197,7 @@ fun vfs_init 0 {
   @vfs vfsinst_init = ;
   vfs "init" initmount_init vfsinst_mount ;
   vfs "ram" rammount_init vfsinst_mount ;
+  vfs mbr_vfs_scan ;
 }
 
 fun vfs_destroy 0 {

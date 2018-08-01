@@ -50,6 +50,13 @@ build/bootloader.x86.mbr: build/bootloader.x86.exe
 build/bootloader.x86.stage2: build/bootloader.x86.exe
 	tail -c +513 $< > $@
 
+# Diskfs image
+build/diskfs.list: script-data/*
+	(cd script-data/ ; find -type f) | cut -c3- | sed -e 's|\(.*\)|\1 script-data/\1|' > $@
+
+build/diskfs.img: build/diskfs.list
+	xargs ./create_diskfs.py < $< > $@
+
 # Asmasm executable
 build/asmasm_linux.asm: asmasm/asmasm_linux.asm lib/library.asm asmasm/asmasm.asm
 	cat $^ > $@
@@ -115,7 +122,7 @@ build/script.g:
 build/full-asmg.asm: lib/multiboot.asm lib/kernel.asm lib/shutdown.asm lib/ar.asm lib/library.asm asmg/asmg.asm asmg/kernel-asmg.asm lib/top.asm
 	cat $^ | grep -v "^ *section " > $@
 
-build/initrd-asmg.ar: asmg/*.g build/script.g test/test.hex2 test/test.m1 test/test.c test/first.h test/other.h test/test_mes.c test/test.asm script-data/* build/END
+build/initrd-asmg.ar: asmg/*.g build/script.g test/test.hex2 test/test.m1 test/test.c test/first.h test/other.h test/test_mes.c test/test.asm build/END
 	-rm $@
 	$(AR) rcs $@ $^
 
@@ -130,7 +137,7 @@ endif
 build/asmg.x86: build/asmg.x86.exe build/initrd-asmg.ar
 	cat $^ > $@
 
-build/boot_asmg.x86: build/bootloader.x86.mbr build/bootloader.x86.stage2 build/asmg.x86
+build/boot_asmg.x86: build/bootloader.x86.mbr build/bootloader.x86.stage2 build/asmg.x86 build/diskfs.img
 	./create_partition.py $^ > $@
 
 # Asmg0 kernel

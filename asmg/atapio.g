@@ -41,6 +41,13 @@ fun atapio_init 2 {
   a ret ;
 }
 
+fun atapio_duplicate 1 {
+  $a
+  @a 0 param = ;
+
+  a ATAPIO_BASE take a ATAPIO_MASTER take atapio_init ret ;
+}
+
 fun atapio_destroy 1 {
   $a
   @a 0 param = ;
@@ -212,7 +219,8 @@ fun atapio_print_identify 1 {
   # data 512 dump_mem ;
   # "\n" 1 platform_log ;
 
-  "Model number: " 1 platform_log ;
+  "Found disk!\n" 1 platform_log ;
+  "  Model number: " 1 platform_log ;
   $i
   @i 27 = ;
   while i 47 < {
@@ -222,7 +230,7 @@ fun atapio_print_identify 1 {
   }
   "\n" 1 platform_log ;
 
-  "Serial number: " 1 platform_log ;
+  "  Serial number: " 1 platform_log ;
   $i
   @i 10 = ;
   while i 20 < {
@@ -232,7 +240,7 @@ fun atapio_print_identify 1 {
   }
   "\n" 1 platform_log ;
 
-  "Firmware revision: " 1 platform_log ;
+  "  Firmware revision: " 1 platform_log ;
   $i
   @i 23 = ;
   while i 27 < {
@@ -244,7 +252,7 @@ fun atapio_print_identify 1 {
 
   $size
   @size data 2 60 * + ** = ;
-  "Drive has " 1 platform_log ;
+  "  Size: " 1 platform_log ;
   size itoa 1 platform_log ;
   " sectors\n" 1 platform_log ;
 

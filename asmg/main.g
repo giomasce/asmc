@@ -15,12 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-const COMPILE_ASM 1
+const COMPILE_ASM 0
 const COMPILE_C 1
-const COMPILE_MESCC 1
-const RUN_ASM 1
+const COMPILE_MESCC 0
+const RUN_ASM 0
 const RUN_C 1
-const RUN_MESCC 1
+const RUN_MESCC 0
 
 const USE_TRIVIAL_MALLOC 0
 const USE_SIMPLE_MALLOC 0
@@ -71,12 +71,20 @@ fun main 0 {
   "utils2.g" platform_g_compile ;
   "done!\n" 1 platform_log ;
 
+  "Compiling atapio.g... " 1 platform_log ;
+  "atapio.g" platform_g_compile ;
+  "done!\n" 1 platform_log ;
+
+  "Compiling diskfs.g... " 1 platform_log ;
+  "diskfs.g" platform_g_compile ;
+  "done!\n" 1 platform_log ;
+
   "Compiling ramfs.g... " 1 platform_log ;
   "ramfs.g" platform_g_compile ;
   "done!\n" 1 platform_log ;
 
-  "Compiling atapio.g... " 1 platform_log ;
-  "atapio.g" platform_g_compile ;
+  "Compiling mbr.g... " 1 platform_log ;
+  "mbr.g" platform_g_compile ;
   "done!\n" 1 platform_log ;
 
   "Compiling vfs.g... " 1 platform_log ;
@@ -145,9 +153,9 @@ fun main 0 {
   0 platform_allocate itoa 1 platform_log ;
   "\n" 1 platform_log ;
 
-  "Initializing Virtual File System... " 1 platform_log ;
+  "Initializing Virtual File System...\n" 1 platform_log ;
   0 "vfs_init" platform_get_symbol \0 ;
-  "done!\n" 1 platform_log ;
+  "Virtual File System initialized!\n" 1 platform_log ;
 
   # Determine if there is an actual script
   $script_file
