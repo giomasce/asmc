@@ -52,7 +52,7 @@ build/bootloader.x86.stage2: build/bootloader.x86.exe
 
 # Diskfs image
 build/diskfs.list: script-data/*
-	(cd script-data/ ; find -type f) | cut -c3- | sed -e 's|\(.*\)|\1 script-data/\1|' > $@
+	(cd script-data/ ; find . -type f) | cut -c3- | sed -e 's|\(.*\)|\1 script-data/\1|' > $@
 
 build/diskfs.img: build/diskfs.list
 	xargs ./create_diskfs.py < $< > $@
