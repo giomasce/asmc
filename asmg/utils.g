@@ -15,6 +15,69 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+fun resolve_symbol 3 {
+  $loc
+  $nameptr
+  $offptr
+  @loc 2 param = ;
+  @nameptr 1 param = ;
+  @offptr 0 param = ;
+
+  $i
+  @i 0 = ;
+  offptr 0 = ;
+  nameptr "<unknown>" = ;
+  while i __symbol_num < {
+    $this_loc
+    @this_loc __symbol_locs i 4 * + ** = ;
+    $this_name
+    @this_name __symbol_names i __max_symbol_name_len * + = ;
+    if this_loc loc <= this_loc offptr ** >= && {
+      offptr this_loc = ;
+      nameptr this_name = ;
+    }
+    @i i 1 + = ;
+  }
+  offptr loc offptr ** - = ;
+}
+
+fun dump_frame 1 {
+  $frame_ptr
+  @frame_ptr 0 param = ;
+
+  if frame_ptr 0 == {
+    ret ;
+  }
+
+  $prev_frame_ptr
+  $ret_addr
+  @prev_frame_ptr frame_ptr ** = ;
+  @ret_addr frame_ptr 4 + ** = ;
+  $name
+  $off
+  ret_addr @name @off resolve_symbol ;
+
+  "Frame pointer: " 1 platform_log ;
+  frame_ptr itoa 1 platform_log ;
+  "; previous frame pointer: " 1 platform_log ;
+  prev_frame_ptr itoa 1 platform_log ;
+  "; return address: " 1 platform_log ;
+  ret_addr itoa 1 platform_log ;
+  " (" 1 platform_log ;
+  name 1 platform_log ;
+  "+" 1 platform_log ;
+  off itoa 1 platform_log ;
+  ")\n" 1 platform_log ;
+
+  prev_frame_ptr dump_frame ;
+}
+
+fun dump_stacktrace 0 {
+  $frame_ptr
+  @frame_ptr __frame_ptr = ;
+  frame_ptr dump_frame ;
+}
+
 $assert_pos
 
 fun set_assert_pos 1 {
@@ -23,6 +86,8 @@ fun set_assert_pos 1 {
 
 fun assert 1 {
   if 0 param ! {
+    "\nASSERTION FAILED\n" 1 platform_log ;
+    dump_stacktrace ;
     platform_panic ;
   }
 }
@@ -34,6 +99,7 @@ fun assert_msg 2 {
     "\n" 1 platform_log ;
     0 param 1 platform_log ;
     "\n" 1 platform_log ;
+    dump_stacktrace ;
     platform_panic ;
   }
 }

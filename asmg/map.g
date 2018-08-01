@@ -59,10 +59,10 @@ fun map_at 2 {
   @key 0 param = ;
   $idx
   @idx map key _map_find_idx = ;
-  idx 0xffffffff != assert ;
+  idx 0xffffffff != "map_at: key does not exist" assert_msg ;
   $addr
   @addr map idx vector_at_addr = ;
-  addr MAP_ELEM_PRESENT take assert ;
+  addr MAP_ELEM_PRESENT take "map_at: element is not present" assert_msg ;
   addr MAP_ELEM_VALUE take ret ;
 }
 
@@ -73,7 +73,7 @@ fun map_at_idx 2 {
   @idx 0 param = ;
   $addr
   @addr map idx vector_at_addr = ;
-  addr MAP_ELEM_PRESENT take assert ;
+  addr MAP_ELEM_PRESENT take "map_at_idx: element is not present" assert_msg ;
   addr MAP_ELEM_VALUE take ret ;
 }
 
@@ -84,7 +84,7 @@ fun map_key_at_idx 2 {
   @idx 0 param = ;
   $addr
   @addr map idx vector_at_addr = ;
-  addr MAP_ELEM_PRESENT take assert ;
+  addr MAP_ELEM_PRESENT take "map_key_at_idx: element is not present" assert_msg ;
   addr MAP_ELEM_KEY take ret ;
 }
 

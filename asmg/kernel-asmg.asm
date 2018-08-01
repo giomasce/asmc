@@ -194,12 +194,19 @@ start:
   call platform_log
   add esp, 8
 
+  ;; Set EBP to zero, so that stack traces originating from the G code
+  ;; are cut
+  push ebp
+  mov ebp, 0
+
   ;; Call main
   push 0
   push str_main
   call platform_get_symbol
   add esp, 8
   call eax
+
+  pop ebp
 
   ret
 
@@ -517,6 +524,59 @@ str_itoa:
   db 'itoa'
   db 0
 
+str_frame_ptr:
+  db '__frame_ptr'
+  db 0
+frame_ptr:
+  mov eax, ebp
+  ret
+
+str_max_symbol_name_len:
+  db '__max_symbol_name_len'
+  db 0
+max_symbol_name_len:
+  mov eax, MAX_SYMBOL_NAME_LEN
+  ret
+
+str_symbol_table_len:
+  db '__symbol_table_len'
+  db 0
+symbol_table_len:
+  mov eax, SYMBOL_TABLE_LEN
+  ret
+
+str_symbol_num:
+  db '__symbol_num'
+  db 0
+symbol_num_func:
+  mov eax, symbol_num
+  mov eax, [eax]
+  ret
+
+str_symbol_names:
+  db '__symbol_names'
+  db 0
+symbol_names_func:
+  mov eax, symbol_names_ptr
+  mov eax, [eax]
+  ret
+
+str_symbol_locs:
+  db '__symbol_locs'
+  db 0
+symbol_locs_func:
+  mov eax, symbol_locs_ptr
+  mov eax, [eax]
+  ret
+
+str_symbol_arities:
+  db '__symbol_arities'
+  db 0
+symbol_arities_func:
+  mov eax, symbol_arities_ptr
+  mov eax, [eax]
+  ret
+
 
 init_g_operations:
   push 2
@@ -714,6 +774,48 @@ init_g_operations:
   push 1
   push itoa
   push str_itoa
+  call add_symbol
+  add esp, 12
+
+  push 0
+  push frame_ptr
+  push str_frame_ptr
+  call add_symbol
+  add esp, 12
+
+  push 0
+  push max_symbol_name_len
+  push str_max_symbol_name_len
+  call add_symbol
+  add esp, 12
+
+  push 0
+  push symbol_table_len
+  push str_symbol_table_len
+  call add_symbol
+  add esp, 12
+
+  push 0
+  push symbol_num_func
+  push str_symbol_num
+  call add_symbol
+  add esp, 12
+
+  push 0
+  push symbol_names_func
+  push str_symbol_names
+  call add_symbol
+  add esp, 12
+
+  push 0
+  push symbol_locs_func
+  push str_symbol_locs
+  call add_symbol
+  add esp, 12
+
+  push 0
+  push symbol_arities_func
+  push str_symbol_arities
   call add_symbol
   add esp, 12
 
