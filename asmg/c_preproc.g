@@ -819,6 +819,11 @@ fun preproc_file 3 {
         }
         @processed 1 = ;
       }
+      if tok "pragma" strcmp 0 == processed ! && {
+        # pragma-s are silently discarded
+        intoks @i discard_until_newline ;
+        @processed 1 = ;
+      }
       if tok "if" strcmp 0 == processed ! && {
         ctx tokens intoks @i if_stack preproc_process_if ;
         @including if_stack is_including = ;
