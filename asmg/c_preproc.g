@@ -185,7 +185,10 @@ fun get_token 0 {
   @cont 1 = ;
   while cont {
     $c
-    @c get_char = ;
+    @c '\r' = ;
+    while c '\r' == {
+      @c get_char = ;
+    }
     @cont c 0xffffffff != = ;
     if cont {
       $save_char
@@ -447,10 +450,10 @@ fun process_token_function 5 {
     $tok
     @tok repl i vector_at = ;
     if tok "#" strcmp 0 == {
-      0 assert ;
+      0 "process_token_function: # unsupported" assert_msg ;
     } else {
       if tok "##" strcmp 0 == {
-        0 assert ;
+        0 "process_token_function: ## unsupported" assert_msg ;
       } else {
         if args tok map_has {
           $repl2
@@ -754,7 +757,7 @@ fun preproc_eval 2 {
         $repl
         @repl subst SUBST_REPLACEMENT take = ;
         subst SUBST_IS_FUNCTION take ! "preproc_eval: not supported" assert_msg ;
-        if repl vector_size 1 == {
+        if repl vector_size 1 == repl 0 vector_at is_valid_identifier ! && {
           repl 0 vector_at atoi ret ;
         } else {
           $ast2
@@ -784,8 +787,60 @@ fun preproc_eval 2 {
       ctx ast AST_LEFT take preproc_eval ctx ast AST_RIGHT take preproc_eval || ret ;
     }
 
+    if name "&" strcmp 0 == {
+      ctx ast AST_LEFT take preproc_eval ctx ast AST_RIGHT take preproc_eval & ret ;
+    }
+
+    if name "|" strcmp 0 == {
+      ctx ast AST_LEFT take preproc_eval ctx ast AST_RIGHT take preproc_eval | ret ;
+    }
+
     if name "==" strcmp 0 == {
       ctx ast AST_LEFT take preproc_eval ctx ast AST_RIGHT take preproc_eval == ret ;
+    }
+
+    if name "!=" strcmp 0 == {
+      ctx ast AST_LEFT take preproc_eval ctx ast AST_RIGHT take preproc_eval != ret ;
+    }
+
+    if name ">=" strcmp 0 == {
+      ctx ast AST_LEFT take preproc_eval ctx ast AST_RIGHT take preproc_eval >= ret ;
+    }
+
+    if name "<=" strcmp 0 == {
+      ctx ast AST_LEFT take preproc_eval ctx ast AST_RIGHT take preproc_eval <= ret ;
+    }
+
+    if name ">" strcmp 0 == {
+      ctx ast AST_LEFT take preproc_eval ctx ast AST_RIGHT take preproc_eval > ret ;
+    }
+
+    if name "<" strcmp 0 == {
+      ctx ast AST_LEFT take preproc_eval ctx ast AST_RIGHT take preproc_eval < ret ;
+    }
+
+    if name "+" strcmp 0 == {
+      ctx ast AST_LEFT take preproc_eval ctx ast AST_RIGHT take preproc_eval + ret ;
+    }
+
+    if name "-" strcmp 0 == {
+      ctx ast AST_LEFT take preproc_eval ctx ast AST_RIGHT take preproc_eval - ret ;
+    }
+
+    if name "*" strcmp 0 == {
+      ctx ast AST_LEFT take preproc_eval ctx ast AST_RIGHT take preproc_eval * ret ;
+    }
+
+    if name "/" strcmp 0 == {
+      ctx ast AST_LEFT take preproc_eval ctx ast AST_RIGHT take preproc_eval / ret ;
+    }
+
+    if name "%" strcmp 0 == {
+      ctx ast AST_LEFT take preproc_eval ctx ast AST_RIGHT take preproc_eval % ret ;
+    }
+
+    if name "^" strcmp 0 == {
+      ctx ast AST_LEFT take preproc_eval ctx ast AST_RIGHT take preproc_eval ^ ret ;
     }
 
     if name "defined_PRE" strcmp 0 == {
@@ -801,6 +856,13 @@ fun preproc_eval 2 {
       ctx ast AST_RIGHT take preproc_eval ! ret ;
     }
 
+    if name "-_PRE" strcmp 0 == {
+      0 ctx ast AST_RIGHT take preproc_eval - ret ;
+    }
+
+    "Please implement " 1 platform_log ;
+    name 1 platform_log ;
+    "\n" 1 platform_log ;
     0 "preproc_eval: unsupported operation" assert_msg ;
   }
 }
@@ -1017,6 +1079,9 @@ fun preproc_file 3 {
       ready_toks vector_clear ;
       intoks @i discard_white_tokens ;
       @tok intoks i vector_at = ;
+      # "Processing " 1 platform_log ;
+      # tok 1 platform_log ;
+      # "\n" 1 platform_log ;
       $processed
       @processed 0 = ;
       if tok "include" strcmp 0 == processed ! && {

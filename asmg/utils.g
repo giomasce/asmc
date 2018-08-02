@@ -355,6 +355,9 @@ fun atoi 1 {
   $res
   @res ptr @end 0 strtol = ;
 
+  # "atoi with input " 1 platform_log ;
+  # ptr 1 platform_log ;
+  # "\n" 1 platform_log ;
   end **c 0 == "atoi: invalid number" assert_msg ;
 
   res ret ;

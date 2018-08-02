@@ -253,6 +253,7 @@ fun ast_parse 3 {
   @operator_stack 4 vector_init = ;
   $operand_stack
   @operand_stack 4 vector_init = ;
+  # "Beginning parse\n" 1 platform_log ;
   while cont {
     $tok
     iptr iptr ** 1 + = ;
@@ -417,6 +418,8 @@ fun ast_parse 3 {
 
   operand_stack vector_destroy ;
   operator_stack vector_destroy ;
+
+  # "Ending parse\n" 1 platform_log ;
 
   res ret ;
 }
