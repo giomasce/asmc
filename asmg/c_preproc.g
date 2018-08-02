@@ -642,6 +642,10 @@ fun preproc_process_define 4 {
       intoks iptr discard_white_tokens ;
       @tok intoks iptr ** vector_at = ;
     }
+  } else {
+    iptr iptr ** 1 - = ;
+    intoks iptr discard_white_tokens ;
+    @tok intoks iptr ** vector_at = ;
   }
   while tok "\n" strcmp 0 != {
     subst SUBST_REPLACEMENT take tok strdup vector_push_back ;
@@ -747,9 +751,21 @@ fun preproc_eval 2 {
       if defs name map_has {
         $subst
         @subst defs name map_at = ;
-        subst SUBST_IS_FUNCTION take ! "preproc_eval: not supported 1" assert_msg ;
-        subst SUBST_REPLACEMENT take vector_size 1 == "preproc_eval: not supported 2" assert_msg ;
-        subst SUBST_REPLACEMENT take 1 vector_at atoi ret ;
+        $repl
+        @repl subst SUBST_REPLACEMENT take = ;
+        subst SUBST_IS_FUNCTION take ! "preproc_eval: not supported" assert_msg ;
+        if repl vector_size 1 == {
+          repl 0 vector_at atoi ret ;
+        } else {
+          $ast2
+          $i
+          @i 0 1 - = ;
+          @ast2 repl @i ";;" ast_parse = ;
+          $res
+          @res ctx ast2 preproc_eval = ;
+          ast2 ast_destroy ;
+          res ret ;
+        }
       } else {
         0 ret ;
       }

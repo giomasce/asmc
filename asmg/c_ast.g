@@ -256,21 +256,25 @@ fun ast_parse 3 {
   while cont {
     $tok
     iptr iptr ** 1 + = ;
-    @tok intoks iptr ** vector_at = ;
+    if iptr ** intoks vector_size >= {
+      @tok end_tok = ;
+    } else {
+      @tok intoks iptr ** vector_at = ;
+    }
     if end_tok tok strcmp 0 == {
       @cont 0 = ;
     } else {
       if " " tok strcmp 0 != {
         $is_operator
         @is_operator tok ast_is_operator = ;
-        #"Found: " 1 platform_log ;
-        #tok 1 platform_log ;
-        #if is_operator {
-        #  " (operator)" 1 platform_log ;
-        #} else {
-        #  " (operand)" 1 platform_log ;
-        #}
-        #"\n" 1 platform_log ;
+        # "Found: " 1 platform_log ;
+        # tok 1 platform_log ;
+        # if is_operator {
+        #   " (operator)" 1 platform_log ;
+        # } else {
+        #   " (operand)" 1 platform_log ;
+        # }
+        # "\n" 1 platform_log ;
         if expect_operator {
           if is_operator {
             # Operator as we expect, push it in the operator stack.
@@ -302,6 +306,7 @@ fun ast_parse 3 {
             if tok "(" strcmp 0 == {
               $tok2
               iptr iptr ** 1 + = ;
+              iptr ** intoks vector_size < "ast_parse: token expected" assert_msg ;
               @tok2 intoks iptr ** vector_at = ;
               if tok2 ")" strcmp 0 == {
                 # No arguments, push a placeholder
