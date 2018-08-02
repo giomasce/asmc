@@ -442,7 +442,7 @@ fun get_char_type 1 {
   $x
   @x 0 param = ;
   if x '\n' == { 1 ret ; }
-  if x '\t' == x ' ' == || { 2 ret ; }
+  if x '\t' == x ' ' == || x '\f' == || { 2 ret ; }
   if x '0' >= x '9' <= && x 'a' >= x 'z' <= && || x 'A' >= x 'Z' <= && || x '_' == || { 3 ret ; }
   4 ret ;
 }
