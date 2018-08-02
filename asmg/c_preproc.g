@@ -373,6 +373,114 @@ fun discard_white_tokens 2 {
   }
 }
 
+fun discard_white_newline_tokens 2 {
+  $tokens
+  $iptr
+  @iptr 0 param = ;
+  @tokens 1 param = ;
+  $cont
+  @cont 1 = ;
+  while cont {
+    iptr iptr ** 1 + = ;
+    iptr ** tokens vector_size < "discard_white_token: stream end was found" assert_msg ;
+    $tok
+    @tok tokens iptr ** vector_at = ;
+    @cont tok " " strcmp 0 == tok "\n" strcmp 0 == || = ;
+  }
+}
+
+fun process_token_function 5 {
+  $ctx
+  $tokens
+  $intoks
+  $iptr
+  $subst
+  @ctx 4 param = ;
+  @tokens 3 param = ;
+  @intoks 2 param = ;
+  @iptr 1 param = ;
+  @subst 0 param = ;
+
+  # First parse the inputs
+  $args
+  @args map_init = ;
+  while args vector_size subst SUBST_PARAMETERS take vector_size < {
+    $depth
+    @depth 0 = ;
+    $cont
+    @cont 1 = ;
+    $arg
+    @arg 4 vector_init = ;
+    $tok
+    while cont {
+      @tok intoks iptr ** vector_at = ;
+      iptr iptr ** 1 + = ;
+      iptr ** intoks vector_size < "preproc_token_function: end of stream found" assert_msg ;
+      if tok "," strcmp 0 == tok ")" strcmp 0 == || depth 0 == && {
+        @cont 0 = ;
+      } else {
+        if tok "(" strcmp 0 == {
+          @depth depth 1 + = ;
+        }
+        if tok ")" strcmp 0 == {
+          @depth depth 1 - = ;
+        }
+        arg tok vector_push_back ;
+      }
+    }
+    $ident
+    @ident subst SUBST_PARAMETERS take args map_size vector_at = ;
+    args ident arg map_set ;
+    if args vector_size subst SUBST_PARAMETERS take vector_size == {
+      tok ")" strcmp 0 == "process_token_funcion: ) expected" assert_msg ;
+    } else {
+      tok "," strcmp 0 == "process_token_function: , expected" assert_msg ;
+    }
+  }
+
+  # Output tokens
+  $i
+  @i 0 = ;
+  $repl
+  @repl subst SUBST_REPLACEMENT take = ;
+  while i repl vector_size < {
+    $tok
+    @tok repl i vector_at = ;
+    if tok "#" strcmp 0 == {
+      0 assert ;
+    } else {
+      if tok "##" strcmp 0 == {
+        0 assert ;
+      } else {
+        if args tok map_has {
+          $repl2
+          @repl2 args tok map_at = ;
+          $j
+          @j 0 = ;
+          while j repl2 vector_size < {
+            @tok repl2 j vector_at = ;
+            tokens tok strdup vector_push_back ;
+            @j j 1 + = ;
+          }
+        } else {
+          tokens tok strdup vector_push_back ;
+        }
+      }
+    }
+    @i i 1 + = ;
+  }
+
+  # Free temporaries
+  @i 0 = ;
+  while i args map_size < {
+    if args i map_has_idx {
+      args i map_at_idx vector_destroy ;
+    }
+    @i i 1 + = ;
+  }
+  args map_destroy ;
+}
+
 fun process_token 4 {
   $ctx
   $tokens
@@ -389,7 +497,6 @@ fun process_token 4 {
   $changed
   @changed 0 = ;
   if ctx PPCTX_DEFINES take tok map_has {
-    @changed 1 = ;
     #"Expanding: " 1 platform_log ;
     #tok 1 platform_log ;
     #"\n" 1 platform_log ;
@@ -398,9 +505,23 @@ fun process_token 4 {
     $repl
     @repl subst SUBST_REPLACEMENT take = ;
     if subst SUBST_IS_FUNCTION take {
-      # TODO
-      0 "process_token: not implemented yet" assert_msg ;
+      $saved_i
+      @saved_i iptr ** = ;
+      intoks iptr discard_white_newline_tokens ;
+      @tok intoks iptr ** vector_at = ;
+      if tok "(" strcmp 0 == {
+        @changed 1 = ;
+        iptr iptr ** 1 + = ;
+        iptr ** intoks vector_size < "preproc_token: end of stream found" assert_msg ;
+        ctx tokens intoks iptr subst process_token_function ;
+      } else {
+        # No actual substitution, roll back changes and push unchanged token
+        iptr saved_i = ;
+        @tok intoks iptr ** vector_at = ;
+        tokens tok strdup vector_push_back ;
+      }
     } else {
+      @changed 1 = ;
       $j
       @j 0 = ;
       while j repl vector_size < {
@@ -505,6 +626,7 @@ fun preproc_process_define 4 {
       $cont
       @cont 1 = ;
       while cont {
+        tok is_valid_identifier "preproc_process_define: token is not an identifier" assert_msg ;
         subst SUBST_PARAMETERS take tok strdup vector_push_back ;
         intoks iptr discard_white_tokens ;
         @tok intoks iptr ** vector_at = ;
