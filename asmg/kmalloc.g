@@ -26,6 +26,7 @@
 const KMALLOC_NBUCKETS 28
 
 $kmalloc_buckets
+$kmalloc_num
 
 fun _bucket_actual_size 1 {
   $bucket
@@ -45,6 +46,9 @@ fun malloc 1 {
   if size 0 == {
     0 ret ;
   }
+  size 0 > "malloc: invalid negative size" assert_msg ;
+
+  @kmalloc_num kmalloc_num 1 + = ;
 
   # Initialize buckets on first call
   if kmalloc_buckets 0 == {
@@ -93,6 +97,9 @@ fun free 1 {
     ret ;
   }
 
+  kmalloc_num 0 > "free: mismatched free" assert_msg ;
+  @kmalloc_num kmalloc_num 1 - = ;
+
   $ptr
   @ptr buf 4 - = ;
 
@@ -123,4 +130,6 @@ fun _malloc_get_size 1 {
 }
 
 fun malloc_stats 0 {
+  kmalloc_num itoa 1 platform_log ;
+  " malloc-ed regions were never free-d\n" 1 platform_log ;
 }
