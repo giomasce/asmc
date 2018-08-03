@@ -436,11 +436,25 @@ fun cctx_add_type 2 {
   @ctx 1 param = ;
   @type 0 param = ;
 
+  # Add the type to the list
   $types
   $idx
   @types ctx CCTX_TYPES take = ;
   @idx types vector_size = ;
   types type vector_push_back ;
+
+  # Check if the new type already matches with another
+  $i
+  @i 0 = ;
+  while i idx < {
+    if ctx i idx cctx_type_compare {
+      # Found a match, remove the new one and return the old one
+      types vector_pop_back
+      i ret ;
+    }
+    @i i 1 + = ;
+  }
+
   idx ret ;
 }
 
