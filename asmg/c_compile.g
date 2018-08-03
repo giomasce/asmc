@@ -381,28 +381,26 @@ fun _cctx_type_compare 3 {
     1 ret ;
   }
   if t1 TYPE_KIND take TYPE_KIND_POINTER == {
-    if t1 TYPE_BASE take t2 TYPE_BASE take != { 0 ret ; }
+    if ctx t1 TYPE_BASE take t2 TYPE_BASE take cctx_type_compare ! { 0 ret ; }
     1 ret ;
   }
   if t1 TYPE_KIND take TYPE_KIND_FUNCTION == {
-    if t1 TYPE_BASE take t2 TYPE_BASE take != { 0 ret ; }
-    if t1 TYPE_LENGTH take t2 TYPE_LENGTH take != { 0 ret ; }
-    $length
-    @length t1 TYPE_LENGTH take = ;
+    if ctx t1 TYPE_BASE take t2 TYPE_BASE take cctx_type_compare ! { 0 ret ; }
     $args1
     $args2
     @args1 t1 TYPE_ARGS take = ;
     @args2 t2 TYPE_ARGS take = ;
+    if args1 vector_size args2 vector_size != { 0 ret ; }
     $i
     @i 0 = ;
-    while i length < {
+    while i args1 vector_size < {
       if ctx args1 i vector_at args2 i vector_at cctx_type_compare ! { 0 ret ; }
       @i i 1 + = ;
     }
     1 ret ;
   }
   if t1 TYPE_KIND take TYPE_KIND_ARRAY == {
-    if t1 TYPE_BASE take t2 TYPE_BASE take != { 0 ret ; }
+    if ctx t1 TYPE_BASE take t2 TYPE_BASE take cctx_type_compare ! { 0 ret ; }
     if t1 TYPE_LENGTH take t2 TYPE_LENGTH take != { 0 ret ; }
     1 ret ;
   }
