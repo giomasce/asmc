@@ -17,7 +17,8 @@
 
 const MALLOC_MAX_NUM 100000
 const MALLOC_GUARD_SIZE 32
-const MALLOC_GUARD_BYTE 0x4d
+const MALLOC_GUARD_BYTE 0xd4
+const MALLOC_GARBAGE_BYTE 0x5c
 
 $malloc_data
 $malloc_num
@@ -72,6 +73,9 @@ fun malloc 1 {
   # Fill the guards with the guard byte
   ptr MALLOC_GUARD_BYTE MALLOC_GUARD_SIZE memset ;
   buf_end MALLOC_GUARD_BYTE MALLOC_GUARD_SIZE memset ;
+
+  # Fill the allocated zone with garbage bytes, so that the program does not depend on it being nulled
+  buf_begin MALLOC_GARBAGE_BYTE size memset ;
 
   buf_begin ret ;
 }
