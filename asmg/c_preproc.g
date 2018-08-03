@@ -278,7 +278,7 @@ fun get_token 0 {
                 }
                 if done ! {
                   token_buf token_len + 0 =c ;
-                  if token_buf ast_is_operator ! {
+                  if token_buf ast_is_operator token_buf "##" strcmp 0 == || ! {
                     @cont 0 = ;
                     @done 1 = ;
                     @token_len token_len 1 - = ;
@@ -373,6 +373,83 @@ fun discard_white_newline_tokens 2 {
   }
 }
 
+# Check that the argument string has no " or \
+fun check_string 1 {
+  $s
+  @s 0 param = ;
+
+  while 1 {
+    if s **c 0 == {
+      ret ;
+    }
+    s **c '\"' == s **c '\\' == || ! "check_string: string is not valid" assert_msg ;
+    @s s 1 + = ;
+  }
+}
+
+fun process_token_stringify 2 {
+  $ctx
+  $toks
+  @ctx 1 param = ;
+  @toks 0 param = ;
+
+  $res
+  @res "\"" strdup = ;
+  $i
+  @i 0 = ;
+  $begin
+  @begin 1 = ;
+  $whites
+  @whites 0 = ;
+  while i toks vector_size < {
+    $tok
+    @tok toks i vector_at = ;
+    if tok " " strcmp 0 == tok "\n" strcmp 0 == || {
+      if begin ! {
+        @whites 1 = ;
+      }
+    } else {
+      @begin 0 = ;
+      if whites {
+        @res res " " append_to_str = ;
+      }
+      tok check_string ;
+      @res res tok append_to_str = ;
+    }
+    @i i 1 + = ;
+  }
+  @res res "\"" append_to_str = ;
+  res ret ;
+}
+
+fun push_token 2 {
+  $tokens
+  $tok
+  @tokens 1 param = ;
+  @tok 0 param = ;
+
+  $prev
+  @prev tokens vector_pop_back = ;
+  if prev "##" strcmp 0 == {
+    if tok " " strcmp 0 == tok "\n" strcmp 0 == || ! {
+      prev free ;
+      @prev tokens vector_pop_back = ;
+      @prev prev tok append_to_str = ;
+    }
+    tokens prev vector_push_back ;
+    tok free ;
+  } else {
+    if tok "##" strcmp 0 == {
+      while prev " " strcmp 0 == prev "\n" strcmp 0 == || {
+        prev free ;
+        @prev tokens vector_pop_back = ;
+      }
+    }
+    tokens prev vector_push_back ;
+    tokens tok vector_push_back ;
+  }
+}
+
 fun process_token_function 5 {
   $ctx
   $tokens
@@ -399,7 +476,7 @@ fun process_token_function 5 {
     while cont {
       @tok intoks iptr ** vector_at = ;
       iptr iptr ** 1 + = ;
-      iptr ** intoks vector_size < "preproc_token_function: end of stream found" assert_msg ;
+      iptr ** intoks vector_size < "process_token_function: end of stream found" assert_msg ;
       if tok "," strcmp 0 == tok ")" strcmp 0 == || depth 0 == && {
         @cont 0 = ;
       } else {
@@ -416,7 +493,7 @@ fun process_token_function 5 {
     @ident subst SUBST_PARAMETERS take args map_size vector_at = ;
     args ident arg map_set ;
     if args vector_size subst SUBST_PARAMETERS take vector_size == {
-      tok ")" strcmp 0 == "process_token_funcion: ) expected" assert_msg ;
+      tok ")" strcmp 0 == "process_token_function: ) expected" assert_msg ;
     } else {
       tok "," strcmp 0 == "process_token_function: , expected" assert_msg ;
     }
@@ -431,24 +508,26 @@ fun process_token_function 5 {
     $tok
     @tok repl i vector_at = ;
     if tok "#" strcmp 0 == {
-      0 "process_token_function: # unsupported" assert_msg ;
+      @i i 1 + = ;
+      i repl vector_size < "process_token_function: invalid # usage" assert_msg ;
+      @tok repl i vector_at = ;
+      args tok map_has "process_token_function: # requires a parameter" assert_msg ;
+      $newtok
+      @newtok ctx args tok map_at process_token_stringify = ;
+      tokens newtok push_token ;
     } else {
-      if tok "##" strcmp 0 == {
-        0 "process_token_function: ## unsupported" assert_msg ;
-      } else {
-        if args tok map_has {
-          $repl2
-          @repl2 args tok map_at = ;
-          $j
-          @j 0 = ;
-          while j repl2 vector_size < {
-            @tok repl2 j vector_at = ;
-            tokens tok strdup vector_push_back ;
-            @j j 1 + = ;
-          }
-        } else {
-          tokens tok strdup vector_push_back ;
+      if args tok map_has {
+        $repl2
+        @repl2 args tok map_at = ;
+        $j
+        @j 0 = ;
+        while j repl2 vector_size < {
+          @tok repl2 j vector_at = ;
+          tokens tok strdup push_token ;
+          @j j 1 + = ;
         }
+      } else {
+        tokens tok strdup push_token ;
       }
     }
     @i i 1 + = ;
@@ -481,9 +560,9 @@ fun process_token 4 {
   $changed
   @changed 0 = ;
   if ctx PPCTX_DEFINES take tok map_has {
-    #"Expanding: " 1 platform_log ;
-    #tok 1 platform_log ;
-    #"\n" 1 platform_log ;
+    # "Expanding: " 1 platform_log ;
+    # tok 1 platform_log ;
+    # "\n" 1 platform_log ;
     $subst
     @subst ctx PPCTX_DEFINES take tok map_at = ;
     $repl
