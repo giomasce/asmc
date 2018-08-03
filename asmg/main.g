@@ -24,7 +24,8 @@ const RUN_MESCC 0
 
 const USE_TRIVIAL_MALLOC 0
 const USE_SIMPLE_MALLOC 0
-const USE_CHECKED_MALLOC 1
+const USE_CHECKED_MALLOC 0
+const USE_KMALLOC 1
 
 fun main 0 {
   "Hello, G!\n" 1 platform_log ;
@@ -52,6 +53,12 @@ fun main 0 {
   if USE_CHECKED_MALLOC {
     "Compiling check_malloc.g... " 1 platform_log ;
     "check_malloc.g" platform_g_compile ;
+    "done!\n" 1 platform_log ;
+  }
+
+  if USE_KMALLOC {
+    "Compiling kmalloc.g... " 1 platform_log ;
+    "kmalloc.g" platform_g_compile ;
     "done!\n" 1 platform_log ;
   }
 
