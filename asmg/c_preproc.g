@@ -126,24 +126,6 @@ fun get_char 0 {
   read_char ret
 }
 
-fun is_valid_2_char_token 1 {
-  $first
-  $second
-  @first 0 param **c = ;
-  @second 0 param 1 + **c = ;
-  if first '+' == second '+' == && { 1 ret ; }
-  if first '-' == second '-' == && { 1 ret ; }
-  if first '=' == second '=' == && { 1 ret ; }
-  if first '!' == second '=' == && { 1 ret ; }
-  if first '<' == second '=' == && { 1 ret ; }
-  if first '>' == second '=' == && { 1 ret ; }
-  if first '<' == second '<' == && { 1 ret ; }
-  if first '>' == second '>' == && { 1 ret ; }
-  if first '&' == second '&' == && { 1 ret ; }
-  if first '|' == second '|' == && { 1 ret ; }
-  0 ret ;
-}
-
 fun is_c_comment 1 {
   $first
   $second
@@ -264,7 +246,7 @@ fun get_token 0 {
       token_buf token_len + c =c ;
       if save_char {
         if token_len 0 == {
-          @token_len token_len 1 + = ;
+          @token_len 1 = ;
           @token_type type = ;
           if c '"' == {
             @state 4 = ;
@@ -294,15 +276,14 @@ fun get_token 0 {
                   @state 1 = ;
                   @done 1 = ;
                 }
-                if token_buf is_valid_2_char_token {
-                  @token_len token_len 1 + = ;
-                  @cont 0 = ;
-                  @done 1 = ;
-                }
                 if done ! {
-                  give_back_char ;
-                  @token_len 1 = ;
-                  @cont 0 = ;
+                  token_buf token_len + 0 =c ;
+                  if token_buf ast_is_operator ! {
+                    @cont 0 = ;
+                    @done 1 = ;
+                    @token_len token_len 1 - = ;
+                    give_back_char ;
+                  }
                 }
               }
             } else {
