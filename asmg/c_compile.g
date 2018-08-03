@@ -2678,20 +2678,7 @@ fun parse_c 1 {
   tokens ctx filename preproc_file ;
   @tokens tokens remove_whites = ;
   "Finished preprocessing\n" 1 platform_log ;
-  $i
-  @i 0 = ;
-  while i tokens vector_size < {
-    $tok
-    @tok tokens i vector_at = ;
-    if tok **c '\n' == {
-      "NL" 1 platform_log ;
-    } else {
-      tok 1 platform_log ;
-    }
-    "#" 1 platform_log ;
-    @i i 1 + = ;
-  }
-  "\n" 1 platform_log ;
+  tokens print_token_list ;
 
   # Compilation
   $cctx

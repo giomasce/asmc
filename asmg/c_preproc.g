@@ -446,7 +446,11 @@ fun push_token 2 {
       }
     }
     tokens prev vector_push_back ;
-    tokens tok vector_push_back ;
+    if tok "" strcmp 0 == {
+      tok free ;
+    } else {
+      tokens tok vector_push_back ;
+    }
   }
 }
 
@@ -498,6 +502,7 @@ fun process_token_function 5 {
       tok "," strcmp 0 == "process_token_function: , expected" assert_msg ;
     }
   }
+  iptr iptr ** 1 - = ;
 
   # Output tokens
   $i
@@ -521,6 +526,10 @@ fun process_token_function 5 {
         @repl2 args tok map_at = ;
         $j
         @j 0 = ;
+        # If the substitution is empty, push an empty token to trigger ## pasting
+        if repl2 vector_size 0 == {
+          tokens "" strdup push_token ;
+        }
         while j repl2 vector_size < {
           @tok repl2 j vector_at = ;
           tokens tok strdup push_token ;
@@ -598,6 +607,26 @@ fun process_token 4 {
   changed ret ;
 }
 
+fun print_token_list 1 {
+  $tokens
+  @tokens 0 param = ;
+
+  $i
+  @i 0 = ;
+  while i tokens vector_size < {
+    $tok
+    @tok tokens i vector_at = ;
+    if tok **c '\n' == {
+      "NL" 1 platform_log ;
+    } else {
+      tok 1 platform_log ;
+    }
+    "#" 1 platform_log ;
+    @i i 1 + = ;
+  }
+  "\n" 1 platform_log ;
+}
+
 fun preproc_replace_int 3 {
   $ctx
   $intoks
@@ -630,6 +659,8 @@ fun preproc_replace 2 {
   while changed {
     $outtoks
     @outtoks 4 vector_init = ;
+    # "---\n" 1 platform_log ;
+    # intoks print_token_list ;
     @changed ctx intoks outtoks preproc_replace_int = ;
     intoks free_vect_of_ptrs ;
     @intoks outtoks = ;
@@ -792,6 +823,9 @@ fun preproc_process_include 4 {
   filename 1 platform_log ;
   "\n" 1 platform_log ;
   tokens ctx filename preproc_file ;
+  "Finished including file " 1 platform_log ;
+  filename 1 platform_log ;
+  "\n" 1 platform_log ;
   filename free ;
 
   intoks iptr discard_white_tokens ;
