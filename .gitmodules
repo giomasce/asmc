@@ -1,0 +1,3 @@
+[submodule "contrib/M2-Planet"]
+	path = contrib/M2-Planet
+	url = https://github.com/oriansj/M2-Planet.git
