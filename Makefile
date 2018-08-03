@@ -6,14 +6,14 @@ ifeq ($(UNAME),Linux)
 FOUND := 1
 AR=ar
 USE_NASM=0
-all: build script-data/placeholder build/asmasm_linux build/boot_asmasm.x86 build/boot_empty.x86 build/boot_asmg.x86 build/boot_asmg0.x86 build/boot.iso
+all: build build/asmasm_linux build/boot_asmasm.x86 build/boot_empty.x86 build/boot_asmg.x86 build/boot_asmg0.x86 build/boot.iso
 endif
 
 ifeq ($(UNAME),Darwin)
 FOUND := 1
 AR=gar
 USE_NASM=1
-all: build script-data/placeholder build/boot_asmasm.x86 build/boot_empty.x86 build/boot_asmg.x86 build/boot_asmg0.x86
+all: build build/boot_asmasm.x86 build/boot_empty.x86 build/boot_asmg.x86 build/boot_asmg0.x86
 endif
 
 ifeq ($(FOUND),0)
@@ -25,11 +25,8 @@ endif
 build:
 	mkdir $@
 
-script-data:
+diskfs:
 	mkdir $@
-
-script-data/placeholder: script-data
-	touch $@
 
 build/END:
 	touch $@
@@ -51,8 +48,12 @@ build/bootloader.x86.stage2: build/bootloader.x86.exe
 	tail -c +513 $< > $@
 
 # Diskfs image
-build/diskfs.list: script-data/*
-	(cd script-data/ ; find . -type f) | cut -c3- | sed -e 's|\(.*\)|\1 script-data/\1|' > $@
+diskfs/mescc/x86_defs.m1:
+	mkdir -p diskfs/mescc
+	cp contrib/M2-Planet/test/common_x86/x86_defs.M1 $@
+
+build/diskfs.list: diskfs/* diskfs/mescc/x86_defs.m1
+	(cd diskfs/ ; find . -type f) | cut -c3- | sed -e 's|\(.*\)|\1 diskfs/\1|' > $@
 
 build/diskfs.img: build/diskfs.list
 	xargs ./create_diskfs.py < $< > $@

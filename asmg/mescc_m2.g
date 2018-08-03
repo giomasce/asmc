@@ -2161,7 +2161,7 @@ fun m2_test 0 {
   files "/ram/compiled.m1" m2_compile ;
   files free_vect_of_ptrs ;
 
-  "/ram/compiled.m1" dump_debug ;
+  #"/ram/compiled.m1" dump_debug ;
 }
 
 fun m2_test_full_compilation 0 {
@@ -2173,7 +2173,7 @@ fun m2_test_full_compilation 0 {
   "/ram/compiled.m1" dump_file ;
 
   @files 4 vector_init = ;
-  files "/init/defs.m1" strdup vector_push_back ;
+  files "/disk1/mescc/x86_defs.m1" strdup vector_push_back ;
   files "/ram/compiled.m1" strdup vector_push_back ;
   files "/ram/assembled.hex2" m1_assemble ;
   files free_vect_of_ptrs ;
