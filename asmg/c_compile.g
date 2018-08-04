@@ -625,8 +625,6 @@ fun cctx_construct_struct_type 3 {
     $fp
     @fp ctx type_idxs i vector_at cctx_type_footprint = ;
     @off off fp + = ;
-    " " 1 platform_log ;
-    fp itoa 1 platform_log ;
     @i i 1 + = ;
   }
   type TYPE_SIZE take_addr off = ;
