@@ -107,19 +107,28 @@ const TYPE_BASE 4
 const TYPE_SIZE 8
 const TYPE_LENGTH 12
 const TYPE_ARGS 16
-const SIZEOF_TYPE 20
+const TYPE_FIELDS_OFFS 20
+const TYPE_FIELDS_TYPE_IDXS 24
+const TYPE_FIELDS_NAMES 28
+const SIZEOF_TYPE 32
 
 fun type_init 0 {
   $type
   @type SIZEOF_TYPE malloc = ;
   type TYPE_ARGS take_addr 4 vector_init = ;
+  type TYPE_FIELDS_OFFS take_addr 4 vector_init = ;
+  type TYPE_FIELDS_TYPE_IDXS take_addr 4 vector_init = ;
+  type TYPE_FIELDS_NAMES take_addr 4 vector_init = ;
   type ret ;
 }
 
 fun type_destroy 1 {
   $type
   @type 0 param = ;
-  type TYPE_ARGS take vector_destroy ;
+  #type TYPE_ARGS take vector_destroy ;
+  #type TYPE_FIELDS_OFFS take vector_destroy ;
+  #type TYPE_FIELDS_TYPE_IDXS take vector_destroy ;
+  #type TYPE_FIELDS_NAMES take free_vect_of_ptrs ;
   type free ;
 }
 
@@ -174,6 +183,46 @@ fun type_dump 1 {
     }
   }
 
+  if kind TYPE_KIND_STRUCT == {
+    "Struct type with fields" 1 platform_log ;
+    $i
+    @i 0 = ;
+    $names
+    $type_idxs
+    $offs
+    @names type TYPE_FIELDS_NAMES take = ;
+    @type_idxs type TYPE_FIELDS_TYPE_IDXS take = ;
+    @offs type TYPE_FIELDS_OFFS take = ;
+    while i names vector_size < {
+      " " 1 platform_log ;
+      names i vector_at 1 platform_log ;
+      " (@" 1 platform_log ;
+      offs i vector_at itoa 1 platform_log ;
+      " #" 1 platform_log ;
+      type_idxs i vector_at itoa 1 platform_log ;
+      ")" 1 platform_log ;
+      @i i 1 + = ;
+    }
+  }
+
+  if kind TYPE_KIND_UNION == {
+    "Union type with fields" 1 platform_log ;
+    $i
+    @i 0 = ;
+    $names
+    $type_idxs
+    @names type TYPE_FIELDS_NAMES take = ;
+    @type_idxs type TYPE_FIELDS_TYPE_IDXS take = ;
+    while i names vector_size < {
+      " " 1 platform_log ;
+      names i vector_at 1 platform_log ;
+      " (#" 1 platform_log ;
+      type_idxs i vector_at itoa 1 platform_log ;
+      ")" 1 platform_log ;
+      @i i 1 + = ;
+    }
+  }
+
   $size
   @size type TYPE_SIZE take = ;
   if size 0xffffffff == {
@@ -219,7 +268,9 @@ const CCTX_CURRENT_LOC 24
 const CCTX_LABEL_POS 28
 const CCTX_LABEL_BUF 32
 const CCTX_LABEL_NUM 36
-const SIZEOF_CCTX 40
+const CCTX_STRUCTS 40
+const CCTX_UNIONS 44
+const SIZEOF_CCTX 48
 
 fun cctx_init_types 1 {
   $ctx
@@ -227,6 +278,8 @@ fun cctx_init_types 1 {
 
   ctx CCTX_TYPES take_addr 4 vector_init = ;
   ctx CCTX_TYPENAMES take_addr map_init = ;
+  ctx CCTX_STRUCTS take_addr map_init = ;
+  ctx CCTX_UNIONS take_addr map_init = ;
 }
 
 fun cctx_init 1 {
@@ -262,6 +315,14 @@ fun cctx_destroy_types 1 {
   $typenames
   @typenames ctx CCTX_TYPENAMES take = ;
   typenames map_destroy ;
+
+  $structs
+  @structs ctx CCTX_STRUCTS take = ;
+  structs map_destroy ;
+
+  $unions
+  @unions ctx CCTX_UNIONS take = ;
+  unions map_destroy ;
 }
 
 fun cctx_destroy 1 {
@@ -380,10 +441,12 @@ fun _cctx_type_compare 3 {
     if t1 TYPE_BASE take t2 TYPE_BASE take != { 0 ret ; }
     1 ret ;
   }
+
   if t1 TYPE_KIND take TYPE_KIND_POINTER == {
     if ctx t1 TYPE_BASE take t2 TYPE_BASE take cctx_type_compare ! { 0 ret ; }
     1 ret ;
   }
+
   if t1 TYPE_KIND take TYPE_KIND_FUNCTION == {
     if ctx t1 TYPE_BASE take t2 TYPE_BASE take cctx_type_compare ! { 0 ret ; }
     $args1
@@ -399,11 +462,23 @@ fun _cctx_type_compare 3 {
     }
     1 ret ;
   }
+
   if t1 TYPE_KIND take TYPE_KIND_ARRAY == {
     if ctx t1 TYPE_BASE take t2 TYPE_BASE take cctx_type_compare ! { 0 ret ; }
     if t1 TYPE_LENGTH take t2 TYPE_LENGTH take != { 0 ret ; }
     1 ret ;
   }
+
+  # structs and unions are always different unless they have the same
+  # type index, which has already been checked
+  if t1 TYPE_KIND take TYPE_KIND_STRUCT == {
+    0 ret ;
+  }
+
+  if t1 TYPE_KIND take TYPE_KIND_UNION == {
+    0 ret ;
+  }
+
   0 "_type_compare: not yet implemented" assert_msg ;
 }
 
@@ -514,6 +589,91 @@ fun cctx_get_function_type 3 {
   type TYPE_SIZE take_addr 0xffffffff = ;
   type TYPE_ARGS take vector_destroy ;
   type TYPE_ARGS take_addr args = ;
+
+  ctx type cctx_add_type ret ;
+}
+
+ifun cctx_type_footprint 2
+
+fun cctx_construct_struct_type 3 {
+  $ctx
+  $type_idxs
+  $names
+  @ctx 2 param = ;
+  @type_idxs 1 param = ;
+  @names 0 param = ;
+
+  type_idxs vector_size names vector_size == "cctx_get_struct_type: inputs have different lengths" assert_msg ;
+
+  $type
+  @type type_init = ;
+  type TYPE_KIND take_addr TYPE_KIND_STRUCT = ;
+  type TYPE_FIELDS_TYPE_IDXS take vector_destroy ;
+  type TYPE_FIELDS_NAMES take vector_destroy ;
+  type TYPE_FIELDS_TYPE_IDXS take_addr type_idxs = ;
+  type TYPE_FIELDS_NAMES take_addr names = ;
+
+  # Compute offsets and size
+  $off
+  @off 0 = ;
+  $i
+  @i 0 = ;
+  $offs
+  @offs type TYPE_FIELDS_OFFS take = ;
+  while i names vector_size < {
+    offs off vector_push_back ;
+    $fp
+    @fp ctx type_idxs i vector_at cctx_type_footprint = ;
+    @off off fp + = ;
+    " " 1 platform_log ;
+    fp itoa 1 platform_log ;
+    @i i 1 + = ;
+  }
+  type TYPE_SIZE take_addr off = ;
+
+  type ret ;
+}
+
+fun cctx_get_incomplete_struct_type 1 {
+  $ctx
+  @ctx 0 param = ;
+
+  $type
+  @type type_init = ;
+  type TYPE_KIND take_addr TYPE_KIND_STRUCT = ;
+  type TYPE_SIZE take_addr 0xffffffff = ;
+
+  ctx type cctx_add_type ret ;
+}
+
+fun cctx_get_union_type 3 {
+  $ctx
+  $type_idxs
+  $names
+  @ctx 2 param = ;
+  @type_idxs 1 param = ;
+  @names 0 param = ;
+
+  type_idxs vector_size names vector_size == "cctx_get_union_type: inputs have different lengths" assert_msg ;
+
+  $type
+  @type type_init = ;
+  type TYPE_KIND take_addr TYPE_KIND_STRUCT = ;
+  type TYPE_FIELDS_TYPE_IDXS take vector_destroy ;
+  type TYPE_FIELDS_NAMES take vector_destroy ;
+  type TYPE_FIELDS_TYPE_IDXS take_addr type_idxs = ;
+  type TYPE_FIELDS_NAMES take_addr names = ;
+
+  # Compute size
+  $size
+  @size 0 = ;
+  $i
+  @i 0 = ;
+  while i names vector_size < {
+    @size size ctx type_idxs i vector_at cctx_type_footprint max = ;
+    @i i 1 + = ;
+  }
+  type TYPE_SIZE take_addr size = ;
 
   ctx type cctx_add_type ret ;
 }
@@ -811,6 +971,61 @@ fun cctx_print_token_pos 1 {
   "\n" 1 platform_log ;
 }
 
+ifun cctx_parse_type 1
+ifun cctx_parse_declarator 5
+
+fun cctx_parse_struct 1 {
+  $ctx
+  $type_idxs_ptr
+  $names_ptr
+  @ctx 2 param = ;
+  @type_idxs_ptr 1 param = ;
+  @names_ptr 0 param = ;
+
+  $type_idxs
+  $names
+  @type_idxs 4 vector_init = ;
+  @names 4 vector_init = ;
+
+  $cont
+  @cont 1 = ;
+  while cont {
+    $tok
+    @tok ctx cctx_get_token_or_fail = ;
+    if tok "}" strcmp 0 == {
+      @cont 0 = ;
+    } else {
+      ctx cctx_give_back_token ;
+      $type_idx
+      @type_idx ctx cctx_parse_type = ;
+      type_idx 0xffffffff != "cctx_parse_struct: type expected" assert_msg ;
+      $cont2
+      @cont2 1 = ;
+      while cont2 {
+        $actual_type_idx
+        $name
+        ctx type_idx @actual_type_idx @name 0 cctx_parse_declarator "cctx_parse_struct: could not parse declarator" assert_msg ;
+        type_idxs actual_type_idx vector_push_back ;
+        names name strdup vector_push_back ;
+        @tok ctx cctx_get_token_or_fail = ;
+        if tok ":" strcmp 0 == {
+          @tok ctx cctx_get_token_or_fail = ;
+          @tok ctx cctx_get_token_or_fail = ;
+          "Bitfield specification is ignored\n" 1 platform_log ;
+        }
+        if tok ";" strcmp 0 == {
+          @cont2 0 = ;
+        } else {
+          tok "," strcmp 0 == "cctx_parse_struct: comma expected" assert_msg ;
+        }
+      }
+    }
+  }
+
+  type_idxs_ptr type_idxs = ;
+  names_ptr names = ;
+}
+
 fun cctx_parse_type 1 {
   $ctx
   @ctx 0 param = ;
@@ -838,14 +1053,50 @@ fun cctx_parse_type 1 {
   }
 
   if tok "struct" strcmp 0 == {
+    $tag
+    $type_idxs
+    $names
+    @tag 0 = ;
+    @type_idxs 0 = ;
     @tok ctx cctx_get_token_or_fail = ;
-    0 "cctx_parse_type: unimplemented" assert_msg ;
+    $structs
+    @structs ctx CCTX_STRUCTS take = ;
+    $type_idx
+    if tok "{" strcmp 0 != {
+      @tag tok = ;
+      @tok ctx cctx_get_token_or_fail = ;
+      if structs tag map_has {
+        @type_idx structs tag map_at = ;
+      } else {
+        @type_idx ctx cctx_get_incomplete_struct_type = ;
+        structs tag type_idx map_set ;
+      }
+    } else {
+      @type_idx ctx cctx_get_incomplete_struct_type = ;
+    }
+    if tok "{" strcmp 0 == {
+      ctx @type_idxs @names cctx_parse_struct ;
+      $type
+      @type ctx type_idx cctx_get_type = ;
+      type TYPE_SIZE take 0xffffffff == "cctx_parse_type: cannot define a struct twice" assert_msg ;
+      $newtype
+      @newtype ctx type_idxs names cctx_construct_struct_type = ;
+      type type_destroy ;
+      ctx CCTX_TYPES take type_idx vector_at_addr newtype = ;
+    } else {
+      ctx cctx_give_back_token ;
+      tag 0 != "cctx_parse_type: struct without neither tag nor definition" assert_msg ;
+    }
+
+    type_idx ret ;
   }
-  if tok "enum" strcmp 0 == {
-    @tok ctx cctx_get_token_or_fail = ;
-    0 "cctx_parse_type: unimplemented" assert_msg ;
-  }
+
   if tok "union" strcmp 0 == {
+    @tok ctx cctx_get_token_or_fail = ;
+    0 "cctx_parse_type: unimplemented" assert_msg ;
+  }
+
+  if tok "enum" strcmp 0 == {
     @tok ctx cctx_get_token_or_fail = ;
     0 "cctx_parse_type: unimplemented" assert_msg ;
   }
@@ -2588,7 +2839,7 @@ fun cctx_compile_line 1 {
     while cont {
       $actual_type_idx
       $name
-      ctx type_idx @actual_type_idx @name 0 cctx_parse_declarator "cctx_compile_line: error 2" assert_msg ;
+      ctx type_idx @actual_type_idx @name 0 cctx_parse_declarator "cctx_compile_line: could not parse declarator after typedef" assert_msg ;
       name 0 != "cctx_compile_line: cannot define type without name" assert_msg ;
       $typenames
       @typenames ctx CCTX_TYPENAMES take = ;
@@ -2610,13 +2861,19 @@ fun cctx_compile_line 1 {
   @type_idx ctx cctx_parse_type = ;
   type_idx 0xffffffff != "cctx_compile: type expected" assert_msg ;
   $cont
-  @cont 1 = ;
+  @tok ctx cctx_get_token_or_fail = ;
+  if tok ";" strcmp 0 == {
+    @cont 0 = ;
+  } else {
+    ctx cctx_give_back_token ;
+    @cont 1 = ;
+  }
   while cont {
     $actual_type_idx
     $name
     $arg_names
     @arg_names 4 vector_init = ;
-    ctx type_idx @actual_type_idx @name arg_names cctx_parse_declarator "cctx_compile_line: error 1" assert_msg ;
+    ctx type_idx @actual_type_idx @name arg_names cctx_parse_declarator "cctx_compile_line: could not parse declarator" assert_msg ;
     $type
     @type ctx actual_type_idx cctx_get_type = ;
     name 0 != "cctx_compile_line: cannot instantiate variable without name" assert_msg ;

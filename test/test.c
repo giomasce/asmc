@@ -21,6 +21,19 @@ typedef int ssize_t;
 // Test from http://www.unixwiz.net/techtips/reading-cdecl.html
 typedef char *(*(**foo [0][8])())[];
 
+int;
+
+struct OtherStruct {
+  int x, y, z;
+};
+
+typedef struct Test {
+  int x, y;
+  struct OtherStruct s;
+  char z;
+  struct Test *ptr;
+} Test2, *TestPtr, **TestPtrPtr;
+
 // C++ comment
 int glob2;   \
 int glob; /* C comment */
