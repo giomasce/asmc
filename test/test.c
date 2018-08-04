@@ -28,15 +28,24 @@ struct OtherStruct {
 };
 
 typedef struct Test {
+  int x:5, y:6;
+  struct OtherStruct s;
+  char z:0;
+  struct Test *ptr;
+} Test2, *TestPtr, **TestPtrPtr;
+
+typedef union Test {
   int x, y;
   struct OtherStruct s;
   char z;
   struct Test *ptr;
-} Test2, *TestPtr, **TestPtrPtr;
+} Test3;
 
 // C++ comment
 int glob2;   \
 int glob; /* C comment */
+Test2 glob3;
+Test3 glob4;
 
 #include <first.h>
 #include \
@@ -45,6 +54,8 @@ int glob; /* C comment */
 int main() {
   "test string";
   int a;
+  Test2 loc2;
+  Test3 loc3;
   return sum_numbers(0);
 }
 

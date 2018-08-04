@@ -644,7 +644,7 @@ fun cctx_get_incomplete_struct_type 1 {
   ctx type cctx_add_type ret ;
 }
 
-fun cctx_get_union_type 3 {
+fun cctx_construct_union_type 3 {
   $ctx
   $type_idxs
   $names
@@ -656,7 +656,7 @@ fun cctx_get_union_type 3 {
 
   $type
   @type type_init = ;
-  type TYPE_KIND take_addr TYPE_KIND_STRUCT = ;
+  type TYPE_KIND take_addr TYPE_KIND_UNION = ;
   type TYPE_FIELDS_TYPE_IDXS take vector_destroy ;
   type TYPE_FIELDS_NAMES take vector_destroy ;
   type TYPE_FIELDS_TYPE_IDXS take_addr type_idxs = ;
@@ -672,6 +672,18 @@ fun cctx_get_union_type 3 {
     @i i 1 + = ;
   }
   type TYPE_SIZE take_addr size = ;
+
+  type ret ;
+}
+
+fun cctx_get_incomplete_union_type 1 {
+  $ctx
+  @ctx 0 param = ;
+
+  $type
+  @type type_init = ;
+  type TYPE_KIND take_addr TYPE_KIND_UNION = ;
+  type TYPE_SIZE take_addr 0xffffffff = ;
 
   ctx type cctx_add_type ret ;
 }
@@ -1009,7 +1021,6 @@ fun cctx_parse_struct 1 {
         if tok ":" strcmp 0 == {
           @tok ctx cctx_get_token_or_fail = ;
           @tok ctx cctx_get_token_or_fail = ;
-          "Bitfield specification is ignored\n" 1 platform_log ;
         }
         if tok ";" strcmp 0 == {
           @cont2 0 = ;
@@ -1090,8 +1101,42 @@ fun cctx_parse_type 1 {
   }
 
   if tok "union" strcmp 0 == {
+    $tag
+    $type_idxs
+    $names
+    @tag 0 = ;
+    @type_idxs 0 = ;
     @tok ctx cctx_get_token_or_fail = ;
-    0 "cctx_parse_type: unimplemented" assert_msg ;
+    $unions
+    @unions ctx CCTX_UNIONS take = ;
+    $type_idx
+    if tok "{" strcmp 0 != {
+      @tag tok = ;
+      @tok ctx cctx_get_token_or_fail = ;
+      if unions tag map_has {
+        @type_idx unions tag map_at = ;
+      } else {
+        @type_idx ctx cctx_get_incomplete_union_type = ;
+        unions tag type_idx map_set ;
+      }
+    } else {
+      @type_idx ctx cctx_get_incomplete_union_type = ;
+    }
+    if tok "{" strcmp 0 == {
+      ctx @type_idxs @names cctx_parse_struct ;
+      $type
+      @type ctx type_idx cctx_get_type = ;
+      type TYPE_SIZE take 0xffffffff == "cctx_parse_type: cannot define a union twice" assert_msg ;
+      $newtype
+      @newtype ctx type_idxs names cctx_construct_union_type = ;
+      type type_destroy ;
+      ctx CCTX_TYPES take type_idx vector_at_addr newtype = ;
+    } else {
+      ctx cctx_give_back_token ;
+      tag 0 != "cctx_parse_type: union without neither tag nor definition" assert_msg ;
+    }
+
+    type_idx ret ;
   }
 
   if tok "enum" strcmp 0 == {
