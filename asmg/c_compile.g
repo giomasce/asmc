@@ -449,7 +449,7 @@ fun cctx_add_type 2 {
   while i idx < {
     if ctx i idx cctx_type_compare {
       # Found a match, remove the new one and return the old one
-      types vector_pop_back
+      types vector_pop_back type_destroy ;
       i ret ;
     }
     @i i 1 + = ;
