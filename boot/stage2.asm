@@ -166,7 +166,7 @@ identify_disk:
 
   ;; Write it on the target disk
   mov DWORD [atapio16_lba], 0
-  mov DWORD [atapio16_lba], MBR_BUF
+  mov DWORD [atapio16_buf], MBR_BUF
   call atapio16_write_sector
   cmp eax, 0
   je error16
