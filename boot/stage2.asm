@@ -225,13 +225,13 @@ identify_disks:
   mov BYTE [atapio16_master], 0
   call identify_disk
 
-  mov WORD [atapio16_base], 0x170
-  mov BYTE [atapio16_master], 1
-  call identify_disk
+  ;; mov WORD [atapio16_base], 0x170
+  ;; mov BYTE [atapio16_master], 1
+  ;; call identify_disk
 
-  mov WORD [atapio16_base], 0x170
-  mov BYTE [atapio16_master], 0
-  call identify_disk
+  ;; mov WORD [atapio16_base], 0x170
+  ;; mov BYTE [atapio16_master], 0
+  ;; call identify_disk
 
   ret
 

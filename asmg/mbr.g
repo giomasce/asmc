@@ -110,8 +110,8 @@ fun mbr_vfs_scan 1 {
 
   vfs 0x1f0 1 mbr_vfs_scan_drive ;
   vfs 0x1f0 0 mbr_vfs_scan_drive ;
-  vfs 0x170 1 mbr_vfs_scan_drive ;
-  vfs 0x170 0 mbr_vfs_scan_drive ;
+  # vfs 0x170 1 mbr_vfs_scan_drive ;
+  # vfs 0x170 0 mbr_vfs_scan_drive ;
 }
 
 fun mbr_read_test_drive 2 {
@@ -144,6 +144,6 @@ fun mbr_read_test_drive 2 {
 fun mbr_read_test 0 {
   0x1f0 1 mbr_read_test_drive ;
   0x1f0 0 mbr_read_test_drive ;
-  0x170 1 mbr_read_test_drive ;
-  0x170 0 mbr_read_test_drive ;
+  # 0x170 1 mbr_read_test_drive ;
+  # 0x170 0 mbr_read_test_drive ;
 }

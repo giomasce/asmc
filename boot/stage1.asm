@@ -183,6 +183,10 @@ serial_setup16:
 	mov ax, 0x0b
 	out dx, al
 
+  ;; mov ax, 11100011b
+  ;; mov dx, 0
+  ;; int 0x14
+
 	ret
 
 
@@ -202,6 +206,10 @@ serial_write_char16:
 	mov dx, SERIAL_PORT
   mov al, bl
 	out dx, al
+
+  ;; mov ah, 0x01
+  ;; mov dx, 0
+  ;; int 0x14
 
 	ret
 

@@ -284,6 +284,6 @@ fun atapio_test_drive 2 {
 fun atapio_test 0 {
   0x1f0 1 atapio_test_drive ;
   0x1f0 0 atapio_test_drive ;
-  0x170 1 atapio_test_drive ;
-  0x170 0 atapio_test_drive ;
+  # 0x170 1 atapio_test_drive ;
+  # 0x170 0 atapio_test_drive ;
 }
