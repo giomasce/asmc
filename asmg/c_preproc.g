@@ -95,6 +95,20 @@ fun ppctx_destroy 1 {
   ptr free ;
 }
 
+fun ppctx_define 3 {
+  $ctx
+  $key
+  $value
+  @ctx 2 param = ;
+  @key 1 param = ;
+  @value 0 param = ;
+
+  $subst
+  @subst subst_init = ;
+  subst SUBST_REPLACEMENT take value strdup vector_push_back ;
+  ctx PPCTX_DEFINES take key subst map_set ;
+}
+
 fun ppctx_set_base_filename 2 {
   $ctx
   $filename
@@ -1121,7 +1135,42 @@ fun preproc_process_error 4 {
   @intoks 1 param = ;
   @iptr 0 param = ;
 
+  intoks iptr discard_white_tokens ;
+
+  $msg
+  @msg intoks iptr ** vector_at = ;
+  msg "\n" strcmp 0 != "preproc_process_error: newline found" assert_msg ;
+
+  "#error with " 1 platform_log ;
+  msg 1 platform_log ;
+  "\n" 1 platform_log ;
+
+  intoks iptr discard_white_tokens ;
+
   0 "preproc_process_error: dying because of error" assert_msg ;
+}
+
+fun preproc_process_warning 4 {
+  $ctx
+  $tokens
+  $intoks
+  $iptr
+  @ctx 3 param = ;
+  @tokens 2 param = ;
+  @intoks 1 param = ;
+  @iptr 0 param = ;
+
+  intoks iptr discard_white_tokens ;
+
+  $msg
+  @msg intoks iptr ** vector_at = ;
+  msg "\n" strcmp 0 != "preproc_process_warning: newline found" assert_msg ;
+
+  "#warning with " 1 platform_log ;
+  msg 1 platform_log ;
+  "\n" 1 platform_log ;
+
+  intoks iptr discard_white_tokens ;
 }
 
 fun is_including 1 {
@@ -1205,6 +1254,14 @@ fun preproc_file 3 {
       if tok "error" strcmp 0 == processed ! && {
         if including {
           ctx tokens intoks @i preproc_process_error ;
+        } else {
+          intoks @i discard_until_newline ;
+        }
+        @processed 1 = ;
+      }
+      if tok "warning" strcmp 0 == processed ! && {
+        if including {
+          ctx tokens intoks @i preproc_process_warning ;
         } else {
           intoks @i discard_until_newline ;
         }
