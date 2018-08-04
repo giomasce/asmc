@@ -255,6 +255,39 @@ atapio_wait_ret_false:
   ret
 
 
+atapio_out_lba28:
+  mov dx, [atapio_base]
+  add dx, ATAPIO_PORT_DRIVE
+  mov eax, 0
+  mov al, [atapio_lba+3]
+  test al, 0xf0
+  jnz platform_panic
+  and al, 0x0f
+  or al, 0xe0
+  cmp BYTE [atapio_master], 0
+  jne atapio_out_lba28_cont
+  or al, 0xf0
+atapio_out_lba28_cont:
+  out dx, al
+  mov dx, [atapio_base]
+  add dx, ATAPIO_PORT_SECTOR_COUNT
+  mov eax, 1
+  out dx, al
+  mov dx, [atapio_base]
+  add dx, ATAPIO_PORT_LBA_LO
+  mov al, [atapio_lba]
+  out dx, al
+  mov dx, [atapio_base]
+  add dx, ATAPIO_PORT_LBA_MID
+  mov al, [atapio_lba+1]
+  out dx, al
+  mov dx, [atapio_base]
+  add dx, ATAPIO_PORT_LBA_HI
+  mov al, [atapio_lba+2]
+  out dx, al
+  ret
+
+
 atapio_out_lba48:
   mov dx, [atapio_base]
   add dx, ATAPIO_PORT_DRIVE
@@ -298,12 +331,13 @@ atapio_out_lba48_cont:
   out dx, al
   ret
 
+
 atapio_read_sector:
-  call atapio_out_lba48
+  call atapio_out_lba28
 
   mov dx, [atapio_base]
   add dx, ATAPIO_PORT_COMMAND
-  mov al, 0x24
+  mov al, 0x20
   out dx, al
 
   ;; Poll and in
@@ -320,11 +354,11 @@ atapio_read_sector_ret_false:
 
 
 atapio_write_sector:
-  call atapio_out_lba48
+  call atapio_out_lba28
 
   mov dx, [atapio_base]
   add dx, ATAPIO_PORT_COMMAND
-  mov al, 0x34
+  mov al, 0x30
   out dx, al
 
   ;; Poll and out
