@@ -125,10 +125,10 @@ fun type_init 0 {
 fun type_destroy 1 {
   $type
   @type 0 param = ;
-  #type TYPE_ARGS take vector_destroy ;
-  #type TYPE_FIELDS_OFFS take vector_destroy ;
-  #type TYPE_FIELDS_TYPE_IDXS take vector_destroy ;
-  #type TYPE_FIELDS_NAMES take free_vect_of_ptrs ;
+  type TYPE_ARGS take vector_destroy ;
+  type TYPE_FIELDS_OFFS take vector_destroy ;
+  type TYPE_FIELDS_TYPE_IDXS take vector_destroy ;
+  type TYPE_FIELDS_NAMES take free_vect_of_ptrs ;
   type free ;
 }
 
