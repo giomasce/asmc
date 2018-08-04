@@ -2577,6 +2577,35 @@ fun cctx_compile_line 1 {
   $ctx
   @ctx 0 param = ;
 
+  $tok
+  @tok ctx cctx_get_token_or_fail = ;
+  if tok "typedef" strcmp 0 == {
+    $type_idx
+    @type_idx ctx cctx_parse_type = ;
+    type_idx 0xffffffff != "cctx_compile_line: type expected after typedef" assert_msg ;
+    $cont
+    @cont 1 = ;
+    while cont {
+      $actual_type_idx
+      $name
+      ctx type_idx @actual_type_idx @name 0 cctx_parse_declarator "cctx_compile_line: error 2" assert_msg ;
+      name 0 != "cctx_compile_line: cannot define type without name" assert_msg ;
+      $typenames
+      @typenames ctx CCTX_TYPENAMES take = ;
+      typenames name map_has ! "cctx_compile_line: type name already defined" assert_msg ;
+      typenames name actual_type_idx map_set ;
+      @tok ctx cctx_get_token_or_fail = ;
+      if tok ";" strcmp 0 == {
+        @cont 0 = ;
+      } else {
+        tok "," strcmp 0 == "cctx_compile_line: comma expected after typedef" assert_msg ;
+      }
+    }
+    ret ;
+  } else {
+    ctx cctx_give_back_token ;
+  }
+
   $type_idx
   @type_idx ctx cctx_parse_type = ;
   type_idx 0xffffffff != "cctx_compile: type expected" assert_msg ;
@@ -2596,7 +2625,6 @@ fun cctx_compile_line 1 {
       @actual_type_idx ctx actual_type_idx cctx_mangle_function_type = ;
       @type ctx actual_type_idx cctx_get_type = ;
       # Then check if it has a body
-      $tok
       @tok ctx cctx_get_token_or_fail = ;
       if tok "{" strcmp 0 == {
         # There is the body, register the global and compile the body
@@ -2616,7 +2644,6 @@ fun cctx_compile_line 1 {
     arg_names vector_destroy ;
 
     if cont {
-      $tok
       @tok ctx cctx_get_token_or_fail = ;
       if tok ";" strcmp 0 == {
         @cont 0 = ;

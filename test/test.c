@@ -15,6 +15,12 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
+typedef unsigned int size_t;
+typedef int ssize_t;
+
+// Test from http://www.unixwiz.net/techtips/reading-cdecl.html
+typedef char *(*(**foo [0][8])())[];
+
 // C++ comment
 int glob2;   \
 int glob; /* C comment */
@@ -43,9 +49,6 @@ char *(arr4[10]);
 char (*arr5)[10];
 
 void (*main_ptr)(int argc, char *argv[], char*);
-
-// Test from http://www.unixwiz.net/techtips/reading-cdecl.html
-char *(*(**foo [0][8])())[];
 
 int main(int other_name, char **);
 
