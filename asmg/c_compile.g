@@ -270,7 +270,8 @@ const CCTX_LABEL_BUF 32
 const CCTX_LABEL_NUM 36
 const CCTX_STRUCTS 40
 const CCTX_UNIONS 44
-const SIZEOF_CCTX 48
+const CCTX_ENUM_CONSTS 48
+const SIZEOF_CCTX 52
 
 fun cctx_init_types 1 {
   $ctx
@@ -280,6 +281,7 @@ fun cctx_init_types 1 {
   ctx CCTX_TYPENAMES take_addr map_init = ;
   ctx CCTX_STRUCTS take_addr map_init = ;
   ctx CCTX_UNIONS take_addr map_init = ;
+  ctx CCTX_ENUM_CONSTS take_addr map_init = ;
 }
 
 fun cctx_init 1 {
@@ -323,6 +325,8 @@ fun cctx_destroy_types 1 {
   $unions
   @unions ctx CCTX_UNIONS take = ;
   unions map_destroy ;
+
+  ctx CCTX_ENUM_CONSTS take map_destroy ;
 }
 
 fun cctx_destroy 1 {
@@ -912,6 +916,8 @@ fun cctx_get_token 1 {
     $tok
     @tok ctx CCTX_TOKENS take ctx CCTX_TOKENS_POS take vector_at = ;
     ctx CCTX_TOKENS_POS take_addr ctx CCTX_TOKENS_POS take 1 + = ;
+    " " 1 platform_log ;
+    tok 1 platform_log ;
     tok ret ;
   }
 }
@@ -920,6 +926,7 @@ fun cctx_give_back_token 1 {
   $ctx
   @ctx 0 param = ;
 
+  " <give back>" 1 platform_log ;
   ctx CCTX_TOKENS_POS take 0 > "cctx_give_back_token: error 1" assert_msg ;
   ctx CCTX_TOKENS_POS take_addr ctx CCTX_TOKENS_POS take 1 - = ;
 }
@@ -984,7 +991,7 @@ fun cctx_print_token_pos 1 {
 ifun cctx_parse_type 1
 ifun cctx_parse_declarator 5
 
-fun cctx_parse_struct 1 {
+fun cctx_parse_struct 3 {
   $ctx
   $type_idxs_ptr
   $names_ptr
@@ -1035,12 +1042,55 @@ fun cctx_parse_struct 1 {
   names_ptr names = ;
 }
 
+fun cctx_parse_enum 1 {
+  $ctx
+  @ctx 0 param = ;
+
+  $enum_consts
+  @enum_consts ctx CCTX_ENUM_CONSTS take = ;
+
+  $cont
+  @cont 1 = ;
+  $val
+  @val 0 = ;
+  while cont {
+    $tok
+    @tok ctx cctx_get_token_or_fail = ;
+    if tok "}" strcmp 0 == {
+      @cont 0 = ;
+    } else {
+      $ident
+      @ident tok = ;
+      @tok ctx cctx_get_token_or_fail = ;
+      if tok "=" strcmp 0 == {
+        @tok ctx cctx_get_token_or_fail = ;
+        # FIXME: evaluate general formula
+        @val tok atoi = ;
+        @tok ctx cctx_get_token_or_fail = ;
+      }
+      enum_consts ident map_has ! "cctx_parse_enum: constant is already defined" assert_msg ;
+      enum_consts ident val map_set ;
+      @val val 1 + = ;
+      if tok "}" strcmp 0 == {
+        @cont 0 = ;
+      } else {
+        tok "," strcmp 0 == "cctx_parse_enum: comma expected" assert_msg ;
+      }
+    }
+  }
+}
+
 fun cctx_parse_type 1 {
   $ctx
   @ctx 0 param = ;
 
   $tok
   @tok ctx cctx_get_token_or_fail = ;
+
+  # Ignore constness
+  if tok "const" strcmp 0 == {
+    @tok ctx cctx_get_token_or_fail = ;
+  }
 
   if tok "void" strcmp 0 == { TYPE_VOID ret ; }
   if tok "char" strcmp 0 == { TYPE_CHAR ret ; }
@@ -1172,8 +1222,20 @@ fun cctx_parse_type 1 {
   }
 
   if tok "enum" strcmp 0 == {
+    $tag
     @tok ctx cctx_get_token_or_fail = ;
-    0 "cctx_parse_type: unimplemented" assert_msg ;
+    if tok "{" strcmp 0 != {
+      @tag tok = ;
+      @tok ctx cctx_get_token_or_fail = ;
+    }
+    if tok "{" strcmp 0 == {
+      ctx cctx_parse_enum ;
+    } else {
+      ctx cctx_give_back_token ;
+      tag 0 != "cctx_parse_type: enum without neither tag nor definition" assert_msg ;
+    }
+
+    TYPE_UINT ret ;
   }
 
   $typenames
@@ -1850,15 +1912,22 @@ fun ast_eval_type 3 {
   if ast AST_TYPE take 0 == {
     # Operand
     if name is_valid_identifier {
-      # Search in local stack and among globals
-      $elem
-      @elem lctx name lctx_get_variable = ;
-      if elem {
-        @type_idx elem STACK_ELEM_TYPE_IDX take = ;
+      # Search among enum constants
+      $enum_consts
+      @enum_consts ctx CCTX_ENUM_CONSTS take = ;
+      if enum_consts name map_has {
+        TYPE_UINT ret ;
       } else {
-        $global
-        @global ctx name cctx_get_global = ;
-        @type_idx global GLOBAL_TYPE_IDX take = ;
+        # Search in local stack and among globals
+        $elem
+        @elem lctx name lctx_get_variable = ;
+        if elem {
+          @type_idx elem STACK_ELEM_TYPE_IDX take = ;
+        } else {
+          $global
+          @global ctx name cctx_get_global = ;
+          @type_idx global GLOBAL_TYPE_IDX take = ;
+        }
       }
     } else {
       if name **c '\"' == {
@@ -2515,11 +2584,20 @@ fun ast_push_value 3 {
   if ast AST_TYPE take 0 == {
     # Operand
     if name is_valid_identifier {
-      # Push the address
-      ast ctx lctx ast_push_addr ;
-      # pop eax
-      ctx 0x58 cctx_emit ;
-      ctx ctx type_idx cctx_type_footprint cctx_gen_push_data ;
+      $enum_consts
+      @enum_consts ctx CCTX_ENUM_CONSTS take = ;
+      if enum_consts name map_has {
+        $value
+        @value enum_consts name map_at = ;
+        ctx 0x68 cctx_emit ;
+        ctx value cctx_emit32 ;
+      } else {
+        # Push the address
+        ast ctx lctx ast_push_addr ;
+        # pop eax
+        ctx 0x58 cctx_emit ;
+        ctx ctx type_idx cctx_type_footprint cctx_gen_push_data ;
+      }
     } else {
       $value
       if name **c '\"' == {

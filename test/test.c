@@ -41,11 +41,27 @@ typedef union Test {
   struct Test *ptr;
 } Test3;
 
+enum Enum {
+  ZERO,
+  ONE,
+  TWO,
+  TEN = 10,
+  ELEVEN
+};
+
 // C++ comment
 int glob2;   \
 int glob; /* C comment */
 Test2 glob3;
 Test3 glob4;
+
+int test_enum() {
+  return ZERO;
+  return ONE;
+  return TWO;
+  return TEN;
+  return ELEVEN;
+}
 
 #include <first.h>
 #include \

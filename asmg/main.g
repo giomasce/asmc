@@ -24,8 +24,8 @@ const RUN_MESCC 0
 
 const USE_TRIVIAL_MALLOC 0
 const USE_SIMPLE_MALLOC 0
-const USE_CHECKED_MALLOC 1
-const USE_KMALLOC 0
+const USE_CHECKED_MALLOC 0
+const USE_KMALLOC 1
 
 fun main 0 {
   "Hello, G!\n" 1 platform_log ;
