@@ -323,6 +323,7 @@ fun get_token 0 {
 
 fun tokenize_file 1 {
   @fd_in 0 param vfs_open = ;
+  fd_in 0 != "tokenize_file: could not open file" assert_msg ;
   $tok
   $cont
   @cont 1 = ;
@@ -832,7 +833,25 @@ fun preproc_process_include 4 {
     @filename tok 1 + strdup = ;
     filename filename strlen 1 - + '\0' =c ;
   }
-  @filename filename ctx PPCTX_BASE_PATH take prepend_to_str = ;
+
+  # Search for the right include path
+  $testfile
+  @testfile filename strdup ctx PPCTX_BASE_PATH take prepend_to_str = ;
+  $fd
+  @fd testfile vfs_open = ;
+  if fd ! {
+    @testfile filename strdup "/disk1/stdlib/" prepend_to_str = ;
+    @fd testfile vfs_open = ;
+    fd "preproc_process_include: cannot find file" assert_msg ;
+    fd vfs_close ;
+    filename free ;
+    @filename testfile = ;
+  } else {
+    fd vfs_close ;
+    filename free ;
+    @filename testfile = ;
+  }
+
   "Including file " 1 platform_log ;
   filename 1 platform_log ;
   "\n" 1 platform_log ;

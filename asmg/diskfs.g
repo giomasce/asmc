@@ -142,7 +142,10 @@ fun diskmount_open 2 {
   @disk 1 param = ;
   @name 0 param = ;
 
-  disk DISKMOUNT_STARTS take name map_has "diskmount_open: file does not exist" assert_msg ;
+  if disk DISKMOUNT_STARTS take name map_has ! {
+    0 ret ;
+  }
+
   disk DISKMOUNT_SIZES take name map_has "diskmount_open: error 1" assert_msg ;
   disk DISKMOUNT_ATAPIO take disk DISKMOUNT_STARTS take name map_at disk DISKMOUNT_SIZES take name map_at diskfd_init ret ;
 }
