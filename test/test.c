@@ -19,7 +19,7 @@ typedef unsigned int size_t;
 typedef int ssize_t;
 
 // Test from http://www.unixwiz.net/techtips/reading-cdecl.html
-typedef char *(*(**foo [0][8])())[];
+typedef char *(*(**foo [][2*3+1])())[];
 
 int;
 
@@ -45,7 +45,7 @@ enum Enum {
   ZERO,
   ONE,
   TWO,
-  TEN = 10,
+  TEN = 5+3+2,
   ELEVEN
 };
 

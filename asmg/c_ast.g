@@ -268,7 +268,7 @@ fun ast_parse2 3 {
     }
     $i
     @i 0 = ;
-    while i end_toks vector_size < {
+    while i end_toks vector_size < stop ! && {
       if end_toks i vector_at tok strcmp 0 == {
         @stop 1 = ;
       }
@@ -400,7 +400,7 @@ fun ast_parse2 3 {
               ast AST_TYPE take_addr 0 = ;
               ast AST_NAME take_addr tok strdup = ;
             }
-            operand_stack ast vector_push_back ;
+                        operand_stack ast vector_push_back ;
             @expect_operator 1 = ;
           }
         }
@@ -496,6 +496,7 @@ fun ast_dump_int 2 {
     }
     "\n" 1 platform_log ;
   } else {
+    ast AST_TYPE take 1 == "ast_dump_int: error 1" assert_msg ;
     "Operator of type #" 1 platform_log ;
     ast AST_TYPE_IDX take itoa 1 platform_log ;
     ": " 1 platform_log ;
