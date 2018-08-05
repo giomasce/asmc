@@ -237,13 +237,15 @@ fun ast_rewind_stack 2 {
   }
 }
 
-fun ast_parse 3 {
+ifun ast_parse 3
+
+fun ast_parse2 3 {
   $intoks
   $iptr
-  $end_tok
+  $end_toks
   @intoks 2 param = ;
   @iptr 1 param = ;
-  @end_tok 0 param = ;
+  @end_toks 0 param = ;
 
   $cont
   @cont 1 = ;
@@ -257,12 +259,22 @@ fun ast_parse 3 {
   while cont {
     $tok
     iptr iptr ** 1 + = ;
+    $stop
+    @stop 0 = ;
     if iptr ** intoks vector_size >= {
-      @tok end_tok = ;
+      @stop 1 = ;
     } else {
       @tok intoks iptr ** vector_at = ;
     }
-    if end_tok tok strcmp 0 == {
+    $i
+    @i 0 = ;
+    while i end_toks vector_size < {
+      if end_toks i vector_at tok strcmp 0 == {
+        @stop 1 = ;
+      }
+      @i i 1 + = ;
+    }
+    if stop {
       @cont 0 = ;
     } else {
       if " " tok strcmp 0 != {
@@ -307,7 +319,7 @@ fun ast_parse 3 {
             if tok "(" strcmp 0 == {
               $tok2
               iptr iptr ** 1 + = ;
-              iptr ** intoks vector_size < "ast_parse: token expected" assert_msg ;
+              iptr ** intoks vector_size < "ast_parse2: token expected" assert_msg ;
               @tok2 intoks iptr ** vector_at = ;
               if tok2 ")" strcmp 0 == {
                 # No arguments, push a placeholder
@@ -421,6 +433,43 @@ fun ast_parse 3 {
 
   # "Ending parse\n" 1 platform_log ;
 
+  res ret ;
+}
+
+fun ast_parse 3 {
+  $intoks
+  $iptr
+  $end_tok
+  @intoks 2 param = ;
+  @iptr 1 param = ;
+  @end_tok 0 param = ;
+
+  $end_toks
+  @end_toks 4 vector_init = ;
+  end_toks end_tok vector_push_back ;
+  $res
+  @res intoks iptr end_toks ast_parse2 = ;
+  end_toks vector_destroy ;
+  res ret ;
+}
+
+fun ast_parse3 4 {
+  $intoks
+  $iptr
+  $end_tok1
+  $end_tok2
+  @intoks 3 param = ;
+  @iptr 2 param = ;
+  @end_tok1 1 param = ;
+  @end_tok2 0 param = ;
+
+  $end_toks
+  @end_toks 4 vector_init = ;
+  end_toks end_tok1 vector_push_back ;
+  end_toks end_tok2 vector_push_back ;
+  $res
+  @res intoks iptr end_toks ast_parse2 = ;
+  end_toks vector_destroy ;
   res ret ;
 }
 
