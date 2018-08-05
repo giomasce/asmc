@@ -53,7 +53,7 @@ diskfs/mescc/x86_defs.m1:
 	cp contrib/M2-Planet/test/common_x86/x86_defs.M1 $@
 
 build/diskfs.list: diskfs/* diskfs/mescc/x86_defs.m1
-	(cd diskfs/ ; find . -type f) | cut -c3- | sed -e 's|\(.*\)|\1 diskfs/\1|' > $@
+	(cd diskfs/ ; find -L . -type f) | cut -c3- | sed -e 's|\(.*\)|\1 diskfs/\1|' > $@
 
 build/diskfs.img: build/diskfs.list
 	xargs ./create_diskfs.py < $< > $@

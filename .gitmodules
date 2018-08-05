@@ -1,3 +1,6 @@
 [submodule "contrib/M2-Planet"]
 	path = contrib/M2-Planet
 	url = https://github.com/oriansj/M2-Planet.git
+[submodule "contrib/mcpp"]
+	path = contrib/mcpp
+	url = https://gitlab.com/giomasce/mcpp.git

@@ -19,8 +19,9 @@ const COMPILE_ASM 0
 const COMPILE_C 1
 const COMPILE_MESCC 0
 const RUN_ASM 0
-const RUN_C 1
+const RUN_C 0
 const RUN_MESCC 0
+const RUN_MCPP 1
 
 const USE_TRIVIAL_MALLOC 0
 const USE_SIMPLE_MALLOC 0
@@ -193,6 +194,14 @@ fun main 0 {
       0 "m1_test" platform_get_symbol \0 ;
       0 "m2_test" platform_get_symbol \0 ;
       0 "m2_test_full_compilation" platform_get_symbol \0 ;
+    }
+
+    if RUN_MCPP {
+      "Compiling mcpp.g... " 1 platform_log ;
+      "mcpp.g" platform_g_compile ;
+      "done!\n" 1 platform_log ;
+
+      0 "compile_mcpp" platform_get_symbol \0 ;
     }
   }
 
