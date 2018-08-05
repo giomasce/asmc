@@ -49,6 +49,16 @@ enum Enum {
   ELEVEN
 };
 
+int printf(char *format, ...) {
+  return 0;
+}
+
+char *format;
+
+void test_printf() {
+  printf(format, 10);
+}
+
 extern int glob2;
 
 // C++ comment

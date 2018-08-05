@@ -107,10 +107,11 @@ const TYPE_BASE 4
 const TYPE_SIZE 8
 const TYPE_LENGTH 12
 const TYPE_ARGS 16
-const TYPE_FIELDS_OFFS 20
-const TYPE_FIELDS_TYPE_IDXS 24
-const TYPE_FIELDS_NAMES 28
-const SIZEOF_TYPE 32
+const TYPE_ELLIPSIS 20
+const TYPE_FIELDS_OFFS 24
+const TYPE_FIELDS_TYPE_IDXS 28
+const TYPE_FIELDS_NAMES 32
+const SIZEOF_TYPE 36
 
 fun type_init 0 {
   $type
@@ -156,7 +157,9 @@ fun type_dump 1 {
     base itoa 1 platform_log ;
     $args
     @args type TYPE_ARGS take = ;
-    if args vector_size 0 == {
+    $ellipsis
+    @ellipsis type TYPE_ELLIPSIS take = ;
+    if args vector_size 0 == ellipsis ! && {
       " taking no argument" 1 platform_log ;
     } else {
       " taking arguments" 1 platform_log ;
@@ -166,6 +169,9 @@ fun type_dump 1 {
         " #" 1 platform_log ;
         args i vector_at itoa 1 platform_log ;
         @i i 1 + = ;
+      }
+      if ellipsis {
+        " ..." 1 platform_log ;
       }
     }
   }
@@ -453,6 +459,7 @@ fun _cctx_type_compare 3 {
 
   if t1 TYPE_KIND take TYPE_KIND_FUNCTION == {
     if ctx t1 TYPE_BASE take t2 TYPE_BASE take cctx_type_compare ! { 0 ret ; }
+    if t1 TYPE_ELLIPSIS take t2 TYPE_ELLIPSIS take != { 0 ret ; }
     $args1
     $args2
     @args1 t1 TYPE_ARGS take = ;
@@ -578,13 +585,15 @@ fun cctx_get_array_type 3 {
   ctx type cctx_add_type ret ;
 }
 
-fun cctx_get_function_type 3 {
+fun cctx_get_function_type 4 {
   $ctx
   $type_idx
   $args
-  @ctx 2 param = ;
-  @type_idx 1 param = ;
-  @args 0 param = ;
+  $ellipsis
+  @ctx 3 param = ;
+  @type_idx 2 param = ;
+  @args 1 param = ;
+  @ellipsis 0 param = ;
 
   $type
   @type type_init = ;
@@ -593,6 +602,7 @@ fun cctx_get_function_type 3 {
   type TYPE_SIZE take_addr 0xffffffff = ;
   type TYPE_ARGS take vector_destroy ;
   type TYPE_ARGS take_addr args = ;
+  type TYPE_ELLIPSIS take_addr ellipsis = ;
 
   ctx type cctx_add_type ret ;
 }
@@ -1209,11 +1219,15 @@ fun cctx_parse_type 1 {
 
 ifun cctx_parse_declarator 5
 
-fun _cctx_parse_function_arguments 2 {
+fun _cctx_parse_function_arguments 3 {
   $ctx
   $ret_arg_names
-  @ctx 1 param = ;
-  @ret_arg_names 0 param = ;
+  $ret_ellipsis
+  @ctx 2 param = ;
+  @ret_arg_names 1 param = ;
+  @ret_ellipsis 0 param = ;
+
+  ret_ellipsis 0 = ;
 
   $args
   @args 4 vector_init = ;
@@ -1223,8 +1237,12 @@ fun _cctx_parse_function_arguments 2 {
     if type_idx 0xffffffff == {
       $tok
       @tok ctx cctx_get_token_or_fail = ;
+      if tok "..." strcmp 0 == {
+        ret_ellipsis 1 = ;
+        @tok ctx cctx_get_token_or_fail = ;
+      }
       tok ")" strcmp 0 == "_cctx_parse_function_arguments: ) or type expected" assert_msg ;
-      args vector_size 0 == "_cctx_parse_function_arguments: unexpected )" assert_msg ;
+      args vector_size 0 == ret_ellipsis ** || "_cctx_parse_function_arguments: unexpected )" assert_msg ;
       args ret ;
     }
     $name
@@ -1307,11 +1325,12 @@ fun _cctx_parse_declarator 5 {
     if is_funct {
       # Function parenthesis
       $args
-      @args ctx ret_arg_names _cctx_parse_function_arguments = ;
+      $ellipsis
+      @args ctx ret_arg_names @ellipsis _cctx_parse_function_arguments = ;
       if ctx type_idx ret_type_idx ret_name 0 _cctx_parse_declarator {
         @type_idx ret_type_idx ** = ;
       }
-      ret_type_idx ctx type_idx args cctx_get_function_type = ;
+      ret_type_idx ctx type_idx args ellipsis cctx_get_function_type = ;
     } else {
       # Grouping parenthesis
       $inside_pos
@@ -2420,6 +2439,28 @@ fun cctx_gen_move_data 2 {
   }
 }
 
+fun cctx_default_promotion 2 {
+  $ctx
+  $type_idx
+  @ctx 1 param = ;
+  @type_idx 0 param = ;
+
+  if type_idx TYPE_CHAR ==
+     type_idx TYPE_SCHAR == ||
+     type_idx TYPE_SHORT == ||
+     type_idx TYPE_INT == || {
+    TYPE_INT ret ;
+  }
+
+  if type_idx TYPE_UCHAR ==
+     type_idx TYPE_USHORT == ||
+     type_idx TYPE_UINT == || {
+    TYPE_UINT ret ;
+  }
+
+  type_idx ret ;
+}
+
 fun ast_gen_function_call 3 {
   $ast
   $ctx
@@ -2466,21 +2507,33 @@ fun ast_gen_function_call 3 {
   }
 
   # Push arguments on the stack, right to left
-  passed_args vector_size args vector_size == "ast_gen_function_call: arguments number does not match" assert_msg ;
+  $ellipsis
+  @ellipsis fun_type TYPE_ELLIPSIS take = ;
+  if ellipsis {
+    passed_args vector_size args vector_size >= "ast_gen_function_call: too few arguments" assert_msg ;
+  } else {
+    passed_args vector_size args vector_size == "ast_gen_function_call: arguments number does not match" assert_msg ;
+  }
   $i
   @i 0 = ;
   $rewind
   @rewind 0 = ;
+  $excess_args
+  @excess_args passed_args vector_size args vector_size - = ;
   while i passed_args vector_size < {
     $passed_arg
-    $arg
     @passed_arg passed_args i vector_at = ;
-    @arg args args vector_size i - 1 - vector_at = ;
     passed_arg ctx lctx ast_push_value ;
     $from_type
     $to_type
     @from_type passed_arg ctx lctx ast_eval_type = ;
-    @to_type arg = ;
+    if i excess_args < {
+      @to_type ctx from_type cctx_default_promotion = ;
+    } else {
+      $arg
+      @arg args args vector_size i excess_args - - 1 - vector_at = ;
+      @to_type arg = ;
+    }
     lctx ctx from_type to_type lctx_convert_stack ;
     @rewind rewind ctx to_type cctx_type_footprint + = ;
     @i i 1 + = ;
@@ -2908,6 +2961,8 @@ fun cctx_mangle_function_type 2 {
   @args type TYPE_ARGS take = ;
   $new_args
   @new_args 4 vector_init = ;
+  $ellipsis
+  @ellipsis type TYPE_ELLIPSIS take = ;
 
   $i
   @i 0 = ;
@@ -2931,7 +2986,7 @@ fun cctx_mangle_function_type 2 {
     @i i 1 + = ;
   }
 
-  ctx base_idx new_args cctx_get_function_type ret ;
+  ctx base_idx new_args ellipsis cctx_get_function_type ret ;
 }
 
 fun cctx_compile_line 1 {

@@ -292,7 +292,7 @@ fun get_token 0 {
                 }
                 if done ! {
                   token_buf token_len + 0 =c ;
-                  if token_buf ast_is_operator token_buf "##" strcmp 0 == || ! {
+                  if token_buf ast_is_operator token_buf "##" strcmp 0 == || token_buf ".." strcmp 0 == || token_buf "..." strcmp 0 == || ! {
                     @cont 0 = ;
                     @done 1 = ;
                     @token_len token_len 1 - = ;
