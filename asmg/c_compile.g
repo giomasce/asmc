@@ -1051,14 +1051,46 @@ fun cctx_parse_type 1 {
     if tok "char" strcmp 0 == { TYPE_SCHAR ret ; }
     if tok "short" strcmp 0 == { TYPE_SHORT ret ; }
     if tok "int" strcmp 0 == { TYPE_INT ret ; }
-    0 "cctx_parse_type: unexpected token after signed" assert_msg ;
+    if tok "long" strcmp 0 == {
+      @tok ctx cctx_get_token_or_fail = ;
+      if tok "int" strcmp 0 == { TYPE_INT ret ; }
+      if tok "long" strcmp 0 == {
+        @tok ctx cctx_get_token_or_fail = ;
+        if tok "int" strcmp 0 == { TYPE_INT ret ; }
+        ctx cctx_give_back_token ;
+        TYPE_INT ret ;
+      }
+      ctx cctx_give_back_token ;
+      TYPE_INT ret ;
+    }
+    ctx cctx_give_back_token ;
+    TYPE_INT ret ;
   }
   if tok "unsigned" strcmp 0 == {
     @tok ctx cctx_get_token_or_fail = ;
     if tok "char" strcmp 0 == { TYPE_UCHAR ret ; }
     if tok "short" strcmp 0 == { TYPE_USHORT ret ; }
     if tok "int" strcmp 0 == { TYPE_UINT ret ; }
-    0 "cctx_parse_type: unexpected token after unsigned" assert_msg ;
+    if tok "long" strcmp 0 == {
+      @tok ctx cctx_get_token_or_fail = ;
+      if tok "int" strcmp 0 == { TYPE_UINT ret ; }
+      if tok "long" strcmp 0 == {
+        @tok ctx cctx_get_token_or_fail = ;
+        if tok "int" strcmp 0 == { TYPE_UINT ret ; }
+        ctx cctx_give_back_token ;
+        TYPE_UINT ret ;
+      }
+      ctx cctx_give_back_token ;
+      TYPE_UINT ret ;
+    }
+    ctx cctx_give_back_token ;
+    TYPE_UINT ret ;
+  }
+  if tok "long" strcmp 0 == {
+    @tok ctx cctx_get_token_or_fail = ;
+    if tok "long" strcmp 0 == { TYPE_INT ret ; }
+    ctx cctx_give_back_token ;
+    TYPE_INT ret ;
   }
 
   if tok "struct" strcmp 0 == {
