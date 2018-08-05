@@ -49,9 +49,11 @@ enum Enum {
   ELEVEN
 };
 
+extern int glob2;
+
 // C++ comment
-int glob2;   \
 int glob; /* C comment */
+int glob2;   \
 Test2 glob3;
 Test3 glob4;
 

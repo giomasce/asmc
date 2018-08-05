@@ -787,63 +787,20 @@ fun cctx_add_global 4 {
 
   if ctx CCTX_STAGE take 0 == {
     global GLOBAL_LOC take_addr 0xffffffff = ;
-    present ! "cctx_add_global: error 4" assert_msg ;
   } else {
     present "cctx_add_global: error 2" assert_msg ;
   }
 
   if ctx CCTX_STAGE take 1 == {
-    global GLOBAL_LOC take 0xffffffff == "cctx_add_global: error 5" assert_msg ;
-    global GLOBAL_LOC take_addr loc = ;
-  }
-
-  if ctx CCTX_STAGE take 2 == {
-    global GLOBAL_LOC take loc == "cctx_add_global: error 3" assert_msg ;
-  }
-}
-
-fun cctx_add_global_funct 4 {
-  $ctx
-  $name
-  $loc
-  $type_idx
-  @ctx 3 param = ;
-  @name 2 param = ;
-  @loc 1 param = ;
-  @type_idx 0 param = ;
-
-  $globals
-  @globals ctx CCTX_GLOBALS take = ;
-  $present
-  @present globals name map_has = ;
-  $global
-  if present {
-    @global globals name map_at = ;
-    ctx global GLOBAL_TYPE_IDX take type_idx cctx_type_compare "cctx_add_global_funct: function types do not match" assert_msg ;
-  } else {
-    ctx CCTX_STAGE take 0 == "cctx_add_global_funct: error 1" assert_msg ;
-    @global global_init = ;
-    global GLOBAL_TYPE_IDX take_addr type_idx = ;
-    global GLOBAL_LOC take_addr loc = ;
-    globals name global map_set ;
-  }
-
-  if ctx CCTX_STAGE take 0 == {
-    global GLOBAL_LOC take_addr 0xffffffff = ;
-  } else {
-    present "cctx_add_global_funct: error 2" assert_msg ;
-  }
-
-  if ctx CCTX_STAGE take 1 == {
     if loc 0xffffffff != {
-      global GLOBAL_LOC take 0xffffffff == "cctx_add_global_funct: function is defined more than once" assert_msg ;
+      global GLOBAL_LOC take 0xffffffff == "cctx_add_global: global is defined more than once" assert_msg ;
       global GLOBAL_LOC take_addr loc = ;
     }
   }
 
   if ctx CCTX_STAGE take 2 == {
     if loc 0xffffffff != {
-      global GLOBAL_LOC take loc == "cctx_add_global_funct: error 3" assert_msg ;
+      global GLOBAL_LOC take loc == "cctx_add_global: error 3" assert_msg ;
     }
   }
 }
@@ -1730,13 +1687,13 @@ fun cctx_gen_label 3 {
   if ctx CCTX_STAGE take 0 == {
     idx label_pos vector_size == "cctx_gen_label: error 2" assert_msg ;
     label_pos pos vector_push_back ;
-    ctx name loc TYPE_VOID cctx_add_global_funct ;
+    ctx name loc TYPE_VOID cctx_add_global ;
   } else {
     idx label_pos vector_size < "cctx_gen_label: error 1" assert_msg ;
     if pos 0xffffffff != {
       label_pos idx vector_at pos == "cctx_gen_label: error 3" assert_msg ;
     }
-    ctx name loc TYPE_VOID cctx_add_global_funct ;
+    ctx name loc TYPE_VOID cctx_add_global ;
   }
   ctx CCTX_LABEL_NUM take_addr idx 1 + = ;
   idx ret ;
@@ -1756,7 +1713,7 @@ fun cctx_fix_label 4 {
   @label_pos ctx CCTX_LABEL_POS take = ;
   $name
   @name ctx idx cctx_write_label = ;
-  ctx name loc TYPE_VOID cctx_add_global_funct ;
+  ctx name loc TYPE_VOID cctx_add_global ;
   if ctx CCTX_STAGE take 0 == {
     label_pos idx vector_at_addr pos = ;
   } else {
@@ -3010,6 +2967,15 @@ fun cctx_compile_line 1 {
     ctx cctx_give_back_token ;
   }
 
+  $extern
+  @extern 0 = ;
+  @tok ctx cctx_get_token_or_fail = ;
+  if tok "extern" strcmp 0 == {
+    @extern 1 = ;
+  } else {
+    ctx cctx_give_back_token ;
+  }
+
   $type_idx
   @type_idx ctx cctx_parse_type = ;
   type_idx 0xffffffff != "cctx_compile: type expected" assert_msg ;
@@ -3038,18 +3004,22 @@ fun cctx_compile_line 1 {
       @tok ctx cctx_get_token_or_fail = ;
       if tok "{" strcmp 0 == {
         # There is the body, register the global and compile the body
-        ctx name ctx CCTX_CURRENT_LOC take actual_type_idx cctx_add_global_funct ;
+        ctx name ctx CCTX_CURRENT_LOC take actual_type_idx cctx_add_global ;
         ctx actual_type_idx arg_names cctx_compile_function ;
         @cont 0 = ;
       } else {
         # No body, register the global with a fictious location
         ctx cctx_give_back_token ;
-        ctx name 0xffffffff actual_type_idx cctx_add_global_funct ;
+        ctx name 0xffffffff actual_type_idx cctx_add_global ;
       }
     } else {
-      # If it is anything else, register it and allocate its size
-      ctx name ctx CCTX_CURRENT_LOC take actual_type_idx cctx_add_global ;
-      ctx ctx actual_type_idx cctx_type_footprint cctx_emit_zeros ;
+      if extern {
+        ctx name 0xffffffff actual_type_idx cctx_add_global ;
+      } else {
+        # If it is anything else, register it and allocate its size
+        ctx name ctx CCTX_CURRENT_LOC take actual_type_idx cctx_add_global ;
+        ctx ctx actual_type_idx cctx_type_footprint cctx_emit_zeros ;
+      }
     }
     arg_names vector_destroy ;
 
