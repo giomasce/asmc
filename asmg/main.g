@@ -19,9 +19,9 @@ const COMPILE_ASM 0
 const COMPILE_C 1
 const COMPILE_MESCC 0
 const RUN_ASM 0
-const RUN_C 0
+const RUN_C 1
 const RUN_MESCC 0
-const RUN_MCPP 1
+const RUN_MCPP 0
 
 const USE_TRIVIAL_MALLOC 0
 const USE_SIMPLE_MALLOC 0

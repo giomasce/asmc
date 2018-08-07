@@ -2929,6 +2929,66 @@ fun cctx_compile_statement 2 {
     @processed 1 = ;
   }
 
+  # Parse for
+  if tok "for" strcmp 0 == processed ! && {
+    # Set up labels
+    $continue_lab
+    $break_lab
+    $restart_lab
+    $body_lab
+    @continue_lab lctx ctx lctx_gen_label = ;
+    @break_lab lctx ctx lctx_gen_label = ;
+    @restart_lab lctx ctx lctx_gen_label = ;
+    @body_lab lctx ctx lctx_gen_label = ;
+
+    # Compile initialization expression
+    @tok ctx cctx_get_token_or_fail = ;
+    tok "(" strcmp 0 == "cctx_compile_statement: ( expected after for" assert_msg ;
+    ctx lctx TYPE_VOID ";" cctx_compile_expression ;
+    @tok ctx cctx_get_token_or_fail = ;
+    tok ";" strcmp 0 == "cctx_compile_statement: ; expected after for" assert_msg ;
+
+    # Compile guard expression
+    lctx ctx restart_lab lctx_fix_label ;
+    ctx lctx TYPE_UINT ";" cctx_compile_expression ;
+    @tok ctx cctx_get_token_or_fail = ;
+    tok ";" strcmp 0 == "cctx_compile_statement: second ; expected after for" assert_msg ;
+
+    # pop eax; test eax, eax; cctx_gen_label_jump; cctx_gen_label_jump
+    ctx 0x58 cctx_emit ;
+    ctx 0x85 cctx_emit ;
+    ctx 0xc0 cctx_emit ;
+    ctx lctx break_lab JUMP_TYPE_JZ 0 cctx_gen_label_jump ;
+    ctx lctx body_lab JUMP_TYPE_JMP 0 cctx_gen_label_jump ;
+
+    # Compile iteration expression
+    lctx ctx continue_lab lctx_fix_label ;
+    ctx lctx TYPE_VOID ")" cctx_compile_expression ;
+    @tok ctx cctx_get_token_or_fail = ;
+    tok ")" strcmp 0 == "cctx_compile_statement: ) expected after for" assert_msg ;
+
+    # cctx_gen_label_jump
+    ctx lctx restart_lab JUMP_TYPE_JMP 0 cctx_gen_label_jump ;
+
+    # Compile body
+    $old_break_lab
+    $old_continue_lab
+    @old_break_lab lctx LCTX_BREAK_LABEL take = ;
+    @old_continue_lab lctx LCTX_CONTINUE_LABEL take = ;
+    lctx LCTX_BREAK_LABEL take_addr break_lab = ;
+    lctx LCTX_CONTINUE_LABEL take_addr continue_lab = ;
+    lctx ctx body_lab lctx_fix_label ;
+    ctx lctx cctx_compile_statement_or_block ;
+    lctx LCTX_BREAK_LABEL take_addr old_break_lab = ;
+    lctx LCTX_CONTINUE_LABEL take_addr old_continue_lab = ;
+
+    # cctx_gen_label_jump
+    ctx lctx continue_lab JUMP_TYPE_JMP 0 cctx_gen_label_jump ;
+
+    lctx ctx break_lab lctx_fix_label ;
+    @processed 1 = ;
+  }
+
   # Parse while
   if tok "while" strcmp 0 == processed ! && {
     # Set up labels
@@ -2940,10 +3000,10 @@ fun cctx_compile_statement 2 {
     # Compile guard expression
     lctx ctx continue_lab lctx_fix_label ;
     @tok ctx cctx_get_token_or_fail = ;
-    tok "(" strcmp 0 == "cctx_compile_statement: ( expected" assert_msg ;
+    tok "(" strcmp 0 == "cctx_compile_statement: ( expected after while" assert_msg ;
     ctx lctx TYPE_UINT ")" cctx_compile_expression ;
     @tok ctx cctx_get_token_or_fail = ;
-    tok ")" strcmp 0 == "cctx_compile_statement: ) expected" assert_msg ;
+    tok ")" strcmp 0 == "cctx_compile_statement: ) expected after while" assert_msg ;
 
     # pop eax; test eax, eax; cctx_gen_label_jump
     ctx 0x58 cctx_emit ;

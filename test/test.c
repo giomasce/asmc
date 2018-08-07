@@ -84,7 +84,10 @@ int main() {
   int a;
   Test2 loc2;
   Test3 loc3;
-  return sum_numbers(0);
+  int i;
+  a = 1;
+  for (i = 1; i < 10; i = i + 1) a = a * 2;
+  return sum_numbers(0) + a;
 }
 
 #ifdef __UNDEF
