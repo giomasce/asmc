@@ -88,8 +88,7 @@ int main() {
   a = 1;
   for (i = 1; i < 10; i = i + 1) a = a * 2;
 
-  int b;
-  int *bptr;
+  int b, *bptr;
   b = 10;
   bptr = &b;
   *bptr = 20;

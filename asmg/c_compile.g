@@ -3072,11 +3072,22 @@ fun cctx_compile_statement 2 {
     @type_idx ctx cctx_parse_type = ;
     if type_idx 0xffffffff != {
       # There is a type, so we have a variable declaration
-      $actual_type_idx
-      $name
-      ctx type_idx @actual_type_idx @name 0 cctx_parse_declarator "cctx_compile_statement: error 1" assert_msg ;
-      name 0 != "cctx_compile_statement: cannot instantiate variable without name" assert_msg ;
-      lctx ctx actual_type_idx name lctx_push_var ;
+      $cont
+      @cont 1 = ;
+      while cont {
+        $actual_type_idx
+        $name
+        ctx type_idx @actual_type_idx @name 0 cctx_parse_declarator "cctx_compile_statement: error 1" assert_msg ;
+        name 0 != "cctx_compile_statement: cannot instantiate variable without name" assert_msg ;
+        lctx ctx actual_type_idx name lctx_push_var ;
+	@tok ctx cctx_get_token_or_fail = ;
+	if tok ";" strcmp 0 == {
+	  ctx cctx_give_back_token ;
+	  @cont 0 = ;
+	} else {
+	  tok "," strcmp 0 == "cctx_compile_statement: comma expected" assert_msg ;
+	}
+      }
     } else {
       # No type, so this is an expression
       ctx lctx TYPE_VOID ";" cctx_compile_expression ;
