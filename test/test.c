@@ -87,7 +87,14 @@ int main() {
   int i;
   a = 1;
   for (i = 1; i < 10; i = i + 1) a = a * 2;
-  return sum_numbers(0) + a;
+
+  int b;
+  int *bptr;
+  b = 10;
+  bptr = &b;
+  *bptr = 20;
+
+  return sum_numbers(0) + a + b;
 }
 
 #ifdef __UNDEF

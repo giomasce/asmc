@@ -2071,6 +2071,23 @@ fun ast_eval_type 3 {
       @processed 1 = ;
     }
 
+    if name "*_PRE" strcmp 0 == {
+      $ptr_idx
+      $ptr_type
+      @ptr_idx ast AST_RIGHT take ctx lctx ast_eval_type = ;
+      @ptr_type ctx ptr_idx cctx_get_type = ;
+      ptr_type TYPE_KIND take TYPE_KIND_POINTER == "ast_eval_type: right is not a pointer" assert_msg ;
+      @type_idx ptr_type TYPE_BASE take = ;
+      @processed 1 = ;
+    }
+
+    if name "&_PRE" strcmp 0 == {
+      $orig_idx
+      @orig_idx ast AST_RIGHT take ctx lctx ast_eval_type = ;
+      @type_idx ctx orig_idx cctx_get_pointer_type = ;
+      @processed 1 = ;
+    }
+
     processed "ast_eval_type: not implemented" assert_msg ;
   }
 
@@ -2098,6 +2115,8 @@ fun ast_eval_type 3 {
   ast AST_ORIG_TYPE_IDX take_addr orig_type_idx = ;
   type_idx ret ;
 }
+
+ifun ast_push_value 3
 
 fun ast_push_addr 3 {
   $ast
@@ -2157,6 +2176,11 @@ fun ast_push_addr 3 {
     # Operator
     $processed
     @processed 0 = ;
+
+    if name "*_PRE" strcmp 0 == {
+      ast AST_RIGHT take ctx lctx ast_push_value ;
+      @processed 1 = ;
+    }
 
     processed "ast_push_addr: not implemented" assert_msg ;
   }
@@ -2232,8 +2256,6 @@ fun lctx_convert_stack 4 {
 
   0 "lctx_convert_stack: not implemented" assert_msg ;
 }
-
-ifun ast_push_value 3
 
 fun ast_push_value_arith 3 {
   $ast
@@ -2783,6 +2805,19 @@ fun ast_push_value 3 {
 
     if name "(" strcmp 0 == {
       ast ctx lctx ast_gen_function_call ;
+      @processed 1 = ;
+    }
+
+    if name "*_PRE" strcmp 0 == {
+      # Push the address
+      ast ctx lctx ast_push_addr ;
+      # pop eax
+      ctx 0x58 cctx_emit ;
+      ctx ctx type_idx cctx_type_footprint cctx_gen_push_data ;
+    }
+
+    if name "&_PRE" strcmp 0 == {
+      ast AST_RIGHT take ctx lctx ast_push_addr ;
       @processed 1 = ;
     }
 
