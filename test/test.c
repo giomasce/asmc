@@ -49,9 +49,14 @@ enum Enum {
   ELEVEN
 };
 
-void test_struct() {
+int test_struct() {
   Test2 t;
-  t.s;
+  t.x = 10;
+  t.y = 20;
+  t.s.x = 30;
+  t.s.y = 40;
+  t.s.z = 50;
+  return t.s.y;
 }
 
 int printf(char *format, ...) {
@@ -98,9 +103,7 @@ int main() {
   bptr = &b;
   *bptr = 20;
 
-  test_struct();
-
-  return sum_numbers(0) + a + b;
+  return sum_numbers(0) + a + b + test_struct();
 }
 
 #ifdef __UNDEF

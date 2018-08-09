@@ -2221,6 +2221,30 @@ fun ast_push_addr 3 {
       @processed 1 = ;
     }
 
+    if name "." strcmp 0 == {
+      $struct_idx
+      $struct_type
+      @struct_idx ast AST_LEFT take ctx lctx ast_eval_type = ;
+      @struct_type ctx struct_idx cctx_get_type = ;
+      ast AST_RIGHT take AST_TYPE take 0 == "ast_push_value: right is not a plain name" assert_msg ;
+      $name
+      @name ast AST_RIGHT take AST_NAME take = ;
+      $field
+      @field struct_type name type_get_idx = ;
+      field 0xffffffff != "ast_push_value: specified field does not exist" assert_msg ;
+      $off
+      @off struct_type TYPE_FIELDS_OFFS take field vector_at = ;
+
+      # ast_push_addr; pop eax; add eax, off; push eax
+      ast AST_LEFT take ctx lctx ast_push_addr ;
+      ctx 0x58 cctx_emit ;
+      ctx 0x05 cctx_emit ;
+      ctx off cctx_emit32 ;
+      ctx 0x50 cctx_emit ;
+
+      @processed 1 = ;
+    }
+
     processed "ast_push_addr: not implemented" assert_msg ;
   }
 }
