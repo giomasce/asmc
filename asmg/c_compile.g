@@ -239,6 +239,27 @@ fun type_dump 1 {
   }
 }
 
+fun type_get_idx 2 {
+  $type
+  $name
+  @type 1 param = ;
+  @name 0 param = ;
+
+  type TYPE_KIND take TYPE_KIND_STRUCT == type TYPE_KIND take TYPE_KIND_UNION == || "type_get_idx: type is not a struct or a union" assert_msg ;
+
+  $i
+  @i 0 = ;
+  $names
+  @names type TYPE_FIELDS_NAMES take = ;
+  while i names vector_size < {
+    if name names i vector_at strcmp 0 == {
+      i ret ;
+    }
+    @i i 1 + = ;
+  }
+  0xffffffff ret ;
+}
+
 const GLOBAL_TYPE_IDX 0
 const GLOBAL_LOC 4
 const SIZEOF_GLOBAL 8
@@ -617,7 +638,7 @@ fun cctx_construct_struct_type 3 {
   @type_idxs 1 param = ;
   @names 0 param = ;
 
-  type_idxs vector_size names vector_size == "cctx_get_struct_type: inputs have different lengths" assert_msg ;
+  type_idxs vector_size names vector_size == "cctx_construct_struct_type: inputs have different lengths" assert_msg ;
 
   $type
   @type type_init = ;
@@ -666,7 +687,7 @@ fun cctx_construct_union_type 3 {
   @type_idxs 1 param = ;
   @names 0 param = ;
 
-  type_idxs vector_size names vector_size == "cctx_get_union_type: inputs have different lengths" assert_msg ;
+  type_idxs vector_size names vector_size == "cctx_construct_union_type: inputs have different lengths" assert_msg ;
 
   $type
   @type type_init = ;
@@ -681,7 +702,10 @@ fun cctx_construct_union_type 3 {
   @size 0 = ;
   $i
   @i 0 = ;
+  $offs
+  @offs type TYPE_FIELDS_OFFS take = ;
   while i names vector_size < {
+    offs 0 vector_push_back ;
     @size size ctx type_idxs i vector_at cctx_type_footprint max = ;
     @i i 1 + = ;
   }
@@ -2088,6 +2112,21 @@ fun ast_eval_type 3 {
       @processed 1 = ;
     }
 
+    if name "." strcmp 0 == {
+      $struct_idx
+      $struct_type
+      @struct_idx ast AST_LEFT take ctx lctx ast_eval_type = ;
+      @struct_type ctx struct_idx cctx_get_type = ;
+      ast AST_RIGHT take AST_TYPE take 0 == "ast_eval_type: right is not a plain name" assert_msg ;
+      $name
+      @name ast AST_RIGHT take AST_NAME take = ;
+      $field
+      @field struct_type name type_get_idx = ;
+      field 0xffffffff != "ast_eval_type: specified field does not exist" assert_msg ;
+      @type_idx struct_type TYPE_FIELDS_TYPE_IDXS take field vector_at = ;
+      @processed 1 = ;
+    }
+
     processed "ast_eval_type: not implemented" assert_msg ;
   }
 
@@ -2573,6 +2612,29 @@ fun cctx_gen_move_data 2 {
   }
 }
 
+fun cctx_gen_move_data_backward 2 {
+  $ctx
+  $size
+  @ctx 1 param = ;
+  @size 0 param = ;
+
+  size 4 % 0 == "cctx_gen_move_data: size is not multiple of 4" assert_msg ;
+
+  $i
+  @i size 4 - = ;
+  while i 0 >= {
+    # mov edx, [esp+off]; mov [eax+off], edx
+    ctx 0x8b cctx_emit ;
+    ctx 0x94 cctx_emit ;
+    ctx 0x24 cctx_emit ;
+    ctx i cctx_emit32 ;
+    ctx 0x89 cctx_emit ;
+    ctx 0x90 cctx_emit ;
+    ctx i cctx_emit32 ;
+    @i i 4 - = ;
+  }
+}
+
 fun cctx_default_promotion 2 {
   $ctx
   $type_idx
@@ -2818,6 +2880,42 @@ fun ast_push_value 3 {
 
     if name "&_PRE" strcmp 0 == {
       ast AST_RIGHT take ctx lctx ast_push_addr ;
+      @processed 1 = ;
+    }
+
+    if name "." strcmp 0 == {
+      $struct_idx
+      $struct_type
+      $struct_size
+      @struct_idx ast AST_LEFT take ctx lctx ast_eval_type = ;
+      @struct_type ctx struct_idx cctx_get_type = ;
+      @struct_size ctx struct_idx cctx_type_footprint = ;
+      ast AST_RIGHT take AST_TYPE take 0 == "ast_push_value: right is not a plain name" assert_msg ;
+      $name
+      @name ast AST_RIGHT take AST_NAME take = ;
+      $field
+      @field struct_type name type_get_idx = ;
+      field 0xffffffff != "ast_push_value: specified field does not exist" assert_msg ;
+      $res_idx
+      $res_size
+      $off
+      @res_idx ast ctx lctx ast_eval_type = ;
+      @res_size ctx res_idx cctx_type_footprint = ;
+      @off struct_type TYPE_FIELDS_OFFS take field vector_at = ;
+
+      # ast_push_value; lea eax, [esp+struct_size-res_size]; add esp, off; cctx_gen_move_data_backward; mov esp, eax
+      ast AST_LEFT take ctx lctx ast_push_value ;
+      ctx 0x8d cctx_emit ;
+      ctx 0x84 cctx_emit ;
+      ctx 0x24 cctx_emit ;
+      ctx struct_size res_size - cctx_emit32 ;
+      ctx 0x81 cctx_emit ;
+      ctx 0xc4 cctx_emit ;
+      ctx off cctx_emit32 ;
+      ctx res_size cctx_gen_move_data_backward ;
+      ctx 0x89 cctx_emit ;
+      ctx 0xc4 cctx_emit ;
+
       @processed 1 = ;
     }
 
