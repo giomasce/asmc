@@ -917,7 +917,7 @@ fun cctx_give_back_token 1 {
   $ctx
   @ctx 0 param = ;
 
-  " <give back>" 1 platform_log ;
+  " <gb>" 1 platform_log ;
   ctx CCTX_TOKENS_POS take 0 > "cctx_give_back_token: error 1" assert_msg ;
   ctx CCTX_TOKENS_POS take_addr ctx CCTX_TOKENS_POS take 1 - = ;
 }
@@ -1035,6 +1035,34 @@ fun cctx_parse_struct 3 {
 
 ifun ast_eval_compile 2
 
+fun cctx_parse_ast1 2 {
+  $ctx
+  $term
+  @ctx 1 param = ;
+  @term 0 param = ;
+
+  " <pa>" 1 platform_log ;
+
+  # Bad hack to fix ast_parse interface
+  ctx cctx_give_back_token ;
+  ctx CCTX_TOKENS take ctx CCTX_TOKENS_POS take_addr term ast_parse ret ;
+}
+
+fun cctx_parse_ast2 3 {
+  $ctx
+  $term1
+  $term2
+  @ctx 2 param = ;
+  @term1 1 param = ;
+  @term2 0 param = ;
+
+  " <pa>" 1 platform_log ;
+
+  # Bad hack to fix ast_parse interface
+  ctx cctx_give_back_token ;
+  ctx CCTX_TOKENS take ctx CCTX_TOKENS_POS take_addr term1 term2 ast_parse3 ret ;
+}
+
 fun cctx_parse_enum 1 {
   $ctx
   @ctx 0 param = ;
@@ -1057,9 +1085,7 @@ fun cctx_parse_enum 1 {
       @tok ctx cctx_get_token_or_fail = ;
       if tok "=" strcmp 0 == {
         $ast
-        # Bad hack to fix ast_parse interface
-        ctx cctx_give_back_token ;
-        @ast ctx CCTX_TOKENS take ctx CCTX_TOKENS_POS take_addr "}" "," ast_parse3 = ;
+	@ast ctx "}" "," cctx_parse_ast2 = ;
         @val ctx ast ast_eval_compile = ;
         ast ast_destroy ;
         @tok ctx cctx_get_token_or_fail = ;
@@ -1391,9 +1417,7 @@ fun _cctx_parse_declarator 5 {
     } else {
       ctx cctx_give_back_token ;
       $ast
-      # Bad hack to fix ast_parse interface
-      ctx cctx_give_back_token ;
-      @ast ctx CCTX_TOKENS take ctx CCTX_TOKENS_POS take_addr "]" ast_parse = ;
+      @ast ctx "]" cctx_parse_ast1 = ;
       @length ctx ast ast_eval_compile = ;
       ast ast_destroy ;
       @tok ctx cctx_get_token_or_fail = ;
@@ -2983,9 +3007,7 @@ fun cctx_compile_expression 2 {
   @end_tok 0 param = ;
 
   $ast
-  # Bad hack to fix ast_parse interface
-  ctx cctx_give_back_token ;
-  @ast ctx CCTX_TOKENS take ctx CCTX_TOKENS_POS take_addr end_tok ast_parse = ;
+  @ast ctx end_tok cctx_parse_ast1 = ;
   #ast ctx lctx ast_eval_type ;
   if target_type_idx TYPE_VOID == {
     ast ctx lctx ast_eval ;
