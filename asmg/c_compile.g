@@ -2081,6 +2081,52 @@ fun ast_eval_type 3 {
     $processed
     @processed 0 = ;
 
+    $sum
+    $subtract
+    @sum name "+" strcmp 0 == = ;
+    @subtract name "-" strcmp 0 == = ;
+
+    if sum subtract || {
+      $left_idx
+      $right_idx
+      @left_idx ast AST_LEFT take ctx lctx ast_eval_type = ;
+      @right_idx ast AST_RIGHT take ctx lctx ast_eval_type = ;
+      $left_ptr
+      $right_ptr
+      @left_ptr ctx left_idx cctx_get_type TYPE_KIND take TYPE_KIND_POINTER == = ;
+      @right_ptr ctx right_idx cctx_get_type TYPE_KIND take TYPE_KIND_POINTER == = ;
+      $left_size
+      $right_size
+      if left_ptr {
+        @left_size ctx ctx left_idx cctx_get_type TYPE_BASE take cctx_type_footprint = ;
+      }
+      if right_ptr {
+        @right_size ctx ctx right_idx cctx_get_type TYPE_BASE take cctx_type_footprint = ;
+      }
+      if sum {
+        left_ptr right_ptr && ! "ast_eval_type: cannot take sum of two pointers" assert_msg ;
+        if left_ptr {
+          @type_idx left_idx = ;
+          @processed 1 = ;
+        }
+        if right_ptr {
+          @type_idx right_idx = ;
+          @processed 1 = ;
+        }
+      } else {
+        left_ptr ! right_ptr && ! "ast_eval_type: cannot take different of a non-pointer and a pointer" assert_msg ;
+	if left_ptr {
+	  if right_ptr {
+            left_size right_size == "ast_eval_type: cannot take difference of pointers to types of different size" assert_msg ;
+	    @type_idx TYPE_INT = ;
+	  } else {
+	    @type_idx left_idx = ;
+	  }
+	  @processed 1 = ;
+	}
+      }
+    }
+
     if name "*" strcmp 0 ==
        name "/" strcmp 0 == ||
        name "%" strcmp 0 == ||
@@ -2094,7 +2140,8 @@ fun ast_eval_type 3 {
        name "!=" strcmp 0 == ||
        name "&" strcmp 0 == ||
        name "^" strcmp 0 == ||
-       name "|" strcmp 0 == || {
+       name "|" strcmp 0 == ||
+       processed ! && {
       @type_idx ast ctx lctx ast_arith_conv = ;
       @processed 1 = ;
     }
@@ -2859,6 +2906,123 @@ fun ast_gen_function_call 3 {
   passed_args vector_destroy ;
 }
 
+fun ast_push_value_ptr 3 {
+  $ast
+  $ctx
+  $lctx
+  @ast 2 param = ;
+  @ctx 1 param = ;
+  @lctx 0 param = ;
+
+  $name
+  @name ast AST_NAME take = ;
+
+  $sum
+  $subtract
+  @sum name "+" strcmp 0 == = ;
+  @subtract name "-" strcmp 0 == = ;
+
+  sum subtract || "ast_push_value_ptr: not a sum or a subtraction" assert_msg ;
+
+  $processed
+  @processed 0 = ;
+
+  $left_idx
+  $right_idx
+  @left_idx ast AST_LEFT take ctx lctx ast_eval_type = ;
+  @right_idx ast AST_RIGHT take ctx lctx ast_eval_type = ;
+  $left_ptr
+  $right_ptr
+  @left_ptr ctx left_idx cctx_get_type TYPE_KIND take TYPE_KIND_POINTER == = ;
+  @right_ptr ctx right_idx cctx_get_type TYPE_KIND take TYPE_KIND_POINTER == = ;
+  $left_size
+  $right_size
+  if left_ptr {
+    @left_size ctx ctx left_idx cctx_get_type TYPE_BASE take cctx_type_footprint = ;
+  }
+  if right_ptr {
+    @right_size ctx ctx right_idx cctx_get_type TYPE_BASE take cctx_type_footprint = ;
+  }
+
+  if sum {
+    left_ptr right_ptr && ! "ast_eval_type: cannot take sum of two pointers" assert_msg ;
+    if left_ptr {
+      # ast_push_value; ast_push_value; push size
+      ast AST_LEFT take ctx lctx ast_push_value ;
+      ast AST_RIGHT take ctx lctx ast_push_value ;
+      lctx ctx ast AST_RIGHT take ctx lctx ast_eval_type TYPE_UINT lctx_convert_stack ;
+      ctx 0x68 cctx_emit ;
+      ctx left_size cctx_emit32 ;
+      @processed 1 = ;
+    }
+    if right_ptr {
+      # ast_push_value; ast_push_value; push size
+      ast AST_RIGHT take ctx lctx ast_push_value ;
+      ast AST_LEFT take ctx lctx ast_push_value ;
+      lctx ctx ast AST_LEFT take ctx lctx ast_eval_type TYPE_UINT lctx_convert_stack ;
+      ctx 0x68 cctx_emit ;
+      ctx right_size cctx_emit32 ;
+      @processed 1 = ;
+    }
+    if processed {
+      # pop eax; pop edx; imul edx; pop ecx; add eax, ecx; push eax
+      ctx 0x58 cctx_emit ;
+      ctx 0x5a cctx_emit ;
+      ctx 0xf7 cctx_emit ;
+      ctx 0xea cctx_emit ;
+      ctx 0x59 cctx_emit ;
+      ctx 0x01 cctx_emit ;
+      ctx 0xc8 cctx_emit ;
+      ctx 0x50 cctx_emit ;
+    }
+  } else {
+    left_ptr ! right_ptr && ! "ast_eval_type: cannot take different of a non-pointer and a pointer" assert_msg ;
+    if left_ptr {
+      if right_ptr {
+        left_size right_size == "ast_eval_type: cannot take difference of pointers to types of different size" assert_msg ;
+	# push size; ast_push_value; ast_push_value
+	ctx 0x68 cctx_emit ;
+	ctx left_size cctx_emit32 ;
+	ast AST_LEFT take ctx lctx ast_push_value ;
+	ast AST_RIGHT take ctx lctx ast_push_value ;
+
+	# pop edx; pop eax; sub eax, edx; pop ecx; cdq; idiv ecx; push eax
+	ctx 0x5a cctx_emit ;
+	ctx 0x58 cctx_emit ;
+	ctx 0x29 cctx_emit ;
+	ctx 0xd0 cctx_emit ;
+	ctx 0x59 cctx_emit ;
+	ctx 0x99 cctx_emit ;
+	ctx 0xf7 cctx_emit ;
+	ctx 0xf9 cctx_emit ;
+	ctx 0x50 cctx_emit ;
+      } else {
+        # ast_push_value; ast_push_value; push size
+        ast AST_LEFT take ctx lctx ast_push_value ;
+        ast AST_RIGHT take ctx lctx ast_push_value ;
+        lctx ctx ast AST_RIGHT take ctx lctx ast_eval_type TYPE_UINT lctx_convert_stack ;
+        ctx 0x68 cctx_emit ;
+        ctx left_size cctx_emit32 ;
+
+	# pop eax; pop edx; imul edx; pop ecx; neg eax; add eax, ecx; push eax
+        ctx 0x58 cctx_emit ;
+        ctx 0x5a cctx_emit ;
+        ctx 0xf7 cctx_emit ;
+        ctx 0xea cctx_emit ;
+        ctx 0x59 cctx_emit ;
+	ctx 0xf7 cctx_emit ;
+	ctx 0xd8 cctx_emit ;
+        ctx 0x01 cctx_emit ;
+        ctx 0xc8 cctx_emit ;
+        ctx 0x50 cctx_emit ;
+      }
+      @processed 1 = ;
+    }
+  }
+
+  processed ret ;
+}
+
 fun ast_push_value 3 {
   $ast
   $ctx
@@ -2932,6 +3096,15 @@ fun ast_push_value 3 {
     $processed
     @processed 0 = ;
 
+    $sum
+    $subtract
+    @sum name "+" strcmp 0 == = ;
+    @subtract name "-" strcmp 0 == = ;
+
+    if sum subtract || {
+      @processed ast ctx lctx ast_push_value_ptr = ;
+    }
+
     if name "*" strcmp 0 ==
        name "/" strcmp 0 == ||
        name "%" strcmp 0 == ||
@@ -2945,7 +3118,8 @@ fun ast_push_value 3 {
        name "!=" strcmp 0 == ||
        name "&" strcmp 0 == ||
        name "^" strcmp 0 == ||
-       name "|" strcmp 0 == || {
+       name "|" strcmp 0 == ||
+       processed ! && {
       ast ctx lctx ast_push_value_arith ;
       @processed 1 = ;
     }

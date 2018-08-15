@@ -49,6 +49,15 @@ enum Enum {
   ELEVEN
 };
 
+int test_array() {
+  int x[3];
+  *(x+1) = *x = 200;
+  *x = 100;
+  //*(x+1) = 200;
+  *(x+2) = 300;
+  return *(1+x);
+}
+
 int test_struct() {
   Test2 t;
   t.x = 10;
@@ -107,7 +116,7 @@ int main() {
   bptr = &b;
   *bptr = 20;
 
-  return sum_numbers(0) + a + b + (****test_struct)();
+  return sum_numbers(0) + a + b + (****test_struct)() + test_array();
 }
 
 #ifdef __UNDEF
