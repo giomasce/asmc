@@ -56,7 +56,11 @@ int test_struct() {
   t.s.x = 30;
   t.s.y = 40;
   t.s.z = 50;
-  return t.s.y;
+  Test2 t2;
+  t2 = t;
+  Test2 *ptr;
+  ptr = &t2;
+  return ptr->s.y;
 }
 
 int printf(char *format, ...) {
@@ -103,7 +107,7 @@ int main() {
   bptr = &b;
   *bptr = 20;
 
-  return sum_numbers(0) + a + b + test_struct();
+  return sum_numbers(0) + a + b + (****test_struct)();
 }
 
 #ifdef __UNDEF

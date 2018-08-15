@@ -2151,6 +2151,26 @@ fun ast_eval_type 3 {
       @processed 1 = ;
     }
 
+    if name "->" strcmp 0 == {
+      $ptr_idx
+      $ptr_type
+      $struct_idx
+      $struct_type
+      @ptr_idx ast AST_LEFT take ctx lctx ast_eval_type = ;
+      @ptr_type ctx ptr_idx cctx_get_type = ;
+      ptr_type TYPE_KIND take TYPE_KIND_POINTER == "ast_eval_type: right is not a pointer" assert_msg ;
+      @struct_idx ptr_type TYPE_BASE take = ;
+      @struct_type ctx struct_idx cctx_get_type = ;
+      ast AST_RIGHT take AST_TYPE take 0 == "ast_eval_type: right is not a plain name" assert_msg ;
+      $name
+      @name ast AST_RIGHT take AST_NAME take = ;
+      $field
+      @field struct_type name type_get_idx = ;
+      field 0xffffffff != "ast_eval_type: specified field does not exist" assert_msg ;
+      @type_idx struct_type TYPE_FIELDS_TYPE_IDXS take field vector_at = ;
+      @processed 1 = ;
+    }
+
     processed "ast_eval_type: not implemented" assert_msg ;
   }
 
@@ -2250,17 +2270,46 @@ fun ast_push_addr 3 {
       $struct_type
       @struct_idx ast AST_LEFT take ctx lctx ast_eval_type = ;
       @struct_type ctx struct_idx cctx_get_type = ;
-      ast AST_RIGHT take AST_TYPE take 0 == "ast_push_value: right is not a plain name" assert_msg ;
+      ast AST_RIGHT take AST_TYPE take 0 == "ast_push_addr: right is not a plain name" assert_msg ;
       $name
       @name ast AST_RIGHT take AST_NAME take = ;
       $field
       @field struct_type name type_get_idx = ;
-      field 0xffffffff != "ast_push_value: specified field does not exist" assert_msg ;
+      field 0xffffffff != "ast_push_addr: specified field does not exist" assert_msg ;
       $off
       @off struct_type TYPE_FIELDS_OFFS take field vector_at = ;
 
       # ast_push_addr; pop eax; add eax, off; push eax
       ast AST_LEFT take ctx lctx ast_push_addr ;
+      ctx 0x58 cctx_emit ;
+      ctx 0x05 cctx_emit ;
+      ctx off cctx_emit32 ;
+      ctx 0x50 cctx_emit ;
+
+      @processed 1 = ;
+    }
+
+    if name "->" strcmp 0 == {
+      $ptr_idx
+      $ptr_type
+      $struct_idx
+      $struct_type
+      @ptr_idx ast AST_LEFT take ctx lctx ast_eval_type = ;
+      @ptr_type ctx ptr_idx cctx_get_type = ;
+      ptr_type TYPE_KIND take TYPE_KIND_POINTER == "ast_push_addr: right is not a pointer" assert_msg ;
+      @struct_idx ptr_type TYPE_BASE take = ;
+      @struct_type ctx struct_idx cctx_get_type = ;
+      ast AST_RIGHT take AST_TYPE take 0 == "ast_push_addr: right is not a plain name" assert_msg ;
+      $name
+      @name ast AST_RIGHT take AST_NAME take = ;
+      $field
+      @field struct_type name type_get_idx = ;
+      field 0xffffffff != "ast_push_addr: specified field does not exist" assert_msg ;
+      $off
+      @off struct_type TYPE_FIELDS_OFFS take field vector_at = ;
+
+      # ast_push_value; pop eax; add eax, off; push eax
+      ast AST_LEFT take ctx lctx ast_push_value ;
       ctx 0x58 cctx_emit ;
       ctx 0x05 cctx_emit ;
       ctx off cctx_emit32 ;
@@ -2924,6 +2973,7 @@ fun ast_push_value 3 {
       # pop eax
       ctx 0x58 cctx_emit ;
       ctx ctx type_idx cctx_type_footprint cctx_gen_push_data ;
+      @processed 1 = ;
     }
 
     if name "&_PRE" strcmp 0 == {
@@ -2964,6 +3014,15 @@ fun ast_push_value 3 {
       ctx 0x89 cctx_emit ;
       ctx 0xc4 cctx_emit ;
 
+      @processed 1 = ;
+    }
+
+    if name "->" strcmp 0 == {
+      # Push the address
+      ast ctx lctx ast_push_addr ;
+      # pop eax
+      ctx 0x58 cctx_emit ;
+      ctx ctx type_idx cctx_type_footprint cctx_gen_push_data ;
       @processed 1 = ;
     }
 
