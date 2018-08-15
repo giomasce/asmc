@@ -50,11 +50,12 @@ enum Enum {
 };
 
 int test_array() {
-  int x[3];
+  short x[3];
   *(x+1) = *x = 200;
   *x = 100;
   //*(x+1) = 200;
   *(x+2) = 300;
+  //return (x+2)-x;
   return *(1+x);
 }
 

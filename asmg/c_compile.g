@@ -1480,6 +1480,20 @@ fun cctx_type_footprint 2 {
   size 1 - 3 | 1 + ret ;
 }
 
+fun cctx_type_size 2 {
+  $ctx
+  $type_idx
+  @ctx 1 param = ;
+  @type_idx 0 param = ;
+
+  $type
+  @type ctx CCTX_TYPES take type_idx vector_at = ;
+  $size
+  @size type TYPE_SIZE take = ;
+  size 0xffffffff != "cctx_type_size: type cannot be instantiated" assert_msg ;
+  size ret ;
+}
+
 const STACK_ELEM_NAME 0
 const STACK_ELEM_TYPE_IDX 4
 const STACK_ELEM_LOC 8
@@ -2098,10 +2112,10 @@ fun ast_eval_type 3 {
       $left_size
       $right_size
       if left_ptr {
-        @left_size ctx ctx left_idx cctx_get_type TYPE_BASE take cctx_type_footprint = ;
+        @left_size ctx ctx left_idx cctx_get_type TYPE_BASE take cctx_type_size = ;
       }
       if right_ptr {
-        @right_size ctx ctx right_idx cctx_get_type TYPE_BASE take cctx_type_footprint = ;
+        @right_size ctx ctx right_idx cctx_get_type TYPE_BASE take cctx_type_size = ;
       }
       if sum {
         left_ptr right_ptr && ! "ast_eval_type: cannot take sum of two pointers" assert_msg ;
@@ -2739,6 +2753,27 @@ fun cctx_gen_move_data 2 {
   @ctx 1 param = ;
   @size 0 param = ;
 
+  if size 1 == {
+    # mov dl, [esp]; mov [eax], dl
+    ctx 0x8a cctx_emit ;
+    ctx 0x14 cctx_emit ;
+    ctx 0x24 cctx_emit ;
+    ctx 0x88 cctx_emit ;
+    ctx 0x10 cctx_emit ;
+    ret ;
+  }
+  if size 2 == {
+    # mov dx, [esp]; mov [eax], dx
+    ctx 0x66 cctx_emit ;
+    ctx 0x8b cctx_emit ;
+    ctx 0x14 cctx_emit ;
+    ctx 0x24 cctx_emit ;
+    ctx 0x66 cctx_emit ;
+    ctx 0x89 cctx_emit ;
+    ctx 0x10 cctx_emit ;
+    ret ;
+  }
+
   size 4 % 0 == "cctx_gen_move_data: size is not multiple of 4" assert_msg ;
 
   $i
@@ -2938,10 +2973,10 @@ fun ast_push_value_ptr 3 {
   $left_size
   $right_size
   if left_ptr {
-    @left_size ctx ctx left_idx cctx_get_type TYPE_BASE take cctx_type_footprint = ;
+    @left_size ctx ctx left_idx cctx_get_type TYPE_BASE take cctx_type_size = ;
   }
   if right_ptr {
-    @right_size ctx ctx right_idx cctx_get_type TYPE_BASE take cctx_type_footprint = ;
+    @right_size ctx ctx right_idx cctx_get_type TYPE_BASE take cctx_type_size = ;
   }
 
   if sum {
@@ -3131,7 +3166,7 @@ fun ast_push_value 3 {
 
       # pop eax; cctx_gen_move_data
       ctx 0x58 cctx_emit ;
-      ctx ctx ast ctx lctx ast_eval_type cctx_type_footprint cctx_gen_move_data ;
+      ctx ctx ast ctx lctx ast_eval_type cctx_type_size cctx_gen_move_data ;
 
       @processed 1 = ;
     }
