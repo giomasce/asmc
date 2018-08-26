@@ -526,4 +526,4 @@ This repository contains the following code ported to G:
 
  * `mescc_m2.g` is ported from many files in repository
    <https://github.com/oriansj/M2-Planet>. It is synchronized with
-   commit `64531def3b83992280349efd4876ff881e42d78a`.
+   commit `dc94afb5588dda0521aca9f6f1a7df546c5053ea`.
