@@ -1085,7 +1085,7 @@ fun cctx_parse_enum 1 {
       @tok ctx cctx_get_token_or_fail = ;
       if tok "=" strcmp 0 == {
         $ast
-	@ast ctx "}" "," cctx_parse_ast2 = ;
+        @ast ctx "}" "," cctx_parse_ast2 = ;
         @val ctx ast ast_eval_compile = ;
         ast ast_destroy ;
         @tok ctx cctx_get_token_or_fail = ;
@@ -1834,8 +1834,8 @@ fun cctx_gen_jump 3 {
     } else {
       if type JUMP_TYPE_JZ == {
         # jz rel
-	ctx 0x0f cctx_emit ;
-	ctx 0x84 cctx_emit ;
+        ctx 0x0f cctx_emit ;
+        ctx 0x84 cctx_emit ;
       } else {
         0 "cctx_gen_dump: error 1" assert_msg ;
       }
@@ -2129,15 +2129,15 @@ fun ast_eval_type 3 {
         }
       } else {
         left_ptr ! right_ptr && ! "ast_eval_type: cannot take different of a non-pointer and a pointer" assert_msg ;
-	if left_ptr {
-	  if right_ptr {
+        if left_ptr {
+          if right_ptr {
             left_size right_size == "ast_eval_type: cannot take difference of pointers to types of different size" assert_msg ;
-	    @type_idx TYPE_INT = ;
-	  } else {
-	    @type_idx left_idx = ;
-	  }
-	  @processed 1 = ;
-	}
+            @type_idx TYPE_INT = ;
+          } else {
+            @type_idx left_idx = ;
+          }
+          @processed 1 = ;
+        }
       }
     }
 
@@ -2296,22 +2296,22 @@ fun ast_push_addr 3 {
     } else {
       if name **c '\"' == {
         $label
-	$str_label
+        $str_label
         @label lctx ctx lctx_gen_label = ;
-	@str_label lctx ctx lctx_gen_label = ;
+        @str_label lctx ctx lctx_gen_label = ;
         ctx lctx label JUMP_TYPE_JMP 0 cctx_gen_label_jump ;
-	lctx ctx str_label lctx_fix_label ;
+        lctx ctx str_label lctx_fix_label ;
         $from
-	@from name 1 + = ;
-	while from **c '\"' != {
-	  @from 0 ctx escape_char ;
-	}
-	from 1 + **c 0 == "ast_push_addr: illegal string literal" assert_msg ;
-	ctx 0 cctx_emit ;
+        @from name 1 + = ;
+        while from **c '\"' != {
+          @from 0 ctx escape_char ;
+        }
+        from 1 + **c 0 == "ast_push_addr: illegal string literal" assert_msg ;
+        ctx 0 cctx_emit ;
         lctx ctx label lctx_fix_label ;
-	# push str_label
-	ctx 0x68 cctx_emit ;
-	ctx ctx lctx label cctx_get_label_addr cctx_emit32 ;
+        # push str_label
+        ctx 0x68 cctx_emit ;
+        ctx ctx lctx label cctx_get_label_addr cctx_emit32 ;
       } else {
         0 "ast_push_addr: cannot take the address of an immediate" assert_msg ;
       }
@@ -3015,22 +3015,22 @@ fun ast_push_value_ptr 3 {
     if left_ptr {
       if right_ptr {
         left_size right_size == "ast_eval_type: cannot take difference of pointers to types of different size" assert_msg ;
-	# push size; ast_push_value; ast_push_value
-	ctx 0x68 cctx_emit ;
-	ctx left_size cctx_emit32 ;
-	ast AST_LEFT take ctx lctx ast_push_value ;
-	ast AST_RIGHT take ctx lctx ast_push_value ;
+        # push size; ast_push_value; ast_push_value
+        ctx 0x68 cctx_emit ;
+        ctx left_size cctx_emit32 ;
+        ast AST_LEFT take ctx lctx ast_push_value ;
+        ast AST_RIGHT take ctx lctx ast_push_value ;
 
-	# pop edx; pop eax; sub eax, edx; pop ecx; cdq; idiv ecx; push eax
-	ctx 0x5a cctx_emit ;
-	ctx 0x58 cctx_emit ;
-	ctx 0x29 cctx_emit ;
-	ctx 0xd0 cctx_emit ;
-	ctx 0x59 cctx_emit ;
-	ctx 0x99 cctx_emit ;
-	ctx 0xf7 cctx_emit ;
-	ctx 0xf9 cctx_emit ;
-	ctx 0x50 cctx_emit ;
+        # pop edx; pop eax; sub eax, edx; pop ecx; cdq; idiv ecx; push eax
+        ctx 0x5a cctx_emit ;
+        ctx 0x58 cctx_emit ;
+        ctx 0x29 cctx_emit ;
+        ctx 0xd0 cctx_emit ;
+        ctx 0x59 cctx_emit ;
+        ctx 0x99 cctx_emit ;
+        ctx 0xf7 cctx_emit ;
+        ctx 0xf9 cctx_emit ;
+        ctx 0x50 cctx_emit ;
       } else {
         # ast_push_value; ast_push_value; push size
         ast AST_LEFT take ctx lctx ast_push_value ;
@@ -3039,14 +3039,14 @@ fun ast_push_value_ptr 3 {
         ctx 0x68 cctx_emit ;
         ctx left_size cctx_emit32 ;
 
-	# pop eax; pop edx; imul edx; pop ecx; neg eax; add eax, ecx; push eax
+        # pop eax; pop edx; imul edx; pop ecx; neg eax; add eax, ecx; push eax
         ctx 0x58 cctx_emit ;
         ctx 0x5a cctx_emit ;
         ctx 0xf7 cctx_emit ;
         ctx 0xea cctx_emit ;
         ctx 0x59 cctx_emit ;
-	ctx 0xf7 cctx_emit ;
-	ctx 0xd8 cctx_emit ;
+        ctx 0xf7 cctx_emit ;
+        ctx 0xd8 cctx_emit ;
         ctx 0x01 cctx_emit ;
         ctx 0xc8 cctx_emit ;
         ctx 0x50 cctx_emit ;
@@ -3492,13 +3492,13 @@ fun cctx_compile_statement 2 {
         ctx type_idx @actual_type_idx @name 0 cctx_parse_declarator "cctx_compile_statement: error 1" assert_msg ;
         name 0 != "cctx_compile_statement: cannot instantiate variable without name" assert_msg ;
         lctx ctx actual_type_idx name lctx_push_var ;
-	@tok ctx cctx_get_token_or_fail = ;
-	if tok ";" strcmp 0 == {
-	  ctx cctx_give_back_token ;
-	  @cont 0 = ;
-	} else {
-	  tok "," strcmp 0 == "cctx_compile_statement: comma expected" assert_msg ;
-	}
+        @tok ctx cctx_get_token_or_fail = ;
+        if tok ";" strcmp 0 == {
+          ctx cctx_give_back_token ;
+          @cont 0 = ;
+        } else {
+          tok "," strcmp 0 == "cctx_compile_statement: comma expected" assert_msg ;
+        }
       }
     } else {
       # No type, so this is an expression

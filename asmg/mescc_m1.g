@@ -143,17 +143,17 @@ fun m1_tokenize_line 2 {
     } else {
       if 9 c == 10 c == || 32 c == || ! {
         if 0xffffffff c == {
-	  head ret ;
-	}
-	@p m1_new_token = ;
-	if 34 c == 39 c == || {
-	  p M1TOKEN_TEXT take_addr ctx c m1_store_string = ;
-	  p M1TOKEN_TYPE take_addr M1TOKEN_TYPE_STR = ;
-	} else {
-	  p M1TOKEN_TEXT take_addr ctx c m1_store_atom = ;
-	}
-	p M1TOKEN_NEXT take_addr head = ;
-	@head p = ;
+          head ret ;
+        }
+        @p m1_new_token = ;
+        if 34 c == 39 c == || {
+          p M1TOKEN_TEXT take_addr ctx c m1_store_string = ;
+          p M1TOKEN_TYPE take_addr M1TOKEN_TYPE_STR = ;
+        } else {
+          p M1TOKEN_TEXT take_addr ctx c m1_store_atom = ;
+        }
+        p M1TOKEN_NEXT take_addr head = ;
+        @head p = ;
       }
     }
   }
@@ -264,8 +264,8 @@ fun m1_process_string 2 {
         i M1TOKEN_EXPR take_addr i M1TOKEN_TEXT take 1 + = ;
       } else {
         if '\"' i M1TOKEN_TEXT take **c == {
-	  ctx i m1_hexify_string ;
-	}
+          ctx i m1_hexify_string ;
+        }
       }
     }
     @i i M1TOKEN_NEXT take = ;

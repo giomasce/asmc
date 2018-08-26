@@ -244,58 +244,58 @@ fun hex2_link 1 {
       @cont 1 = ;
       while cont {
         $c
-	@c fd 0 hex2_read = ;
-	if c 0xffffffff == {
+        @c fd 0 hex2_read = ;
+        if c 0xffffffff == {
           @cont 0 = ;
-	} else {
-	  $processed
+        } else {
+          $processed
           @processed 0 = ;
           if c ':' == {
-	    $label
-	    $term
-	    @label fd @term hex2_read_token = ;
-	    term hex2_is_white "hex2_link: invalid realtive label definition" assert_msg ;
-	    if stage 1 == {
-	      labels label map_has ! "hex2_link: label already defined" assert_msg ;
-	      labels label ptr map_set ;
-	    }
-	    if stage 2 == {
-	      labels label map_has "hex2_link: error 1" assert_msg ;
-	      labels label map_at ptr == "hex2_link: error 2" assert_msg ;
-	    }
-	    label free ;
-	    @processed 1 = ;
-	  }
-	  if c '!' == {
-	    stage fd labels @ptr @count 1 1 hex2_process_reference ;
-	    @processed 1 = ;
-	  }
-	  if c '$' == {
-	    stage fd labels @ptr @count 2 0 hex2_process_reference ;
-	    @processed 1 = ;
-	  }
-	  if c '@' == {
-	    stage fd labels @ptr @count 2 1 hex2_process_reference ;
-	    @processed 1 = ;
-	  }
-	  if c '&' == {
-	    stage fd labels @ptr @count 4 0 hex2_process_reference ;
-	    @processed 1 = ;
-	  }
-	  if c '%' == {
-	    stage fd labels @ptr @count 4 1 hex2_process_reference ;
-	    @processed 1 = ;
-	  }
-	  if processed ! {
-	    $c2
-	    @c2 fd 0 hex2_read_or_fail = ;
-	    if ptr 0 != {
-	      ptr c c2 byte_from_hex =c ;
-	      @ptr ptr 1 + = ;
-	    }
-	    @count count 1 + = ;
-	  }
-	}
+            $label
+            $term
+            @label fd @term hex2_read_token = ;
+            term hex2_is_white "hex2_link: invalid realtive label definition" assert_msg ;
+            if stage 1 == {
+              labels label map_has ! "hex2_link: label already defined" assert_msg ;
+              labels label ptr map_set ;
+            }
+            if stage 2 == {
+              labels label map_has "hex2_link: error 1" assert_msg ;
+              labels label map_at ptr == "hex2_link: error 2" assert_msg ;
+            }
+            label free ;
+            @processed 1 = ;
+          }
+          if c '!' == {
+            stage fd labels @ptr @count 1 1 hex2_process_reference ;
+            @processed 1 = ;
+          }
+          if c '$' == {
+            stage fd labels @ptr @count 2 0 hex2_process_reference ;
+            @processed 1 = ;
+          }
+          if c '@' == {
+            stage fd labels @ptr @count 2 1 hex2_process_reference ;
+            @processed 1 = ;
+          }
+          if c '&' == {
+            stage fd labels @ptr @count 4 0 hex2_process_reference ;
+            @processed 1 = ;
+          }
+          if c '%' == {
+            stage fd labels @ptr @count 4 1 hex2_process_reference ;
+            @processed 1 = ;
+          }
+          if processed ! {
+            $c2
+            @c2 fd 0 hex2_read_or_fail = ;
+            if ptr 0 != {
+              ptr c c2 byte_from_hex =c ;
+              @ptr ptr 1 + = ;
+            }
+            @count count 1 + = ;
+          }
+        }
       }
       fd vfs_close ;
       @name_idx name_idx 1 + = ;
