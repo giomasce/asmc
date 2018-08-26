@@ -2,8 +2,8 @@
 # Copyright (C) 2018 Giovanni Mascellani <gio@debian.org>
 # https://gitlab.com/giomasce/asmc
 
-# This file was ported from hex2_linker.c, distributed with MES,
-# which has the following copyright notices:
+# This file was ported from hex2_linker.c, distributed with
+# mescc-tools, which has the following copyright notices:
 # Copyright (C) 2017 Jeremiah Orians
 # Copyright (C) 2017 Jan Nieuwenhuizen <janneke@gnu.org>
 
@@ -317,9 +317,9 @@ fun hex2_link 1 {
   " at address " 1 platform_log ;
   orig_ptr itoa 1 platform_log ;
   "\n" 1 platform_log ;
-  "Compiled dump:\n" 1 platform_log ;
-  orig_ptr size dump_mem ;
-  "\n" 1 platform_log ;
+  #"Compiled dump:\n" 1 platform_log ;
+  #orig_ptr size dump_mem ;
+  #"\n" 1 platform_log ;
   orig_ptr ret ;
 }
 

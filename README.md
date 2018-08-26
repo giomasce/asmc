@@ -518,11 +518,11 @@ This repository contains the following code ported to G:
 
  * `mescc_hex2.g` is ported from `hex2_linker.c` in repository
    <https://github.com/oriansj/mescc-tools>. It is synchronized with
-   commit `7ca979f660f53050cc34eb9930b9dc64ca7bd9c2`.
+   commit `40537c0200ad28cd5090bc0776251d5983ef56e3`.
 
  * `mescc_m1.g` is ported from `M1-macro.c` in repository
    <https://github.com/oriansj/mescc-tools>. It is synchronized with
-   commit `7ca979f660f53050cc34eb9930b9dc64ca7bd9c2`.
+   commit `40537c0200ad28cd5090bc0776251d5983ef56e3`.
 
  * `mescc_m2.g` is ported from many files in repository
    <https://github.com/oriansj/M2-Planet>. It is synchronized with

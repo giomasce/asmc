@@ -16,11 +16,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 const COMPILE_ASM 0
-const COMPILE_C 1
-const COMPILE_MESCC 0
+const COMPILE_C 0
+const COMPILE_MESCC 1
 const RUN_ASM 0
-const RUN_C 1
-const RUN_MESCC 0
+const RUN_C 0
+const RUN_MESCC 1
 const RUN_MCPP 0
 
 const USE_TRIVIAL_MALLOC 0

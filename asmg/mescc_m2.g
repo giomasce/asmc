@@ -2170,7 +2170,7 @@ fun m2_test_full_compilation 0 {
   files "/init/test_mes.c" strdup vector_push_back ;
   files "/ram/compiled.m1" m2_compile ;
   files free_vect_of_ptrs ;
-  "/ram/compiled.m1" dump_file ;
+  #"/ram/compiled.m1" dump_file ;
 
   @files 4 vector_init = ;
   files "/disk1/mescc/x86_defs.m1" strdup vector_push_back ;

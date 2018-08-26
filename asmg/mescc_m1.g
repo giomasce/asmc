@@ -2,7 +2,7 @@
 # Copyright (C) 2018 Giovanni Mascellani <gio@debian.org>
 # https://gitlab.com/giomasce/asmc
 
-# This file was ported from M1-macro.c, distributed with MES,
+# This file was ported from M1-macro.c, distributed with mescc-tools,
 # which has the following copyright notices:
 # Copyright (C) 2016 Jeremiah Orians
 # Copyright (C) 2017 Jan Nieuwenhuizen <janneke@gnu.org>
@@ -122,7 +122,7 @@ fun m1_store_string 2 {
     M1_MAX_STRING i != "m1_store_string: max string size exceeded" assert_msg ;
     @cont c ch != = ;
   }
-  store ret ;  
+  store ret ;
 }
 
 fun m1_tokenize_line 2 {
@@ -615,9 +615,9 @@ fun m1_assemble 2 {
   ctx M1CTX_DEST_FD take vfs_close ;
   head m1_dealloc_list ;
   ctx free ;
-  "Assembled dump:\n" 1 platform_log ;
-  outfile dump_file ;
-  "\n" 1 platform_log ;
+  #"Assembled dump:\n" 1 platform_log ;
+  #outfile dump_file ;
+  #"\n" 1 platform_log ;
 }
 
 fun m1_test 0 {
