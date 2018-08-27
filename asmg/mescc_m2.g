@@ -19,6 +19,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+const M2TLIST_ENTRY 8     # M2TLIST*
+const M2TLIST_FRAME 12    # M2TLIST*
+const M2_LF 10
+
 const M2TYPE_NEXT 0       # M2TYPE*
 const M2TYPE_SIZE 4       # int
 const M2TYPE_OFFSET 8     # int
@@ -29,52 +33,66 @@ const M2TYPE_NAME 24      # char*
 const SIZEOF_M2TYPE 28
 
 const M2TLIST_NEXT 0      # M2TLIST*
+const M2TLIST_LOCALS 4    # M2TLIST*
 const M2TLIST_PREV 4      # M2TLIST*
-const M2TLIST_ENTRY 8     # M2TLIST*
 const M2TLIST_S 8         # char*
-const M2TLIST_FRAME 12    # M2TLIST*
 const M2TLIST_TYPE 12     # M2TYPE*
 const M2TLIST_FILENAME 12 # char*
 const M2TLIST_ARGS 16     # M2TLIST*
-const M2TLIST_LINENUM 16  # int
-const M2TLIST_LOCALS 20   # M2TLIST*
 const M2TLIST_DEPTH 24    # int
-const SIZEOF_M2TLIST 28
+const M2TLIST_LINENUM 16  # int
+const SIZEOF_M2TLIST 20
 
 # Globals defined in cc.h
 const M2CTX_GLOBAL_TYPES 0    # M2TYPE*
 const M2CTX_GLOBAL_TOKEN 4    # M2TLIST*
 const M2CTX_STRINGS_LIST 8    # M2TLIST*
 const M2CTX_GLOBALS_LIST 12   # M2TLIST*
+const M2CTX_HOLD_STRING 16    # char*
+const M2CTX_STRING_INDEX 20   # int
 # Globals defined in cc_types.c
-const M2CTX_MEMBER_SIZE 16    # int
+const M2CTX_MEMBER_SIZE 24    # int
 # Globals defined in cc_reader.c
-const M2CTX_INPUT 20          # FILE*
-const M2CTX_TOKEN 24          # M2TLIST*
-const M2CTX_LINE 28           # int
-const M2CTX_FILE 32           # char*
-const M2CTX_STRING_INDEX 36   # int
+const M2CTX_INPUT 28          # FILE*
+const M2CTX_TOKEN 32          # M2TLIST*
+const M2CTX_LINE 36           # int
+const M2CTX_FILE 40           # char*
 # Globals defined in cc_core.c
-const M2CTX_GLOBAL_SYMBOL_LIST 40    # M2TLIST*
-const M2CTX_GLOBAL_FUNCTION_LIST 44  # M2TLIST*
-const M2CTX_GLOBAL_CONSTANT_LIST 48  # M2TLIST*
-const M2CTX_CURRENT_TARGET 52        # M2TYPE*
-const M2CTX_BREAK_TARGET_HEAD 56     # char*
-const M2CTX_BREAK_TARGET_FUNC 60     # char*
-const M2CTX_BREAK_TARGET_NUM 64      # char*
-const M2CTX_CURRENT_COUNT 68         # int
-const M2CTX_LAST_TYPE 72             # M2TYPE*
-const SIZEOF_M2CTX 76
+const M2CTX_GLOBAL_SYMBOL_LIST 44    # M2TLIST*
+const M2CTX_GLOBAL_FUNCTION_LIST 48  # M2TLIST*
+const M2CTX_GLOBAL_CONSTANT_LIST 52  # M2TLIST*
+const M2CTX_CURRENT_TARGET 56        # M2TYPE*
+const M2CTX_BREAK_TARGET_HEAD 60     # char*
+const M2CTX_BREAK_TARGET_FUNC 64     # char*
+const M2CTX_BREAK_TARGET_NUM 68      # char*
+const M2CTX_BREAK_FRAME 72           # M2TLIST*
+const M2CTX_CURRENT_COUNT 76         # int
+const M2CTX_LAST_TYPE 80             # M2TYPE*
+const SIZEOF_M2CTX 84
 
 const M2_MAX_STRING 4096
-const M2_LF 10
 const M2_EOF 0xffffffff
+
+fun m2_in_set 2 {
+  $c
+  $s
+  @c 1 param = ;
+  @s 0 param = ;
+
+  while 0 s **c != {
+    if c s **c == {
+      1 ret ;
+    }
+    @s s 1 + = ;
+  }
+  0 ret ;
+}
 
 fun m2_upcase 1 {
   $a
   @a 0 param = ;
 
-  if 97 a <= 122 a >= && {
+  if a "abcdefghijklmnopqrstuvwxyz" m2_in_set {
     @a a 32 - = ;
   }
   a ret ;
@@ -95,155 +113,151 @@ fun m2_hexify 2 {
   i ret ;
 }
 
+ifun m2_escape_lookup 1
+
 fun m2_weird 1 {
   $string
   @string 0 param = ;
 
-  if string **c 0 == { 0 ret ; }
-  if string **c '\\' == {
-    if string 1 + **c 'x' == {
-      if string 2 + **c '0' == { 1 ret ; }
-      if string 2 + **c '1' == { 1 ret ; }
-      if string 2 + **c '2' == {
-        if string 3 + **c '2' == { 1 ret ; }
-        string 3 + m2_weird ret ;
+  $c
+  @string string 1 + = ;
+
+  while 1 {
+    @c string **c = ;
+    if 0 c == {
+      0 ret ;
+    }
+    if '\\' c == {
+      @c string m2_escape_lookup = ;
+      if 'x' string 1 + **c == {
+        @string string 2 + = ;
       }
-      if string 2 + **c '3' == {
-        if string 3 + **c 'A' == { 1 ret ; }
-        string 3 + m2_weird ret ;
-      }
-      if string 2 + **c '8' == { 1 ret ; }
-      if string 2 + **c '9' == { 1 ret ; }
-      if string 2 + **c 'a' == { 1 ret ; }
-      if string 2 + **c 'A' == { 1 ret ; }
-      if string 2 + **c 'b' == { 1 ret ; }
-      if string 2 + **c 'B' == { 1 ret ; }
-      if string 2 + **c 'c' == { 1 ret ; }
-      if string 2 + **c 'C' == { 1 ret ; }
-      if string 2 + **c 'd' == { 1 ret ; }
-      if string 2 + **c 'D' == { 1 ret ; }
-      if string 2 + **c 'e' == { 1 ret ; }
-      if string 2 + **c 'E' == { 1 ret ; }
-      if string 2 + **c 'f' == { 1 ret ; }
-      if string 2 + **c 'F' == { 1 ret ; }
-      string 3 + m2_weird ret ;
+      @string string 1 + = ;
     }
-    if string 1 + **c 'n' == {
-      if string 2 + **c ':' == { 1 ret ; }
-      string 2 + m2_weird ret ;
+    if c "\t\n !#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~" m2_in_set ! {
+      1 ret ;
     }
-    if string 1 + **c 't' == {
-      string 2 + m2_weird ret ;
+    if c " \t\n\r" m2_in_set ':' string 1 + **c == && {
+      1 ret ;
     }
-    if string 1 + **c '\"' == { 1 ret ; }
-    string 3 + m2_weird ret ;
+    @string string 1 + = ;
   }
-  string 1 + m2_weird ret ;
 }
 
 fun m2_escape_lookup 1 {
   $c
   @c 0 param = ;
 
-  if c **c '\\' == c 1 + **c 'x' == & {
+  if '\\' c **c != {
+    c **c ret ;
+  }
+
+  if c 1 + **c 'x' == {
     $t1
     $t2
     @t1 c 2 + **c 1 m2_hexify = ;
     @t2 c 3 + **c 0 m2_hexify = ;
     t1 t2 + ret ;
   }
-  if c **c '\\' == c 1 + **c 'n' == & { 10 ret ; }
-  if c **c '\\' == c 1 + **c 't' == & { 9 ret ; }
-  if c **c '\\' == c 1 + **c '\\' == & { 92 ret ; }
-  if c **c '\\' == c 1 + **c '\'' == & { 39 ret ; }
-  if c **c '\\' == c 1 + **c '\"' == & { 34 ret ; }
-  if c **c '\\' == c 1 + **c 'r' == & { 13 ret ; }
+  if c 1 + **c 'n' == { 10 ret ; }
+  if c 1 + **c 't' == { 9 ret ; }
+  if c 1 + **c '\\' == { 92 ret ; }
+  if c 1 + **c '\'' == { 39 ret ; }
+  if c 1 + **c '\"' == { 34 ret ; }
+  if c 1 + **c 'r' == { 13 ret ; }
 
   0 "m2_escape_lookup: unknown escape received" assert_msg ;
 }
 
-fun m2_collect_regular_string 1 {
+ifun m2_copy_string 2
+ifun m2_reset_hold_string 1
+
+fun m2_collect_regular_string 2 {
+  $ctx
   $string
+  @ctx 1 param = ;
   @string 0 param = ;
 
-  $j
-  @j 0 = ;
-  $i
-  @i 0 = ;
-  $message
-  @message 1 M2_MAX_STRING calloc = ;
-  message 34 =c ;
-  while string j + **c 0 != {
-    if string j + **c '\\' == string j + 1 + **c 'x' == & {
-      message i + string j + m2_escape_lookup =c ;
-      @j j 4 + = ;
-    } else {
-      if string j + **c '\\' == {
-        message i + string j + m2_escape_lookup =c ;
-        @j j 2 + = ;
-      } else {
-        message i + string j + **c =c ;
-        @j j 1 + = ;
+  ctx M2CTX_STRING_INDEX take_addr 0 = ;
+
+  while string **c 0 != {
+    if string **c '\\' == {
+      ctx M2CTX_HOLD_STRING take ctx M2CTX_STRING_INDEX take + string m2_escape_lookup =c ;
+      if string 1 + **c 'x' == {
+        @string string 2 + = ;
       }
+      @string string 2 + = ;
+    } else {
+      ctx M2CTX_HOLD_STRING take ctx M2CTX_STRING_INDEX take + string **c =c ;
+      @string string 1 + = ;
     }
-    @i i 1 + = ;
+    ctx M2CTX_STRING_INDEX take_addr ctx M2CTX_STRING_INDEX take 1 + = ;
   }
-  message i + 34 =c ;
-  message i + 1 + M2_LF =c ;
+
+  ctx M2CTX_HOLD_STRING take ctx M2CTX_STRING_INDEX take + '\"' =c ;
+  ctx M2CTX_HOLD_STRING take ctx M2CTX_STRING_INDEX take 1 + + '\n' =c ;
+  $message
+  @message ctx M2CTX_STRING_INDEX take 3 + 1 calloc = ;
+  message ctx M2CTX_HOLD_STRING take m2_copy_string ;
+  ctx m2_reset_hold_string ;
   message ret ;
 }
 
-fun m2_collect_weird_string 1 {
+fun m2_collect_weird_string 2 {
+  $ctx
   $string
+  @ctx 1 param = ;
   @string 0 param = ;
 
-  $j
-  @j 1 = ;
-  $k
-  @k 1 = ;
+  $i
+  @i 1 = ;
+  ctx M2CTX_STRING_INDEX take_addr 1 = ;
   $temp
   $table
   @table "0123456789ABCDEF" = ;
-  $hold
-  @hold M2_MAX_STRING 1 calloc = ;
 
-  hold 39 =c ;
-  while string j + **c 0 != {
-    hold k + ' ' =c ;
-    if string j + **c '\\' == string j + 1 + **c 'x' == & {
-      hold k + 1 + string j + 2 + **c m2_upcase =c ;
-      hold k + 2 + string j + 3 + **c m2_upcase =c ;
-      @j j 4 + = ;
-    } else {
-      if string j + **c '\\' == {
-        @temp string j + m2_escape_lookup = ;
-        hold k + 1 + table temp 4 >> + **c =c ;
-        hold k + 2 + table temp 15 & + **c =c ;
-        @j j 2 + = ;
-      } else {
-        hold k + 1 + table string j + **c 4 >> + **c =c ;
-        hold k + 2 + table string j + **c 15 & + **c =c ;
-        @j j 1 + = ;
+  ctx M2CTX_HOLD_STRING take '\'' =c ;
+
+  while string i + **c 0 != {
+    ctx M2CTX_HOLD_STRING take ctx M2CTX_STRING_INDEX take + ' ' =c ;
+    @temp string i + m2_escape_lookup = ;
+    ctx M2CTX_HOLD_STRING take ctx M2CTX_STRING_INDEX take 1 + + table temp 4 >> + **c =c ;
+    ctx M2CTX_HOLD_STRING take ctx M2CTX_STRING_INDEX take 2 + + table temp 15 & + **c =c ;
+
+    if string i + **c '\\' == {
+      if string i 1 + + **c 'x' == {
+        @i i 2 + = ;
       }
+      @i i 1 + = ;
     }
-    @k k 3 + = ;
+    @i i 1 + = ;
+
+    ctx M2CTX_STRING_INDEX take_addr ctx M2CTX_STRING_INDEX take 3 + = ;
   }
-  hold k + ' ' =c ;
-  hold k + 1 + '0' =c ;
-  hold k + 2 + '0' =c ;
-  hold k + 3 + 39 =c ;
-  hold k + 4 + M2_LF =c ;
+
+  ctx M2CTX_HOLD_STRING take ctx M2CTX_STRING_INDEX take + ' ' =c ;
+  ctx M2CTX_HOLD_STRING take ctx M2CTX_STRING_INDEX take 1 + + '0' =c ;
+  ctx M2CTX_HOLD_STRING take ctx M2CTX_STRING_INDEX take 2 + + '0' =c ;
+  ctx M2CTX_HOLD_STRING take ctx M2CTX_STRING_INDEX take 3 + + '\'' =c ;
+  ctx M2CTX_HOLD_STRING take ctx M2CTX_STRING_INDEX take 4 + + '\n' =c ;
+
+  $hold
+  @hold ctx M2CTX_STRING_INDEX take 6 + 1 calloc = ;
+  hold ctx M2CTX_HOLD_STRING take m2_copy_string ;
+  ctx m2_reset_hold_string ;
   hold ret ;
 }
 
-fun m2_parse_string 1 {
+fun m2_parse_string 2 {
+  $ctx
   $string
+  @ctx 1 param = ;
   @string 0 param = ;
 
-  if string m2_weird ':' string 1 + **c == || {
-    string m2_collect_weird_string ret ;
+  if string m2_weird {
+    ctx string m2_collect_weird_string ret ;
   } else {
-    string m2_collect_regular_string ret ;
+    ctx string m2_collect_regular_string ret ;
   }
 }
 
@@ -310,7 +324,7 @@ fun m2_initialize_types 1 {
   f M2TYPE_NEXT take_addr g = ;
   e M2TYPE_NEXT take_addr f = ;
   d M2TYPE_NEXT take_addr e = ;
-  c M2TYPE_NEXT take_addr d = ;
+  c M2TYPE_NEXT take_addr e = ;
   a M2TYPE_NEXT take_addr c = ;
   ctx M2CTX_GLOBAL_TYPES take M2TYPE_NEXT take_addr a = ;
 }
@@ -397,6 +411,7 @@ fun m2_create_struct 1 {
 
   $offset
   @offset 0 = ;
+  ctx M2CTX_MEMBER_SIZE take_addr 0 = ;
   $head
   @head 1 SIZEOF_M2TYPE calloc = ;
   $i
@@ -426,7 +441,7 @@ fun m2_create_struct 1 {
   ctx "m2_create_struct: missing ; at the end" ";" m2_require_match ;
   head M2TYPE_SIZE take_addr offset = ;
   head M2TYPE_MEMBERS take_addr last = ;
-  head M2TYPE_INDIRECT take M2TYPE_MEMBERS take_addr last = ;
+  i M2TYPE_MEMBERS take_addr last = ;
 }
 
 fun m2_type_name 1 {
@@ -434,9 +449,8 @@ fun m2_type_name 1 {
   @ctx 0 param = ;
 
   $structure
-  @structure 0 = ;
-  if ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take "struct" strcmp 0 == {
-    @structure 1 = ;
+  @structure ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take "struct" strcmp 0 == = ;
+  if structure {
     ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
   }
   $r
@@ -482,26 +496,22 @@ fun m2_clear_white_space 2 {
   c ret ;
 }
 
-fun m2_consume_byte 3 {
+fun m2_consume_byte 2 {
   $ctx
-  $current
   $c
-  @ctx 2 param = ;
-  @current 1 param = ;
+  @ctx 1 param = ;
   @c 0 param = ;
 
-  current M2TLIST_S take ctx M2CTX_STRING_INDEX take + c =c ;
+  ctx M2CTX_HOLD_STRING take ctx M2CTX_STRING_INDEX take + c =c ;
   ctx M2CTX_STRING_INDEX take_addr ctx M2CTX_STRING_INDEX take 1 + = ;
   ctx M2CTX_INPUT take vfs_read ret ;
 }
 
-fun m2_consume_word 4 {
+fun m2_consume_word 3 {
   $ctx
-  $current
   $c
   $frequent
-  @ctx 3 param = ;
-  @current 2 param = ;
+  @ctx 2 param = ;
   @c 1 param = ;
   @frequent 0 param = ;
 
@@ -515,17 +525,15 @@ fun m2_consume_word 4 {
     } else {
       @escape 0 = ;
     }
-    @c ctx current c m2_consume_byte = ;
+    @c ctx c m2_consume_byte = ;
     @cont escape c frequent != || = ;
   }
   ctx M2CTX_INPUT take vfs_read ret ;
 }
 
-fun m2_fixup_label 2 {
+fun m2_fixup_label 1 {
   $ctx
-  $current
-  @ctx 1 param = ;
-  @current 0 param = ;
+  @ctx 0 param = ;
 
   $hold
   @hold ':' = ;
@@ -536,41 +544,37 @@ fun m2_fixup_label 2 {
   @cont 1 = ;
   while cont {
     @prev hold = ;
-    @hold current M2TLIST_S take i + **c = ;
-    current M2TLIST_S take i + prev =c ;
+    @hold ctx M2CTX_HOLD_STRING take i + **c = ;
+    ctx M2CTX_HOLD_STRING take i + prev =c ;
     @i i 1 + = ;
     @cont 0 hold != = ;
   }
 }
 
-fun m2_preserve_keyword 3 {
+fun m2_preserve_keyword 2 {
   $ctx
-  $current
   $c
-  @ctx 2 param = ;
-  @current 1 param = ;
+  @ctx 1 param = ;
   @c 0 param = ;
 
-  while 'a' c <= c 'z' <= & 'A' c <= c 'Z' <= & | '0' c <= c '9' <= & | c '_' == | {
-    @c ctx current c m2_consume_byte = ;
+  while c "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_" m2_in_set {
+    @c ctx c m2_consume_byte = ;
   }
   if c ':' == {
-    ctx current m2_fixup_label ;
+    ctx m2_fixup_label ;
     32 ret ;
   }
   c ret ;
 }
 
-fun m2_preserve_symbol 3 {
+fun m2_preserve_symbol 2 {
   $ctx
-  $current
   $c
-  @ctx 2 param = ;
-  @current 1 param = ;
+  @ctx 1 param = ;
   @c 0 param = ;
 
-  while c '<' == c '=' == | c '>' == | c '|' == | c '&' == | c '!' == | c '-' == | {
-    @c ctx current c m2_consume_byte = ;
+  while c "<=>|&!-" m2_in_set {
+    @c ctx c m2_consume_byte = ;
   }
   c ret ;
 }
@@ -587,6 +591,32 @@ fun m2_purge_macro 2 {
   ch ret ;
 }
 
+fun m2_reset_hold_string 1 {
+  $ctx
+  @ctx 0 param = ;
+
+  $i
+  @i ctx M2CTX_STRING_INDEX take 2 + = ;
+  while 0 i != {
+    ctx M2CTX_HOLD_STRING take i + 0 =c ;
+    @i i 1 - = ;
+  }
+}
+
+fun m2_copy_string 2 {
+  $target
+  $source
+  @target 1 param = ;
+  @source 0 param = ;
+
+  while 0 source **c != {
+    target source **c =c ;
+    @target target 1 + = ;
+    @source source 1 + = ;
+  }
+  target ret ;
+}
+
 fun m2_get_token 2 {
   $ctx
   $c
@@ -595,39 +625,46 @@ fun m2_get_token 2 {
 
   $current
   @current 1 SIZEOF_M2TLIST calloc = ;
-  current M2TLIST_S take_addr 1 M2_MAX_STRING calloc = ;
 
   $cont
   @cont 1 = ;
   while cont {
     @cont 0 = ;
-    $processed
-    @processed 0 = ;
+
+    ctx m2_reset_hold_string ;
     ctx M2CTX_STRING_INDEX take_addr 0 = ;
     @c ctx c m2_clear_white_space = ;
+
+    $processed
+    @processed 0 = ;
     if c '#' == processed ! && {
       @c ctx c m2_purge_macro = ;
       @cont 1 = ;
       @processed 1 = ;
     }
-    if 'a' c <= c 'z' <= & 'A' c <= c 'Z' <= & | '0' c <= c '9' <= & | c '_' == | processed ! && {
-      @c ctx current c m2_preserve_keyword = ;
+
+    if c "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_" m2_in_set processed ! && {
+      @c ctx c m2_preserve_keyword = ;
       @processed 1 = ;
     }
-    if c '<' == c '=' == | c '>' == | c '|' == | c '&' == | c '!' == | c '-' == | processed ! && {
-      @c ctx current c m2_preserve_symbol = ;
+
+    if c "<=>|&!-" m2_in_set processed ! && {
+      @c ctx c m2_preserve_symbol = ;
       @processed 1 = ;
     }
-    if c 39 == processed ! && {
-      @c ctx current c 39 m2_consume_word = ;
+
+    if c '\'' == processed ! && {
+      @c ctx c '\'' m2_consume_word = ;
       @processed 1 = ;
     }
+
     if c '"' == processed ! && {
-      @c ctx current c '"' m2_consume_word = ;
+      @c ctx c '"' m2_consume_word = ;
       @processed 1 = ;
     }
+
     if c '/' == processed ! && {
-      @c ctx current c m2_consume_byte = ;
+      @c ctx c m2_consume_byte = ;
       if c '*' == {
         @c ctx M2CTX_INPUT take vfs_read = ;
         while c '/' != {
@@ -657,9 +694,12 @@ fun m2_get_token 2 {
       c ret ;
     }
     if processed ! {
-      @c ctx current c m2_consume_byte = ;
+      @c ctx c m2_consume_byte = ;
     }
   }
+
+  current M2TLIST_S take_addr ctx M2CTX_STRING_INDEX take 2 + 1 calloc = ;
+  current M2TLIST_S take ctx M2CTX_HOLD_STRING take m2_copy_string ;
 
   current M2TLIST_PREV take_addr ctx M2CTX_TOKEN take = ;
   current M2TLIST_NEXT take_addr ctx M2CTX_TOKEN take = ;
@@ -983,7 +1023,7 @@ fun m2_primary_expr_string 3 {
   ctx M2CTX_STRINGS_LIST take_addr ctx ":STRING_" ctx M2CTX_STRINGS_LIST take m2_emit = ;
   ctx M2CTX_STRINGS_LIST take_addr ctx function M2TLIST_S take ctx M2CTX_STRINGS_LIST take number_string m2_unique_id = ;
 
-  ctx M2CTX_STRINGS_LIST take_addr ctx ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take m2_parse_string ctx M2CTX_STRINGS_LIST take m2_emit = ;
+  ctx M2CTX_STRINGS_LIST take_addr ctx ctx ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take m2_parse_string ctx M2CTX_STRINGS_LIST take m2_emit = ;
   ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
 
   ctx M2CTX_CURRENT_COUNT take_addr ctx M2CTX_CURRENT_COUNT take 1 + = ;
@@ -1598,8 +1638,8 @@ fun m2_process_for 3 {
   $nested_break_num
   @nested_break_num ctx M2CTX_BREAK_TARGET_NUM take = ;
   $nested_locals
-  @nested_locals function M2TLIST_FRAME take = ;
-  function M2TLIST_FRAME take_addr function M2TLIST_LOCALS take = ;
+  @nested_locals ctx M2CTX_BREAK_FRAME take = ;
+  ctx M2CTX_BREAK_FRAME take_addr function M2TLIST_LOCALS take = ;
   ctx M2CTX_BREAK_TARGET_HEAD take_addr "FOR_END_" = ;
   ctx M2CTX_BREAK_TARGET_FUNC function M2TLIST_S take = ;
   ctx M2CTX_BREAK_TARGET_NUM take_addr number_string = ;
@@ -1646,7 +1686,7 @@ fun m2_process_for 3 {
   ctx M2CTX_BREAK_TARGET_HEAD take_addr nested_break_head = ;
   ctx M2CTX_BREAK_TARGET_FUNC take_addr nested_break_func = ;
   ctx M2CTX_BREAK_TARGET_NUM take_addr nested_break_num = ;
-  function M2TLIST_FRAME take_addr nested_locals = ;
+  ctx M2CTX_BREAK_FRAME take_addr nested_locals = ;
 
   out ret ;
 }
@@ -1688,8 +1728,8 @@ fun m2_process_do 3 {
   $nested_break_num
   @nested_break_num ctx M2CTX_BREAK_TARGET_NUM take = ;
   $nested_locals
-  @nested_locals function M2TLIST_FRAME take = ;
-  function M2TLIST_FRAME take_addr function M2TLIST_LOCALS take = ;
+  @nested_locals ctx M2CTX_BREAK_FRAME take = ;
+  ctx M2CTX_BREAK_FRAME take_addr function M2TLIST_LOCALS take = ;
   ctx M2CTX_BREAK_TARGET_HEAD take_addr "DO_END_" = ;
   ctx M2CTX_BREAK_TARGET_FUNC take_addr function M2TLIST_S take = ;
   ctx M2CTX_BREAK_TARGET_NUM take_addr number_string = ;
@@ -1711,7 +1751,7 @@ fun m2_process_do 3 {
   @out ctx ":DO_END_" out m2_emit = ;
   @out ctx function M2TLIST_S take out number_string m2_unique_id = ;
 
-  function M2TLIST_FRAME take_addr nested_locals = ;
+  ctx M2CTX_BREAK_FRAME take_addr nested_locals = ;
   ctx M2CTX_BREAK_TARGET_HEAD take_addr nested_break_head = ;
   ctx M2CTX_BREAK_TARGET_FUNC take_addr nested_break_func = ;
   ctx M2CTX_BREAK_TARGET_NUM take_addr nested_break_num = ;
@@ -1738,8 +1778,8 @@ fun m2_process_while 3 {
   $nested_break_num
   @nested_break_num ctx M2CTX_BREAK_TARGET_NUM take = ;
   $nested_locals
-  @nested_locals function M2TLIST_FRAME take = ;
-  function M2TLIST_FRAME take_addr function M2TLIST_LOCALS take = ;
+  @nested_locals ctx M2CTX_BREAK_FRAME take = ;
+  ctx M2CTX_BREAK_FRAME take_addr function M2TLIST_LOCALS take = ;
   ctx M2CTX_BREAK_TARGET_HEAD take_addr "END_WHILE_" = ;
   ctx M2CTX_BREAK_TARGET_FUNC take_addr function M2TLIST_S take = ;
   ctx M2CTX_BREAK_TARGET_NUM take_addr number_string = ;
@@ -1764,7 +1804,7 @@ fun m2_process_while 3 {
   @out ctx ":END_WHILE_" out m2_emit = ;
   @out ctx function M2TLIST_S take out number_string m2_unique_id = ;
 
-  function M2TLIST_FRAME take_addr nested_locals = ;
+  ctx M2CTX_BREAK_FRAME take_addr nested_locals = ;
   ctx M2CTX_BREAK_TARGET_HEAD take_addr nested_break_head = ;
   ctx M2CTX_BREAK_TARGET_FUNC take_addr nested_break_func = ;
   ctx M2CTX_BREAK_TARGET_NUM take_addr nested_break_num = ;
@@ -1891,7 +1931,7 @@ fun m2_statement 3 {
     0 ctx M2CTX_BREAK_TARGET_HEAD take != "m2_statement: not inside a loop or case statement" assert_msg ;
     $i
     @i function M2TLIST_LOCALS take = ;
-    while i 0 != i function M2TLIST_FRAME take != && {
+    while i 0 != i ctx M2CTX_BREAK_FRAME take != && {
       @out ctx "POP_ebx\t# break_cleanup_locals\n" out m2_emit = ;
       @i i M2TLIST_NEXT take = ;
     }
@@ -2005,41 +2045,47 @@ fun m2_program 2 {
     } else {
       @type_size ctx m2_type_name = ;
       if 0 type_size != {
+        ctx M2CTX_GLOBAL_SYMBOL_LIST take_addr ctx ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take type_size ctx M2CTX_GLOBAL_SYMBOL_LIST take m2_sym_declare = ;
         ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
-        if ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take **c ';' == {
-          ctx M2CTX_GLOBAL_SYMBOL_LIST take_addr ctx ctx M2CTX_GLOBAL_TOKEN take M2TLIST_PREV take M2TLIST_S take type_size ctx M2CTX_GLOBAL_SYMBOL_LIST take m2_sym_declare = ;
+
+        $processed
+        @processed 0 = ;
+
+        if ";" ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take strcmp 0 == processed ! && {
           ctx M2CTX_GLOBALS_LIST take_addr ctx ":GLOBAL_" ctx M2CTX_GLOBALS_LIST take m2_emit = ;
           ctx M2CTX_GLOBALS_LIST take_addr ctx ctx M2CTX_GLOBAL_TOKEN take M2TLIST_PREV take M2TLIST_S take ctx M2CTX_GLOBALS_LIST take m2_emit = ;
           ctx M2CTX_GLOBALS_LIST take_addr ctx "\nNOP\n" ctx M2CTX_GLOBALS_LIST take m2_emit = ;
           ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
-        } else {
-          if "=" ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take strcmp 0 == {
-            ctx M2CTX_GLOBAL_SYMBOL_LIST take_addr ctx ctx M2CTX_GLOBAL_TOKEN take M2TLIST_PREV take M2TLIST_S take type_size ctx M2CTX_GLOBAL_SYMBOL_LIST take m2_sym_declare = ;
-            ctx M2CTX_GLOBALS_LIST take_addr ctx ":GLOBAL_" ctx M2CTX_GLOBALS_LIST take m2_emit = ;
-            ctx M2CTX_GLOBALS_LIST take_addr ctx ctx M2CTX_GLOBAL_TOKEN take M2TLIST_PREV take M2TLIST_S take ctx M2CTX_GLOBALS_LIST take m2_emit = ;
+          @processed 1 = ;
+        }
+
+        if "(" ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take strcmp 0 == processed ! && {
+          @out ctx out m2_declare_function = ;
+          @processed 1 = ;
+        }
+
+        if "=" ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take strcmp 0 == processed ! && {
+          ctx M2CTX_GLOBALS_LIST take_addr ctx ":GLOBAL_" ctx M2CTX_GLOBALS_LIST take m2_emit = ;
+          ctx M2CTX_GLOBALS_LIST take_addr ctx ctx M2CTX_GLOBAL_TOKEN take M2TLIST_PREV take M2TLIST_S take ctx M2CTX_GLOBALS_LIST take m2_emit = ;
+          ctx M2CTX_GLOBALS_LIST take_addr ctx "\n" ctx M2CTX_GLOBALS_LIST take m2_emit = ;
+          ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
+          if ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take **c "0123456789" m2_in_set {
+            ctx M2CTX_GLOBALS_LIST take_addr ctx "%" ctx M2CTX_GLOBALS_LIST take m2_emit = ;
+            ctx M2CTX_GLOBALS_LIST take_addr ctx ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take ctx M2CTX_GLOBALS_LIST take m2_emit = ;
             ctx M2CTX_GLOBALS_LIST take_addr ctx "\n" ctx M2CTX_GLOBALS_LIST take m2_emit = ;
-            ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
-            if '0' ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take **c <= ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take **c '9' <= & {
-              ctx M2CTX_GLOBALS_LIST take_addr ctx "%" ctx M2CTX_GLOBALS_LIST take m2_emit = ;
-              ctx M2CTX_GLOBALS_LIST take_addr ctx ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take ctx M2CTX_GLOBALS_LIST take m2_emit = ;
-              ctx M2CTX_GLOBALS_LIST take_addr ctx "\n" ctx M2CTX_GLOBALS_LIST take m2_emit = ;
-            } else {
-              if '\"' ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take **c <= {
-                ctx M2CTX_GLOBALS_LIST take_addr ctx ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take m2_parse_string ctx M2CTX_GLOBALS_LIST take m2_emit = ;
-              } else {
-                0 "m2_program: invalid token in program" assert_msg ;
-              }
-            }
-            ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
-            ctx "m2_program: missing ;" ";" m2_require_match ;
           } else {
-            if ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take **c '(' == {
-              @out ctx out m2_declare_function = ;
+            if '\"' ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take **c <= {
+              ctx M2CTX_GLOBALS_LIST take_addr ctx ctx ctx M2CTX_GLOBAL_TOKEN take M2TLIST_S take m2_parse_string ctx M2CTX_GLOBALS_LIST take m2_emit = ;
             } else {
               0 "m2_program: invalid token in program" assert_msg ;
             }
           }
+          ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
+          ctx "m2_program: missing ;" ";" m2_require_match ;
+          @processed 1 = ;
         }
+
+        processed "m2_program: invalid token" assert_msg ;
       }
     }
   }
@@ -2067,6 +2113,7 @@ fun m2_compile 2 {
 
   $ctx
   @ctx 1 SIZEOF_M2CTX calloc = ;
+  ctx M2CTX_HOLD_STRING take_addr 1 M2_MAX_STRING calloc = ;
   $destination_file
   @destination_file outfile vfs_open = ;
   destination_file vfs_truncate ;
@@ -2084,6 +2131,7 @@ fun m2_compile 2 {
   0 ctx M2CTX_GLOBAL_TOKEN take != "m2_compile: no or empty input file" assert_msg ;
   ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take m2_reverse_list = ;
   ctx m2_initialize_types ;
+  ctx m2_reset_hold_string ;
   $output_list
   @output_list ctx 0 m2_program = ;
   destination_file "\n# Core program\n" vfs_write_string ;
