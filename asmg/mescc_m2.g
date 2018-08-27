@@ -361,7 +361,7 @@ fun m2_build_member 3 {
     i M2TYPE_SIZE take_addr member_type M2TYPE_SIZE take = ;
   }
 
-  ctx M2CTX_MEMBER_SIZE take_addr member_type M2TYPE_SIZE take = ;
+  ctx M2CTX_MEMBER_SIZE take_addr i M2TYPE_SIZE take = ;
   i M2TYPE_TYPE take_addr member_type = ;
   i M2TYPE_OFFSET take_addr offset = ;
   i ret ;
@@ -1366,7 +1366,7 @@ fun m2_relational_expr_stub 3 {
   @out ctx out function @m2_additive_expr "CMP\nSETL\nMOVEZBL\n" "<" @m2_relational_expr_stub m2_general_recursion = ;
   @out ctx out function @m2_additive_expr "CMP\nSETLE\nMOVEZBL\n" "<=" @m2_relational_expr_stub m2_general_recursion = ;
   @out ctx out function @m2_additive_expr "CMP\nSETGE\nMOVEZBL\n" ">=" @m2_relational_expr_stub m2_general_recursion = ;
-  @out ctx out function @m2_additive_expr "CMP\nSETG\nMOVEZBL\n" "=" @m2_relational_expr_stub m2_general_recursion = ;
+  @out ctx out function @m2_additive_expr "CMP\nSETG\nMOVEZBL\n" ">" @m2_relational_expr_stub m2_general_recursion = ;
   @out ctx out function @m2_additive_expr "CMP\nSETE\nMOVEZBL\n" "==" @m2_relational_expr_stub m2_general_recursion = ;
   @out ctx out function @m2_additive_expr "CMP\nSETNE\nMOVEZBL\n" "!=" @m2_relational_expr_stub m2_general_recursion = ;
 
@@ -1551,6 +1551,7 @@ fun m2_process_if 3 {
   ctx M2CTX_CURRENT_COUNT take_addr ctx M2CTX_CURRENT_COUNT take 1 + = ;
 
   @out ctx "# IF_" out m2_emit = ;
+  @out ctx function M2TLIST_S take out number_string m2_unique_id = ;
 
   ctx M2CTX_GLOBAL_TOKEN take_addr ctx M2CTX_GLOBAL_TOKEN take M2TLIST_NEXT take = ;
   ctx "m2_process_if: missing (" "(" m2_require_match ;
