@@ -574,6 +574,18 @@ get_token_end:
   add ecx, eax
   mov BYTE [ecx], 0
 
+  ;; ;; Log token
+  ;; push eax
+  ;; push eax
+  ;; push 1
+  ;; call platform_log
+  ;; add esp, 8
+  ;; push 32
+  ;; push 1
+  ;; call platform_write_char
+  ;; add esp, 8
+  ;; pop eax
+
   pop ebx
   ret
 
