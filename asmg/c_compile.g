@@ -1063,6 +1063,23 @@ fun cctx_parse_ast2 3 {
   ctx CCTX_TOKENS take ctx CCTX_TOKENS_POS take_addr term1 term2 ast_parse3 ret ;
 }
 
+fun cctx_parse_ast3 4 {
+  $ctx
+  $term1
+  $term2
+  $term3
+  @ctx 3 param = ;
+  @term1 2 param = ;
+  @term2 1 param = ;
+  @term3 0 param = ;
+
+  " <pa>" 1 platform_log ;
+
+  # Bad hack to fix ast_parse interface
+  ctx cctx_give_back_token ;
+  ctx CCTX_TOKENS take ctx CCTX_TOKENS_POS take_addr term1 term2 term3 ast_parse4 ret ;
+}
+
 fun cctx_parse_enum 1 {
   $ctx
   @ctx 0 param = ;
@@ -3619,6 +3636,83 @@ fun cctx_mangle_function_type 2 {
   ctx base_idx new_args ellipsis cctx_get_function_type ret ;
 }
 
+fun assign_with_size 3 {
+  $loc
+  $value
+  $size
+  @loc 2 param = ;
+  @value 1 param = ;
+  @size 0 param = ;
+
+  if size 1 == {
+    loc value =c ;
+    ret ;
+  }
+
+  if size 2 == {
+    loc value =c ;
+    loc 1 + value 8 >> =c ;
+    ret ;
+  }
+
+  if size 4 == {
+    loc value = ;
+    ret ;
+  }
+
+  0 "assign_with_size: invalid size" assert_msg ;
+}
+
+fun cctx_parse_initializer 3 {
+  $ctx
+  $type_idx
+  $loc
+  @ctx 2 param = ;
+  @type_idx 1 param = ;
+  @loc 0 param = ;
+
+  $type
+  @type ctx type_idx cctx_get_type = ;
+
+  if type_idx is_integer_type {
+    $ast
+    @ast ctx "," "}" ";" cctx_parse_ast3 = ;
+    $value
+    @value ctx ast ast_eval_compile = ;
+    ast ast_destroy ;
+    $size
+    @size ctx type_idx cctx_type_size = ;
+    loc value size assign_with_size ;
+    ret ;
+  }
+
+  if type TYPE_KIND take TYPE_KIND_STRUCT == {
+    $tok
+    @tok ctx cctx_get_token_or_fail = ;
+    tok "{" strcmp 0 == "cctx_parse_initializer: { expected" assert_msg ;
+    $i
+    @i 0 = ;
+    $offs
+    @offs type TYPE_FIELDS_OFFS take = ;
+    $type_idxs
+    @type_idxs type TYPE_FIELDS_TYPE_IDXS take = ;
+    while i offs vector_size < {
+      ctx type_idxs i vector_at loc offs i vector_at + cctx_parse_initializer ;
+      @tok ctx cctx_get_token_or_fail = ;
+      if tok "}" strcmp 0 == {
+        @i offs vector_size = ;
+      } else {
+        tok "," strcmp 0 == "cctx_parse_initializer: , or } expected" assert_msg ;
+        @i i 1 + = ;
+      }
+    }
+    tok "}" strcmp 0 == "cctx_parse_initializer: initializer has too many entries" assert_msg ;
+    ret ;
+  }
+
+  0 "cctx_parse_initializer: not implemented" assert_msg ;
+}
+
 fun cctx_compile_line 1 {
   $ctx
   @ctx 0 param = ;
@@ -3702,8 +3796,17 @@ fun cctx_compile_line 1 {
         ctx name 0xffffffff actual_type_idx cctx_add_global ;
       } else {
         # If it is anything else, register it and allocate its size
-        ctx name ctx CCTX_CURRENT_LOC take actual_type_idx cctx_add_global ;
+        $loc
+        @loc ctx CCTX_CURRENT_LOC take = ;
+        ctx name loc actual_type_idx cctx_add_global ;
         ctx ctx actual_type_idx cctx_type_footprint cctx_emit_zeros ;
+        # Check if there is an initializer
+        @tok ctx cctx_get_token_or_fail = ;
+        if tok "=" strcmp 0 == {
+          ctx actual_type_idx loc cctx_parse_initializer ;
+        } else {
+          ctx cctx_give_back_token ;
+        }
       }
     }
     arg_names vector_destroy ;

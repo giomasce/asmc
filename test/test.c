@@ -27,6 +27,9 @@ struct OtherStruct {
   int x, y, z;
 };
 
+int init1 = 10 + 20;
+struct OtherStruct init2 = { 1000, 2 * 5, 200 / 120};
+
 typedef struct Test {
   int x:5, y:6;
   struct OtherStruct s;
@@ -117,7 +120,7 @@ int main() {
   bptr = &b;
   *bptr = 20;
 
-  return sum_numbers(0) + a + b + (****test_struct)() + test_array();
+  return sum_numbers(0) + a + b + (****test_struct)() + test_array() + init1 + init2.y;
 }
 
 #ifdef __UNDEF

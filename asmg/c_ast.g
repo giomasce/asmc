@@ -473,6 +473,29 @@ fun ast_parse3 4 {
   res ret ;
 }
 
+fun ast_parse4 5 {
+  $intoks
+  $iptr
+  $end_tok1
+  $end_tok2
+  $end_tok3
+  @intoks 4 param = ;
+  @iptr 3 param = ;
+  @end_tok1 2 param = ;
+  @end_tok2 1 param = ;
+  @end_tok3 0 param = ;
+
+  $end_toks
+  @end_toks 4 vector_init = ;
+  end_toks end_tok1 vector_push_back ;
+  end_toks end_tok2 vector_push_back ;
+  end_toks end_tok3 vector_push_back ;
+  $res
+  @res intoks iptr end_toks ast_parse2 = ;
+  end_toks vector_destroy ;
+  res ret ;
+}
+
 fun ast_dump_int 2 {
   $ast
   $depth
