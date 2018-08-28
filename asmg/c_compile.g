@@ -1932,7 +1932,7 @@ fun ast_eval_compile 2 {
       enum_consts name map_has "ast_eval_compile: invalid identifier" assert_msg ;
       enum_consts name map_at ret ;
     } else {
-      name atoi ret ;
+      name atoi_c ret ;
     }
   } else {
     # Operator
@@ -3135,7 +3135,7 @@ fun ast_push_value 3 {
           from 1 + **c 0 == "ast_push_value: invalid character literal 3" assert_msg ;
           @value data = ;
         } else {
-          @value name atoi = ;
+          @value name atoi_c = ;
         }
       }
 

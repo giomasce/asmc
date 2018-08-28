@@ -363,6 +363,34 @@ fun atoi 1 {
   res ret ;
 }
 
+fun atoi_c 1 {
+  $ptr
+  @ptr 0 param = ;
+
+  ptr 0 != "atoi: invalid null pointer" assert_msg ;
+  ptr **c 0 != "atoi: invalid empty string" assert_msg ;
+
+  $end
+  $res
+  @res ptr @end 0 strtol = ;
+
+  # "atoi with input " 1 platform_log ;
+  # ptr 1 platform_log ;
+  # "\n" 1 platform_log ;
+
+  # Ignore L or LL suffixes
+  if end **c 'L' == {
+    @end end 1 + = ;
+  }
+  if end **c 'L' == {
+    @end end 1 + = ;
+  }
+
+  end **c 0 == "atoi: invalid number" assert_msg ;
+
+  res ret ;
+}
+
 fun memset 3 {
   $s
   $c
