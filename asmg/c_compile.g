@@ -2541,6 +2541,13 @@ fun lctx_convert_stack 4 {
     ret ;
   }
 
+  if from_idx is_integer_type to_type TYPE_KIND take TYPE_KIND_POINTER == && {
+    # Permit any implicit converstion of integers to pointers
+    ctx from_idx cctx_type_footprint 4 == "lctx_convert_stack: error 5" assert_msg ;
+    ctx to_idx cctx_type_footprint 4 == "lctx_convert_stack: error 6" assert_msg ;
+    ret ;
+  }
+
   0 "lctx_convert_stack: not implemented" assert_msg ;
 }
 
