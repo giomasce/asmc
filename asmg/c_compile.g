@@ -3728,6 +3728,8 @@ fun cctx_parse_initializer 3 {
   @type_idx 1 param = ;
   @loc 0 param = ;
 
+  # Check that the type is complete
+  ctx type_idx cctx_type_footprint ;
   $type
   @type ctx type_idx cctx_get_type = ;
 
@@ -3754,13 +3756,51 @@ fun cctx_parse_initializer 3 {
     $type_idxs
     @type_idxs type TYPE_FIELDS_TYPE_IDXS take = ;
     while i offs vector_size < {
-      ctx type_idxs i vector_at loc offs i vector_at + cctx_parse_initializer ;
       @tok ctx cctx_get_token_or_fail = ;
       if tok "}" strcmp 0 == {
         @i offs vector_size = ;
       } else {
-        tok "," strcmp 0 == "cctx_parse_initializer: , or } expected" assert_msg ;
-        @i i 1 + = ;
+        ctx cctx_give_back_token ;
+        ctx type_idxs i vector_at loc offs i vector_at + cctx_parse_initializer ;
+        @tok ctx cctx_get_token_or_fail = ;
+        if tok "}" strcmp 0 == {
+          @i offs vector_size = ;
+        } else {
+          tok "," strcmp 0 == "cctx_parse_initializer: , or } expected" assert_msg ;
+          @i i 1 + = ;
+        }
+      }
+    }
+    tok "}" strcmp 0 == "cctx_parse_initializer: initializer has too many entries" assert_msg ;
+    ret ;
+  }
+
+  if type TYPE_KIND take TYPE_KIND_ARRAY == {
+    $tok
+    @tok ctx cctx_get_token_or_fail = ;
+    tok "{" strcmp 0 == "cctx_parse_initializer: { expected" assert_msg ;
+    $i
+    @i 0 = ;
+    $len
+    @len type TYPE_LENGTH take = ;
+    $base_type_idx
+    @base_type_idx type TYPE_BASE take = ;
+    $base_size
+    @base_size ctx base_type_idx cctx_type_size = ;
+    while i len < {
+      @tok ctx cctx_get_token_or_fail = ;
+      if tok "}" strcmp 0 == {
+        @i len = ;
+      } else {
+        ctx cctx_give_back_token ;
+        ctx base_type_idx loc i base_size * + cctx_parse_initializer ;
+        @tok ctx cctx_get_token_or_fail = ;
+        if tok "}" strcmp 0 == {
+          @i len = ;
+        } else {
+          tok "," strcmp 0 == "cctx_parse_initializer: , or } expected" assert_msg ;
+          @i i 1 + = ;
+        }
       }
     }
     tok "}" strcmp 0 == "cctx_parse_initializer: initializer has too many entries" assert_msg ;
