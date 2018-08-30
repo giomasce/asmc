@@ -3860,18 +3860,28 @@ fun cctx_compile_line 1 {
   }
 
   $extern
+  $static
   @extern 0 = ;
-  @tok ctx cctx_get_token_or_fail = ;
-  if tok "extern" strcmp 0 == {
-    @extern 1 = ;
-  } else {
-    ctx cctx_give_back_token ;
+  @static 0 = ;
+  $cont
+  @cont 1 = ;
+  while cont {
+    @tok ctx cctx_get_token_or_fail = ;
+    if tok "extern" strcmp 0 == {
+      @extern 1 = ;
+    } else {
+      if tok "static" strcmp 0 == {
+        @static 1 = ;
+      } else {
+        ctx cctx_give_back_token ;
+        @cont 0 = ;
+      }
+    }
   }
 
   $type_idx
   @type_idx ctx cctx_parse_type = ;
   type_idx 0xffffffff != "cctx_compile: type expected" assert_msg ;
-  $cont
   @tok ctx cctx_get_token_or_fail = ;
   if tok ";" strcmp 0 == {
     @cont 0 = ;
