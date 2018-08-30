@@ -127,11 +127,10 @@ int test_enum() {
 
 int main() {
   "test string";
-  int a;
+  int a = 1;
   Test2 loc2;
   Test3 loc3;
   int i;
-  a = 1;
   for (i = 1; i < 10; i = i + 1) a = a * 2;
 
   int b, *bptr;

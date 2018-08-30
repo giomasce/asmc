@@ -3583,6 +3583,25 @@ fun cctx_compile_statement 2 {
         name 0 != "cctx_compile_statement: cannot instantiate variable without name" assert_msg ;
         lctx ctx actual_type_idx name lctx_push_var ;
         @tok ctx cctx_get_token_or_fail = ;
+        if tok "=" strcmp 0 == {
+          $right_ast
+          $left_ast
+          $ast
+          @right_ast ctx ";" cctx_parse_ast1 = ;
+          @left_ast ast_init = ;
+          left_ast AST_TYPE take_addr 0 = ;
+          left_ast AST_NAME take_addr name strdup = ;
+          @ast ast_init = ;
+          ast AST_TYPE take_addr 1 = ;
+          ast AST_NAME take_addr "=" strdup = ;
+          ast AST_RIGHT take_addr right_ast = ;
+          ast AST_LEFT take_addr left_ast = ;
+          ast ctx lctx ast_eval ;
+          ast ast_destroy ;
+        } else {
+          ctx cctx_give_back_token ;
+        }
+        @tok ctx cctx_get_token_or_fail = ;
         if tok ";" strcmp 0 == {
           ctx cctx_give_back_token ;
           @cont 0 = ;
