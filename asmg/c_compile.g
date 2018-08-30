@@ -1960,7 +1960,7 @@ fun cctx_gen_string 3 {
   while from **c '\"' != {
     @from 0 ctx escape_char ;
   }
-  from 1 + **c 0 == "ast_push_addr: illegal string literal" assert_msg ;
+  from 1 + **c 0 == "cctx_gen_string: illegal string literal" assert_msg ;
   ctx 0 cctx_emit ;
   lctx ctx label lctx_fix_label ;
   str_label ret ;
