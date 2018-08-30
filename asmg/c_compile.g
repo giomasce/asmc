@@ -1980,8 +1980,24 @@ fun ast_eval_compile 2 {
     if name is_valid_identifier {
       $enum_consts
       @enum_consts ctx CCTX_ENUM_CONSTS take = ;
-      enum_consts name map_has "ast_eval_compile: invalid identifier" assert_msg ;
-      enum_consts name map_at ret ;
+      if enum_consts name map_has {
+        enum_consts name map_at ret ;
+      } else {
+        $global
+        @global ctx name cctx_get_global = ;
+        $loc
+        @loc global GLOBAL_LOC take = ;
+        $type_idx
+        @type_idx global GLOBAL_TYPE_IDX take = ;
+        $type
+        @type ctx type_idx cctx_get_type = ;
+        if type TYPE_KIND take TYPE_KIND_ARRAY == type TYPE_KIND take TYPE_KIND_FUNCTION == || {
+          loc ret ;
+        } else {
+          ctx type_idx cctx_type_footprint 4 == "ast_eval_compile: unsupported global" assert_msg ;
+          loc ** ret ;
+        }
+      }
     } else {
       if name **c '\"' == {
         $str_label
