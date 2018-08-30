@@ -23,6 +23,25 @@ typedef char *(*(**foo [][2*3+1])())[];
 
 int;
 
+struct __handles_t {
+  void (*platform_write_char)(int fd, char c);
+};
+
+char *global_str = "global test string\n";
+
+void putc(char c) {
+  struct __handles_t *handles;
+  handles = &__handles;
+  handles->platform_write_char(1, c);
+}
+
+void puts(char *s) {
+  while (*s != 0) {
+    putc(*s);
+    s = s + 1;
+  }
+}
+
 struct OtherStruct {
   int x, y, z;
 };
@@ -80,7 +99,7 @@ int printf(char *format, ...) {
   return 0;
 }
 
-char *format;
+char *format = "this is a format\n";
 
 void test_printf() {
   printf(format, 10);
@@ -119,6 +138,9 @@ int main() {
   b = 10;
   bptr = &b;
   *bptr = 20;
+
+  puts("local test string\n");
+  puts(global_str);
 
   return sum_numbers(0) + a + b + (****test_struct)() + test_array() + init1 + init2.y;
 }

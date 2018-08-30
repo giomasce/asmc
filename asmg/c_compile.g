@@ -298,7 +298,8 @@ const CCTX_LABEL_NUM 36
 const CCTX_STRUCTS 40
 const CCTX_UNIONS 44
 const CCTX_ENUM_CONSTS 48
-const SIZEOF_CCTX 52
+const CCTX_HANDLES 52
+const SIZEOF_CCTX 56
 
 fun cctx_init_types 1 {
   $ctx
@@ -309,6 +310,16 @@ fun cctx_init_types 1 {
   ctx CCTX_STRUCTS take_addr map_init = ;
   ctx CCTX_UNIONS take_addr map_init = ;
   ctx CCTX_ENUM_CONSTS take_addr map_init = ;
+}
+
+fun cctx_setup_handles 1 {
+  $ctx
+  @ctx 0 param = ;
+
+  $handles
+  @handles ctx CCTX_HANDLES take = ;
+
+  handles @platform_write_char vector_push_back ;
 }
 
 fun cctx_init 1 {
@@ -324,6 +335,10 @@ fun cctx_init 1 {
   ctx CCTX_LABEL_NUM take_addr 0 = ;
   ctx CCTX_LABEL_BUF take_addr 32 malloc = ;
   ctx CCTX_LABEL_POS take_addr 4 vector_init = ;
+  ctx CCTX_HANDLES take_addr 4 vector_init = ;
+
+  ctx cctx_setup_handles ;
+
   ctx ret ;
 }
 
@@ -376,6 +391,7 @@ fun cctx_destroy 1 {
 
   ctx CCTX_LABEL_POS take vector_destroy ;
   ctx CCTX_LABEL_BUF take free ;
+  ctx CCTX_HANDLES take vector_destroy ;
 
   ctx free ;
 }
@@ -735,6 +751,7 @@ const TYPE_INT 5
 const TYPE_USHORT 6
 const TYPE_UINT 7
 const TYPE_CHAR_ARRAY 8
+const TYPE_VOID_PTR 9
 
 fun is_integer_type 1 {
   $idx
@@ -777,6 +794,7 @@ fun cctx_create_basic_types 1 {
   ctx TYPE_UINT 4 cctx_create_basic_type ;
 
   ctx TYPE_CHAR 0xffffffff cctx_get_array_type TYPE_CHAR_ARRAY == "cctx_create_basic_types: error 1" assert_msg ;
+  ctx TYPE_VOID cctx_get_pointer_type TYPE_VOID_PTR == "cctx_create_basic_types: error 2" assert_msg ;
 }
 
 fun cctx_get_global 2 {
@@ -1588,7 +1606,11 @@ fun lctx_fix_label 3 {
   $loc
   $pos
   @loc ctx CCTX_CURRENT_LOC take = ;
-  @pos lctx lctx_stack_pos = ;
+  if lctx 0 != {
+    @pos lctx lctx_stack_pos = ;
+  } else {
+    @pos 0 = ;
+  }
   ctx idx loc pos cctx_fix_label ;
 }
 
@@ -1883,7 +1905,11 @@ fun cctx_gen_label_jump 5 {
   @rewind 0 param = ;
 
   $current_pos
-  @current_pos lctx lctx_stack_pos = ;
+  if lctx 0 != {
+    @current_pos lctx lctx_stack_pos = ;
+  } else {
+    @current_pos 0 = ;
+  }
   $new_pos
   @new_pos ctx CCTX_LABEL_POS take idx vector_at = ;
   $pos_diff
@@ -1915,6 +1941,31 @@ fun cctx_get_label_addr 3 {
   global GLOBAL_LOC take ret ;
 }
 
+fun cctx_gen_string 3 {
+  $ctx
+  $lctx
+  $name
+  @ctx 2 param = ;
+  @lctx 1 param = ;
+  @name 0 param = ;
+
+  $str_label
+  $label
+  @str_label lctx ctx lctx_gen_label = ;
+  @label lctx ctx lctx_gen_label = ;
+  ctx lctx label JUMP_TYPE_JMP 0 cctx_gen_label_jump ;
+  lctx ctx str_label lctx_fix_label ;
+  $from
+  @from name 1 + = ;
+  while from **c '\"' != {
+    @from 0 ctx escape_char ;
+  }
+  from 1 + **c 0 == "ast_push_addr: illegal string literal" assert_msg ;
+  ctx 0 cctx_emit ;
+  lctx ctx label lctx_fix_label ;
+  str_label ret ;
+}
+
 fun ast_eval_compile 2 {
   $ctx
   $ast
@@ -1932,7 +1983,13 @@ fun ast_eval_compile 2 {
       enum_consts name map_has "ast_eval_compile: invalid identifier" assert_msg ;
       enum_consts name map_at ret ;
     } else {
-      name atoi_c ret ;
+      if name **c '\"' == {
+        $str_label
+        @str_label ctx 0 name cctx_gen_string = ;
+        ctx 0 str_label cctx_get_label_addr ret ;
+      } else {
+        name atoi_c ret ;
+      }
     }
   } else {
     # Operator
@@ -2312,23 +2369,11 @@ fun ast_push_addr 3 {
       }
     } else {
       if name **c '\"' == {
-        $label
         $str_label
-        @label lctx ctx lctx_gen_label = ;
-        @str_label lctx ctx lctx_gen_label = ;
-        ctx lctx label JUMP_TYPE_JMP 0 cctx_gen_label_jump ;
-        lctx ctx str_label lctx_fix_label ;
-        $from
-        @from name 1 + = ;
-        while from **c '\"' != {
-          @from 0 ctx escape_char ;
-        }
-        from 1 + **c 0 == "ast_push_addr: illegal string literal" assert_msg ;
-        ctx 0 cctx_emit ;
-        lctx ctx label lctx_fix_label ;
+        @str_label ctx lctx name cctx_gen_string = ;
         # push str_label
         ctx 0x68 cctx_emit ;
-        ctx ctx lctx label cctx_get_label_addr cctx_emit32 ;
+        ctx ctx lctx str_label cctx_get_label_addr cctx_emit32 ;
       } else {
         0 "ast_push_addr: cannot take the address of an immediate" assert_msg ;
       }
@@ -2465,6 +2510,18 @@ fun lctx_convert_stack 4 {
     ctx 0x58 cctx_emit ;
     lctx ctx from_idx to_idx lctx_int_convert ;
     ctx 0x50 cctx_emit ;
+    ret ;
+  }
+
+  $from_type
+  $to_type
+  @from_type ctx from_idx cctx_get_type = ;
+  @to_type ctx to_idx cctx_get_type = ;
+
+  if from_type TYPE_KIND take TYPE_KIND_POINTER == to_type TYPE_KIND take TYPE_KIND_POINTER == && {
+    # Permit any implicit conversion between any two pointers of any type
+    ctx from_idx cctx_type_footprint 4 == "lctx_convert_stack: error 3" assert_msg ;
+    ctx to_idx cctx_type_footprint 4 == "lctx_convert_stack: error 4" assert_msg ;
     ret ;
   }
 
@@ -3674,7 +3731,7 @@ fun cctx_parse_initializer 3 {
   $type
   @type ctx type_idx cctx_get_type = ;
 
-  if type_idx is_integer_type {
+  if type_idx is_integer_type type TYPE_KIND take TYPE_KIND_POINTER == || {
     $ast
     @ast ctx "," "}" ";" cctx_parse_ast3 = ;
     $value
@@ -3838,6 +3895,7 @@ fun cctx_compile 1 {
     ctx CCTX_LABEL_NUM take_addr 0 = ;
     ctx cctx_reset_types ;
     ctx cctx_create_basic_types ;
+    ctx "__handles" ctx CCTX_HANDLES take vector_data TYPE_VOID_PTR cctx_add_global ;
     while ctx cctx_is_eof ! {
       ctx cctx_compile_line ;
     }
