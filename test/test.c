@@ -121,10 +121,6 @@ int test_enum() {
   return ELEVEN;
 }
 
-#include <first.h>
-#include \
-"other.h"
-
 int main() {
   "test string";
   int a = 1;

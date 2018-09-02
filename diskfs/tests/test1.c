@@ -22,3 +22,33 @@ int test_false() {
 int test_true() {
   return 1;
 }
+
+int do_sum(int x, char y) {
+  return x+y;
+}
+
+int test_while() {
+  int i;
+  int sum;
+  i = 0;
+  sum = 0;
+  while (i < 200) {
+    i = i + 1;
+    if (i == 10) continue;
+    sum = do_sum(sum, i);
+    if (i == 100) break;
+  }
+  return sum;
+}
+
+int test_for() {
+  int i;
+  int sum;
+  sum = 0;
+  for (i = 0; i < 200; i = i + 1) {
+    if (i == 10) continue;
+    sum = do_sum(sum, i);
+    if (i == 100) break;
+  }
+  return sum;
+}
