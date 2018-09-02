@@ -1,0 +1,17 @@
+# Not that we depend on this, but otherwise it seems that the default
+# language is Ruby!
+language: c
+
+addons:
+  apt:
+    packages:
+    - build-essential
+    - nasm
+    - qemu-system-x86
+    - python3
+    - gcc-multilib
+
+script:
+- mkdir build
+- make build/boot_asmg.x86
+- qemu-system-i386 -hda build/boot_asmg.x86 -serial stdio -device isa-debug-exit -display none | ./test/decode_tests.py
