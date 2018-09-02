@@ -19,9 +19,10 @@ const COMPILE_ASM 0
 const COMPILE_C 1
 const COMPILE_MESCC 0
 const RUN_ASM 0
-const RUN_C 1
+const RUN_C 0
 const RUN_MESCC 0
 const RUN_MCPP 0
+const TEST_C 1
 
 const USE_TRIVIAL_MALLOC 0
 const USE_SIMPLE_MALLOC 0
@@ -141,6 +142,10 @@ fun main 0 {
     "Compiling c_compile.g... " 1 platform_log ;
     "c_compile.g" platform_g_compile ;
     "done!\n" 1 platform_log ;
+
+    "Compiling c_test.g... " 1 platform_log ;
+    "c_test.g" platform_g_compile ;
+    "done!\n" 1 platform_log ;
   }
 
   if COMPILE_MESCC {
@@ -187,6 +192,10 @@ fun main 0 {
 
     if RUN_C {
       "/init/test.c" 0 "parse_c" platform_get_symbol \1 ;
+    }
+
+    if TEST_C {
+      0 "c_run_testcases" platform_get_symbol \0 ;
     }
 
     if RUN_MESCC {

@@ -299,7 +299,8 @@ const CCTX_STRUCTS 40
 const CCTX_UNIONS 44
 const CCTX_ENUM_CONSTS 48
 const CCTX_HANDLES 52
-const SIZEOF_CCTX 56
+const CCTX_VERBOSE 56
+const SIZEOF_CCTX 60
 
 fun cctx_init_types 1 {
   $ctx
@@ -336,6 +337,7 @@ fun cctx_init 1 {
   ctx CCTX_LABEL_BUF take_addr 32 malloc = ;
   ctx CCTX_LABEL_POS take_addr 4 vector_init = ;
   ctx CCTX_HANDLES take_addr 4 vector_init = ;
+  ctx CCTX_VERBOSE take_addr 1 = ;
 
   ctx cctx_setup_handles ;
 
@@ -925,8 +927,10 @@ fun cctx_get_token 1 {
     $tok
     @tok ctx CCTX_TOKENS take ctx CCTX_TOKENS_POS take vector_at = ;
     ctx CCTX_TOKENS_POS take_addr ctx CCTX_TOKENS_POS take 1 + = ;
-    " " 1 platform_log ;
-    tok 1 platform_log ;
+    if ctx CCTX_VERBOSE take {
+      " " 1 platform_log ;
+      tok 1 platform_log ;
+    }
     tok ret ;
   }
 }
@@ -935,7 +939,9 @@ fun cctx_give_back_token 1 {
   $ctx
   @ctx 0 param = ;
 
-  " <gb>" 1 platform_log ;
+  if ctx CCTX_VERBOSE take {
+    " <gb>" 1 platform_log ;
+  }
   ctx CCTX_TOKENS_POS take 0 > "cctx_give_back_token: error 1" assert_msg ;
   ctx CCTX_TOKENS_POS take_addr ctx CCTX_TOKENS_POS take 1 - = ;
 }
@@ -1059,7 +1065,9 @@ fun cctx_parse_ast1 2 {
   @ctx 1 param = ;
   @term 0 param = ;
 
-  " <pa>" 1 platform_log ;
+  if ctx CCTX_VERBOSE take {
+    " <pa>" 1 platform_log ;
+  }
 
   # Bad hack to fix ast_parse interface
   ctx cctx_give_back_token ;
@@ -1074,7 +1082,9 @@ fun cctx_parse_ast2 3 {
   @term1 1 param = ;
   @term2 0 param = ;
 
-  " <pa>" 1 platform_log ;
+  if ctx CCTX_VERBOSE take {
+    " <pa>" 1 platform_log ;
+  }
 
   # Bad hack to fix ast_parse interface
   ctx cctx_give_back_token ;
@@ -1091,7 +1101,9 @@ fun cctx_parse_ast3 4 {
   @term2 1 param = ;
   @term3 0 param = ;
 
-  " <pa>" 1 platform_log ;
+  if ctx CCTX_VERBOSE take {
+    " <pa>" 1 platform_log ;
+  }
 
   # Bad hack to fix ast_parse interface
   ctx cctx_give_back_token ;
@@ -3980,8 +3992,11 @@ fun cctx_compile 1 {
   @start_loc 0 = ;
   $size
   while ctx CCTX_STAGE take 3 < {
-    "Compilation stage " 1 platform_log ;
-    ctx CCTX_STAGE take 1 + itoa 1 platform_log ;
+    if ctx CCTX_VERBOSE take {
+      "Compilation stage " 1 platform_log ;
+      ctx CCTX_STAGE take 1 + itoa 1 platform_log ;
+      "\n" 1 platform_log ;
+    }
     ctx CCTX_CURRENT_LOC take_addr start_loc = ;
     ctx CCTX_TOKENS_POS take_addr 0 = ;
     ctx CCTX_LABEL_NUM take_addr 0 = ;
@@ -3991,7 +4006,6 @@ fun cctx_compile 1 {
     while ctx cctx_is_eof ! {
       ctx cctx_compile_line ;
     }
-    "\n" 1 platform_log ;
     if ctx CCTX_STAGE take 0 == {
       @size ctx CCTX_CURRENT_LOC take start_loc - = ;
       @start_loc size platform_allocate = ;
@@ -4000,14 +4014,16 @@ fun cctx_compile 1 {
     }
     ctx CCTX_STAGE take_addr ctx CCTX_STAGE take 1 + = ;
   }
-  "Compiled program has size " 1 platform_log ;
-  size itoa 1 platform_log ;
-  " and starts at " 1 platform_log ;
-  start_loc itoa 1 platform_log ;
-  "\n" 1 platform_log ;
-  "Compiled dump:\n" 1 platform_log ;
-  start_loc size dump_mem ;
-  "\n" 1 platform_log ;
+  if ctx CCTX_VERBOSE take {
+    "Compiled program has size " 1 platform_log ;
+    size itoa 1 platform_log ;
+    " and starts at " 1 platform_log ;
+    start_loc itoa 1 platform_log ;
+    "\n" 1 platform_log ;
+    "Compiled dump:\n" 1 platform_log ;
+    start_loc size dump_mem ;
+    "\n" 1 platform_log ;
+  }
 }
 
 fun parse_c 1 {
