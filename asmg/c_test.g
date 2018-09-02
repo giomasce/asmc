@@ -96,6 +96,12 @@ fun c_run_testcases 0 {
   tests "/disk1/tests/test1.c" "test_true" 1 c_run_testcase ;
   tests "/disk1/tests/test1.c" "test_while" 5040 c_run_testcase ;
   tests "/disk1/tests/test1.c" "test_for" 5040 c_run_testcase ;
+  tests "/disk1/tests/test1.c" "test_array" 200 c_run_testcase ;
+  tests "/disk1/tests/test1.c" "test_struct" 40 c_run_testcase ;
+  tests "/disk1/tests/test1.c" "test_enum" 11 c_run_testcase ;
+  tests "/disk1/tests/test1.c" "test_strings" 1 c_run_testcase ;
+  tests "/disk1/tests/test1.c" "test_define" 4 c_run_testcase ;
+  tests "/disk1/tests/test1.c" "test_extension" 0xffffffff c_run_testcase ;
 
   tests TESTS_SUCCESSFUL take itoa 1 platform_log ;
   " / " 1 platform_log ;
