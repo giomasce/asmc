@@ -4002,7 +4002,7 @@ fun cctx_compile 1 {
     ctx CCTX_LABEL_NUM take_addr 0 = ;
     ctx cctx_reset_types ;
     ctx cctx_create_basic_types ;
-    ctx "__handles" ctx CCTX_HANDLES take vector_data TYPE_VOID_PTR cctx_add_global ;
+    ctx "__handles_" ctx CCTX_HANDLES take vector_data TYPE_VOID_PTR cctx_add_global ;
     while ctx cctx_is_eof ! {
       ctx cctx_compile_line ;
     }
@@ -4057,7 +4057,7 @@ fun parse_c 1 {
   # Try to execute the code
   "Executing compiled code...\n" 1 platform_log ;
   $main_global
-  @main_global cctx "main" cctx_get_global = ;
+  @main_global cctx "_start" cctx_get_global = ;
   $main_addr
   @main_addr main_global GLOBAL_LOC take = ;
   $arg

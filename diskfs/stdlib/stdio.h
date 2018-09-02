@@ -1,2 +1,1 @@
-
-typedef int FILE;
+#include "asmc.h"

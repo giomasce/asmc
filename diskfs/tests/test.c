@@ -15,6 +15,9 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
+#include <stdio.h>
+
 int main(int argc, char *argv[]) {
+  puts("Hello, world!\n");
   return 0;
 }

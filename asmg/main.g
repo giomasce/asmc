@@ -191,7 +191,7 @@ fun main 0 {
     }
 
     if RUN_C {
-      "/init/test.c" 0 "parse_c" platform_get_symbol \1 ;
+      "/disk1/tests/test.c" 0 "parse_c" platform_get_symbol \1 ;
     }
 
     if TEST_C {
