@@ -28,10 +28,12 @@ import os
 import re
 
 TEST_RE = re.compile("Testing ([^ ]*) in file ([^ ]*)... ([^ ]*)!")
+MALLOC_RE = re.compile("0 malloc-ed regions were never free-d")
 
 def main():
     test_num = 0
     test_success = 0
+    malloc_ok = False
     for line in sys.stdin:
         line = line.strip()
         print(line)
@@ -43,6 +45,9 @@ def main():
             test_num += 1
             if status == "passed":
                 test_success += 1
+        if MALLOC_RE.match(line):
+            malloc_ok = True
+
     if test_num == 0:
         print("No test detected, failing...")
         sys.exit(2)
@@ -50,6 +55,10 @@ def main():
         print("Only {} / {} tests succeeded, how bad...".format(test_success, test_num))
         sys.exit(1)
     print("All {} tests succeeded, very good! :-)".format(test_num))
+
+    if not malloc_ok:
+        print("Some malloc-ed region was not free-d, that's terrible...")
+        sys.exit(1)
 
 if __name__ == '__main__':
     main()
