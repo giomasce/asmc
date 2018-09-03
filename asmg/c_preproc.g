@@ -67,13 +67,15 @@ fun subst_destroy 1 {
 
 const PPCTX_DEFINES 0
 const PPCTX_BASE_PATH 4
-const SIZEOF_PPCTX 8
+const PPCTX_VERBOSE 8
+const SIZEOF_PPCTX 12
 
 fun ppctx_init 0 {
   $ptr
   @ptr SIZEOF_PPCTX malloc = ;
   ptr PPCTX_DEFINES take_addr map_init = ;
   ptr PPCTX_BASE_PATH take_addr 0 = ;
+  ptr PPCTX_VERBOSE take_addr 1 = ;
   ptr ret ;
 }
 
@@ -840,6 +842,7 @@ fun preproc_process_include 4 {
   $fd
   @fd testfile vfs_open = ;
   if fd ! {
+    testfile free ;
     @testfile filename strdup "/disk1/stdlib/" prepend_to_str = ;
     @fd testfile vfs_open = ;
     fd "preproc_process_include: cannot find file" assert_msg ;
@@ -852,13 +855,17 @@ fun preproc_process_include 4 {
     @filename testfile = ;
   }
 
-  "Including file " 1 platform_log ;
-  filename 1 platform_log ;
-  "\n" 1 platform_log ;
+  if ctx PPCTX_VERBOSE take {
+    "Including file " 1 platform_log ;
+    filename 1 platform_log ;
+    "\n" 1 platform_log ;
+  }
   tokens ctx filename preproc_file ;
-  "Finished including file " 1 platform_log ;
-  filename 1 platform_log ;
-  "\n" 1 platform_log ;
+  if ctx PPCTX_VERBOSE take {
+    "Finished including file " 1 platform_log ;
+    filename 1 platform_log ;
+    "\n" 1 platform_log ;
+  }
   filename free ;
 
   intoks iptr discard_white_tokens ;

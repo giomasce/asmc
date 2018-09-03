@@ -51,10 +51,14 @@ int puts(const char *s) {
 
 int main(int, char *[]);
 
-int _start(int argc, char *argv[]) {
-  __handles = &__handles_;
+void __init_stdlib() {
+  __handles = &__builtin_handles;
   stdout = &__stdout;
   stderr = &__stderr;
+}
+
+int _start(int argc, char *argv[]) {
+  __init_stdlib();
   return main(argc, argv);
 }
 

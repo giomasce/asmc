@@ -19,15 +19,33 @@ const TESTS_RAN 0
 const TESTS_SUCCESSFUL 4
 const SIZEOF_TESTS 8
 
+$test_expected_stdout
+$test_stdout_ok
+
+fun test_platform_write_char 2 {
+  $c
+  $fd
+  @c 1 param = ;
+  @fd 0 param = ;
+
+  if test_expected_stdout **c c == {
+    @test_expected_stdout test_expected_stdout 1 + = ;
+  } else {
+    @test_stdout_ok 0 = ;
+  }
+}
+
 fun c_run_testcase 3 {
   $tests
   $filename
   $function
   $result
-  @tests 3 param = ;
-  @filename 2 param = ;
-  @function 1 param = ;
-  @result 0 param = ;
+  $out
+  @tests 4 param = ;
+  @filename 3 param = ;
+  @function 2 param = ;
+  @result 1 param = ;
+  @out 0 param = ;
 
   "Testing " 1 platform_log ;
   function 1 platform_log ;
@@ -38,6 +56,7 @@ fun c_run_testcase 3 {
   # Preprocessing
   $ctx
   @ctx ppctx_init = ;
+  ctx PPCTX_VERBOSE take_addr 0 = ;
   ctx filename ppctx_set_base_filename ;
   $tokens
   @tokens 4 vector_init = ;
@@ -52,6 +71,11 @@ fun c_run_testcase 3 {
   cctx CCTX_VERBOSE take_addr 0 = ;
   cctx cctx_compile ;
 
+  # Hack the handles in order to intercept calls to platform_write_char
+  cctx CCTX_HANDLES take 0 vector_at_addr @test_platform_write_char = ;
+  @test_expected_stdout out = ;
+  @test_stdout_ok 1 = ;
+
   # Debug output
   #"TYPES TABLE\n" 1 platform_log ;
   #cctx cctx_dump_types ;
@@ -62,6 +86,13 @@ fun c_run_testcase 3 {
 
   # Try to execute the code
   #"Executing compiled code...\n" 1 platform_log ;
+  if cctx "__init_stdlib" cctx_has_global {
+    $init_global
+    @init_global cctx "__init_stdlib" cctx_get_global = ;
+    $init_addr
+    @init_addr init_global GLOBAL_LOC take = ;
+    init_addr \0 ;
+  }
   $function_global
   @function_global cctx function cctx_get_global = ;
   $function_addr
@@ -78,7 +109,7 @@ fun c_run_testcase 3 {
   ctx ppctx_destroy ;
 
   tests TESTS_RAN take_addr tests TESTS_RAN take 1 + = ;
-  if res result == {
+  if res result == test_expected_stdout **c 0 == && test_stdout_ok && {
     " passed!\n" 1 platform_log ;
     tests TESTS_SUCCESSFUL take_addr tests TESTS_SUCCESSFUL take 1 + = ;
   } else {
@@ -92,16 +123,18 @@ fun c_run_testcases 0 {
   tests TESTS_RAN take_addr 0 = ;
   tests TESTS_SUCCESSFUL take_addr 0 = ;
 
-  tests "/disk1/tests/test_lang.c" "test_false" 0 c_run_testcase ;
-  tests "/disk1/tests/test_lang.c" "test_true" 1 c_run_testcase ;
-  tests "/disk1/tests/test_lang.c" "test_while" 5040 c_run_testcase ;
-  tests "/disk1/tests/test_lang.c" "test_for" 5040 c_run_testcase ;
-  tests "/disk1/tests/test_lang.c" "test_array" 200 c_run_testcase ;
-  tests "/disk1/tests/test_lang.c" "test_struct" 40 c_run_testcase ;
-  tests "/disk1/tests/test_lang.c" "test_enum" 11 c_run_testcase ;
-  tests "/disk1/tests/test_lang.c" "test_strings" 1 c_run_testcase ;
-  tests "/disk1/tests/test_lang.c" "test_define" 4 c_run_testcase ;
-  tests "/disk1/tests/test_lang.c" "test_extension" 0xffffffff c_run_testcase ;
+  tests "/disk1/tests/test_lang.c" "test_false" 0 "" c_run_testcase ;
+  tests "/disk1/tests/test_lang.c" "test_true" 1 "" c_run_testcase ;
+  tests "/disk1/tests/test_lang.c" "test_while" 5040 "" c_run_testcase ;
+  tests "/disk1/tests/test_lang.c" "test_for" 5040 "" c_run_testcase ;
+  tests "/disk1/tests/test_lang.c" "test_array" 200 "" c_run_testcase ;
+  tests "/disk1/tests/test_lang.c" "test_struct" 40 "" c_run_testcase ;
+  tests "/disk1/tests/test_lang.c" "test_enum" 11 "" c_run_testcase ;
+  tests "/disk1/tests/test_lang.c" "test_strings" 1 "" c_run_testcase ;
+  tests "/disk1/tests/test_lang.c" "test_define" 4 "" c_run_testcase ;
+  tests "/disk1/tests/test_lang.c" "test_extension" 0xffffffff "" c_run_testcase ;
+
+  tests "/disk1/tests/test_stdlib.c" "test_fputs" 0 "This is a test string\n" c_run_testcase ;
 
   tests TESTS_SUCCESSFUL take itoa 1 platform_log ;
   " / " 1 platform_log ;

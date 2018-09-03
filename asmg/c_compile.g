@@ -799,6 +799,17 @@ fun cctx_create_basic_types 1 {
   ctx TYPE_VOID cctx_get_pointer_type TYPE_VOID_PTR == "cctx_create_basic_types: error 2" assert_msg ;
 }
 
+fun cctx_has_global 2 {
+  $ctx
+  $name
+  @ctx 1 param = ;
+  @name 0 param = ;
+
+  $globals
+  @globals ctx CCTX_GLOBALS take = ;
+  globals name map_has ret ;
+}
+
 fun cctx_get_global 2 {
   $ctx
   $name
@@ -4002,7 +4013,7 @@ fun cctx_compile 1 {
     ctx CCTX_LABEL_NUM take_addr 0 = ;
     ctx cctx_reset_types ;
     ctx cctx_create_basic_types ;
-    ctx "__handles_" ctx CCTX_HANDLES take vector_data TYPE_VOID_PTR cctx_add_global ;
+    ctx "__builtin_handles" ctx CCTX_HANDLES take vector_data TYPE_VOID_PTR cctx_add_global ;
     while ctx cctx_is_eof ! {
       ctx cctx_compile_line ;
     }
