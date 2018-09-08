@@ -32,10 +32,19 @@ int test_calloc_free() {
 }
 
 int test_malloc_realloc_free() {
-  void *ptr;
+  char *ptr;
   ptr = malloc(100);
+  *ptr = 'A';
+  *(ptr+1) = 'B';
+  *(ptr+49) = 'Z';
   ptr = realloc(ptr, 50);
+  if (*ptr != 'A') return 0;
+  if (*(ptr+1) != 'B') return 0;
+  if (*(ptr+49) != 'Z') return 0;
   ptr = realloc(ptr, 200);
+  if (*ptr != 'A') return 0;
+  if (*(ptr+1) != 'B') return 0;
+  if (*(ptr+49) != 'Z') return 0;
   free(ptr);
   return ptr != NULL;
 }
