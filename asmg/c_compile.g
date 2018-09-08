@@ -321,6 +321,10 @@ fun cctx_setup_handles 1 {
   @handles ctx CCTX_HANDLES take = ;
 
   handles @platform_write_char vector_push_back ;
+  handles @malloc vector_push_back ;
+  handles @calloc vector_push_back ;
+  handles @free vector_push_back ;
+  handles @realloc vector_push_back ;
 }
 
 fun cctx_init 1 {

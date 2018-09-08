@@ -16,10 +16,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 fun realloc 2 {
-  $ptr
   $newsize
-  @ptr 0 param = ;
+  $ptr
   @newsize 1 param = ;
+  @ptr 0 param = ;
+
   $size
   @size ptr _malloc_get_size = ;
   $newptr

@@ -9,6 +9,10 @@ typedef unsigned int size_t;
 
 struct __handles_t {
   void (*platform_write_char)(int fd, char c);
+  void *(*malloc)(size_t size);
+  void *(*calloc)(size_t num, size_t size);
+  void (*free)(void *ptr);
+  void *(*realloc)(void *ptr, size_t new_size);
 };
 
 struct __handles_t *__handles;
