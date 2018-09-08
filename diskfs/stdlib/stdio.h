@@ -1,3 +1,6 @@
+#ifndef __STDIO_H
+#define __STDIO_H
+
 #include "asmc.h"
 
 #define EOF (0-1)
@@ -26,3 +29,5 @@ int fputs(const char *s, FILE *stream) {
 int puts(const char *s) {
   return fputs(s, stdout);
 }
+
+#endif

@@ -1,3 +1,6 @@
+#ifndef __STDLIB_H
+#define __STDLIB_H
+
 #include "asmc.h"
 
 void *malloc(size_t size) {
@@ -15,3 +18,5 @@ void free(void *ptr) {
 void *realloc(void *ptr, size_t new_size) {
   return __handles->realloc(ptr, new_size);
 }
+
+#endif

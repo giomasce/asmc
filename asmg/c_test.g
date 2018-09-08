@@ -145,6 +145,11 @@ fun c_run_testcases 0 {
   tests "/disk1/tests/test_stdlib.c" "test_malloc_realloc_free" 1 "" c_run_testcase ;
   tests "/disk1/tests/test_stdlib.c" "test_free_null" 1 "" c_run_testcase ;
 
+  tests "/disk1/tests/test_string.c" "test_strcmp1" 1 "" c_run_testcase ;
+  tests "/disk1/tests/test_string.c" "test_strcmp2" 1 "" c_run_testcase ;
+  tests "/disk1/tests/test_string.c" "test_strcmp3" 1 "" c_run_testcase ;
+  tests "/disk1/tests/test_string.c" "test_strcmp4" 1 "" c_run_testcase ;
+
   tests TESTS_SUCCESSFUL take itoa 1 platform_log ;
   " / " 1 platform_log ;
   tests TESTS_RAN take itoa 1 platform_log ;
