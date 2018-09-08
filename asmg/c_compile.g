@@ -2263,17 +2263,28 @@ fun ast_eval_type 3 {
        name "%" strcmp 0 == ||
        name "+" strcmp 0 == ||
        name "-" strcmp 0 == ||
-       name "<" strcmp 0 == ||
-       name ">" strcmp 0 == ||
-       name "<=" strcmp 0 == ||
-       name ">=" strcmp 0 == ||
-       name "==" strcmp 0 == ||
-       name "!=" strcmp 0 == ||
        name "&" strcmp 0 == ||
        name "^" strcmp 0 == ||
        name "|" strcmp 0 == ||
        processed ! && {
       @type_idx ast ctx lctx ast_arith_conv = ;
+      @processed 1 = ;
+    }
+
+    if name "<" strcmp 0 ==
+       name ">" strcmp 0 == ||
+       name "<=" strcmp 0 == ||
+       name ">=" strcmp 0 == ||
+       name "==" strcmp 0 == ||
+       name "!=" strcmp 0 == ||
+       processed ! && {
+      $type1
+      $type2
+      @type1 ast AST_LEFT take ctx lctx ast_eval_type = ;
+      @type2 ast AST_RIGHT take ctx lctx ast_eval_type = ;
+      type1 is_integer_type ctx type1 cctx_get_type TYPE_KIND take TYPE_KIND_POINTER == || "ast_eval_type: left is neither integer nor pointer" assert_msg ;
+      type2 is_integer_type ctx type2 cctx_get_type TYPE_KIND take TYPE_KIND_POINTER == || "ast_eval_type: left is neither integer nor pointer" assert_msg ;
+      @type_idx TYPE_INT = ;
       @processed 1 = ;
     }
 
@@ -2606,14 +2617,18 @@ fun ast_push_value_arith 3 {
   # Pop right result, promote it and store in ECX
   # pop eax; lctx_int_convert; mov ecx, eax
   ctx 0x58 cctx_emit ;
-  lctx ctx type2 type_idx lctx_int_convert ;
+  if type2 is_integer_type {
+    lctx ctx type2 type_idx lctx_int_convert ;
+  }
   ctx 0x89 cctx_emit ;
   ctx 0xc1 cctx_emit ;
 
   # Pop left result, promote it and store in EAX
   # pop eax, lctx_int_convert
   ctx 0x58 cctx_emit ;
-  lctx ctx type1 type_idx lctx_int_convert ;
+  if type1 is_integer_type {
+    lctx ctx type1 type_idx lctx_int_convert ;
+  }
 
   # Invoke the operation specific operation
   $processed

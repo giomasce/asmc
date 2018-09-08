@@ -21,16 +21,14 @@ int test_malloc_free() {
   void *ptr;
   ptr = malloc(10);
   free(ptr);
-  return 1;
-  //return ptr != NULL;
+  return ptr != NULL;
 }
 
 int test_calloc_free() {
   void *ptr;
   ptr = calloc(50, 20);
   free(ptr);
-  return 1;
-  //return ptr != NULL;
+  return ptr != NULL;
 }
 
 int test_malloc_realloc_free() {
@@ -39,8 +37,7 @@ int test_malloc_realloc_free() {
   ptr = realloc(ptr, 50);
   ptr = realloc(ptr, 200);
   free(ptr);
-  return 1;
-  //return ptr != NULL;
+  return ptr != NULL;
 }
 
 int test_free_null() {
