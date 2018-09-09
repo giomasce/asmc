@@ -30,4 +30,8 @@ int puts(const char *s) {
   return fputs(s, stdout);
 }
 
+char *itoa(unsigned int x) {
+  return __handles->itoa(x);
+}
+
 #endif

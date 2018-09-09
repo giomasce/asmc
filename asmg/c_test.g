@@ -28,10 +28,14 @@ fun test_platform_write_char 2 {
   @c 1 param = ;
   @fd 0 param = ;
 
-  if test_expected_stdout **c c == {
-    @test_expected_stdout test_expected_stdout 1 + = ;
+  if fd 1 == {
+    if test_expected_stdout **c c == {
+      @test_expected_stdout test_expected_stdout 1 + = ;
+    } else {
+      @test_stdout_ok 0 = ;
+    }
   } else {
-    @test_stdout_ok 0 = ;
+    c fd platform_write_char ;
   }
 }
 
@@ -149,6 +153,9 @@ fun c_run_testcases 0 {
   tests "/disk1/tests/test_string.c" "test_strcmp2" 1 "" c_run_testcase ;
   tests "/disk1/tests/test_string.c" "test_strcmp3" 1 "" c_run_testcase ;
   tests "/disk1/tests/test_string.c" "test_strcmp4" 1 "" c_run_testcase ;
+
+  tests "/disk1/tests/test_setjmp.c" "test_setjmp" 0 "" c_run_testcase ;
+  tests "/disk1/tests/test_setjmp.c" "test_setjmp2" 0 "called\ncalled\ncalled\n" c_run_testcase ;
 
   tests TESTS_SUCCESSFUL take itoa 1 platform_log ;
   " / " 1 platform_log ;

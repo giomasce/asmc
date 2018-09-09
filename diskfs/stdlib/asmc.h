@@ -9,10 +9,13 @@ typedef unsigned int size_t;
 
 struct __handles_t {
   void (*platform_write_char)(int fd, char c);
+  int (*platform_setjmp)(void *env);
+  void (*platform_longjmp)(void *env, int status);
   void *(*malloc)(size_t size);
   void *(*calloc)(size_t num, size_t size);
   void (*free)(void *ptr);
   void *(*realloc)(void *ptr, size_t new_size);
+  char *(*itoa)(unsigned int x);
 };
 
 struct __handles_t *__handles;
@@ -23,7 +26,7 @@ typedef struct {
 
 FILE __stdout = {1};
 FILE *stdout;
-FILE __stderr = {1};
+FILE __stderr = {2};
 FILE *stderr;
 
 int main(int, char *[]);

@@ -19,6 +19,13 @@ str_platform_g_compile:
   db 'platform_g_compile'
   db 0
 
+str_platform_setjmp:
+  db 'platform_setjmp'
+  db 0
+str_platform_longjmp:
+  db 'platform_longjmp'
+  db 0
+
 str_init_compile_main:
   db 'Will now compile main.g...'
   db NEWLINE
@@ -171,9 +178,21 @@ start:
   ;; Init compiler
   call init_g_compiler
   call init_g_operations
+
+  ;; Add some asmg-specific platform_* calls
   push 1
   push platform_g_compile
   push str_platform_g_compile
+  call add_symbol
+  add esp, 12
+  push 1
+  push platform_setjmp
+  push str_platform_setjmp
+  call add_symbol
+  add esp, 12
+  push 2
+  push platform_longjmp
+  push str_platform_longjmp
   call add_symbol
   add esp, 12
 
