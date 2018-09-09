@@ -2122,6 +2122,26 @@ fun ast_eval_compile 2 {
 
 ifun ast_eval_type 3
 
+fun promote_integer_type 1 {
+  $type
+  @type 0 param = ;
+
+  if type TYPE_CHAR ==
+     type TYPE_SCHAR == ||
+     type TYPE_UCHAR == ||
+     type TYPE_SHORT == ||
+     type TYPE_INT == ||
+     type TYPE_USHORT == || {
+    TYPE_INT ret ;
+  }
+
+  if type TYPE_UINT == {
+    TYPE_UINT ret ;
+  }
+
+  0 "promote_integer_type: not an integer type" assert_msg ;
+}
+
 fun ast_arith_conv 3 {
   $ast
   $ctx
@@ -2135,27 +2155,8 @@ fun ast_arith_conv 3 {
   @type1 ast AST_LEFT take ctx lctx ast_eval_type = ;
   @type2 ast AST_RIGHT take ctx lctx ast_eval_type = ;
 
-  if type1 TYPE_CHAR ==
-     type1 TYPE_SCHAR == ||
-     type1 TYPE_UCHAR == ||
-     type1 TYPE_SHORT == ||
-     type1 TYPE_INT == ||
-     type1 TYPE_USHORT == || {
-    @type1 TYPE_INT = ;
-  } else {
-    type1 TYPE_UINT == "ast_arith_conv: left is not an integer type" assert_msg ;
-  }
-
-  if type2 TYPE_CHAR ==
-     type2 TYPE_SCHAR == ||
-     type2 TYPE_UCHAR == ||
-     type2 TYPE_SHORT == ||
-     type2 TYPE_INT == ||
-     type2 TYPE_USHORT == || {
-    @type2 TYPE_INT = ;
-  } else {
-    type2 TYPE_UINT == "ast_arith_conv: right is not an integer type" assert_msg ;
-  }
+  @type1 type1 promote_integer_type = ;
+  @type2 type2 promote_integer_type = ;
 
   if type1 TYPE_UINT == type2 TYPE_UINT == || {
     TYPE_UINT ret ;
@@ -2274,6 +2275,14 @@ fun ast_eval_type 3 {
       @processed 1 = ;
     }
 
+    if name "+_PRE" strcmp 0 ==
+       name "-_PRE" strcmp 0 == ||
+       name "~_PRE" strcmp 0 == ||
+       processed ! && {
+      @type_idx ast AST_RIGHT take ctx lctx ast_eval_type promote_integer_type = ;
+      @processed 1 = ;
+    }
+
     if name "<" strcmp 0 ==
        name ">" strcmp 0 == ||
        name "<=" strcmp 0 == ||
@@ -2287,6 +2296,14 @@ fun ast_eval_type 3 {
       @type2 ast AST_RIGHT take ctx lctx ast_eval_type = ;
       type1 is_integer_type ctx type1 cctx_get_type TYPE_KIND take TYPE_KIND_POINTER == || "ast_eval_type: left is neither integer nor pointer" assert_msg ;
       type2 is_integer_type ctx type2 cctx_get_type TYPE_KIND take TYPE_KIND_POINTER == || "ast_eval_type: left is neither integer nor pointer" assert_msg ;
+      @type_idx TYPE_INT = ;
+      @processed 1 = ;
+    }
+
+    if name "!_PRE" strcmp 0 == {
+      $type
+      @type ast AST_RIGHT take ctx lctx ast_eval_type = ;
+      type is_integer_type ctx type cctx_get_type TYPE_KIND take TYPE_KIND_POINTER == || "ast_eval_type: operand is neither integer nor pointer" assert_msg ;
       @type_idx TYPE_INT = ;
       @processed 1 = ;
     }
@@ -2600,21 +2617,33 @@ fun ast_push_value_arith 3 {
   @ctx 1 param = ;
   @lctx 0 param = ;
 
+  $name
+  @name ast AST_NAME take = ;
+  $is_prefix
+  @is_prefix name "+_PRE" strcmp 0 ==
+             name "-_PRE" strcmp 0 == ||
+             name "~_PRE" strcmp 0 == ||
+             name "!_PRE" strcmp 0 == || = ;
+
   $type1
   $type2
   $type_idx
-  $name
-  @type1 ast AST_LEFT take ctx lctx ast_eval_type = ;
+  if is_prefix ! {
+    @type1 ast AST_LEFT take ctx lctx ast_eval_type = ;
+  }
   @type2 ast AST_RIGHT take ctx lctx ast_eval_type = ;
   @type_idx ast ctx lctx ast_eval_type = ;
-  @name ast AST_NAME take = ;
 
   # Sanity check: both operands must fit in 4 bytes
-  ctx type1 cctx_type_footprint 4 == "ast_push_value_arith: error 1" assert_msg ;
+  if is_prefix ! {
+    ctx type1 cctx_type_footprint 4 == "ast_push_value_arith: error 1" assert_msg ;
+  }
   ctx type2 cctx_type_footprint 4 == "ast_push_value_arith: error 2" assert_msg ;
 
   # Recursively evalute both operands
-  ast AST_LEFT take ctx lctx ast_push_value ;
+  if is_prefix ! {
+    ast AST_LEFT take ctx lctx ast_push_value ;
+  }
   ast AST_RIGHT take ctx lctx ast_push_value ;
 
   # Pop right result, promote it and store in ECX
@@ -2628,9 +2657,11 @@ fun ast_push_value_arith 3 {
 
   # Pop left result, promote it and store in EAX
   # pop eax, lctx_int_convert
-  ctx 0x58 cctx_emit ;
-  if type1 is_integer_type {
-    lctx ctx type1 type_idx lctx_int_convert ;
+  if is_prefix ! {
+    ctx 0x58 cctx_emit ;
+    if type1 is_integer_type {
+      lctx ctx type1 type_idx lctx_int_convert ;
+    }
   }
 
   # Invoke the operation specific operation
@@ -2669,6 +2700,43 @@ fun ast_push_value_arith 3 {
     # xor eax, ecx
     ctx 0x01 cctx_emit ;
     ctx 0x31 cctx_emit ;
+    @processed 1 = ;
+  }
+
+  if name "+_PRE" strcmp 0 == {
+    # mov eax, ecx
+    ctx 0x89 cctx_emit ;
+    ctx 0xc8 cctx_emit ;
+    @processed 1 = ;
+  }
+
+  if name "-_PRE" strcmp 0 == {
+    # mov eax, ecx; neg eax
+    ctx 0x89 cctx_emit ;
+    ctx 0xc8 cctx_emit ;
+    ctx 0xf7 cctx_emit ;
+    ctx 0xd8 cctx_emit ;
+    @processed 1 = ;
+  }
+
+  if name "~_PRE" strcmp 0 == {
+    # mov eax, ecx; not eax
+    ctx 0x89 cctx_emit ;
+    ctx 0xc8 cctx_emit ;
+    ctx 0xf7 cctx_emit ;
+    ctx 0xd0 cctx_emit ;
+    @processed 1 = ;
+  }
+
+  if name "!_PRE" strcmp 0 == {
+    # test ecx, ecx; mov eax, 0; sete al
+    ctx 0x85 cctx_emit ;
+    ctx 0xc9 cctx_emit ;
+    ctx 0xb8 cctx_emit ;
+    ctx 0 cctx_emit32 ;
+    ctx 0x0f cctx_emit ;
+    ctx 0x94 cctx_emit ;
+    ctx 0xc0 cctx_emit ;
     @processed 1 = ;
   }
 
@@ -3296,6 +3364,10 @@ fun ast_push_value 3 {
        name "&" strcmp 0 == ||
        name "^" strcmp 0 == ||
        name "|" strcmp 0 == ||
+       name "+_PRE" strcmp 0 == ||
+       name "-_PRE" strcmp 0 == ||
+       name "~_PRE" strcmp 0 == ||
+       name "!_PRE" strcmp 0 == ||
        processed ! && {
       ast ctx lctx ast_push_value_arith ;
       @processed 1 = ;

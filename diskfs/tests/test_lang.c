@@ -165,6 +165,25 @@ int test_define() {
 #undef NO
 
 int test_extension() {
-  char c = 0-1;
+  char c = -1;
   return c;
+}
+
+int test_unary() {
+  if (+0 != 0) return 0;
+  if (+1 != 1) return 0;
+  if (+2 != 2) return 0;
+  if (-0 != 0) return 0;
+  if (-1 != 0xffffffff) return 0;
+  if (-2 != 0xfffffffe) return 0;
+  if (~0 != 0xffffffff) return 0;
+  if (~1 != 0xfffffffe) return 0;
+  if (~2 != 0xfffffffd) return 0;
+  if (-0 != 0-0) return 0;
+  if (-1 != 0-1) return 0;
+  if (-2 != 0-2) return 0;
+  if (!0 != 1) return 0;
+  if (!1 != 0) return 0;
+  if (!2 != 0) return 0;
+  return 1;
 }
