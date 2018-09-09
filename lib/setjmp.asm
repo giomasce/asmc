@@ -56,17 +56,11 @@ platform_setjmp:
   mov eax, [ebp]
   mov [edi+24], eax
 
-  ;; Save esp after having corrected it for the three push-es (two
-  ;; explicit and one given by the function call)
-  mov eax, esp
-  add eax, 12
+  ;; Recover esp from its value saved in ebp, correcting it for the
+  ;; function call and initial push ebp
+  mov eax, ebp
+  add eax, 8
   mov [edi+28], eax
-
-  ;; Equivalently, we could probably use this, which does not depend
-  ;; on the number of explicit pushes
-  ;; mov eax, ebp
-  ;; add eax, 12
-  ;; mov [edi+28], eax
 
   ;; Recover eip from the stack
   mov eax, [ebp+4]
@@ -90,7 +84,6 @@ platform_longjmp:
   ;; Use edi and eax for env and status
   mov edi, [ebp+8]
   mov eax, [ebp+12]
-  mov [edi], eax
 
   ;; Restore stack
   mov ebp, [edi+24]
@@ -101,7 +94,6 @@ platform_longjmp:
 
   ;; Restore all the other registers, except eax which is already
   ;; loaded, leaving edi as the last one
-  mov eax, [edi]
   mov ebx, [edi+4]
   mov ecx, [edi+8]
   mov edx, [edi+12]
