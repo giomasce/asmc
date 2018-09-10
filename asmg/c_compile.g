@@ -1884,6 +1884,7 @@ fun cctx_fix_label 4 {
 const JUMP_TYPE_JMP 0
 const JUMP_TYPE_CALL 1
 const JUMP_TYPE_JZ 2
+const JUMP_TYPE_JNZ 3
 
 fun cctx_gen_jump 3 {
   $ctx
@@ -1906,7 +1907,13 @@ fun cctx_gen_jump 3 {
         ctx 0x0f cctx_emit ;
         ctx 0x84 cctx_emit ;
       } else {
-        0 "cctx_gen_dump: error 1" assert_msg ;
+        if type JUMP_TYPE_JNZ == {
+          # jnz rel
+          ctx 0x0f cctx_emit ;
+          ctx 0x85 cctx_emit ;
+        } else {
+          0 "cctx_gen_dump: error 1" assert_msg ;
+        }
       }
     }
   }
@@ -2302,6 +2309,8 @@ fun ast_eval_type 3 {
        name ">=" strcmp 0 == ||
        name "==" strcmp 0 == ||
        name "!=" strcmp 0 == ||
+       name "&&" strcmp 0 == ||
+       name "||" strcmp 0 == ||
        processed ! && {
       $type1
       $type2
@@ -2313,7 +2322,8 @@ fun ast_eval_type 3 {
       @processed 1 = ;
     }
 
-    if name "!_PRE" strcmp 0 == {
+    if name "!_PRE" strcmp 0 ==
+       processed ! && {
       $type
       @type ast AST_RIGHT take ctx lctx ast_eval_type = ;
       type is_integer_type ctx type cctx_get_type TYPE_KIND take TYPE_KIND_POINTER == || "ast_eval_type: operand is neither integer nor pointer" assert_msg ;
@@ -2620,6 +2630,66 @@ fun lctx_convert_stack 4 {
   }
 
   0 "lctx_convert_stack: not implemented" assert_msg ;
+}
+
+fun ast_push_value_logic 3 {
+  $ast
+  $ctx
+  $lctx
+  @ast 2 param = ;
+  @ctx 1 param = ;
+  @lctx 0 param = ;
+
+  $name
+  @name ast AST_NAME take = ;
+  $and
+  @and name "&&" strcmp 0 == = ;
+  and name "||" strcmp 0 == ^ "ast_push_value_logic: not a binary logic operator" assert_msg ;
+
+  $type1
+  $type2
+  $type_idx
+  @type1 ast AST_LEFT take ctx lctx ast_eval_type = ;
+  @type2 ast AST_RIGHT take ctx lctx ast_eval_type = ;
+  @type_idx ast ctx lctx ast_eval_type = ;
+
+  # Evaluate first operand
+  ast AST_LEFT take ctx lctx ast_push_value ;
+
+  # Try short-circuit evaluation
+  $end_lab
+  @end_lab lctx ctx lctx_gen_label = ;
+  # pop eax; test eax, eax; mov eax, ?; cctx_gen_label_jump
+  ctx 0x58 cctx_emit ;
+  ctx 0x85 cctx_emit ;
+  ctx 0xc0 cctx_emit ;
+  ctx 0xb8 cctx_emit ;
+  if and {
+    ctx 0 cctx_emit32 ;
+    ctx lctx end_lab JUMP_TYPE_JZ 0 cctx_gen_label_jump ;
+  } else {
+    ctx 1 cctx_emit32 ;
+    ctx lctx end_lab JUMP_TYPE_JNZ 0 cctx_gen_label_jump ;
+  }
+
+  # Evaluate second operand
+  ast AST_RIGHT take ctx lctx ast_push_value ;
+
+  # Reduce result to 0 or 1
+  # pop eax; test eax, eax; mov eax, 0; setnz al
+  ctx 0x58 cctx_emit ;
+  ctx 0x85 cctx_emit ;
+  ctx 0xc0 cctx_emit ;
+  ctx 0xb8 cctx_emit ;
+  ctx 0 cctx_emit32 ;
+  ctx 0x0f cctx_emit ;
+  ctx 0x95 cctx_emit ;
+  ctx 0xc0 cctx_emit ;
+
+  # Push result
+  lctx ctx end_lab lctx_fix_label ;
+  # push eax
+  ctx 0x50 cctx_emit ;
 }
 
 fun ast_push_value_arith 3 {
@@ -3406,6 +3476,13 @@ fun ast_push_value 3 {
        name "!_PRE" strcmp 0 == ||
        processed ! && {
       ast ctx lctx ast_push_value_arith ;
+      @processed 1 = ;
+    }
+
+    if name "&&" strcmp 0 ==
+       name "||" strcmp 0 == ||
+       processed ! && {
+      ast ctx lctx ast_push_value_logic ;
       @processed 1 = ;
     }
 

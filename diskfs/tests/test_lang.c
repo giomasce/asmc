@@ -200,3 +200,21 @@ int test_shifts() {
   if (s2 >> 2 != -32) return 0;
   return 1;
 }
+
+int side_effect(int *val, int ret) {
+  *val = 2;
+  return ret;
+}
+
+int test_logic() {
+  int val = 1;
+  if ((0 && side_effect(&val, 0)) != 0) return 0;
+  if ((1 && 0) != 0) return 0;
+  if ((0 && side_effect(&val, 2)) != 0) return 0;
+  if ((2 && 3) != 1) return 0;
+  if ((0 || 0) != 0) return 0;
+  if ((1 || side_effect(&val, 0)) != 1) return 0;
+  if ((0 || 2) != 1) return 0;
+  if ((2 || side_effect(&val, 3)) != 1) return 0;
+  return val;
+}
