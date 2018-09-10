@@ -90,7 +90,7 @@ platform_longjmp:
   mov esp, [edi+28]
 
   ;; Push eip for returning
-  push [edi+32]
+  push DWORD [edi+32]
 
   ;; Restore all the other registers, except eax which is already
   ;; loaded, leaving edi as the last one
