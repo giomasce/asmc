@@ -187,3 +187,16 @@ int test_unary() {
   if (!2 != 0) return 0;
   return 1;
 }
+
+int test_shifts() {
+  int s1 = 128;
+  unsigned int u1 = 128;
+  int s2 = -128;
+  if (s1 << 2 != 512) return 0;
+  if (s1 >> 2 != 32) return 0;
+  if (u1 << 2 != 512) return 0;
+  if (u1 >> 2 != 32) return 0;
+  if (s2 << 2 != -512) return 0;
+  if (s2 >> 2 != -32) return 0;
+  return 1;
+}

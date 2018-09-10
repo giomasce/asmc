@@ -2275,6 +2275,19 @@ fun ast_eval_type 3 {
       @processed 1 = ;
     }
 
+    if name "<<" strcmp 0 ==
+       name ">>" strcmp 0 == ||
+       processed ! && {
+      $type1
+      $type2
+      @type1 ast AST_LEFT take ctx lctx ast_eval_type = ;
+      @type2 ast AST_RIGHT take ctx lctx ast_eval_type = ;
+      @type1 type1 promote_integer_type = ;
+      @type2 type2 promote_integer_type = ;
+      @type_idx type1 = ;
+      @processed 1 = ;
+    }
+
     if name "+_PRE" strcmp 0 ==
        name "-_PRE" strcmp 0 == ||
        name "~_PRE" strcmp 0 == ||
@@ -2700,6 +2713,27 @@ fun ast_push_value_arith 3 {
     # xor eax, ecx
     ctx 0x01 cctx_emit ;
     ctx 0x31 cctx_emit ;
+    @processed 1 = ;
+  }
+
+  if name "<<" strcmp 0 == {
+    # shl eax, cl
+    ctx 0xd3 cctx_emit ;
+    ctx 0xe0 cctx_emit ;
+    @processed 1 = ;
+  }
+
+  if name ">>" strcmp 0 == type_idx TYPE_UINT == && {
+    # shr eax, cl
+    ctx 0xd3 cctx_emit ;
+    ctx 0xe8 cctx_emit ;
+    @processed 1 = ;
+  }
+
+  if name ">>" strcmp 0 == type_idx TYPE_INT == && {
+    # sar eax, cl
+    ctx 0xd3 cctx_emit ;
+    ctx 0xf8 cctx_emit ;
     @processed 1 = ;
   }
 
@@ -3364,6 +3398,8 @@ fun ast_push_value 3 {
        name "&" strcmp 0 == ||
        name "^" strcmp 0 == ||
        name "|" strcmp 0 == ||
+       name "<<" strcmp 0 == ||
+       name ">>" strcmp 0 == ||
        name "+_PRE" strcmp 0 == ||
        name "-_PRE" strcmp 0 == ||
        name "~_PRE" strcmp 0 == ||
