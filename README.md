@@ -167,7 +167,7 @@ release memory back).
 
  * `USE_KMALLOC`: a port (with some modifications, mainly due to the
    fact that there is no paging in `asmc`) of
-   [kamlloc](https://github.com/emeryberger/Malloc-Implementations/blob/master/allocators/kmalloc/kmalloc.c). Very
+   [kmalloc](https://github.com/emeryberger/Malloc-Implementations/blob/master/allocators/kmalloc/kmalloc.c). Very
    quick and rather memory-efficient. Basically to better option
    currently available in `asmc` (unless you want to debug memory
    allocation), so also the default one.
