@@ -231,6 +231,26 @@ fun asmctx_parse_operand 1 {
               @opvalue opvalue shift << = ;
               tok free ;
               @tok ctx asmctx_get_token = ;
+            } else {
+              if tok "or" strcmp 0 == {
+                tok free ;
+                @tok ctx asmctx_get_token = ;
+                $op2
+                @op2 ctx tok asmctx_parse_number = ;
+                @opvalue opvalue op2 | = ;
+                tok free ;
+                @tok ctx asmctx_get_token = ;
+              } else {
+                if tok "*" strcmp 0 == {
+                  tok free ;
+                  @tok ctx asmctx_get_token = ;
+                  $op2
+                  @op2 ctx tok asmctx_parse_number = ;
+                  @opvalue opvalue op2 * = ;
+                  tok free ;
+                  @tok ctx asmctx_get_token = ;
+                }
+              }
             }
           }
           if sign 0 == {

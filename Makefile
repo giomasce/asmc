@@ -52,7 +52,10 @@ diskfs/mescc/x86_defs.m1:
 	mkdir -p diskfs/mescc
 	cp contrib/M2-Planet/test/common_x86/x86_defs.M1 $@
 
-build/diskfs.list: diskfs/* diskfs/mescc/x86_defs.m1
+diskfs/fasm/fasm.asm: contrib/fasm/source/*.inc contrib/fasm/source/asmc/*
+	cat $^ > $@
+
+build/diskfs.list: diskfs/* diskfs/mescc/x86_defs.m1 diskfs/fasm/fasm.asm
 	(cd diskfs/ ; find -L . -type f) | cut -c3- | sed -e 's|\(.*\)|\1 diskfs/\1|' > $@
 
 build/diskfs.img: build/diskfs.list

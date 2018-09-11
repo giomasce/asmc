@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 const RUN_ASM 0
+const RUN_FASM 0
 const RUN_C 0
 const RUN_MESCC 0
 const RUN_MCPP 0
@@ -101,7 +102,7 @@ fun main 0 {
   "vfs_utils.g" platform_g_compile ;
   "done!\n" 1 platform_log ;
 
-  if RUN_ASM {
+  if RUN_ASM RUN_FASM || {
     #"Memory break before ASM assembler compilation: " 1 platform_log ;
     #0 platform_allocate itoa 1 platform_log ;
     #"\n" 1 platform_log ;
@@ -185,6 +186,14 @@ fun main 0 {
     "No script, running the usual payload...\n" 1 platform_log ;
     if RUN_ASM {
       "/init/test.asm" 0 "parse_asm" platform_get_symbol \1 ;
+    }
+
+    if RUN_FASM {
+      "Compiling fasm.g... " 1 platform_log ;
+      "fasm.g" platform_g_compile ;
+      "done!\n" 1 platform_log ;
+
+      0 "compile_fasm" platform_get_symbol \0 ;
     }
 
     if RUN_C {
