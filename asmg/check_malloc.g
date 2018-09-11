@@ -25,7 +25,7 @@ $malloc_num
 
 fun _malloc_init 0 {
   if malloc_data 0 == {
-    @malloc_data MALLOC_MAX_NUM 12 * platform_allocate = ;
+    @malloc_data MALLOC_MAX_NUM 16 * platform_allocate = ;
   }
 }
 
@@ -54,9 +54,10 @@ fun malloc 1 {
 
   # Bookkeeping
   malloc_num MALLOC_MAX_NUM < "malloc: too many mallocations" assert_msg ;
-  malloc_data malloc_num 12 * + size = ;
-  malloc_data malloc_num 12 * + 4 + buf_begin = ;
-  malloc_data malloc_num 12 * + 8 + 0 = ;
+  malloc_data malloc_num 16 * + size = ;
+  malloc_data malloc_num 16 * + 4 + buf_begin = ;
+  malloc_data malloc_num 16 * + 8 + 0 = ;
+  malloc_data malloc_num 16 * + 12 + __frame_ptr 4 + ** = ;
   @malloc_num malloc_num 1 + = ;
 
   # Debug
@@ -87,7 +88,7 @@ fun _malloc_find_index 1 {
   $i
   @i 0 = ;
   while i malloc_num < {
-    if malloc_data i 12 * + 4 + ** ptr == {
+    if malloc_data i 16 * + 4 + ** ptr == {
       i ret ;
     }
     @i i 1 + = ;
@@ -112,10 +113,10 @@ fun free 1 {
   @i buf_begin _malloc_find_index = ;
 
   # Check the region is allocated and mark it as allocated
-  malloc_data i 12 * + 8 + ** 0 == "free: double free" assert_msg ;
-  malloc_data i 12 * + 8 + 1 = ;
+  malloc_data i 16 * + 8 + ** 0 == "free: double free" assert_msg ;
+  malloc_data i 16 * + 8 + 1 = ;
   $size
-  @size malloc_data i 12 * + ** = ;
+  @size malloc_data i 16 * + ** = ;
 
   # Compute useful pointers
   $ptr
@@ -150,7 +151,7 @@ fun _malloc_get_size 1 {
 
   $i
   @i ptr _malloc_find_index = ;
-  malloc_data i 12 * + ** ret ;
+  malloc_data i 16 * + ** ret ;
 }
 
 fun malloc_stats 0 {
@@ -166,9 +167,9 @@ fun malloc_stats 0 {
     $size
     $buf_begin
     $freed
-    @size malloc_data i 12 * + ** = ;
-    @buf_begin malloc_data i 12 * + 4 + ** = ;
-    @freed malloc_data i 12 * + 8 + ** = ;
+    @size malloc_data i 16 * + ** = ;
+    @buf_begin malloc_data i 16 * + 4 + ** = ;
+    @freed malloc_data i 16 * + 8 + ** = ;
 
     # Compute useful pointers
     $ptr
