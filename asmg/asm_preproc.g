@@ -176,7 +176,7 @@ fun asmctx_get_symbol 2 {
       "Undefined symbol: " 1 platform_log ;
       name 1 platform_log ;
       "\n" 1 platform_log ;
-      0 "asmctx_add_symbol: symbol undefined" assert_msg ;
+      0 "asmctx_get_symbol: symbol undefined" assert_msg ;
     }
   } else {
     0 ret ;

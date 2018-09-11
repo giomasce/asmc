@@ -309,6 +309,7 @@ fun asmctx_parse_db 1 {
       tok free ;
     } else {
       if tok "?" strcmp 0 == {
+        tok free ;
         ctx 0 asmctx_emit ;
       } else {
         ctx asmctx_give_back_token ;
