@@ -4,3 +4,6 @@
 [submodule "contrib/mcpp"]
 	path = contrib/mcpp
 	url = https://gitlab.com/giomasce/mcpp.git
+[submodule "contrib/fasm"]
+	path = contrib/fasm
+	url = https://gitlab.com/giomasce/fasm.git
