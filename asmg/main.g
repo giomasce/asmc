@@ -15,9 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-const COMPILE_ASM 0
-const COMPILE_C 1
-const COMPILE_MESCC 0
 const RUN_ASM 0
 const RUN_C 0
 const RUN_MESCC 0
@@ -104,7 +101,7 @@ fun main 0 {
   "vfs_utils.g" platform_g_compile ;
   "done!\n" 1 platform_log ;
 
-  if COMPILE_ASM {
+  if RUN_ASM {
     #"Memory break before ASM assembler compilation: " 1 platform_log ;
     #0 platform_allocate itoa 1 platform_log ;
     #"\n" 1 platform_log ;
@@ -130,7 +127,7 @@ fun main 0 {
     #"\n" 1 platform_log ;
   }
 
-  if COMPILE_C {
+  if RUN_C RUN_MCPP || TEST_C || {
     "Compiling c_ast.g... " 1 platform_log ;
     "c_ast.g" platform_g_compile ;
     "done!\n" 1 platform_log ;
@@ -148,7 +145,7 @@ fun main 0 {
     "done!\n" 1 platform_log ;
   }
 
-  if COMPILE_MESCC {
+  if RUN_MESCC {
     "Compiling mescc_hex2.g... " 1 platform_log ;
     "mescc_hex2.g" platform_g_compile ;
     "done!\n" 1 platform_log ;

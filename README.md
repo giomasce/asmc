@@ -31,32 +31,34 @@ You should use Linux to compile `asmc`, although some parts of it can
 also be built on macOS. If you use Debian, install the prerequisites
 with
 
-    sudo apt-get install build-essential nasm qemu-system-x86 grub-common
+    sudo apt-get install build-essential nasm qemu-system-x86 grub-common python3 gcc-multilib
+
+If you cloned the GIT repository, you will probably want to checkout
+the submodules as well:
+
+    git submodule init
+    git submodule update --recursive
 
 Then just call `make` in the toplevel directory of the repository. A
 subdirectory named `build` will be created, with all compilation
 artifacts inside it. In particular `build/boot_asmg.x86` is a bootable
 disk image, which you can run with QEMU:
 
-    qemu-system-i386 -hda build/boot_asmg.x86 -serial stdio
+    qemu-system-i386 -hda build/boot_asmg.x86 -serial stdio -device isa-debug-exit -display none
 
 Unless I have broken something, this should run a little operating
 system that compiles a little (and still incomplete) C compiler, and
-later uses such compiler to compile a little test C
-program. Eventually it will compile a more complete C compiler and
+later uses such compiler to compile and run some little test C
+programs. Eventually it will compile a more complete C compiler and
 then actually useful C programs. Stay tuned for updates!
 
-When running QEMU, do not look at the emulated display window, but at
-the QEMU console output, where everything written on the display is
-replicate by mean of the serial port. It will be much easier to follow
-on a real terminal emulator rather than on QEMU 80x25 window!
-
-Together with `boot_asmg.x86`, there will be also `boot_empty.x86` and
-`boot_asmasm.x86` (see below for what they are) and `boot.iso`, which
-is a bootable ISO image with a GRUB menu where you can decide which of
-the three to run. Differently from `boot_*.x86`, `boot.iso` has some
-actual chance to run on a bare metal system, because it uses GRUB
-instead of my custom toy bootloader.
+Together with `boot_asmg.x86`, there will be also `boot_empty.x86`,
+`boot_asmasm.x86` and `boot_asmg0.x86` (see below for what they are)
+and `boot.iso`, which is a bootable ISO image with a GRUB menu where
+you can decide which of the four to run. Such ISO was useful to boot
+`asmc` back in the days when my custom bootloader was not powerful
+enough, but nowadays `asmg` requires some features that GRUB does not
+expose, so it is useless.
 
 WARNING! ATTENTION! Remember that you are giving full control over you
 hardware to an experimental program whose author is not an expert
@@ -73,13 +75,13 @@ system, nothing will work.
 ### How to interpret all the writings
 
 For the full story, read below and the code. However, just to have an
-idea of what is happening:
+idea of what is happening, if you use the command above to boot
+`boot_asmg.x86` the following will happen:
 
- * The first log lines are written by the bootloader (if you are using
-   mine instead of GRUB). At this point it is mostly concerned with
-   loading to RAM the actual kernel and entering the CPU's protected
-   mode. GRUB does the same things, but it does them better and does
-   not write anything to the serial.
+ * The first log lines are written by the bootloader. At this point it
+   is mostly concerned with loading to RAM the actual kernel, enabling
+   some obscure features of the PC platform used to boot properly and
+   entering the CPU's protected mode.
 
  * At some point `asmc` kernel is finally ran, and it writes `Hello, asmc!`
    to the log. There is where the `asmc` binary seed first
@@ -89,31 +91,86 @@ idea of what is happening:
 
  * This is the point where for the first time code that has just been
    compiled is fed to the CPU, so in a sense the binary seed is not in
-   control of the main program (but still gets called as a library,
-   for example to compile other G sources). The message `Hello, G!` is
-   written to the log and immediately after other G sources are
-   compiled, first to introduce some library code (like malloc/free,
-   code for handling dynamic vectors and maps and other utilities) and
-   then to compile the actual C compiler.
+   control of the main program any more (but still gets called as a
+   library, for example to compile other G sources). The message
+   `Hello, G!` is written to the log and immediately after other G
+   sources are compiled, first to introduce some library code (like
+   malloc/free, code for handling dynamic vectors and maps and other
+   utilities) and then to compile the actual C compiler.
 
- * The C preprocessor is first executed, and terminates by dumping in
-   the log the proprocessed tokens. The C compiler is then ran and the
-   compiled code is dumped in hexadecimal form. Also, a number of
-   internal compilation tables are dumped, mainly for debugging and
-   (why not?) to impress the casual bystander. There are useful online
-   disassemblers to check how horrible (while hopefully working) is
-   the generated code. This C compiler is definitely not an optimizing
-   compiler. Sometimes I am tempted to think it is a pessimizing
-   compiler (but see the design considerations below).
+ * At last a suite of C test programs is compiled and executed. They
+   test the parts that have already been implemented of the C compiler
+   and the C standard library. In line of principle all the test
+   should pass and all `malloc`-s should be `free`-ed.
 
- * At last the compiled C code is executed (`Executing compiled code...`)
-   and `main`'s return value is written in the log.
+### How to fiddle with flags
 
- * If everything has gone well (in particular, the compiled C program
-   has not smashed the stack), the kernel will write a final farewell
-   message and will halt the CPU. Do not wait for surprises here: the
-   processor is stuck in a halt cycle with interrupts turned off. It
-   will never respond to any input except reset.
+`asmg`'s behaviour can be customized thanks to some flags at the
+beginning of the `asmg/main.g` file. There you can enable:
+
+ * `RUN_ASM`: it will compile an assembler (completely independent
+   from `asmasm`) and then run it on the file `test/test.asm`. The
+   assembler is not complete at all, but should be more or less enough
+   to assemble a lightly patched version of FASM, which then is
+   probably able to assemble more or less anything. But I still have
+   to finish to develop this possibility.
+
+ * `RUN_C`: it will compile the C compiler (the same as above) and
+   then use it to compile the program in
+   `diskfs/tests/test.c`. Differently from the test suite, this will
+   dump a log of debugging info about the compiled program, including
+   a dump of the machine code itself. It is useful to debug the C
+   compiler itself. Also, feel free to edit the test program to test
+   your own C programs (but expect frequent breakages!).
+
+ * `RUN_MESCC`: it will compile a port of the
+   [mescc](https://github.com/oriansj/mescc-tools)/[M2-Planet](https://github.com/oriansj/M2-Planet)
+   toolchain, which is basically an indepdendent C compiler with
+   different features and bugs than mine. This port just tracks the
+   upstream program, no original development is done here. See below
+   from more precise links. The test program in `test/test_mes.c` will
+   then be compiled and executed.
+
+ * `RUN_MCPP`: it will compile the C compiler (the same as above) and
+   then use it to try compiling a lightly patched version of
+   [mcpp](http://mcpp.sourceforge.net/), which is a complete C
+   preprocessor. Since the preprocessor embedded in `asmg`'s C
+   compiler is rather lacking, the idea is that mcpp could be used
+   instead to compile C sources that require deep preprocessing
+   capabilities. However, at this point, mcpp itself does not compile,
+   so at some point `asmc` with die with a failed assertion.
+
+ * `TEST_C`: it will compile the C compiler and run the test
+   suite. This is the default behaviour.
+
+There is also another pack of flags that control which `malloc`
+implementation `asmg` is going to use. There are four at this
+point. All of them gather memory with the `platform_allocate` call
+(see below), which is similary to UNIX' `brk` (and does not permit to
+release memory back).
+
+ * `USE_TRIVIAL_MALLOC`: just map `malloc` to `platform_allocate` and
+   discard `free`. Very quick, but wastes all `free`-ed memory.
+
+ * `USE_SIMPLE_MALLOC`: a simple freelist implementation, ported from
+   [here](https://github.com/andrestc/linux-prog/blob/master/ch7/malloc.c),
+   which is probably rather memory efficient, but can be linear in
+   time, so it easily becomes a bottleneck.
+
+ * `USE_CHECKED_MALLOC`: somewhat similar to `USE_TRIVIAL_MALLOC`, but
+   checks that your program uses `malloc` and `free` correctly (i.e.,
+   that you not overflow or underflow your allocations, that you do
+   not double `free`, or use after `free`). As a result it is very
+   slow and memory-inefficient, but if your program runs with it it
+   most probably means that it is correctly allocating and
+   deallocating memory. It is a kind of `valgrind` checker.
+
+ * `USE_KMALLOC`: a port (with some modifications, mainly due to the
+   fact that there is no paging in `asmc`) of
+   [kamlloc](https://github.com/emeryberger/Malloc-Implementations/blob/master/allocators/kmalloc/kmalloc.c). Very
+   quick and rather memory-efficient. Basically to better option
+   currently available in `asmc` (unless you want to debug memory
+   allocation), so also the default one.
 
 ## What is inside this repository
 
@@ -158,26 +215,18 @@ idea of what is happening:
    I invented for this project, described below in more details. As
    soon as it is ready, it compiles the file `main.g` and jumps to
    `main`. Here is where most of the development is concentrated
-   nowadays. `asmg` can be compiled by `asmasm`.
-
-   There are quite a few G sources available: besides a few C-styled
-   library routines, there are an Assembly compiler and a C
-   compiler. The Assembly compiler should be nearly ready to compile a
-   lighly patched version of the FASM assembler, although this has
-   never actually been done. The C compiler is still in development,
-   but it is already able to compile some simple C
-   programs. Eventually I hope to make it able to compile some real C
-   compiler, like tcc, so that an actual toolchain can be boostrapped.
+   nowadays. `asmg` can be compiled by `asmasm`. See above for what is
+   implemented in the G environment.
 
  * `boot` contains a simple bootloader that can be used to boot all of
-   the above if you do not want to use GRUB (in the minimalistic style
-   of the rest of the project). For the moment is cannot be compiled
-   with `asmasm`, because it must use some system level opcodes that
-   are not supported by `asmasm`, so you have to use NASM. Also, while
-   it works under QEMU, it is definitely not bare metal proven. In the
-   future it might be nice to make it a viable alternative to GRUB, so
-   that `asmc`'s tiny binary seed is not tainted by megabytes of GRUB
-   binaries.
+   the above (in the minimalistic style of the rest of the
+   project). For the moment is cannot be compiled with `asmasm`,
+   because it must use some system level opcodes that are not
+   supported by `asmasm`, so you have to use NASM. It works under QEMU
+   and in line of principle it also work under bare metal, at least
+   those that I tried (old computers that I had around). As already
+   outlined above, this is not tested software, you should never run
+   it on computer that you cannot afford to be erased.
 
  * `attic` and `cc` contains some earlier test code, that is not used
    any more and it is also probably broken. `staging.c` and
@@ -190,11 +239,14 @@ idea of what is happening:
  * `test` contains some test programs for the Assembly and C compilers
    contained in `asmg`.
 
+ * `diskfs` contains the file that are made available to the virtual
+   file system in `asmg`.
+
 ## Design considerations
 
-Ideally everything in `lib`, `asmasm` and `asmg` should be as simple
-and small as possible. Since that is the part that must be already
-build when the system boots, it should be verifiable by hand, i.e., it
+Ideally the system seed written in Assembly should be as simple and
+small as possible. Since that is the part that must be already build
+when the system boots, it should be verifiable by hand, i.e., it
 should be so simple that a human being can take a printout of the code
 and of the binary hex dump and check opcode by opcode that the code
 was translated correctly. This is very tedious, so everything that is
@@ -266,6 +318,16 @@ registers are callee-saved).
    Assembly). The number -1 (0xffffffff) is returned if arity is
    undefined.
 
+ * `platform_setjmp(void *env)` Copy the content of the general
+   purpose registers in the buffer pointed by `env` (which must be at
+   least 26 bytes long). This is used to implement the `setjmp` call
+   in the C compiler.
+
+ * `platform_longjmp(void *env, int status)` Restore the content of
+   the general purpose registers from the buffer pointed by `env`,
+   except EAX which is set to `status`. This is used to implement the
+   `longjmp` call in the C compiler.
+
 Another routine is provided when compiling the kernel with `asmasm`:
 
  * `platform_assemble(char *filename)` Assemble the Assembly program
@@ -278,6 +340,11 @@ Another routine is provided when compiling the kernel with `asmg`:
 
 Symbols generated by any of the two compilers can be recovered with
 `platform_get_symbol`.
+
+The G compiler also exports a few internal calls to give the G program
+a little introspection capabilities, used to generate stack traces on
+assertions. They are not documented and are not to be used other that
+in these debugging utilities.
 
 ## The G language
 
