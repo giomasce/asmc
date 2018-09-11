@@ -1801,6 +1801,7 @@ fun build_opcode_map 0 {
   opcode OPCODE_IMM8 take_addr 0x0000cd01 = ;
   opcode OPCODE_ALLOW_IMM take_addr 1 = ;
   opcode OPCODE_ALLOW_RM take_addr 0 = ;
+  opcode OPCODE_RELATIVE take_addr 0 = ;
   opcode OPCODE_FORCE_8 take_addr 1 = ;
   opcode OPCODE_FORCE_32 take_addr 0 = ;
   opcode_map name opcode map_set ;
