@@ -15,8 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-$_opcode_map
-
 # 0 -> indirect (all fields set), 1 -> register (REG and SIZE set), 2 -> immediate (OFFSET set)
 const OPERAND_TYPE 0
 # 0 -> unknown, 1 -> 8 bits, 2 -> 16 bits, 3 -> 32 bits
@@ -741,6 +739,21 @@ fun ret_like_handler 3 {
 
   # Just emit the opcode
   ctx opcode OPCODE_NO_OPERAND take emit_multibyte ;
+}
+
+fun destroy_opcode_map 1 {
+  $opcode_map
+  @opcode_map 0 param = ;
+
+  $i
+  @i 0 = ;
+  while i opcode_map map_size < {
+    if opcode_map i map_has_idx {
+      opcode_map i map_at_idx free ;
+    }
+    @i i 1 + = ;
+  }
+  opcode_map map_destroy ;
 }
 
 fun build_opcode_map 0 {
@@ -2255,12 +2268,5 @@ fun build_opcode_map 0 {
   opcode OPCODE_R32RM32 take_addr 0x00bd0f02 = ;
   opcode_map name opcode map_set ;
 
-  @_opcode_map opcode_map = ;
-}
-
-fun get_opcode_map 0 {
-  if _opcode_map ! {
-    build_opcode_map ;
-  }
-  _opcode_map ret ;
+  opcode_map ret ;
 }

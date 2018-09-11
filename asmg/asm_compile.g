@@ -454,9 +454,11 @@ fun asmctx_parse_operands 1 {
   ops ret ;
 }
 
-fun asmctx_parse_line 1 {
+fun asmctx_parse_line 2 {
   $ctx
-  @ctx 0 param = ;
+  $opcode_map
+  @ctx 1 param = ;
+  @opcode_map 0 param = ;
 
   $tok
   @tok ctx asmctx_get_token = ;
@@ -475,8 +477,6 @@ fun asmctx_parse_line 1 {
     ctx 0xf3 asmctx_emit ;
   }
 
-  $opcode_map
-  @opcode_map get_opcode_map = ;
   if opcode_map tok map_has {
     $opcode
     @opcode opcode_map tok map_at = ;
@@ -538,6 +538,8 @@ fun asmctx_compile 1 {
   $start_loc
   @start_loc 0 = ;
   $size
+  $opcode_map
+  @opcode_map build_opcode_map = ;
   while ctx ASMCTX_STAGE take 3 < {
     if ctx ASMCTX_VERBOSE take {
       "Compilation stage " 1 platform_log ;
@@ -556,7 +558,7 @@ fun asmctx_compile 1 {
         "." 1 platform_log ;
       }
       line_num set_assert_pos ;
-      @cont ctx asmctx_parse_line = ;
+      @cont ctx opcode_map asmctx_parse_line = ;
       @line_num line_num 1 + = ;
     }
     if ctx ASMCTX_VERBOSE take {
@@ -564,7 +566,7 @@ fun asmctx_compile 1 {
     }
     if ctx ASMCTX_STAGE take 0 == {
       @size ctx ASMCTX_CURRENT_LOC take start_loc - = ;
-      @start_loc size malloc = ;
+      @start_loc size platform_allocate = ;
     } else {
       ctx ASMCTX_CURRENT_LOC take start_loc - size == "asmctx_compile: error 1" assert_msg ;
     }
@@ -582,6 +584,7 @@ fun asmctx_compile 1 {
     start_loc size dump_mem ;
     "\n" 1 platform_log ;
   }
+  opcode_map destroy_opcode_map ;
 }
 
 fun parse_asm 1 {
