@@ -53,6 +53,7 @@ diskfs/mescc/x86_defs.m1:
 	cp contrib/M2-Planet/test/common_x86/x86_defs.M1 $@
 
 diskfs/fasm/fasm.asm: contrib/fasm/source/*.inc contrib/fasm/source/asmc/*
+	mkdir -p diskfs/fasm
 	cat $^ > $@
 
 build/diskfs.list: diskfs/* diskfs/mescc/x86_defs.m1 diskfs/fasm/fasm.asm
