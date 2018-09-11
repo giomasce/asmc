@@ -539,8 +539,10 @@ fun asmctx_compile 1 {
   @start_loc 0 = ;
   $size
   while ctx ASMCTX_STAGE take 3 < {
-    "Compilation stage " 1 platform_log ;
-    ctx ASMCTX_STAGE take 1 + itoa 1 platform_log ;
+    if ctx ASMCTX_VERBOSE take {
+      "Compilation stage " 1 platform_log ;
+      ctx ASMCTX_STAGE take 1 + itoa 1 platform_log ;
+    }
     $line_num
     @line_num 1 = ;
     ctx ASMCTX_FDIN take vfs_reset ;
@@ -550,14 +552,16 @@ fun asmctx_compile 1 {
     $cont
     @cont 1 = ;
     while cont {
-      if line_num 1000 % 0 == {
+      if line_num 1000 % 0 == ctx ASMCTX_VERBOSE take && {
         "." 1 platform_log ;
       }
       line_num set_assert_pos ;
       @cont ctx asmctx_parse_line = ;
       @line_num line_num 1 + = ;
     }
-    "\n" 1 platform_log ;
+    if ctx ASMCTX_VERBOSE take {
+      "\n" 1 platform_log ;
+    }
     if ctx ASMCTX_STAGE take 0 == {
       @size ctx ASMCTX_CURRENT_LOC take start_loc - = ;
       @start_loc size malloc = ;
@@ -566,14 +570,18 @@ fun asmctx_compile 1 {
     }
     ctx ASMCTX_STAGE take_addr ctx ASMCTX_STAGE take 1 + = ;
   }
-  "Assembled program has size " 1 platform_log ;
-  size itoa 1 platform_log ;
-  " and starts at " 1 platform_log ;
-  start_loc itoa 1 platform_log ;
-  "\n" 1 platform_log ;
-  "Compiled dump:\n" 1 platform_log ;
-  start_loc size dump_mem ;
-  "\n" 1 platform_log ;
+  if ctx ASMCTX_VERBOSE take {
+    "Assembled program has size " 1 platform_log ;
+    size itoa 1 platform_log ;
+    " and starts at " 1 platform_log ;
+    start_loc itoa 1 platform_log ;
+    "\n" 1 platform_log ;
+  }
+  if ctx ASMCTX_DEBUG take {
+    "Compiled dump:\n" 1 platform_log ;
+    start_loc size dump_mem ;
+    "\n" 1 platform_log ;
+  }
 }
 
 fun parse_asm 1 {

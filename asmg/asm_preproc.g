@@ -23,12 +23,16 @@ const ASMCTX_STAGE 16
 const ASMCTX_CURRENT_LOC 20
 const ASMCTX_READ_TOKEN 24
 const ASMCTX_TOKEN_GIVEN_BACK 28
-const SIZEOF_ASMCTX 32
+const ASMCTX_VERBOSE 32
+const ASMCTX_DEBUG 36
+const SIZEOF_ASMCTX 40
 
 fun asmctx_init 0 {
   $ptr
   @ptr SIZEOF_ASMCTX malloc = ;
   ptr ASMCTX_SYMBOLS take_addr map_init = ;
+  ptr ASMCTX_VERBOSE take_addr 1 = ;
+  ptr ASMCTX_DEBUG take_addr 1 = ;
   ptr ret ;
 }
 

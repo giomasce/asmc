@@ -21,6 +21,7 @@ fun compile_fasm 0 {
 
   $ctx
   @ctx asmctx_init = ;
+  ctx ASMCTX_DEBUG take_addr 0 = ;
   $fd
   @fd filename vfs_open = ;
   fd "compile_fasm: file does not exist" assert_msg ;
