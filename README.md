@@ -218,6 +218,11 @@ release memory back).
    nowadays. `asmg` can be compiled by `asmasm`. See above for what is
    implemented in the G environment.
 
+ * `asmg0` is an effort at reducing even more `asmg` binary seed, by
+   introducing a smaller language called G0 between the binary seed
+   and the G language. It is currently a very experimental effort
+   (even more experimental than the rest) and it does not work at all.
+
  * `boot` contains a simple bootloader that can be used to boot all of
    the above (in the minimalistic style of the rest of the
    project). For the moment is cannot be compiled with `asmasm`,
