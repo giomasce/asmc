@@ -183,6 +183,19 @@ fun asmctx_get_symbol 2 {
   }
 }
 
+fun asmctx_get_symbol_addr 2 {
+  $ctx
+  $name
+  @ctx 1 param = ;
+  @name 0 param = ;
+
+  $syms
+  @syms ctx ASMCTX_SYMBOLS take = ;
+
+  syms name map_has "asmctx_get_symbol_addr: symbol does not exist" assert_msg ;
+  syms name map_at ret ;
+}
+
 fun asmctx_set_fd 2 {
   $ptr
   $fd

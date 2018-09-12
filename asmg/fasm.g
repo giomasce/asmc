@@ -19,6 +19,7 @@ fun compile_fasm 0 {
   $filename
   @filename "/disk1/fasm/fasm.asm" = ;
 
+  # Compile fasm
   $ctx
   @ctx asmctx_init = ;
   ctx ASMCTX_DEBUG take_addr 0 = ;
@@ -28,5 +29,20 @@ fun compile_fasm 0 {
   ctx fd asmctx_set_fd ;
   ctx asmctx_compile ;
   fd vfs_close ;
+
+  # Run fasm
+  $input_file
+  $output_file
+  @input_file "" = ;
+  @output_file "" = ;
+  $main_addr
+  @main_addr ctx "main" asmctx_get_symbol_addr = ;
+  $res
+  @res @platform_setjmp @platform_longjmp @malloc @free input_file output_file main_addr \6 = ;
+
+  "fasm returned " 1 platform_log ;
+  res itoa 1 platform_log ;
+  "\n" 1 platform_log ;
+
   ctx asmctx_destroy ;
 }
