@@ -15,11 +15,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+const SEEK_SET 0
+const SEEK_CUR 1
+const SEEK_END 2
+
 const FD_DESTROY 0
 const FD_READ 4
 const FD_WRITE 8
 const FD_TRUNCATE 12
-const FD_RESET 16
+const FD_SEEK 16
 
 const MOUNT_DESTROY 0
 const MOUNT_OPEN 4
@@ -28,7 +32,7 @@ const INITFD_DESTROY 0
 const INITFD_READ 4
 const INITFD_WRITE 8
 const INITFD_TRUNCATE 12
-const INITFD_RESET 16
+const INITFD_SEEK 16
 const INITFD_FD 20
 const SIZEOF_INITFD 24
 
@@ -52,10 +56,20 @@ fun initfd_truncate 1 {
   0 "initfd_truncate: not supported" assert_msg ;
 }
 
-fun initfd_reset 1 {
+fun initfd_seek 3 {
   $fd
-  @fd 0 param = ;
-  fd INITFD_FD take platform_reset_file ;
+  $off
+  $whence
+  @fd 2 param = ;
+  @off 1 param = ;
+  @whence 0 param = ;
+
+  if whence SEEK_SET == off 0 == && {
+    fd INITFD_FD take platform_reset_file ;
+    0 ret ;
+  }
+
+  0 "initfd_seek: unsupported seek" assert_msg ;
 }
 
 fun initfd_init 1 {
@@ -68,7 +82,7 @@ fun initfd_init 1 {
   fd INITFD_READ take_addr @initfd_read = ;
   fd INITFD_WRITE take_addr @initfd_write = ;
   fd INITFD_TRUNCATE take_addr @initfd_truncate = ;
-  fd INITFD_RESET take_addr @initfd_reset = ;
+  fd INITFD_SEEK take_addr @initfd_seek = ;
   fd INITFD_FD take_addr name platform_open_file = ;
   fd ret ;
 }
@@ -237,8 +251,19 @@ fun vfs_truncate 1 {
   fd fd FD_TRUNCATE take \1 ;
 }
 
+fun vfs_seek 3 {
+  $fd
+  $off
+  $whence
+  @fd 2 param = ;
+  @off 1 param = ;
+  @whence 0 param = ;
+
+  fd off whence fd FD_SEEK take \3 ret ;
+}
+
 fun vfs_reset 1 {
   $fd
   @fd 0 param = ;
-  fd fd FD_RESET take \1 ;
+  fd 0 SEEK_SET vfs_seek ;
 }

@@ -19,7 +19,7 @@ const DISKFD_DESTROY 0
 const DISKFD_READ 4
 const DISKFD_WRITE 8
 const DISKFD_TRUNCATE 12
-const DISKFD_RESET 16
+const DISKFD_SEEK 16
 const DISKFD_POS 20
 const DISKFD_ATAPIO 24
 const DISKFD_SIZE 28
@@ -86,13 +86,31 @@ fun diskfd_truncate 1 {
   0 "diskfd_truncate: not supported" assert_msg ;
 }
 
-fun diskfd_reset 1 {
+fun diskfd_seek 3 {
   $fd
-  @fd 0 param = ;
+  $off
+  $whence
+  @fd 2 param = ;
+  @off 1 param = ;
+  @whence 0 param = ;
 
-  fd DISKFD_POS take_addr 0 = ;
+  $size
+  @size fd DISKFD_SIZE take = ;
+  if whence 1 == {
+    @off off fd DISKFD_POS take + = ;
+  }
+  if whence 2 == {
+    @off off size + = ;
+  }
+  if off size > {
+    @off size = ;
+  }
+
+  fd DISKFD_POS take_addr off  = ;
   fd DISKFD_CACHE take free ;
   fd DISKFD_CACHE take_addr 0 = ;
+
+  off ret ;
 }
 
 fun diskfd_init 3 {
@@ -109,7 +127,7 @@ fun diskfd_init 3 {
   fd DISKFD_READ take_addr @diskfd_read = ;
   fd DISKFD_WRITE take_addr @diskfd_write = ;
   fd DISKFD_TRUNCATE take_addr @diskfd_truncate = ;
-  fd DISKFD_RESET take_addr @diskfd_reset = ;
+  fd DISKFD_SEEK take_addr @diskfd_seek = ;
   fd DISKFD_POS take_addr 0 = ;
   fd DISKFD_ATAPIO take_addr atapio = ;
   fd DISKFD_START take_addr start = ;

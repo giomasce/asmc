@@ -83,7 +83,7 @@ const RAMFD_DESTROY 0
 const RAMFD_READ 4
 const RAMFD_WRITE 8
 const RAMFD_TRUNCATE 12
-const RAMFD_RESET 16
+const RAMFD_SEEK 16
 const RAMFD_FILE 20
 const RAMFD_POS 24
 const SIZEOF_RAMFD 28
@@ -131,11 +131,29 @@ fun ramfd_truncate 1 {
   file ramfile_truncate ;
 }
 
-fun ramfd_reset 1 {
+fun ramfd_seek 3 {
   $fd
-  @fd 0 param = ;
+  $off
+  $whence
+  @fd 2 param = ;
+  @off 1 param = ;
+  @whence 0 param = ;
 
-  fd RAMFD_POS take_addr 0 = ;
+  $size
+  @size fd RAMFD_FILE take RAMFILE_SIZE take = ;
+  if whence 1 == {
+    @off off fd RAMFD_POS take + = ;
+  }
+  if whence 2 == {
+    @off off size + = ;
+  }
+  if off size > {
+    @off size = ;
+  }
+
+  fd RAMFD_POS take_addr off = ;
+
+  off ret ;
 }
 
 fun ramfd_init 1 {
@@ -148,7 +166,7 @@ fun ramfd_init 1 {
   fd RAMFD_READ take_addr @ramfd_read = ;
   fd RAMFD_WRITE take_addr @ramfd_write = ;
   fd RAMFD_TRUNCATE take_addr @ramfd_truncate = ;
-  fd RAMFD_RESET take_addr @ramfd_reset = ;
+  fd RAMFD_SEEK take_addr @ramfd_seek = ;
   fd RAMFD_FILE take_addr file = ;
   fd RAMFD_POS take_addr 0 = ;
 
