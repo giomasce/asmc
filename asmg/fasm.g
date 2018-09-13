@@ -25,9 +25,6 @@ fun fasm_open 1 {
 
   $fd
   @fd filename vfs_open = ;
-  "fd = " 1 platform_log ;
-  fd itoa 1 platform_log ;
-  "\n" 1 platform_log ;
   fd ret ;
 }
 
@@ -60,16 +57,18 @@ fun fasm_read 3 {
   @i 0 = ;
   "Reading " 1 platform_log ;
   count itoa 1 platform_log ;
-  " bytes...\n" 1 platform_log ;
+  " bytes: " 1 platform_log ;
   while i count < {
     $tmp
     @tmp fd vfs_read = ;
+    tmp 1 platform_write_char ;
     if tmp 0xffffffff == {
       0 ret ;
     }
     buf i + tmp =c ;
     @i i 1 + = ;
   }
+  " done!\n" 1 platform_log ;
   1 ret ;
 }
 
@@ -83,6 +82,9 @@ fun fasm_write 3 {
 
   $i
   @i 0 = ;
+  "Writing " 1 platform_log ;
+  count itoa 1 platform_log ;
+  " bytes: " 1 platform_log ;
   while i count < {
     $tmp
     @tmp buf i + **c =c ;
@@ -92,10 +94,27 @@ fun fasm_write 3 {
   1 ret ;
 }
 
+fun fasm_lseek 3 {
+  $fd
+  $off
+  $whence
+  @fd 2 param = ;
+  @off 1 param = ;
+  @whence 0 param = ;
+
+  $res
+  @res fd off whence vfs_seek = ;
+  "Seek to " 1 platform_log ;
+  res itoa 1 platform_log ;
+  "\n" 1 platform_log ;
+  res ret ;
+}
+
 fun fasm_close 1 {
   $fd
   @fd 0 param = ;
 
+  "FASM: close\n" 1 platform_log ;
   fd vfs_close ;
 }
 
@@ -149,7 +168,7 @@ fun compile_fasm 0 {
   # Run fasm
   $input_file
   $output_file
-  @input_file "/init/test.asm" = ;
+  @input_file "/disk1/fasm/test.asm" = ;
   @output_file "/ram/test.bin" = ;
   $main_addr
   @main_addr ctx "main" asmctx_get_symbol_addr = ;
@@ -166,6 +185,7 @@ fun compile_fasm 0 {
   handles @fasm_read vector_push_back ;
   handles @fasm_write vector_push_back ;
   handles @fasm_close vector_push_back ;
+  handles @fasm_lseek vector_push_back ;
   handles @fasm_fatal_error vector_push_back ;
   handles @fasm_assembler_error vector_push_back ;
   handles @fasm_display_block vector_push_back ;
