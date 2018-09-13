@@ -15,6 +15,122 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+fun fasm_open 1 {
+  $filename
+  @filename 0 param = ;
+
+  "FASM: opening file " 1 platform_log ;
+  filename 1 platform_log ;
+  "\n" 1 platform_log ;
+
+  $fd
+  @fd filename vfs_open = ;
+  "fd = " 1 platform_log ;
+  fd itoa 1 platform_log ;
+  "\n" 1 platform_log ;
+  fd ret ;
+}
+
+fun fasm_create 1 {
+  $filename
+  @filename 0 param = ;
+
+  "FASM: creating file " 1 platform_log ;
+  filename 1 platform_log ;
+  "\n" 1 platform_log ;
+
+  $fd
+  @fd filename vfs_open = ;
+  if fd 0 == {
+    0 ret ;
+  }
+  fd vfs_truncate ;
+  fd ret ;
+}
+
+fun fasm_read 3 {
+  $fd
+  $buf
+  $count
+  @fd 2 param = ;
+  @buf 1 param = ;
+  @count 0 param = ;
+
+  $i
+  @i 0 = ;
+  "Reading " 1 platform_log ;
+  count itoa 1 platform_log ;
+  " bytes...\n" 1 platform_log ;
+  while i count < {
+    $tmp
+    @tmp fd vfs_read = ;
+    if tmp 0xffffffff == {
+      0 ret ;
+    }
+    buf i + tmp =c ;
+    @i i 1 + = ;
+  }
+  1 ret ;
+}
+
+fun fasm_write 3 {
+  $fd
+  $buf
+  $count
+  @fd 2 param = ;
+  @buf 1 param = ;
+  @count 0 param = ;
+
+  $i
+  @i 0 = ;
+  while i count < {
+    $tmp
+    @tmp buf i + **c =c ;
+    fd tmp vfs_write ;
+    @i i 1 + = ;
+  }
+  1 ret ;
+}
+
+fun fasm_close 1 {
+  $fd
+  @fd 0 param = ;
+
+  fd vfs_close ;
+}
+
+fun fasm_fatal_error 1 {
+  $msg
+  @msg 0 param = ;
+
+  "FASM FATAL ERROR: " 1 platform_log ;
+  msg 1 platform_log ;
+  "\n" 1 platform_log ;
+}
+
+fun fasm_assembler_error 1 {
+  $msg
+  @msg 0 param = ;
+
+  "FASM ASSEMBLER ERROR: " 1 platform_log ;
+  msg 1 platform_log ;
+  "\n" 1 platform_log ;
+}
+
+fun fasm_display_block 2 {
+  $msg
+  $len
+  @msg 1 param = ;
+  @len 0 param = ;
+
+  $i
+  @i 0 = ;
+  while i len < {
+    msg i + **c 1 platform_write_char ;
+    @i i 1 + = ;
+  }
+}
+
 fun compile_fasm 0 {
   $filename
   @filename "/disk1/fasm/fasm.asm" = ;
@@ -33,12 +149,29 @@ fun compile_fasm 0 {
   # Run fasm
   $input_file
   $output_file
-  @input_file "" = ;
-  @output_file "" = ;
+  @input_file "/init/test.asm" = ;
+  @output_file "/ram/test.bin" = ;
   $main_addr
   @main_addr ctx "main" asmctx_get_symbol_addr = ;
+  $handles
+  @handles 4 vector_init = ;
+  handles input_file vector_push_back ;
+  handles output_file vector_push_back ;
+  handles @malloc vector_push_back ;
+  handles @free vector_push_back ;
+  handles @platform_setjmp vector_push_back ;
+  handles @platform_longjmp vector_push_back ;
+  handles @fasm_open vector_push_back ;
+  handles @fasm_create vector_push_back ;
+  handles @fasm_read vector_push_back ;
+  handles @fasm_write vector_push_back ;
+  handles @fasm_close vector_push_back ;
+  handles @fasm_fatal_error vector_push_back ;
+  handles @fasm_assembler_error vector_push_back ;
+  handles @fasm_display_block vector_push_back ;
   $res
-  @res @platform_setjmp @platform_longjmp @malloc @free input_file output_file main_addr \6 = ;
+  @res handles vector_data main_addr \1 = ;
+  handles vector_destroy ;
 
   "fasm returned " 1 platform_log ;
   res itoa 1 platform_log ;
