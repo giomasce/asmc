@@ -150,8 +150,12 @@ fun fasm_display_block 2 {
   }
 }
 
+$ret_instr_enter
+
 fun error_additional_handler 0 {
-  "Additional handler!\n" 1 platform_log ;
+  "Fault happened after executing " 1 platform_log ;
+  read_ret_instr ret_instr_enter - itoa 1 platform_log ;
+  " instructions.\n" 1 platform_log ;
 }
 
 fun compile_fasm 0 {
@@ -159,6 +163,11 @@ fun compile_fasm 0 {
   @filename "/disk1/fasm/fasm.asm" = ;
 
   0x10000 @error_additional_handler = ;
+
+  @ret_instr_enter read_ret_instr = ;
+  "Retired instruction counter before compiling fasm: " 1 platform_log ;
+  read_ret_instr itoa 1 platform_log ;
+  "\n" 1 platform_log ;
 
   # Compile fasm
   $ctx
@@ -171,7 +180,7 @@ fun compile_fasm 0 {
   ctx asmctx_compile ;
   fd vfs_close ;
 
-  # Run fasm
+  # Prepare fasm argument list
   $input_file
   $output_file
   @input_file "/disk1/fasm/test.asm" = ;
@@ -196,13 +205,24 @@ fun compile_fasm 0 {
   handles @fasm_fatal_error vector_push_back ;
   handles @fasm_assembler_error vector_push_back ;
   handles @fasm_display_block vector_push_back ;
+
+  @ret_instr_enter read_ret_instr = ;
+  "Retired instruction counter before entering fasm: " 1 platform_log ;
+  read_ret_instr itoa 1 platform_log ;
+  "\n" 1 platform_log ;
+
+  # Run fasm
   $res
   @res handles vector_data main_addr \1 = ;
-  handles vector_destroy ;
+
+  "Retired instruction counter after exiting fasm: " 1 platform_log ;
+  read_ret_instr itoa 1 platform_log ;
+  "\n" 1 platform_log ;
 
   "fasm returned " 1 platform_log ;
   res itoa 1 platform_log ;
   "\n" 1 platform_log ;
 
+  handles vector_destroy ;
   ctx asmctx_destroy ;
 }

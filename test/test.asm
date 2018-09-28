@@ -143,6 +143,9 @@ there:
   bsf eax, [edi]
   bsr eax, [edi]
 
+  mov ecx, 0x10000000
+  rdpmc
+
   dd there-here
   dw there-here,10,11,there-here
   dd 0x11223344

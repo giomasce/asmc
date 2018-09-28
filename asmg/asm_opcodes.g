@@ -1991,6 +1991,27 @@ fun build_opcode_map 0 {
   opcode OPCODE_NO_OPERAND take_addr 0x0000c301 = ;
   opcode_map name opcode map_set ;
 
+  @name "rdpmc" = ;
+  @opcode SIZEOF_OPCODE malloc = ;
+  opcode OPCODE_ARG_NUM take_addr 0 = ;
+  opcode OPCODE_HANDLER take_addr @ret_like_handler = ;
+  opcode OPCODE_NO_OPERAND take_addr 0x00330f02 = ;
+  opcode_map name opcode map_set ;
+
+  @name "rdmsr" = ;
+  @opcode SIZEOF_OPCODE malloc = ;
+  opcode OPCODE_ARG_NUM take_addr 0 = ;
+  opcode OPCODE_HANDLER take_addr @ret_like_handler = ;
+  opcode OPCODE_NO_OPERAND take_addr 0x00320f02 = ;
+  opcode_map name opcode map_set ;
+
+  @name "wrmsr" = ;
+  @opcode SIZEOF_OPCODE malloc = ;
+  opcode OPCODE_ARG_NUM take_addr 0 = ;
+  opcode OPCODE_HANDLER take_addr @ret_like_handler = ;
+  opcode OPCODE_NO_OPERAND take_addr 0x00300f02 = ;
+  opcode_map name opcode map_set ;
+
   @name "clc" = ;
   @opcode SIZEOF_OPCODE malloc = ;
   opcode OPCODE_ARG_NUM take_addr 0 = ;

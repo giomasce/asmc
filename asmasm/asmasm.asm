@@ -56,6 +56,10 @@
   OP_XOR equ 38
   OP_TEST equ 39
   OP_HLT equ 40
+  OP_RDPMC equ 41
+  OP_RDMSR equ 42
+  OP_WRMSR equ 43
+  OP_CPUID equ 44
 
   section .data
 
@@ -142,6 +146,14 @@ opcode_names:
   db 0
   db 'hlt'
   db 0
+  db 'rdpmc'
+  db 0
+  db 'rdmsr'
+  db 0
+  db 'wrmsr'
+  db 0
+  db 'cpuid'
+  db 0
   db 0
 
 opcode_funcs:
@@ -176,7 +188,7 @@ opcode_funcs:
   dd process_jmp_like    ; OP_MUL
   dd process_jmp_like    ; OP_IMUL
   dd process_int         ; OP_INT
-  dd process_ret         ; OP_RET
+  dd process_ret_like    ; OP_RET
   dd process_in_like     ; OP_IN
   dd process_in_like     ; OP_OUT
   dd process_jmp_like    ; OP_DIV
@@ -186,6 +198,57 @@ opcode_funcs:
   dd process_add_like    ; OP_XOR
   dd process_add_like    ; OP_TEST
   dd process_hlt         ; OP_HLT
+  dd process_ret_like    ; OP_RDPMC
+  dd process_ret_like    ; OP_RDMSR
+  dd process_ret_like    ; OP_WRMSR
+  dd process_ret_like    ; OP_CPUID
+
+empty_opcode:
+  dd 0xf0    ; OP_PUSH
+  dd 0xf0    ; OP_POP
+  dd 0xf0    ; OP_ADD
+  dd 0xf0    ; OP_SUB
+  dd 0xf0    ; OP_MOV
+  dd 0xf0    ; OP_CMP
+  dd 0xf0    ; OP_AND
+  dd 0xf0    ; OP_OR
+  dd 0xf0    ; OP_JMP
+  dd 0xf0    ; OP_CALL
+  dd 0xf0    ; OP_JE
+  dd 0xf0    ; OP_JNE
+  dd 0xf0    ; OP_JA
+  dd 0xf0    ; OP_JNA
+  dd 0xf0    ; OP_JAE
+  dd 0xf0    ; OP_JNAE
+  dd 0xf0    ; OP_JB
+  dd 0xf0    ; OP_JNB
+  dd 0xf0    ; OP_JBE
+  dd 0xf0    ; OP_JNBE
+  dd 0xf0    ; OP_JG
+  dd 0xf0    ; OP_JNG
+  dd 0xf0    ; OP_JGE
+  dd 0xf0    ; OP_JNGE
+  dd 0xf0    ; OP_JL
+  dd 0xf0    ; OP_JNL
+  dd 0xf0    ; OP_JLE
+  dd 0xf0    ; OP_JNLE
+  dd 0xf0    ; OP_MUL
+  dd 0xf0    ; OP_IMUL
+  dd 0xf0    ; OP_INT
+  dd 0xc3    ; OP_RET
+  dd 0xf0    ; OP_IN
+  dd 0xf0    ; OP_OUT
+  dd 0xf0    ; OP_DIV
+  dd 0xf0    ; OP_IDIV
+  dd 0xf0    ; OP_NEG
+  dd 0xf0    ; OP_NOT
+  dd 0xf0    ; OP_XOR
+  dd 0xf0    ; OP_TEST
+  dd 0xf0    ; OP_HLT
+  dd 0x1330f ; OP_RDPMC
+  dd 0x1320f ; OP_RDMSR
+  dd 0x1300f ; OP_WRMSR
+  dd 0x1a20f ; OP_CPUID
 
 rm32_opcode:
   dd 0x06ff  ; OP_PUSH
@@ -229,6 +292,10 @@ rm32_opcode:
   dd 0xf0    ; OP_XOR
   dd 0xf0    ; OP_TEST
   dd 0xf0    ; OP_HLT
+  dd 0xf0    ; OP_RDPMC
+  dd 0xf0    ; OP_RDMSR
+  dd 0xf0    ; OP_WRMSR
+  dd 0xf0    ; OP_CPUID
 
 imm32_opcode:
   dd 0xf0    ; OP_PUSH
@@ -272,6 +339,10 @@ imm32_opcode:
   dd 0xf0    ; OP_XOR
   dd 0xf0    ; OP_TEST
   dd 0xf0    ; OP_HLT
+  dd 0xf0    ; OP_RDPMC
+  dd 0xf0    ; OP_RDMSR
+  dd 0xf0    ; OP_WRMSR
+  dd 0xf0    ; OP_CPUID
 
 r8rm8_opcode:
   dd 0xf0    ; OP_PUSH
@@ -315,6 +386,10 @@ r8rm8_opcode:
   dd 0x32    ; OP_XOR
   dd 0x84    ; OP_TEST
   dd 0xf0    ; OP_HLT
+  dd 0xf0    ; OP_RDPMC
+  dd 0xf0    ; OP_RDMSR
+  dd 0xf0    ; OP_WRMSR
+  dd 0xf0    ; OP_CPUID
 
 r32rm32_opcode:
   dd 0xf0    ; OP_PUSH
@@ -358,6 +433,10 @@ r32rm32_opcode:
   dd 0x33    ; OP_XOR
   dd 0x85    ; OP_TEST
   dd 0xf0    ; OP_HLT
+  dd 0xf0    ; OP_RDPMC
+  dd 0xf0    ; OP_RDMSR
+  dd 0xf0    ; OP_WRMSR
+  dd 0xf0    ; OP_CPUID
 
 rm8r8_opcode:
   dd 0xf0    ; OP_PUSH
@@ -401,6 +480,10 @@ rm8r8_opcode:
   dd 0x30    ; OP_XOR
   dd 0x84    ; OP_TEST
   dd 0xf0    ; OP_HLT
+  dd 0xf0    ; OP_RDPMC
+  dd 0xf0    ; OP_RDMSR
+  dd 0xf0    ; OP_WRMSR
+  dd 0xf0    ; OP_CPUID
 
 rm32r32_opcode:
   dd 0xf0    ; OP_PUSH
@@ -444,6 +527,10 @@ rm32r32_opcode:
   dd 0x31    ; OP_XOR
   dd 0x85    ; OP_TEST
   dd 0xf0    ; OP_HLT
+  dd 0xf0    ; OP_RDPMC
+  dd 0xf0    ; OP_RDMSR
+  dd 0xf0    ; OP_WRMSR
+  dd 0xf0    ; OP_CPUID
 
 rm8imm8_opcode:
   dd 0xf0    ; OP_PUSH
@@ -487,6 +574,10 @@ rm8imm8_opcode:
   dd 0x0680  ; OP_XOR
   dd 0x00f6  ; OP_TEST
   dd 0xf0    ; OP_HLT
+  dd 0xf0    ; OP_RDPMC
+  dd 0xf0    ; OP_RDMSR
+  dd 0xf0    ; OP_WRMSR
+  dd 0xf0    ; OP_CPUID
 
 rm32imm32_opcode:
   dd 0xf0    ; OP_PUSH
@@ -530,6 +621,10 @@ rm32imm32_opcode:
   dd 0x0681  ; OP_XOR
   dd 0x00f7  ; OP_TEST
   dd 0xf0    ; OP_HLT
+  dd 0xf0    ; OP_RDPMC
+  dd 0xf0    ; OP_RDMSR
+  dd 0xf0    ; OP_WRMSR
+  dd 0xf0    ; OP_CPUID
 
 
 reg_eax:
@@ -2190,21 +2285,28 @@ process_int:
   ret
 
 
-  global process_ret
-process_ret:
-  ;; Check the operation is actually a ret
-  cmp DWORD [esp+4], OP_RET
-  jne platform_panic
+  global process_ret_like
+process_ret_like:
+  ;; Get the opcode data
+  mov eax, [esp+4]
+  mov edx, 4
+  mul edx
+  add eax, empty_opcode
+  mov ecx, [eax]
 
   ;; Check that data is empty
   mov edx, [esp+8]
   cmp BYTE [edx], 0
   jne platform_panic
 
-  ;; Call emit
-  push 0xc3
-  call emit
-  add esp, 4
+  ;; Call emit_helper
+  push 0
+  push 0xffffffff
+  push 0xffffffff
+  push 1
+  push ecx
+  call emit_helper
+  add esp, 20
 
   ret
 
