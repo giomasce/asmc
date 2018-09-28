@@ -150,9 +150,15 @@ fun fasm_display_block 2 {
   }
 }
 
+fun error_additional_handler 0 {
+  "Additional handler!\n" 1 platform_log ;
+}
+
 fun compile_fasm 0 {
   $filename
   @filename "/disk1/fasm/fasm.asm" = ;
+
+  0x10000 @error_additional_handler = ;
 
   # Compile fasm
   $ctx

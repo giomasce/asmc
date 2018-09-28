@@ -15,7 +15,8 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-  IDT_BASE equ 0x10000
+  ADDITIONAL_HANDLER equ 0x10000
+  IDT_BASE equ 0x10010
   IDT_SIZE equ 0x800
 
 empty_idt:
@@ -52,6 +53,7 @@ fill_idt_entry:
 
 setup_idt:
   call empty_idt
+  mov dword [ADDITIONAL_HANDLER], 0
 
   mov eax, 13
   mov edx, first_fault_handler
@@ -80,6 +82,14 @@ idt_size:
 idt_offset:
   dd 0
 
+call_additional_handler:
+  ;; Possibly call additional handler, then fail
+  mov eax, [ADDITIONAL_HANDLER]
+  test eax, eax
+  jz error
+  call eax
+  jmp error
+
 abort_handler:
   pusha
 
@@ -91,7 +101,7 @@ abort_handler:
   mov eax, [esp+32]
   call dump_code
 
-  call error
+  jmp call_additional_handler
 
 first_fault_handler:
   pusha
@@ -104,7 +114,7 @@ first_fault_handler:
   mov eax, [esp+36]
   call dump_code
 
-  call error
+  jmp call_additional_handler
 
 double_fault_handler:
   pusha
@@ -114,7 +124,7 @@ double_fault_handler:
 
   call dump_stack
 
-  call error
+  jmp call_additional_handler
 
 dump_stack:
   mov ecx, 64
