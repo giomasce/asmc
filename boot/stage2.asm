@@ -277,6 +277,9 @@ enter_protected:
 	mov esi, str_other_side
 	call print_string
 
+  ;; Also enable the IDT
+  call setup_idt
+
   ;; Setup the ATA PIO driver
   mov WORD [atapio_base], 0x1f0
   mov BYTE [atapio_master], 1
@@ -321,13 +324,17 @@ payload_loaded:
 
   jmp 0x100000
 
+print_char:
+  call serial_write_char
+  ret
+
 ;; Print string pointed by ESI
 print_string:
   mov al, [esi]
   inc esi
   or al, al
   jz print_string_ret
-  call serial_write_char
+  call print_char
   jmp print_string
 print_string_ret:
   ret

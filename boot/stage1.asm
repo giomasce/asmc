@@ -65,7 +65,7 @@ segments_set_up:
   mov si, str_boot_disk
   call print_string16
   mov al, [boot_disk]
-  call print_hex_char
+  call print_hex_char16
   mov si, str_newline
   call print_string16
 
@@ -126,24 +126,24 @@ print_string16:
 print_string16_ret:
   ret
 
-print_hex_nibble:
+print_hex_nibble16:
   and al, 0xf
   cmp al, 0xa
-  jl print_hex_nibble_decimal
+  jl print_hex_nibble16_decimal
   add al, 'a' - 10
-  jmp print_hex_nibble_print
-print_hex_nibble_decimal:
+  jmp print_hex_nibble16_print
+print_hex_nibble16_decimal:
   add al, '0'
-print_hex_nibble_print:
+print_hex_nibble16_print:
   call print_char16
   ret
 
-print_hex_char:
+print_hex_char16:
   mov cl, al
   shr al, 4
-  call print_hex_nibble
+  call print_hex_nibble16
   mov al, cl
-  call print_hex_nibble
+  call print_hex_nibble16
   ret
 
 platform16_panic:
