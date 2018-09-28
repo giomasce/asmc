@@ -180,6 +180,7 @@ fun compile_fasm 0 {
   handles @free vector_push_back ;
   handles @platform_setjmp vector_push_back ;
   handles @platform_longjmp vector_push_back ;
+  handles @platform_log vector_push_back ;
   handles @fasm_open vector_push_back ;
   handles @fasm_create vector_push_back ;
   handles @fasm_read vector_push_back ;
