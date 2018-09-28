@@ -336,13 +336,6 @@ fun asmctx_parse_data 1 {
   $ctx
   @ctx 0 param = ;
 
-  $tok
-  @tok ctx asmctx_get_token = ;
-  if tok strlen 2 != {
-    ctx asmctx_give_back_token ;
-    0 ret ;
-  }
-
   $type
   $size
   $arg
@@ -350,29 +343,41 @@ fun asmctx_parse_data 1 {
   @size 0 = ;
   @arg 0 = ;
 
-  if tok "db" strcmp 0 == {
-    tok free ;
-    ctx asmctx_parse_db ;
-    1 ret ;
-  }
-
-  if tok **c 'd' == {
-    @type 1 = ;
-  }
-  if tok **c 'r' == {
-    @type 2 = ;
-  }
-  if tok 1 + **c 'b' == {
+  $tok
+  @tok ctx asmctx_get_token = ;
+  if tok "align" strcmp 0 == {
+    @type 3 = ;
     @size 1 = ;
-  }
-  if tok 1 + **c 'w' == {
-    @size 2 = ;
-  }
-  if tok 1 + **c 'd' == {
-    @size 3 = ;
-  }
-  if tok 1 + **c 'q' == {
-    @size 4 = ;
+  } else {
+    if tok strlen 2 != type 0 == && {
+      ctx asmctx_give_back_token ;
+      0 ret ;
+    }
+
+    if tok "db" strcmp 0 == {
+      tok free ;
+      ctx asmctx_parse_db ;
+      1 ret ;
+    }
+
+    if tok **c 'd' == {
+      @type 1 = ;
+    }
+    if tok **c 'r' == {
+      @type 2 = ;
+    }
+    if tok 1 + **c 'b' == {
+      @size 1 = ;
+    }
+    if tok 1 + **c 'w' == {
+      @size 2 = ;
+    }
+    if tok 1 + **c 'd' == {
+      @size 3 = ;
+    }
+    if tok 1 + **c 'q' == {
+      @size 4 = ;
+    }
   }
   if type 0 == size 0 == || {
     ctx asmctx_give_back_token ;
@@ -412,7 +417,19 @@ fun asmctx_parse_data 1 {
     @op ctx asmctx_parse_operand = ;
     op OPERAND_TYPE take 2 == "asmctx_parse_data: immediate operand expected" assert_msg ;
     $reps
-    @reps op OPERAND_OFFSET take = ;
+    if type 2 == {
+      @reps op OPERAND_OFFSET take = ;
+    } else {
+      $align
+      @align op OPERAND_OFFSET take = ;
+      $rem
+      @rem ctx ASMCTX_CURRENT_LOC take align % = ;
+      if rem 0 == {
+        @reps 0 = ;
+      } else {
+        @reps align rem - = ;
+      }
+    }
     op free ;
     while reps 0 > {
       ctx 0 size emit_size ;
