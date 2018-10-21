@@ -55,9 +55,9 @@ fun fasm_read 3 {
 
   $i
   @i 0 = ;
-  #"Reading " 1 platform_log ;
-  #count itoa 1 platform_log ;
-  #" bytes: " 1 platform_log ;
+  "FASM: reading " 1 platform_log ;
+  count itoa 1 platform_log ;
+  " bytes\n" 1 platform_log ;
   while i count < {
     $tmp
     @tmp fd vfs_read = ;
@@ -82,9 +82,9 @@ fun fasm_write 3 {
 
   $i
   @i 0 = ;
-  "Writing " 1 platform_log ;
+  "FASM: writing " 1 platform_log ;
   count itoa 1 platform_log ;
-  " bytes: " 1 platform_log ;
+  " bytes\n" 1 platform_log ;
   while i count < {
     $tmp
     @tmp buf i + **c =c ;
@@ -104,9 +104,9 @@ fun fasm_lseek 3 {
 
   $res
   @res fd off whence vfs_seek = ;
-  #"Seek to " 1 platform_log ;
-  #res itoa 1 platform_log ;
-  #"\n" 1 platform_log ;
+  "FASM: seeking to " 1 platform_log ;
+  res itoa 1 platform_log ;
+  "\n" 1 platform_log ;
   res ret ;
 }
 
@@ -114,7 +114,7 @@ fun fasm_close 1 {
   $fd
   @fd 0 param = ;
 
-  "FASM: close\n" 1 platform_log ;
+  "FASM: closing file\n" 1 platform_log ;
   fd vfs_close ;
 }
 
@@ -144,10 +144,27 @@ fun fasm_display_block 2 {
 
   $i
   @i 0 = ;
+  "FASM DISPLAY BLOCK: " 1 platform_log ;
   while i len < {
     msg i + **c 1 platform_write_char ;
     @i i 1 + = ;
   }
+  "\n" 1 platform_log ;
+}
+
+fun fasm_get_environment_variable 1 {
+  $var
+  @var 0 param = ;
+
+  "FASM: requesting envvar " 1 platform_log ;
+  var 1 platform_log ;
+  "\n" 1 platform_log ;
+}
+
+fun fasm_make_timestamp 0 {
+  "FASM: requesting timestamp\n" 1 platform_log ;
+
+  0 ret ;
 }
 
 $instr_num
@@ -263,6 +280,8 @@ fun compile_fasm 0 {
   handles @fasm_fatal_error vector_push_back ;
   handles @fasm_assembler_error vector_push_back ;
   handles @fasm_display_block vector_push_back ;
+  handles @fasm_get_environment_variable vector_push_back ;
+  handles @fasm_make_timestamp vector_push_back ;
 
   @ret_instr_enter read_ret_instr = ;
   "Retired instruction counter before entering fasm: " 1 platform_log ;
@@ -272,8 +291,8 @@ fun compile_fasm 0 {
   # Enable single stepping
   @instr_num 0 = ;
   @dumping 0 = ;
-  #@breakpoint ctx "fix_tables" asmctx_get_symbol_addr = ;
-  @breakpoint_instr_num 0 = ;
+  @breakpoint ctx "fatal_error" asmctx_get_symbol_addr = ;
+  @breakpoint_instr_num 407500 = ;
   0x10010 @single_step_handler = ;
   0x1001c ** \0 ;
 
