@@ -52,7 +52,10 @@ diskfs/mescc/x86_defs.m1:
 	mkdir -p diskfs/mescc
 	cp contrib/M2-Planet/test/common_x86/x86_defs.M1 $@
 
-diskfs/fasm/fasm.asm: contrib/fasm/source/*.inc contrib/fasm/source/asmc/*
+# Unfortunately the order of the files is relevant here, otherwise
+# some internal offsets wrap around because they are store in single
+# words
+diskfs/fasm/fasm.asm: contrib/fasm/source/version.inc contrib/fasm/source/errors.inc contrib/fasm/source/symbdump.inc contrib/fasm/source/preproce.inc contrib/fasm/source/parser.inc contrib/fasm/source/exprpars.inc contrib/fasm/source/assemble.inc contrib/fasm/source/exprcalc.inc contrib/fasm/source/formats.inc contrib/fasm/source/x86_64.inc contrib/fasm/source/avx.inc contrib/fasm/source/tables.inc contrib/fasm/source/messages.inc contrib/fasm/source/variable.inc contrib/fasm/source/asmc/system.inc contrib/fasm/source/asmc/fasm.asm
 	mkdir -p diskfs/fasm
 	cat $^ > $@
 

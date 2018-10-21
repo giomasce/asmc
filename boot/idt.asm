@@ -16,7 +16,10 @@
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
   ADDITIONAL_HANDLER equ 0x10000
-  IDT_BASE equ 0x10010
+  SINGLE_STEP_HANDLER equ 0x10010
+  SINGLE_STEP_ENABLED equ 0x10014
+  ENABLE_SINGLE_STEP_HOOK equ 0x1001c
+  IDT_BASE equ 0x11000
   IDT_SIZE equ 0x800
 
 empty_idt:
@@ -71,6 +74,8 @@ setup_idt:
   dec word [idt_size]
   mov dword [idt_offset], IDT_BASE
   lidt [idt_desc]
+
+  mov DWORD [ENABLE_SINGLE_STEP_HOOK], enable_single_step
 
   ret
 
@@ -195,3 +200,48 @@ str_first_fault:
   db 'FIRST FAULT!', 0xa, 0xd, 0
 str_double_fault:
   db 'Double fault detected!', 0xa, 0xd, 0
+
+
+single_step_handler:
+  pusha
+  mov ebp, esp
+
+  ;; Possibly call the user defined handler
+  mov eax, [SINGLE_STEP_HANDLER]
+  test eax, eax
+  jz single_step_handler_restart
+  push ebp
+  call eax
+  add esp, 4
+
+single_step_handler_restart:
+  ;; Test if we have to reenable the trap flag
+  and DWORD [ebp+0x28], 0xfffffeff
+  mov eax, [SINGLE_STEP_ENABLED]
+  test eax, eax
+  jz single_step_handler_disable
+
+  ;; Reenable the trap flag
+  or DWORD [ebp+0x28], 0x100
+
+single_step_handler_disable:
+
+  popa
+  iret
+
+
+enable_single_step:
+  ;; Remember single step is enabled
+  mov DWORD [SINGLE_STEP_ENABLED], 1
+
+  ;; Fill the IDT entry
+  mov eax, 1
+  mov edx, single_step_handler
+  call fill_idt_entry
+
+  ;; Actually set flag
+  pushf
+  or DWORD [esp], 0x100
+  popf
+
+  ret

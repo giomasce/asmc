@@ -55,20 +55,20 @@ fun fasm_read 3 {
 
   $i
   @i 0 = ;
-  "Reading " 1 platform_log ;
-  count itoa 1 platform_log ;
-  " bytes: " 1 platform_log ;
+  #"Reading " 1 platform_log ;
+  #count itoa 1 platform_log ;
+  #" bytes: " 1 platform_log ;
   while i count < {
     $tmp
     @tmp fd vfs_read = ;
-    tmp 1 platform_write_char ;
+    #tmp 1 platform_write_char ;
     if tmp 0xffffffff == {
       0 ret ;
     }
     buf i + tmp =c ;
     @i i 1 + = ;
   }
-  " done!\n" 1 platform_log ;
+  #" done!\n" 1 platform_log ;
   1 ret ;
 }
 
@@ -104,9 +104,9 @@ fun fasm_lseek 3 {
 
   $res
   @res fd off whence vfs_seek = ;
-  "Seek to " 1 platform_log ;
-  res itoa 1 platform_log ;
-  "\n" 1 platform_log ;
+  #"Seek to " 1 platform_log ;
+  #res itoa 1 platform_log ;
+  #"\n" 1 platform_log ;
   res ret ;
 }
 
@@ -150,12 +150,70 @@ fun fasm_display_block 2 {
   }
 }
 
+$instr_num
 $ret_instr_enter
 
 fun error_additional_handler 0 {
-  "Fault happened after executing " 1 platform_log ;
+  "Fault happened after retiring " 1 platform_log ;
   read_ret_instr ret_instr_enter - itoa 1 platform_log ;
-  " instructions.\n" 1 platform_log ;
+  " instructions (according to PMC).\n" 1 platform_log ;
+  "Fault happened after executing " 1 platform_log ;
+  instr_num itoa 1 platform_log ;
+  " instructions (according to single step counter).\n" 1 platform_log ;
+}
+
+$dumping
+$breakpoint
+$breakpoint_instr_num
+
+fun single_step_handler 1 {
+  $regs
+  @regs 0 param = ;
+
+  $ip
+  @ip regs 0x20 + ** = ;
+
+  # "Instruction number " 1 platform_log ;
+  # instr_num itoa 1 platform_log ;
+  # "\n" 1 platform_log ;
+
+  @instr_num instr_num 1 + = ;
+
+  if breakpoint_instr_num 0 != instr_num breakpoint_instr_num == && {
+    @dumping 1 = ;
+  }
+
+  if ip breakpoint == {
+    @dumping 1 = ;
+  }
+
+  if dumping {
+    "EAX=" 1 platform_log ;
+    regs 0x1c + ** itoa 1 platform_log ;
+    ", EBX=" 1 platform_log ;
+    regs 0x10 + ** itoa 1 platform_log ;
+    ", ECX=" 1 platform_log ;
+    regs 0x18 + ** itoa 1 platform_log ;
+    ", EDX=" 1 platform_log ;
+    regs 0x14 + ** itoa 1 platform_log ;
+    ", ESI=" 1 platform_log ;
+    regs 0x4 + ** itoa 1 platform_log ;
+    ", EDI=" 1 platform_log ;
+    regs 0x0 + ** itoa 1 platform_log ;
+    ", ESP=" 1 platform_log ;
+    regs 0xc + ** itoa 1 platform_log ;
+    ", EBP=" 1 platform_log ;
+    regs 0x8 + ** itoa 1 platform_log ;
+    "\n" 1 platform_log ;
+
+    "Instruction number " 1 platform_log ;
+    instr_num itoa 1 platform_log ;
+    ": EIP=" 1 platform_log ;
+    ip itoa 1 platform_log ;
+    ", code: " 1 platform_log ;
+    ip 32 dump_mem ;
+    "\n\n" 1 platform_log ;
+  }
 }
 
 fun compile_fasm 0 {
@@ -211,12 +269,27 @@ fun compile_fasm 0 {
   read_ret_instr itoa 1 platform_log ;
   "\n" 1 platform_log ;
 
+  # Enable single stepping
+  @instr_num 0 = ;
+  @dumping 0 = ;
+  #@breakpoint ctx "fix_tables" asmctx_get_symbol_addr = ;
+  @breakpoint_instr_num 0 = ;
+  0x10010 @single_step_handler = ;
+  0x1001c ** \0 ;
+
   # Run fasm
   $res
   @res handles vector_data main_addr \1 = ;
 
+  # Disable single stepping
+  0x10014 0 = ;
+
   "Retired instruction counter after exiting fasm: " 1 platform_log ;
   read_ret_instr itoa 1 platform_log ;
+  "\n" 1 platform_log ;
+
+  "Executed instruction number after exiting fasm: " 1 platform_log ;
+  instr_num itoa 1 platform_log ;
   "\n" 1 platform_log ;
 
   "fasm returned " 1 platform_log ;
