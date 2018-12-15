@@ -845,7 +845,7 @@ fun preproc_process_include 4 {
     testfile free ;
     @testfile filename strdup "/disk1/stdlib/" prepend_to_str = ;
     @fd testfile vfs_open = ;
-    fd "preproc_process_include: cannot find file" assert_msg ;
+    fd "preproc_process_include: cannot find file" testfile assert_msg_str ;
     fd vfs_close ;
     filename free ;
     @filename testfile = ;

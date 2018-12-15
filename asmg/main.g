@@ -20,6 +20,7 @@ const RUN_FASM 0
 const RUN_C 0
 const RUN_MESCC 0
 const RUN_MCPP 0
+const RUN_TINYCC 0
 const TEST_C 1
 
 const USE_TRIVIAL_MALLOC 0
@@ -128,7 +129,7 @@ fun main 0 {
     #"\n" 1 platform_log ;
   }
 
-  if RUN_C RUN_MCPP || TEST_C || {
+  if RUN_C RUN_MCPP || RUN_TINYCC || TEST_C || {
     "Compiling c_ast.g... " 1 platform_log ;
     "c_ast.g" platform_g_compile ;
     "done!\n" 1 platform_log ;
@@ -217,6 +218,14 @@ fun main 0 {
       "done!\n" 1 platform_log ;
 
       0 "compile_mcpp" platform_get_symbol \0 ;
+    }
+
+    if RUN_TINYCC {
+      "Compiling tinycc.g..." 1 platform_log ;
+      "tinycc.g" platform_g_compile ;
+      "done!\n" 1 platform_log ;
+
+      0 "compile_tinycc" platform_get_symbol \0 ;
     }
   }
 

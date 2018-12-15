@@ -108,6 +108,20 @@ fun assert_msg 2 {
   }
 }
 
+fun assert_msg_str 3 {
+  if 2 param ! {
+    "\nASSERTION FAILED at line " 1 platform_log ;
+    assert_pos itoa 1 platform_log ;
+    "\n" 1 platform_log ;
+    1 param 1 platform_log ;
+    "\n" 1 platform_log ;
+    0 param 1 platform_log ;
+    "\n" 1 platform_log ;
+    dump_stacktrace ;
+    platform_panic ;
+  }
+}
+
 fun min 2 {
   $x
   $y
