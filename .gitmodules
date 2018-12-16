@@ -9,4 +9,4 @@
 	url = https://gitlab.com/giomasce/fasm.git
 [submodule "contrib/tinycc"]
 	path = contrib/tinycc
-	url = git://repo.or.cz/tinycc.git
+	url = https://gitlab.com/giomasce/tinycc.git
