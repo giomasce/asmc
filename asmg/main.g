@@ -28,6 +28,9 @@ const USE_SIMPLE_MALLOC 0
 const USE_CHECKED_MALLOC 0
 const USE_KMALLOC 1
 
+const USE_SIMPLE_MAP 1
+const USE_AVL_MAP 0
+
 fun main 0 {
   "Hello, G!\n" 1 platform_log ;
 
@@ -71,9 +74,23 @@ fun main 0 {
   "vector.g" platform_g_compile ;
   "done!\n" 1 platform_log ;
 
-  "Compiling map.g... " 1 platform_log ;
-  "map.g" platform_g_compile ;
-  "done!\n" 1 platform_log ;
+  if USE_SIMPLE_MAP {
+    "Compiling map.g... " 1 platform_log ;
+    "map.g" platform_g_compile ;
+    "done!\n" 1 platform_log ;
+  }
+
+  if USE_AVL_MAP {
+    "Compiling avl_map.g... " 1 platform_log ;
+    "avl_map.g" platform_g_compile ;
+    "done!\n" 1 platform_log ;
+  }
+
+  # "Compiling map_test.g... " 1 platform_log ;
+  # "map_test.g" platform_g_compile ;
+  # "done!\n" 1 platform_log ;
+
+  # 0 "map_test" platform_get_symbol \0 ;
 
   "Compiling utils2.g... " 1 platform_log ;
   "utils2.g" platform_g_compile ;
