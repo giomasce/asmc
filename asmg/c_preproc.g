@@ -79,19 +79,23 @@ fun ppctx_init 0 {
   ptr ret ;
 }
 
+fun subst_destroy_closure 3 {
+  $ctx
+  $key
+  $value
+  @ctx 2 param = ;
+  @key 1 param = ;
+  @value 0 param = ;
+
+  value subst_destroy ;
+}
+
 fun ppctx_destroy 1 {
   $ptr
   @ptr 0 param = ;
   $defs
   @defs ptr PPCTX_DEFINES take = ;
-  $i
-  @i 0 = ;
-  while i defs map_size < {
-    if defs i map_has_idx {
-      defs i map_at_idx subst_destroy ;
-    }
-    @i i 1 + = ;
-  }
+  defs @subst_destroy_closure 0 map_foreach ;
   defs map_destroy ;
   ptr PPCTX_BASE_PATH take free ;
   ptr free ;
@@ -471,6 +475,17 @@ fun push_token 2 {
   }
 }
 
+fun vector_destroy_closure 3 {
+  $ctx
+  $key
+  $value
+  @ctx 2 param = ;
+  @key 1 param = ;
+  @value 0 param = ;
+
+  value vector_destroy ;
+}
+
 fun process_token_function 5 {
   $ctx
   $tokens
@@ -560,13 +575,7 @@ fun process_token_function 5 {
   }
 
   # Free temporaries
-  @i 0 = ;
-  while i args map_size < {
-    if args i map_has_idx {
-      args i map_at_idx vector_destroy ;
-    }
-    @i i 1 + = ;
-  }
+  args @vector_destroy_closure 0 map_foreach ;
   args map_destroy ;
 }
 

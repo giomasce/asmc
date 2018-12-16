@@ -178,20 +178,24 @@ const RAMMOUNT_OPEN 4
 const RAMMOUNT_FILES 8
 const SIZEOF_RAMMOUNT 12
 
+fun ramfile_destroy_closure 3 {
+  $ctx
+  $key
+  $value
+  @ctx 2 param = ;
+  @key 1 param = ;
+  @value 0 param = ;
+
+  value ramfile_destroy ;
+}
+
 fun rammount_destroy 1 {
   $ram
   @ram 0 param = ;
 
   $files
   @files ram RAMMOUNT_FILES take = ;
-  $i
-  @i 0 = ;
-  while i files map_size < {
-    if files i map_has_idx {
-      files i map_at_idx ramfile_destroy ;
-    }
-    @i i 1 + = ;
-  }
+  files @ramfile_destroy_closure 0 map_foreach ;
   files map_destroy ;
 
   ram free ;

@@ -66,28 +66,6 @@ fun map_at 2 {
   addr MAP_ELEM_VALUE take ret ;
 }
 
-fun map_at_idx 2 {
-  $map
-  $idx
-  @map 1 param = ;
-  @idx 0 param = ;
-  $addr
-  @addr map idx vector_at_addr = ;
-  addr MAP_ELEM_PRESENT take "map_at_idx: element is not present" assert_msg ;
-  addr MAP_ELEM_VALUE take ret ;
-}
-
-fun map_key_at_idx 2 {
-  $map
-  $idx
-  @map 1 param = ;
-  @idx 0 param = ;
-  $addr
-  @addr map idx vector_at_addr = ;
-  addr MAP_ELEM_PRESENT take "map_key_at_idx: element is not present" assert_msg ;
-  addr MAP_ELEM_KEY take ret ;
-}
-
 fun map_has 2 {
   $map
   $key
@@ -98,16 +76,6 @@ fun map_has 2 {
   if idx 0xffffffff == {
     0 ret ;
   }
-  $addr
-  @addr map idx vector_at_addr = ;
-  addr MAP_ELEM_PRESENT take ret ;
-}
-
-fun map_has_idx 2 {
-  $map
-  $idx
-  @map 1 param = ;
-  @idx 0 param = ;
   $addr
   @addr map idx vector_at_addr = ;
   addr MAP_ELEM_PRESENT take ret ;
@@ -152,4 +120,24 @@ fun map_size 1 {
   $map
   @map 0 param = ;
   map vector_size ret ;
+}
+
+fun map_foreach 3 {
+  $map
+  $func
+  $ctx
+  @map 2 param = ;
+  @func 1 param = ;
+  @ctx 0 param = ;
+
+  $i
+  @i 0 = ;
+  while i map vector_size < {
+    $addr
+    @addr map i vector_at_addr = ;
+    if addr MAP_ELEM_PRESENT take {
+      ctx addr MAP_ELEM_KEY take addr MAP_ELEM_VALUE take func \3 ;
+    }
+    @i i 1 + = ;
+  }
 }

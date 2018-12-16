@@ -124,22 +124,24 @@ fun vfsinst_init 0 {
   vfsinst ret ;
 }
 
+fun mount_destroy_closure 3 {
+  $ctx
+  $key
+  $value
+  @ctx 2 param = ;
+  @key 1 param = ;
+  @value 0 param = ;
+
+  value value MOUNT_DESTROY take \1 ;
+}
+
 fun vfsinst_destroy 1 {
   $vfsinst
   @vfsinst 0 param = ;
 
   $mounts
   @mounts vfsinst VFSINST_MOUNTS take = ;
-  $i
-  @i 0 = ;
-  while i mounts map_size < {
-    if mounts i map_has_idx {
-      $mount
-      @mount mounts i map_at_idx = ;
-      mount mount MOUNT_DESTROY take \1 ;
-    }
-    @i i 1 + = ;
-  }
+  mounts @mount_destroy_closure 0 map_foreach ;
   mounts map_destroy ;
 
   vfsinst free ;

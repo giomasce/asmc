@@ -380,6 +380,17 @@ fun cctx_destroy_types 1 {
   ctx CCTX_ENUM_CONSTS take map_destroy ;
 }
 
+fun global_destroy_closure 3 {
+  $ctx
+  $key
+  $value
+  @ctx 2 param = ;
+  @key 1 param = ;
+  @value 0 param = ;
+
+  value global_destroy ;
+}
+
 fun cctx_destroy 1 {
   $ctx
   @ctx 0 param = ;
@@ -388,14 +399,7 @@ fun cctx_destroy 1 {
 
   $globals
   @globals ctx CCTX_GLOBALS take = ;
-  $i
-  @i 0 = ;
-  while i globals map_size < {
-    if globals i map_has_idx {
-      globals i map_at_idx global_destroy ;
-    }
-    @i i 1 + = ;
-  }
+  globals @global_destroy_closure 0 map_foreach ;
   globals map_destroy ;
 
   ctx CCTX_LABEL_POS take vector_destroy ;
@@ -440,46 +444,52 @@ fun cctx_dump_types 1 {
   }
 }
 
+fun dump_typename_closure 3 {
+  $ctx
+  $key
+  $value
+  @ctx 2 param = ;
+  @key 1 param = ;
+  @value 0 param = ;
+
+  "Typename " 1 platform_log ;
+  key 1 platform_log ;
+  ": #" 1 platform_log ;
+  value itoa 1 platform_log ;
+  "\n" 1 platform_log ;
+}
+
 fun cctx_dump_typenames 1 {
   $ctx
   @ctx 0 param = ;
 
-  $i
-  @i 0 = ;
   $typenames
   @typenames ctx CCTX_TYPENAMES take = ;
-  while i typenames map_size < {
-    if typenames i map_has_idx {
-      "Typename " 1 platform_log ;
-      typenames i map_key_at_idx 1 platform_log ;
-      ": #" 1 platform_log ;
-      typenames i map_at_idx itoa 1 platform_log ;
-      "\n" 1 platform_log ;
-    }
-    @i i 1 + = ;
-  }
+  typenames @dump_typename_closure 0 map_foreach ;
+}
+
+fun dump_global_closure 3 {
+  $ctx
+  $key
+  $value
+  @ctx 2 param = ;
+  @key 1 param = ;
+  @value 0 param = ;
+
+  "Global " 1 platform_log ;
+  key 1 platform_log ;
+  ": " 1 platform_log ;
+  value global_dump ;
+  "\n" 1 platform_log ;
 }
 
 fun cctx_dump_globals 1 {
   $ctx
   @ctx 0 param = ;
 
-  $i
-  @i 0 = ;
   $globals
   @globals ctx CCTX_GLOBALS take = ;
-  while i globals map_size < {
-    if globals i map_has_idx {
-      "Global " 1 platform_log ;
-      globals i map_key_at_idx 1 platform_log ;
-      $global
-      @global globals i map_at_idx = ;
-      ": " 1 platform_log ;
-      global global_dump ;
-      "\n" 1 platform_log ;
-    }
-    @i i 1 + = ;
-  }
+  globals @dump_global_closure 0 map_foreach ;
 }
 
 ifun cctx_type_compare 3
