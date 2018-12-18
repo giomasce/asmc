@@ -19,11 +19,14 @@ const AVL_LEFT 0
 const AVL_RIGHT 4
 const AVL_KEY 8
 const AVL_VALUE 12
-const SIZEOF_AVL 16
+const AVL_PARENT 16
+const SIZEOF_AVL 20
 
-fun avl_init 1 {
+fun avl_init 2 {
   $key
-  @key 0 param = ;
+  $parent
+  @key 1 param = ;
+  @parent 0 param = ;
 
   $avl
   @avl SIZEOF_AVL malloc = ;
@@ -31,6 +34,7 @@ fun avl_init 1 {
   avl AVL_RIGHT take_addr 0 = ;
   avl AVL_KEY take_addr key strdup = ;
   avl AVL_VALUE take_addr 0 = ;
+  avl AVL_PARENT take_addr parent = ;
   avl ret ;
 }
 
@@ -82,10 +86,12 @@ fun _map_find 3 {
   @avl map MAP_AVL take = ;
   $ptr
   @ptr map MAP_AVL take_addr = ;
+  $parent
+  @parent 0 = ;
   while 1 {
     if avl 0 == {
       if create {
-        @avl key avl_init = ;
+        @avl key parent avl_init = ;
         ptr avl = ;
         map MAP_SIZE take_addr map MAP_SIZE take 1 + = ;
         avl ret ;
@@ -100,9 +106,11 @@ fun _map_find 3 {
     }
     if cmp 0 < {
       @ptr avl AVL_LEFT take_addr = ;
+      @parent avl = ;
       @avl avl AVL_LEFT take = ;
     } else {
       @ptr avl AVL_RIGHT take_addr = ;
+      @parent avl = ;
       @avl avl AVL_RIGHT take = ;
     }
   }
@@ -145,6 +153,82 @@ fun map_set 3 {
   avl AVL_VALUE take_addr value = ;
 }
 
+fun _map_erase_leaf 2 {
+  $map
+  $avl
+  @map 1 param = ;
+  @avl 0 param = ;
+
+  map MAP_SIZE take_addr map MAP_SIZE take 1 - = ;
+  avl AVL_LEFT take 0 == "_map_erase_leaf: has left child" assert_msg ;
+  avl AVL_RIGHT take 0 == "_map_erase_leaf: has right child" assert_msg ;
+
+  $parent
+  @parent avl AVL_PARENT take = ;
+  avl avl_destroy ;
+  if parent 0 == {
+    map MAP_AVL take avl == "_map_erase_leaf: wrong root" assert_msg ;
+    map MAP_AVL take_addr 0 = ;
+    ret ;
+  }
+
+  if parent AVL_LEFT take avl == {
+    parent AVL_LEFT take_addr 0 = ;
+    ret ;
+  }
+  if parent AVL_RIGHT take avl == {
+    parent AVL_RIGHT take_addr 0 = ;
+    ret ;
+  }
+  0 "_map_erase_leaf: cannot find among parent's children" assert_msg ;
+}
+
+fun _avl_swap 2 {
+  $avl
+  $avl2
+  @avl 1 param = ;
+  @avl2 0 param = ;
+
+  $tmp
+  @tmp avl AVL_VALUE take = ;
+  avl AVL_VALUE take_addr avl2 AVL_VALUE take = ;
+  avl2 AVL_VALUE take_addr tmp = ;
+  @tmp avl AVL_KEY take = ;
+  avl AVL_KEY take_addr avl2 AVL_KEY take = ;
+  avl2 AVL_KEY take_addr tmp = ;
+}
+
+fun _map_erase 2 {
+  $map
+  $avl
+  @map 1 param = ;
+  @avl 0 param = ;
+
+  if avl 0 != {
+    if avl AVL_LEFT take 0 != {
+      $avl2
+      @avl2 avl AVL_LEFT take = ;
+      while avl2 AVL_RIGHT take 0 != {
+        @avl2 avl2 AVL_RIGHT take = ;
+      }
+      avl avl2 _avl_swap ;
+      map avl2 _map_erase ;
+      ret ;
+    }
+    if avl AVL_RIGHT take 0 != {
+      $avl2
+      @avl2 avl AVL_RIGHT take = ;
+      while avl2 AVL_LEFT take 0 != {
+        @avl2 avl2 AVL_LEFT take = ;
+      }
+      avl avl2 _avl_swap ;
+      map avl2 _map_erase ;
+      ret ;
+    }
+    map avl _map_erase_leaf ;
+  }
+}
+
 fun map_erase 2 {
   $map
   $key
@@ -153,11 +237,7 @@ fun map_erase 2 {
 
   $avl
   @avl map key 0 _map_find = ;
-  if avl 0 != {
-    #map MAP_SIZE take_addr map MAP_SIZE take 1 - = ;
-    #if avl AVL_LEFT take 0 == {
-    #}
-  }
+  map avl _map_erase ;
 }
 
 fun map_size 1 {
