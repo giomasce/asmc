@@ -501,7 +501,7 @@ fun process_token_function 5 {
   # First parse the inputs
   $args
   @args map_init = ;
-  while args vector_size subst SUBST_PARAMETERS take vector_size < {
+  while args map_size subst SUBST_PARAMETERS take vector_size < {
     $depth
     @depth 0 = ;
     $cont
@@ -528,7 +528,7 @@ fun process_token_function 5 {
     $ident
     @ident subst SUBST_PARAMETERS take args map_size vector_at = ;
     args ident arg map_set ;
-    if args vector_size subst SUBST_PARAMETERS take vector_size == {
+    if args map_size subst SUBST_PARAMETERS take vector_size == {
       tok ")" strcmp 0 == "process_token_function: ) expected" assert_msg ;
     } else {
       tok "," strcmp 0 == "process_token_function: , expected" assert_msg ;

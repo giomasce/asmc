@@ -63,6 +63,13 @@ fun map_at 2 {
   $addr
   @addr map idx vector_at_addr = ;
   addr MAP_ELEM_PRESENT take "map_at: element is not present" assert_msg ;
+
+  # "map_at(" 1 platform_log ;
+  # key 1 platform_log ;
+  # ") = " 1 platform_log ;
+  # addr MAP_ELEM_VALUE take itoa 1 platform_log ;
+  # "\n" 1 platform_log ;
+
   addr MAP_ELEM_VALUE take ret ;
 }
 

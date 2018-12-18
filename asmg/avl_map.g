@@ -125,6 +125,13 @@ fun map_at 2 {
   $avl
   @avl map key 0 _map_find = ;
   avl 0 != "map_at: key does not exist" assert_msg ;
+
+  # "map_at(" 1 platform_log ;
+  # key 1 platform_log ;
+  # ") = " 1 platform_log ;
+  # avl AVL_VALUE take itoa 1 platform_log ;
+  # "\n" 1 platform_log ;
+
   avl AVL_VALUE take ret ;
 }
 
@@ -136,6 +143,13 @@ fun map_has 2 {
 
   $avl
   @avl map key 0 _map_find = ;
+
+  # "map_has(" 1 platform_log ;
+  # key 1 platform_log ;
+  # ") = " 1 platform_log ;
+  # avl 0 != itoa 1 platform_log ;
+  # "\n" 1 platform_log ;
+
   avl 0 != ret ;
 }
 
@@ -150,6 +164,13 @@ fun map_set 3 {
   $avl
   @avl map key 1 _map_find = ;
   avl 0 != "map_set: error 1" assert_msg ;
+
+  # "map_set(" 1 platform_log ;
+  # key 1 platform_log ;
+  # ", " 1 platform_log ;
+  # value itoa 1 platform_log ;
+  # ")\n" 1 platform_log ;
+
   avl AVL_VALUE take_addr value = ;
 }
 
@@ -238,11 +259,15 @@ fun map_erase 2 {
   $avl
   @avl map key 0 _map_find = ;
   map avl _map_erase ;
+
+  # "map_erase(" 1 platform_log ;
+  # key 1 platform_log ;
+  # ")\n" 1 platform_log ;
 }
 
 fun map_size 1 {
   $map
-  @map 0 param 0 ;
+  @map 0 param = ;
 
   map MAP_SIZE take ret ;
 }

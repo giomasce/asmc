@@ -28,8 +28,8 @@ const USE_SIMPLE_MALLOC 0
 const USE_CHECKED_MALLOC 0
 const USE_KMALLOC 1
 
-const USE_SIMPLE_MAP 1
-const USE_AVL_MAP 0
+const USE_SIMPLE_MAP 0
+const USE_AVL_MAP 1
 
 fun main 0 {
   "Hello, G!\n" 1 platform_log ;
