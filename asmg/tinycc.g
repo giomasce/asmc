@@ -23,6 +23,7 @@ fun compile_tinycc 0 {
   $ctx
   @ctx ppctx_init = ;
   ctx "ONE_SOURCE" "1" ppctx_define ;
+  ctx "USE_SOFTFLOAT" "1" ppctx_define ;
   ctx filename ppctx_set_base_filename ;
   $tokens
   @tokens 4 vector_init = ;
