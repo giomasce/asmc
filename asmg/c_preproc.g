@@ -631,12 +631,22 @@ fun process_token 4 {
         tokens tok strdup vector_push_back ;
       }
     } else {
-      @changed 1 = ;
-      $j
-      @j 0 = ;
-      while j repl vector_size < {
-        tokens repl j vector_at strdup vector_push_back ;
-        @j j 1 + = ;
+      $different
+      @different 1 = ;
+      # Do not mark as changed if the macro expands back to itself
+      if repl vector_size 1 == {
+        if repl 0 vector_at tok strcmp 0 == {
+          @different 0 = ;
+        }
+      }
+      if different {
+        @changed 1 = ;
+        $j
+        @j 0 = ;
+        while j repl vector_size < {
+          tokens repl j vector_at strdup vector_push_back ;
+          @j j 1 + = ;
+        }
       }
     }
   } else {
