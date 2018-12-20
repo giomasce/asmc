@@ -66,16 +66,17 @@ fun subst_destroy 1 {
 }
 
 const PPCTX_DEFINES 0
-const PPCTX_BASE_PATH 4
-const PPCTX_VERBOSE 8
+const PPCTX_VERBOSE 4
+const PPCTX_INCLUDE_PATH 8
 const SIZEOF_PPCTX 12
 
 fun ppctx_init 0 {
   $ptr
   @ptr SIZEOF_PPCTX malloc = ;
   ptr PPCTX_DEFINES take_addr map_init = ;
-  ptr PPCTX_BASE_PATH take_addr 0 = ;
   ptr PPCTX_VERBOSE take_addr 1 = ;
+  ptr PPCTX_INCLUDE_PATH take_addr 4 vector_init = ;
+  ptr PPCTX_INCLUDE_PATH take "/disk1/stdlib/" strdup vector_push_back ;
   ptr ret ;
 }
 
@@ -97,7 +98,7 @@ fun ppctx_destroy 1 {
   @defs ptr PPCTX_DEFINES take = ;
   defs @subst_destroy_closure 0 map_foreach ;
   defs map_destroy ;
-  ptr PPCTX_BASE_PATH take free ;
+  ptr PPCTX_INCLUDE_PATH take free_vect_of_ptrs ;
   ptr free ;
 }
 
@@ -130,7 +131,18 @@ fun ppctx_set_base_filename 2 {
     @i i 1 - = ;
   }
   filename i + 1 + 0 =c ;
-  ctx PPCTX_BASE_PATH take_addr filename = ;
+  ctx PPCTX_INCLUDE_PATH take filename vector_push_back ;
+}
+
+fun ppctx_add_include_path 2 {
+  $ctx
+  $filename
+  @ctx 1 param = ;
+  @filename 0 param = ;
+
+  @filename filename strdup = ;
+  filename **c '/' == "ppctx_add_include_path: missing initial slash" assert_msg ;
+  ctx PPCTX_INCLUDE_PATH take filename vector_push_back ;
 }
 
 fun give_back_char 0 {
@@ -846,23 +858,26 @@ fun preproc_process_include 4 {
   }
 
   # Search for the right include path
-  $testfile
-  @testfile filename strdup ctx PPCTX_BASE_PATH take prepend_to_str = ;
-  $fd
-  @fd testfile vfs_open = ;
-  if fd ! {
-    testfile free ;
-    @testfile filename strdup "/disk1/stdlib/" prepend_to_str = ;
+  $i
+  @i ctx PPCTX_INCLUDE_PATH take vector_size 1 - = ;
+  $found
+  @found 0 = ;
+  while i 0 >= found ! && {
+    $testfile
+    @testfile filename strdup ctx PPCTX_INCLUDE_PATH take i vector_at prepend_to_str = ;
+    $fd
     @fd testfile vfs_open = ;
-    fd "preproc_process_include: cannot find file" testfile assert_msg_str ;
-    fd vfs_close ;
-    filename free ;
-    @filename testfile = ;
-  } else {
-    fd vfs_close ;
-    filename free ;
-    @filename testfile = ;
+    if fd {
+      fd vfs_close ;
+      filename free ;
+      @filename testfile = ;
+      @found 1 = ;
+    } else {
+      testfile free ;
+    }
+    @i i 1 - = ;
   }
+  found "preproc_process_include: cannot find file" filename assert_msg_str ;
 
   if ctx PPCTX_VERBOSE take {
     "Including file " 1 platform_log ;

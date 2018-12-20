@@ -25,6 +25,10 @@ fun compile_tinycc 0 {
   ctx "ONE_SOURCE" "1" ppctx_define ;
   ctx "USE_SOFTFLOAT" "1" ppctx_define ;
   ctx filename ppctx_set_base_filename ;
+  ctx "/disk1/tinycc/softfloat/" ppctx_add_include_path ;
+  ctx "/disk1/tinycc/softfloat/include/" ppctx_add_include_path ;
+  ctx "/disk1/tinycc/softfloat/8086/" ppctx_add_include_path ;
+  #ctx PPCTX_VERBOSE take_addr 0 = ;
   $tokens
   @tokens 4 vector_init = ;
   tokens ctx filename preproc_file ;
