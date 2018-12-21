@@ -90,6 +90,13 @@ fun mbr_vfs_scan_drive 3 {
           vfs point  mount 0 "vfsinst_mount" platform_get_symbol \3 ;
           point free ;
           @count count 1 + = ;
+        } else {
+          if sect ** "DEBU" ** == sect 4 + ** "GFS " ** == && {
+            "    Found a debugfs file system!\n" 1 platform_log ;
+            $debugfs
+            @debugfs a atapio_duplicate parts i vector_at parts i vector_at_addr 4 + ** debugfsinst_init = ;
+            debugfs debugfs_set ;
+          }
         }
         sect free ;
 

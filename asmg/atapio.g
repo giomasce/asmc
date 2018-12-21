@@ -158,6 +158,17 @@ fun atapio_identify 1 {
   }
 }
 
+fun atapio_write_sect 3 {
+  $a
+  $lba
+  $buf
+  @a 2 param = ;
+  @lba 1 param = ;
+  @buf 0 param = ;
+
+  0 "atapio_write_sect: not implemented" assert_msg ;
+}
+
 fun atapio_read_sect 2 {
   $a
   $lba

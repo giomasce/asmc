@@ -104,6 +104,10 @@ fun main 0 {
   "diskfs.g" platform_g_compile ;
   "done!\n" 1 platform_log ;
 
+  "Compiling debugfs.g... " 1 platform_log ;
+  "debugfs.g" platform_g_compile ;
+  "done!\n" 1 platform_log ;
+
   "Compiling ramfs.g... " 1 platform_log ;
   "ramfs.g" platform_g_compile ;
   "done!\n" 1 platform_log ;
