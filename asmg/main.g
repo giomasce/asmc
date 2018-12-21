@@ -238,7 +238,7 @@ fun main 0 {
     }
 
     if RUN_TINYCC {
-      "Compiling tinycc.g..." 1 platform_log ;
+      "Compiling tinycc.g... " 1 platform_log ;
       "tinycc.g" platform_g_compile ;
       "done!\n" 1 platform_log ;
 
