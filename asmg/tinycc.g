@@ -22,7 +22,7 @@ fun compile_tinycc 0 {
   # Preprocessing
   $ctx
   @ctx ppctx_init = ;
-  ctx "ONE_SOURCE" "0" ppctx_define ;
+  ctx "ONE_SOURCE" "1" ppctx_define ;
   ctx "USE_SOFTFLOAT" "1" ppctx_define ;
   ctx filename ppctx_set_base_filename ;
   ctx "/disk1/tinycc/softfloat/" ppctx_add_include_path ;

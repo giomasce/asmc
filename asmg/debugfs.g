@@ -80,6 +80,7 @@ fun _debugfsinst_flush_buffer 1 {
   debugfs DEBUGFS_BUF take free ;
   debugfs DEBUGFS_BUF take_addr 512 1 calloc = ;
   debugfs DEBUGFS_BUF_POS take_addr 0 = ;
+  debugfs DEBUGFS_POS take_addr debugfs DEBUGFS_POS take 1 + = ;
 }
 
 fun debugfsinst_write_char 2 {
@@ -104,6 +105,11 @@ fun debugfsinst_finish_file 1 {
     debugfs _debugfsinst_flush_buffer ;
   }
 
+  # Write an empty sector
+  debugfs '\0' debugfsinst_write_char ;
+  debugfs _debugfsinst_flush_buffer ;
+
+  debugfs DEBUGFS_BUF take free ;
   debugfs DEBUGFS_BUF take_addr 0 = ;
 }
 

@@ -147,7 +147,7 @@ build/asmg.x86: build/asmg.x86.exe build/initrd-asmg.ar
 	cat $^ > $@
 
 build/debugfs.img:
-	echo 'DEBUGFS ' > $@
+	echo -n 'DEBUGFS ' > $@
 	dd if=/dev/zero of=$@ bs=1M count=10 oflag=append conv=notrunc
 
 build/boot_asmg.x86: build/bootloader.x86.mbr build/bootloader.x86.stage2 build/asmg.x86 build/diskfs.img build/debugfs.img
