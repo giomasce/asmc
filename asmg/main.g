@@ -254,6 +254,10 @@ fun main 0 {
   0 "vfs_destroy" platform_get_symbol \0 ;
   "done!\n" 1 platform_log ;
 
+  "Destroying debugfs... " 1 platform_log ;
+  0 "debugfs_deinit" platform_get_symbol \0 ;
+  "done!\n" 1 platform_log ;
+
   "Memory break before exiting main: " 1 platform_log ;
   0 platform_allocate itoa 1 platform_log ;
   "\n" 1 platform_log ;

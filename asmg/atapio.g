@@ -103,6 +103,33 @@ fun _atapio_in_sector 1 {
   buf ret ;
 }
 
+fun _atapio_out_sector 2 {
+  $a
+  $buf
+  @a 1 param = ;
+  @buf 0 param = ;
+
+  $base
+  @base a ATAPIO_BASE take = ;
+  $i
+  @i 0 = ;
+  while i 256 < {
+    $bytes
+    @bytes buf 2 i * + **c =c ;
+    @bytes 1 + buf 2 i * + 1 + **c =c ;
+    base ATAPIO_PORT_DATA + bytes outw ;
+    @i i 1 + = ;
+  }
+
+  # Discard four status reads
+  base ATAPIO_PORT_COMMAND + inb ;
+  base ATAPIO_PORT_COMMAND + inb ;
+  base ATAPIO_PORT_COMMAND + inb ;
+  base ATAPIO_PORT_COMMAND + inb ;
+
+  ".\n" 1 platform_log ;
+}
+
 fun atapio_identify 1 {
   $a
   @a 0 param = ;
@@ -158,17 +185,6 @@ fun atapio_identify 1 {
   }
 }
 
-fun atapio_write_sect 3 {
-  $a
-  $lba
-  $buf
-  @a 2 param = ;
-  @lba 1 param = ;
-  @buf 0 param = ;
-
-  0 "atapio_write_sect: not implemented" assert_msg ;
-}
-
 fun atapio_read_sect 2 {
   $a
   $lba
@@ -213,6 +229,58 @@ fun atapio_read_sect 2 {
   a _atapio_poll ;
 
   a _atapio_in_sector ret ;
+}
+
+fun atapio_write_sect 3 {
+  $a
+  $lba
+  $buf
+  @a 2 param = ;
+  @lba 1 param = ;
+  @buf 0 param = ;
+
+  $base
+  $master
+  @base a ATAPIO_BASE take = ;
+  @master a ATAPIO_MASTER take = ;
+
+  # 28 bits request
+  lba 0xf0000000 & 0 == "atapio_write_sect: sector number exceeds 28 bits" assert_msg ;
+  if master {
+    base ATAPIO_PORT_DRIVE + 0xe0 lba 24 >> | outb ;
+  } else {
+    base ATAPIO_PORT_DRIVE + 0xf0 lba 24 >> | outb ;
+  }
+  #base ATAPIO_PORT_FEATURES_ERROR + 0 outb ;
+  base ATAPIO_PORT_SECTOR_COUNT + 1 outb ;
+  base ATAPIO_PORT_LBA_LO + lba outb ;
+  base ATAPIO_PORT_LBA_MID + lba 8 >> outb ;
+  base ATAPIO_PORT_LBA_HI + lba 16 >> outb ;
+  base ATAPIO_PORT_COMMAND + 0x30 outb ;
+
+  # 48 bits request
+  # if master {
+  #   base ATAPIO_PORT_DRIVE + 0x40 outb ;
+  # } else {
+  #   base ATAPIO_PORT_DRIVE + 0x50 outb ;
+  # }
+  # base ATAPIO_PORT_SECTOR_COUNT + 0 outb ;
+  # base ATAPIO_PORT_LBA_LO + lba 24 >> outb ;
+  # base ATAPIO_PORT_LBA_MID + 0 outb ;
+  # base ATAPIO_PORT_LBA_HI + 0 outb ;
+  # base ATAPIO_PORT_SECTOR_COUNT + 1 outb ;
+  # base ATAPIO_PORT_LBA_LO + lba outb ;
+  # base ATAPIO_PORT_LBA_MID + lba 8 >> outb ;
+  # base ATAPIO_PORT_LBA_HI + lba 16 >> outb ;
+  # base ATAPIO_PORT_COMMAND + 0x34 outb ;
+
+  a _atapio_poll ;
+
+  a buf _atapio_out_sector ;
+
+  # Flush buffer
+  #base ATAPIO_PORT_COMMAND + 0xe7 outb ;
+  #a _atapio_poll ;
 }
 
 fun atapio_print_identify 1 {

@@ -655,6 +655,28 @@ fun process_token 4 {
   changed ret ;
 }
 
+fun dump_token_list_to_debugfs 1 {
+  $tokens
+  @tokens 0 param = ;
+
+  $i
+  @i 0 = ;
+  "tokens" debugfs_begin_file ;
+  while i tokens vector_size < {
+    $tok
+    @tok tokens i vector_at = ;
+    $j
+    @j 0 = ;
+    while tok j + **c 0 != {
+      tok j + **c debugfs_write_char ;
+      @j j 1 + = ;
+    }
+    '\n' debugfs_write_char ;
+    @i i 1 + = ;
+  }
+  debugfs_finish_file ;
+}
+
 fun print_token_list 1 {
   $tokens
   @tokens 0 param = ;

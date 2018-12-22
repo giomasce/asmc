@@ -36,6 +36,7 @@ fun compile_tinycc 0 {
   #@tokens filename tokenize_file = ;
   "Finished preprocessing\n" 1 platform_log ;
   #tokens print_token_list ;
+  tokens dump_token_list_to_debugfs ;
 
   # Compilation
   $cctx
