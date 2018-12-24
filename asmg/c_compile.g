@@ -767,15 +767,17 @@ const TYPE_SCHAR 2
 const TYPE_UCHAR 3
 const TYPE_SHORT 4
 const TYPE_INT 5
-const TYPE_USHORT 6
-const TYPE_UINT 7
-const TYPE_CHAR_ARRAY 8
-const TYPE_VOID_PTR 9
+const TYPE_LONG 6
+const TYPE_USHORT 7
+const TYPE_UINT 8
+const TYPE_ULONG 9
+const TYPE_CHAR_ARRAY 10
+const TYPE_VOID_PTR 11
 
 fun is_integer_type 1 {
   $idx
   @idx 0 param = ;
-  TYPE_CHAR idx <= TYPE_UINT idx >= && ret ;
+  TYPE_CHAR idx <= TYPE_ULONG idx >= && ret ;
 }
 
 fun cctx_create_basic_type 3 {
@@ -809,8 +811,10 @@ fun cctx_create_basic_types 1 {
   ctx TYPE_UCHAR 1 cctx_create_basic_type ;
   ctx TYPE_SHORT 2 cctx_create_basic_type ;
   ctx TYPE_INT 4 cctx_create_basic_type ;
+  ctx TYPE_LONG 8 cctx_create_basic_type ;
   ctx TYPE_USHORT 2 cctx_create_basic_type ;
   ctx TYPE_UINT 4 cctx_create_basic_type ;
+  ctx TYPE_ULONG 8 cctx_create_basic_type ;
 
   ctx TYPE_CHAR 0xffffffff cctx_get_array_type TYPE_CHAR_ARRAY == "cctx_create_basic_types: error 1" assert_msg ;
   ctx TYPE_VOID cctx_get_pointer_type TYPE_VOID_PTR == "cctx_create_basic_types: error 2" assert_msg ;
@@ -1200,15 +1204,15 @@ fun cctx_parse_type 1 {
     if tok "int" strcmp 0 == { TYPE_INT ret ; }
     if tok "long" strcmp 0 == {
       @tok ctx cctx_get_token_or_fail = ;
-      if tok "int" strcmp 0 == { TYPE_INT ret ; }
+      if tok "int" strcmp 0 == { TYPE_LONG ret ; }
       if tok "long" strcmp 0 == {
         @tok ctx cctx_get_token_or_fail = ;
-        if tok "int" strcmp 0 == { TYPE_INT ret ; }
+        if tok "int" strcmp 0 == { TYPE_LONG ret ; }
         ctx cctx_give_back_token ;
-        TYPE_INT ret ;
+        TYPE_LONG ret ;
       }
       ctx cctx_give_back_token ;
-      TYPE_INT ret ;
+      TYPE_LONG ret ;
     }
     ctx cctx_give_back_token ;
     TYPE_INT ret ;
@@ -1220,24 +1224,24 @@ fun cctx_parse_type 1 {
     if tok "int" strcmp 0 == { TYPE_UINT ret ; }
     if tok "long" strcmp 0 == {
       @tok ctx cctx_get_token_or_fail = ;
-      if tok "int" strcmp 0 == { TYPE_UINT ret ; }
+      if tok "int" strcmp 0 == { TYPE_ULONG ret ; }
       if tok "long" strcmp 0 == {
         @tok ctx cctx_get_token_or_fail = ;
-        if tok "int" strcmp 0 == { TYPE_UINT ret ; }
+        if tok "int" strcmp 0 == { TYPE_ULONG ret ; }
         ctx cctx_give_back_token ;
-        TYPE_UINT ret ;
+        TYPE_ULONG ret ;
       }
       ctx cctx_give_back_token ;
-      TYPE_UINT ret ;
+      TYPE_ULONG ret ;
     }
     ctx cctx_give_back_token ;
     TYPE_UINT ret ;
   }
   if tok "long" strcmp 0 == {
     @tok ctx cctx_get_token_or_fail = ;
-    if tok "long" strcmp 0 == { TYPE_INT ret ; }
+    if tok "long" strcmp 0 == { TYPE_LONG ret ; }
     ctx cctx_give_back_token ;
-    TYPE_INT ret ;
+    TYPE_LONG ret ;
   }
 
   if tok "struct" strcmp 0 == {
@@ -2156,6 +2160,14 @@ fun promote_integer_type 1 {
     TYPE_UINT ret ;
   }
 
+  if type TYPE_LONG == {
+    TYPE_LONG ret ;
+  }
+
+  if type TYPE_ULONG == {
+    TYPE_ULONG ret ;
+  }
+
   0 "promote_integer_type: not an integer type" assert_msg ;
 }
 
@@ -2565,33 +2577,76 @@ fun lctx_int_convert 4 {
   to_idx is_integer_type "lctx_int_convert: target is not an integer type" assert_msg ;
   from_idx is_integer_type "lctx_int_convert: source is not an integer type" assert_msg ;
 
+  if ctx from_idx cctx_type_footprint 4 == {
+    # pop eax
+    ctx 0x58 cctx_emit ;
+  } else {
+    if ctx from_idx cctx_type_footprint 8 == {
+      # pop eax; pop edx
+      ctx 0x58 cctx_emit ;
+      ctx 0x5a cctx_emit ;
+    } else {
+      0 "lctx_int_convert: error 1" assert_msg ;
+    }
+  }
+
   if from_idx TYPE_CHAR == from_idx TYPE_SCHAR == || {
-    # movsx eax, al
+    # movsx eax, al; cdq
     ctx 0x0f cctx_emit ;
     ctx 0xbe cctx_emit ;
     ctx 0xc0 cctx_emit ;
+    ctx 0x99 cctx_emit ;
   } else {
     if from_idx TYPE_UCHAR == {
-      # movzx eax, al
+      # movzx eax, al; xor edx, edx
       ctx 0x0f cctx_emit ;
       ctx 0xb6 cctx_emit ;
       ctx 0xc0 cctx_emit ;
+      ctx 0x31 cctx_emit ;
+      ctx 0xd2 cctx_emit ;
     } else {
       if from_idx TYPE_SHORT == {
-        # movsx eax, ax
+        # movsx eax, ax; cdq
         ctx 0x0f cctx_emit ;
         ctx 0xbf cctx_emit ;
         ctx 0xc0 cctx_emit ;
+        ctx 0x99 cctx_emit ;
       } else {
         if from_idx TYPE_USHORT == {
-          # movzx eax, ax
+          # movzx eax, ax; xor edx, edx
           ctx 0x0f cctx_emit ;
           ctx 0xb7 cctx_emit ;
           ctx 0xc0 cctx_emit ;
+          ctx 0x31 cctx_emit ;
+          ctx 0xd2 cctx_emit ;
         } else {
-          from_idx TYPE_INT == from_idx TYPE_UINT == || "lctx_int_convert: error 1" assert_msg ;
+          if from_idx TYPE_INT == {
+            # cdq
+            ctx 0x99 cctx_emit ;
+          } else {
+            if from_idx TYPE_UINT == {
+              # xor edx, edx
+              ctx 0x31 cctx_emit ;
+              ctx 0xd2 cctx_emit ;
+            } else {
+              from_idx TYPE_LONG == from_idx TYPE_ULONG == || "lctx_int_convert: error 2" assert_msg ;
+            }
+          }
         }
       }
+    }
+  }
+
+  if ctx to_idx cctx_type_footprint 4 == {
+    # push eax
+    ctx 0x50 cctx_emit ;
+  } else {
+    if ctx to_idx cctx_type_footprint 8 == {
+      # push edx; push eax
+      ctx 0x52 cctx_emit ;
+      ctx 0x50 cctx_emit ;
+    } else {
+      0 "lctx_int_convert: error 3" assert_msg ;
     }
   }
 }
@@ -2611,12 +2666,7 @@ fun lctx_convert_stack 4 {
   }
 
   if from_idx is_integer_type to_idx is_integer_type && {
-    ctx from_idx cctx_type_footprint 4 == "lctx_convert_stack: error 1" assert_msg ;
-    ctx to_idx cctx_type_footprint 4 == "lctx_convert_stack: error 2" assert_msg ;
-    # pop eax; lctx_int_convert; push eax
-    ctx 0x58 cctx_emit ;
     lctx ctx from_idx to_idx lctx_int_convert ;
-    ctx 0x50 cctx_emit ;
     ret ;
   }
 
@@ -2740,21 +2790,19 @@ fun ast_push_value_arith 3 {
   ast AST_RIGHT take ctx lctx ast_push_value ;
 
   # Pop right result, promote it and store in ECX
-  # pop eax; lctx_int_convert; mov ecx, eax
-  ctx 0x58 cctx_emit ;
   if type2 is_integer_type {
     lctx ctx type2 type_idx lctx_int_convert ;
   }
-  ctx 0x89 cctx_emit ;
-  ctx 0xc1 cctx_emit ;
+  # pop ecx
+  ctx 0x59 cctx_emit ;
 
   # Pop left result, promote it and store in EAX
-  # pop eax, lctx_int_convert
   if is_prefix ! {
-    ctx 0x58 cctx_emit ;
     if type1 is_integer_type {
       lctx ctx type1 type_idx lctx_int_convert ;
     }
+    # pop eax
+    ctx 0x58 cctx_emit ;
   }
 
   # Invoke the operation specific operation
