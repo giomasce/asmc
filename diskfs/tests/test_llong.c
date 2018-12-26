@@ -21,9 +21,17 @@ int test_llong() {
     return y == 10;
 }
 
-/* int test_llong_sum() { */
-/*     long long x = 10; */
-/*     long long y = 20; */
-/*     long long z = x + y; */
-/*     return z == 30; */
-/* } */
+int test_llong_sum() {
+    long long x = 10;
+    long long y = 20;
+    long long z = x + y;
+    return z == 30;
+}
+
+int test_llong_sum2() {
+    unsigned long long x = 4000000000;
+    unsigned long long y = 4000000000;
+    unsigned long long z = x + y;
+    unsigned long long w = 2 * x;
+    return z == w;
+}

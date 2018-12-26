@@ -2574,8 +2574,13 @@ fun lctx_int_convert 4 {
   @from_idx 1 param = ;
   @to_idx 0 param = ;
 
-  to_idx is_integer_type "lctx_int_convert: target is not an integer type" assert_msg ;
+  # Treat pointers as integers
+  if ctx from_idx cctx_get_type TYPE_KIND take TYPE_KIND_POINTER == {
+    @from_idx TYPE_INT = ;
+  }
+
   from_idx is_integer_type "lctx_int_convert: source is not an integer type" assert_msg ;
+  to_idx is_integer_type "lctx_int_convert: target is not an integer type" assert_msg ;
 
   if ctx from_idx cctx_type_footprint 4 == {
     # pop eax
@@ -2771,38 +2776,40 @@ fun ast_push_value_arith 3 {
   $type1
   $type2
   $type_idx
+  $large_idx
   if is_prefix ! {
     @type1 ast AST_LEFT take ctx lctx ast_eval_type = ;
   }
   @type2 ast AST_RIGHT take ctx lctx ast_eval_type = ;
   @type_idx ast ctx lctx ast_eval_type = ;
-
-  # Sanity check: both operands must fit in 4 bytes
-  if is_prefix ! {
-    ctx type1 cctx_type_footprint 4 == "ast_push_value_arith: error 1" assert_msg ;
+  if type_idx TYPE_LONG == type_idx TYPE_ULONG == || {
+    @large_idx type_idx = ;
+  } else {
+    @large_idx TYPE_LONG = ;
   }
-  ctx type2 cctx_type_footprint 4 == "ast_push_value_arith: error 2" assert_msg ;
+  ctx large_idx cctx_type_footprint 8 == "ast_push_value_arith: error 1" assert_msg ;
+
+  # push ebx
+  ctx 0x53 cctx_emit ;
 
   # Recursively evalute both operands
   if is_prefix ! {
     ast AST_LEFT take ctx lctx ast_push_value ;
+    lctx ctx type1 large_idx lctx_int_convert ;
   }
   ast AST_RIGHT take ctx lctx ast_push_value ;
+  lctx ctx type2 large_idx lctx_int_convert ;
 
-  # Pop right result, promote it and store in ECX
-  if type2 is_integer_type {
-    lctx ctx type2 type_idx lctx_int_convert ;
-  }
-  # pop ecx
+  # Pop right result and store in EBX:ECX
+  # pop ecx; pop ebx
   ctx 0x59 cctx_emit ;
+  ctx 0x5b cctx_emit ;
 
-  # Pop left result, promote it and store in EAX
+  # Pop left result and store in EDX:EAX
   if is_prefix ! {
-    if type1 is_integer_type {
-      lctx ctx type1 type_idx lctx_int_convert ;
-    }
-    # pop eax
+    # pop eax; pop edx
     ctx 0x58 cctx_emit ;
+    ctx 0x5a cctx_emit ;
   }
 
   # Invoke the operation specific operation
@@ -3076,9 +3083,16 @@ fun ast_push_value_arith 3 {
 
   processed "ast_push_value_arith: not implemented" assert_msg ;
 
-  # Push result stored in EAX
-  # push eax
+  # pop ebx
+  ctx 0x5b cctx_emit ;
+
+  # Push result stored in EDX:EAX
+  # push edx; push eax
+  ctx 0x52 cctx_emit ;
   ctx 0x50 cctx_emit ;
+
+  # Convert result to the output type
+  lctx ctx large_idx type_idx lctx_int_convert ;
 }
 
 fun cctx_gen_push_data 2 {
