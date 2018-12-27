@@ -300,7 +300,8 @@ const CCTX_UNIONS 44
 const CCTX_ENUM_CONSTS 48
 const CCTX_HANDLES 52
 const CCTX_VERBOSE 56
-const SIZEOF_CCTX 60
+const CCTX_RUNTIME 60
+const SIZEOF_CCTX 64
 
 fun cctx_init_types 1 {
   $ctx
@@ -330,6 +331,19 @@ fun cctx_setup_handles 1 {
   handles @itoa vector_push_back ;
 }
 
+fun cctx_setup_runtime 1 {
+  $ctx
+  @ctx 0 param = ;
+
+  $fd
+  @fd "/disk1/stdlib/int64.asm" vfs_open = ;
+  ctx CCTX_RUNTIME take ASMCTX_VERBOSE take_addr 0 = ;
+  ctx CCTX_RUNTIME take ASMCTX_DEBUG take_addr 0 = ;
+  ctx CCTX_RUNTIME take fd asmctx_set_fd ;
+  ctx CCTX_RUNTIME take asmctx_compile ;
+  fd vfs_close ;
+}
+
 fun cctx_init 1 {
   $tokens
   @tokens 0 param = ;
@@ -345,8 +359,10 @@ fun cctx_init 1 {
   ctx CCTX_LABEL_POS take_addr 4 vector_init = ;
   ctx CCTX_HANDLES take_addr 4 vector_init = ;
   ctx CCTX_VERBOSE take_addr 1 = ;
+  ctx CCTX_RUNTIME take_addr asmctx_init = ;
 
   ctx cctx_setup_handles ;
+  ctx cctx_setup_runtime ;
 
   ctx ret ;
 }
@@ -405,6 +421,7 @@ fun cctx_destroy 1 {
   ctx CCTX_LABEL_POS take vector_destroy ;
   ctx CCTX_LABEL_BUF take free ;
   ctx CCTX_HANDLES take vector_destroy ;
+  ctx CCTX_RUNTIME take asmctx_destroy ;
 
   ctx free ;
 }

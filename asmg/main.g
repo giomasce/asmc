@@ -124,7 +124,7 @@ fun main 0 {
   "vfs_utils.g" platform_g_compile ;
   "done!\n" 1 platform_log ;
 
-  if RUN_ASM RUN_FASM || {
+  if RUN_C TEST_C || RUN_ASM || RUN_FASM || {
     #"Memory break before ASM assembler compilation: " 1 platform_log ;
     #0 platform_allocate itoa 1 platform_log ;
     #"\n" 1 platform_log ;
