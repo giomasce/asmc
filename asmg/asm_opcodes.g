@@ -741,18 +741,22 @@ fun ret_like_handler 3 {
   ctx opcode OPCODE_NO_OPERAND take emit_multibyte ;
 }
 
+fun _destroy_opcode_map_closure 3 {
+  $ctx
+  $key
+  $value
+  @ctx 2 param = ;
+  @key 1 param = ;
+  @value 0 param = ;
+
+  value free ;
+}
+
 fun destroy_opcode_map 1 {
   $opcode_map
   @opcode_map 0 param = ;
 
-  $i
-  @i 0 = ;
-  while i opcode_map map_size < {
-    if opcode_map i map_has_idx {
-      opcode_map i map_at_idx free ;
-    }
-    @i i 1 + = ;
-  }
+  opcode_map @_destroy_opcode_map_closure 0 map_foreach ;
   opcode_map map_destroy ;
 }
 
