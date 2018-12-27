@@ -389,9 +389,7 @@ str_shl:
 shl:
   mov ecx, [esp+4]
   mov eax, [esp+8]
-  ;; shl eax, cl
-  db 0xd3
-  db 0xe0
+  shl eax, cl
   ret
 
 str_shr:
@@ -400,9 +398,7 @@ str_shr:
 shr:
   mov ecx, [esp+4]
   mov eax, [esp+8]
-  ;; shr eax, cl
-  db 0xd3
-  db 0xe8
+  shr eax, cl
   ret
 
 str_and:

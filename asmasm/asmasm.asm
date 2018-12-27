@@ -60,6 +60,10 @@
   OP_RDMSR equ 42
   OP_WRMSR equ 43
   OP_CPUID equ 44
+  OP_SHL equ 45
+  OP_SHR equ 46
+  OP_SAL equ 47
+  OP_SAR equ 48
 
   section .data
 
@@ -154,6 +158,14 @@ opcode_names:
   db 0
   db 'cpuid'
   db 0
+  db 'shl'
+  db 0
+  db 'shr'
+  db 0
+  db 'sal'
+  db 0
+  db 'sar'
+  db 0
   db 0
 
 opcode_funcs:
@@ -202,6 +214,10 @@ opcode_funcs:
   dd process_ret_like    ; OP_RDMSR
   dd process_ret_like    ; OP_WRMSR
   dd process_ret_like    ; OP_CPUID
+  dd process_push_like   ; OP_SHL
+  dd process_push_like   ; OP_SHR
+  dd process_push_like   ; OP_SAL
+  dd process_push_like   ; OP_SAR
 
 empty_opcode:
   dd 0xf0    ; OP_PUSH
@@ -249,6 +265,10 @@ empty_opcode:
   dd 0x1320f ; OP_RDMSR
   dd 0x1300f ; OP_WRMSR
   dd 0x1a20f ; OP_CPUID
+  dd 0xf0    ; OP_SHL
+  dd 0xf0    ; OP_SHR
+  dd 0xf0    ; OP_SAL
+  dd 0xf0    ; OP_SAR
 
 rm32_opcode:
   dd 0x06ff  ; OP_PUSH
@@ -296,6 +316,10 @@ rm32_opcode:
   dd 0xf0    ; OP_RDMSR
   dd 0xf0    ; OP_WRMSR
   dd 0xf0    ; OP_CPUID
+  dd 0x04d3  ; OP_SHL
+  dd 0x05d3  ; OP_SHR
+  dd 0x04d3  ; OP_SAL
+  dd 0x07d3  ; OP_SAR
 
 imm32_opcode:
   dd 0xf0    ; OP_PUSH
@@ -343,6 +367,10 @@ imm32_opcode:
   dd 0xf0    ; OP_RDMSR
   dd 0xf0    ; OP_WRMSR
   dd 0xf0    ; OP_CPUID
+  dd 0xf0    ; OP_SHL
+  dd 0xf0    ; OP_SHR
+  dd 0xf0    ; OP_SAL
+  dd 0xf0    ; OP_SAR
 
 r8rm8_opcode:
   dd 0xf0    ; OP_PUSH
@@ -390,6 +418,10 @@ r8rm8_opcode:
   dd 0xf0    ; OP_RDMSR
   dd 0xf0    ; OP_WRMSR
   dd 0xf0    ; OP_CPUID
+  dd 0xf0    ; OP_SHL
+  dd 0xf0    ; OP_SHR
+  dd 0xf0    ; OP_SAL
+  dd 0xf0    ; OP_SAR
 
 r32rm32_opcode:
   dd 0xf0    ; OP_PUSH
@@ -437,6 +469,10 @@ r32rm32_opcode:
   dd 0xf0    ; OP_RDMSR
   dd 0xf0    ; OP_WRMSR
   dd 0xf0    ; OP_CPUID
+  dd 0xf0    ; OP_SHL
+  dd 0xf0    ; OP_SHR
+  dd 0xf0    ; OP_SAL
+  dd 0xf0    ; OP_SAR
 
 rm8r8_opcode:
   dd 0xf0    ; OP_PUSH
@@ -484,6 +520,10 @@ rm8r8_opcode:
   dd 0xf0    ; OP_RDMSR
   dd 0xf0    ; OP_WRMSR
   dd 0xf0    ; OP_CPUID
+  dd 0xf0    ; OP_SHL
+  dd 0xf0    ; OP_SHR
+  dd 0xf0    ; OP_SAL
+  dd 0xf0    ; OP_SAR
 
 rm32r32_opcode:
   dd 0xf0    ; OP_PUSH
@@ -531,6 +571,10 @@ rm32r32_opcode:
   dd 0xf0    ; OP_RDMSR
   dd 0xf0    ; OP_WRMSR
   dd 0xf0    ; OP_CPUID
+  dd 0xf0    ; OP_SHL
+  dd 0xf0    ; OP_SHR
+  dd 0xf0    ; OP_SAL
+  dd 0xf0    ; OP_SAR
 
 rm8imm8_opcode:
   dd 0xf0    ; OP_PUSH
@@ -578,6 +622,10 @@ rm8imm8_opcode:
   dd 0xf0    ; OP_RDMSR
   dd 0xf0    ; OP_WRMSR
   dd 0xf0    ; OP_CPUID
+  dd 0xf0    ; OP_SHL
+  dd 0xf0    ; OP_SHR
+  dd 0xf0    ; OP_SAL
+  dd 0xf0    ; OP_SAR
 
 rm32imm32_opcode:
   dd 0xf0    ; OP_PUSH
@@ -625,6 +673,10 @@ rm32imm32_opcode:
   dd 0xf0    ; OP_RDMSR
   dd 0xf0    ; OP_WRMSR
   dd 0xf0    ; OP_CPUID
+  dd 0xf0    ; OP_SHL
+  dd 0xf0    ; OP_SHR
+  dd 0xf0    ; OP_SAL
+  dd 0xf0    ; OP_SAR
 
 
 reg_eax:
@@ -1856,6 +1908,49 @@ process_push_like:
   ;; [ebp-20], which is [ebp+0xffffffec]: is32
   sub esp, 20
 
+  ;; Check if the operation is a bit shift
+  cmp DWORD [ebp+8], OP_SHL
+  je process_push_like_shift
+  cmp DWORD [ebp+8], OP_SHR
+  je process_push_like_shift
+  cmp DWORD [ebp+8], OP_SAL
+  je process_push_like_shift
+  cmp DWORD [ebp+8], OP_SAR
+  je process_push_like_shift
+  jmp process_push_like_decode
+
+process_push_like_shift:
+  ;; Find the comma
+  push COMMA
+  mov edx, [ebp+12]
+  push edx
+  call find_char
+  add esp, 8
+  cmp eax, 0xffffffff
+  je platform_panic
+
+  ;; Substitute the comma with a terminator
+  mov ecx, [ebp+12]
+  add ecx, eax
+  mov BYTE [ecx], 0
+
+  ;; Trim second operand
+  add ecx, 1
+  push ecx
+  push ecx
+  call trimstr
+  add esp, 4
+  pop ecx
+
+  ;; Check that second operand is cl
+  push ecx
+  push reg_cl
+  call strcmp
+  add esp, 8
+  cmp eax, 0
+  jne platform_panic
+
+process_push_like_decode:
   ;; Call decode_operand
   mov eax, ebp
   sub eax, 20
