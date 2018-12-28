@@ -15,11 +15,20 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-and64:
+int64_and:
   mov eax, [esp+8]
   mov ecx, [esp+4]
   mov edx, [ecx]
   and [eax], edx
   mov edx, [ecx+4]
   and [eax+4], edx
+  ret
+
+int64_or:
+  mov eax, [esp+8]
+  mov ecx, [esp+4]
+  mov edx, [ecx]
+  or [eax], edx
+  mov edx, [ecx+4]
+  or [eax+4], edx
   ret

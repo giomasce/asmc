@@ -21,6 +21,7 @@ const RUN_C 0
 const RUN_MESCC 0
 const RUN_MCPP 0
 const RUN_TINYCC 0
+const TEST_INT64 1
 const TEST_C 1
 
 const USE_TRIVIAL_MALLOC 0
@@ -37,6 +38,28 @@ fun main 0 {
   "Memory break after entering main: " 1 platform_log ;
   0 platform_allocate itoa 1 platform_log ;
   "\n" 1 platform_log ;
+
+  $compile_asm
+  $compile_int64
+  $compile_c
+  @compile_asm 0 = ;
+  @compile_int64 0 = ;
+  @compile_c 0 = ;
+  if RUN_ASM RUN_FASM || {
+    @compile_asm 1 = ;
+  }
+  if RUN_C RUN_MCPP || RUN_TINYCC || TEST_C || {
+    @compile_c 1 = ;
+  }
+  if TEST_INT64 {
+    @compile_int64 1 = ;
+  }
+  if compile_c {
+    @compile_int64 1 = ;
+  }
+  if compile_int64 {
+    @compile_asm 1 = ;
+  }
 
   "Compiling utils.g... " 1 platform_log ;
   "utils.g" platform_g_compile ;
@@ -124,7 +147,7 @@ fun main 0 {
   "vfs_utils.g" platform_g_compile ;
   "done!\n" 1 platform_log ;
 
-  if RUN_C TEST_C || RUN_ASM || RUN_FASM || {
+  if compile_asm {
     #"Memory break before ASM assembler compilation: " 1 platform_log ;
     #0 platform_allocate itoa 1 platform_log ;
     #"\n" 1 platform_log ;
@@ -150,7 +173,13 @@ fun main 0 {
     #"\n" 1 platform_log ;
   }
 
-  if RUN_C RUN_MCPP || RUN_TINYCC || TEST_C || {
+  if compile_int64 {
+    "Compiling int64.g... " 1 platform_log ;
+    "int64.g" platform_g_compile ;
+    "done!\n" 1 platform_log ;
+  }
+
+  if compile_c {
     "Compiling c_ast.g... " 1 platform_log ;
     "c_ast.g" platform_g_compile ;
     "done!\n" 1 platform_log ;
@@ -190,6 +219,10 @@ fun main 0 {
   0 "vfs_init" platform_get_symbol \0 ;
   "Virtual File System initialized!\n" 1 platform_log ;
 
+  "Initializing support for int64...\n" 1 platform_log ;
+  0 "int64_init" platform_get_symbol \0 ;
+  "Support for int64 initialized!\n" 1 platform_log ;
+
   # Determine if there is an actual script
   $script_file
   @script_file "/init/script.g" 0 "vfs_open" platform_get_symbol \1 = ;
@@ -222,6 +255,10 @@ fun main 0 {
       "/disk1/tests/test.c" 0 "parse_c" platform_get_symbol \1 ;
     }
 
+    if TEST_INT64 {
+      0 "int64_test" platform_get_symbol \0 ;
+    }
+
     if TEST_C {
       0 "c_run_testcases" platform_get_symbol \0 ;
     }
@@ -249,6 +286,10 @@ fun main 0 {
       0 "compile_tinycc" platform_get_symbol \0 ;
     }
   }
+
+  "Destroying support for int64... " 1 platform_log ;
+  0 "int64_destroy" platform_get_symbol \0 ;
+  "done!\n" 1 platform_log ;
 
   "Destroying Virtual File System... " 1 platform_log ;
   0 "vfs_destroy" platform_get_symbol \0 ;

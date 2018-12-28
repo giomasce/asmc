@@ -362,7 +362,7 @@ fun cctx_init 1 {
   ctx CCTX_RUNTIME take_addr asmctx_init = ;
 
   ctx cctx_setup_handles ;
-  ctx cctx_setup_runtime ;
+  #ctx cctx_setup_runtime ;
 
   ctx ret ;
 }
