@@ -15,8 +15,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-$_int64_and
-$_int64_or
+$_i64_not
+$_i64_and
+$_i64_or
+$_i64_xor
+$_i64_lnot
+$_i64_land
+$_i64_lor
 
 fun int64_init 0 {
   $int64_runtime
@@ -29,8 +34,13 @@ fun int64_init 0 {
   int64_runtime asmctx_compile ;
   fd vfs_close ;
 
-  @_int64_and int64_runtime "int64_and" asmctx_get_symbol_addr = ;
-  @_int64_or int64_runtime "int64_or" asmctx_get_symbol_addr = ;
+  @_i64_not int64_runtime "i64_not" asmctx_get_symbol_addr = ;
+  @_i64_and int64_runtime "i64_and" asmctx_get_symbol_addr = ;
+  @_i64_or int64_runtime "i64_or" asmctx_get_symbol_addr = ;
+  @_i64_xor int64_runtime "i64_xor" asmctx_get_symbol_addr = ;
+  @_i64_lnot int64_runtime "i64_lnot" asmctx_get_symbol_addr = ;
+  @_i64_land int64_runtime "i64_land" asmctx_get_symbol_addr = ;
+  @_i64_lor int64_runtime "i64_lor" asmctx_get_symbol_addr = ;
 
   int64_runtime asmctx_destroy ;
 }
@@ -57,12 +67,32 @@ fun i64_eq 2 {
   x ** y ** == x 4 + ** y 4 + ** == && ret ;
 }
 
+fun i64_not 1 {
+  0 param _i64_not \1 ;
+}
+
 fun i64_and 2 {
-  1 param 0 param _int64_and \2 ;
+  1 param 0 param _i64_and \2 ;
 }
 
 fun i64_or 2 {
-  1 param 0 param _int64_or \2 ;
+  1 param 0 param _i64_or \2 ;
+}
+
+fun i64_xor 2 {
+  1 param 0 param _i64_xor \2 ;
+}
+
+fun i64_lnot 1 {
+  0 param _i64_lnot \1 ;
+}
+
+fun i64_land 2 {
+  1 param 0 param _i64_land \2 ;
+}
+
+fun i64_lor 2 {
+  1 param 0 param _i64_lor \2 ;
 }
 
 fun int64_test 0 {
@@ -81,14 +111,90 @@ fun int64_test 0 {
   @z @x i64_eq "int64_test: error 1" assert_msg ;
 
   @z @x i64_copy ;
+  @z i64_not ;
+  z x ~ == "int64_test: error 2" assert_msg ;
+  z_ x_ ~ == "int64_test: error 3" assert_msg ;
+
+  @z @x i64_copy ;
   @z @y i64_and ;
-  z x y & == "int64_test: error 2" assert_msg ;
-  z_ x_ y_ & == "int64_test: error 3" assert_msg ;
+  z x y & == "int64_test: error 4" assert_msg ;
+  z_ x_ y_ & == "int64_test: error 5" assert_msg ;
 
   @z @x i64_copy ;
   @z @y i64_or ;
-  z x y | == "int64_test: error 4" assert_msg ;
-  z_ x_ y_ | == "int64_test: error 5" assert_msg ;
+  z x y | == "int64_test: error 6" assert_msg ;
+  z_ x_ y_ | == "int64_test: error 7" assert_msg ;
+
+  @z @x i64_copy ;
+  @z @y i64_xor ;
+  z x y ^ == "int64_test: error 6" assert_msg ;
+  z_ x_ y_ ^ == "int64_test: error 7" assert_msg ;
+
+  @x 0 = ;
+  @x_ 0 = ;
+  @x i64_lnot ;
+  x 1 == "int64_test: error 8" assert_msg ;
+  x_ 0 == "int64_test: error 9" assert_msg ;
+
+  @x 0x5555 = ;
+  @x_ 0 = ;
+  @x i64_lnot ;
+  x 0 == "int64_test: error 10" assert_msg ;
+  x_ 0 == "int64_test: error 11" assert_msg ;
+
+  @x 0 = ;
+  @x_ 1 = ;
+  @x i64_lnot ;
+  x 0 == "int64_test: error 12" assert_msg ;
+  x_ 0 == "int64_test: error 13" assert_msg ;
+
+  @x 0 = ;
+  @x_ 0 = ;
+  @y 0 = ;
+  @y_ 0 = ;
+  @x @y i64_land ;
+  x 0 == "int64_test: error 14" assert_msg ;
+  x_ 0 == "int64_test: error 15" assert_msg ;
+
+  @x 0 = ;
+  @x_ 123 = ;
+  @y 0 = ;
+  @y_ 0 = ;
+  @x @y i64_land ;
+  x 0 == "int64_test: error 16" assert_msg ;
+  x_ 0 == "int64_test: error 17" assert_msg ;
+
+  @x 0 = ;
+  @x_ 123 = ;
+  @y 456 = ;
+  @y_ 0 = ;
+  @x @y i64_land ;
+  x 1 == "int64_test: error 18" assert_msg ;
+  x_ 0 == "int64_test: error 19" assert_msg ;
+
+  @x 0 = ;
+  @x_ 0 = ;
+  @y 0 = ;
+  @y_ 0 = ;
+  @x @y i64_lor ;
+  x 0 == "int64_test: error 20" assert_msg ;
+  x_ 0 == "int64_test: error 21" assert_msg ;
+
+  @x 0 = ;
+  @x_ 123 = ;
+  @y 0 = ;
+  @y_ 0 = ;
+  @x @y i64_lor ;
+  x 1 == "int64_test: error 22" assert_msg ;
+  x_ 0 == "int64_test: error 23" assert_msg ;
+
+  @x 0 = ;
+  @x_ 123 = ;
+  @y 456 = ;
+  @y_ 0 = ;
+  @x @y i64_lor ;
+  x 1 == "int64_test: error 24" assert_msg ;
+  x_ 0 == "int64_test: error 25" assert_msg ;
 
   "Tests for int64 successfully passed!\n" 1 platform_log ;
 }
