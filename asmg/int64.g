@@ -22,6 +22,9 @@ $_i64_xor
 $_i64_lnot
 $_i64_land
 $_i64_lor
+$_i64_add
+$_i64_sub
+$_i64_mul
 
 fun int64_init 0 {
   $int64_runtime
@@ -41,6 +44,9 @@ fun int64_init 0 {
   @_i64_lnot int64_runtime "i64_lnot" asmctx_get_symbol_addr = ;
   @_i64_land int64_runtime "i64_land" asmctx_get_symbol_addr = ;
   @_i64_lor int64_runtime "i64_lor" asmctx_get_symbol_addr = ;
+  @_i64_add int64_runtime "i64_add" asmctx_get_symbol_addr = ;
+  @_i64_sub int64_runtime "i64_sub" asmctx_get_symbol_addr = ;
+  @_i64_mul int64_runtime "i64_mul" asmctx_get_symbol_addr = ;
 
   int64_runtime asmctx_destroy ;
 }
@@ -93,6 +99,18 @@ fun i64_land 2 {
 
 fun i64_lor 2 {
   1 param 0 param _i64_lor \2 ;
+}
+
+fun i64_add 2 {
+  1 param 0 param _i64_add \2 ;
+}
+
+fun i64_sub 2 {
+  1 param 0 param _i64_sub \2 ;
+}
+
+fun i64_mul 2 {
+  1 param 0 param _i64_mul \2 ;
 }
 
 fun int64_test 0 {
@@ -195,6 +213,46 @@ fun int64_test 0 {
   @x @y i64_lor ;
   x 1 == "int64_test: error 24" assert_msg ;
   x_ 0 == "int64_test: error 25" assert_msg ;
+
+  @x 0 = ;
+  @x_ 123 = ;
+  @y 456 = ;
+  @y_ 0 = ;
+  @x @y i64_add ;
+  x 456 == "int64_test: error 26" assert_msg ;
+  x_ 123 == "int64_test: error 27" assert_msg ;
+
+  @x 0x80001234 = ;
+  @x_ 0 = ;
+  @y 0x84560000 = ;
+  @y_ 0 = ;
+  @x @y i64_add ;
+  x 0x4561234 == "int64_test: error 28" assert_msg ;
+  x_ 1 == "int64_test: error 29" assert_msg ;
+
+  @x 0 = ;
+  @x_ 1 = ;
+  @y 0x123 = ;
+  @y_ 0 = ;
+  @x @y i64_sub ;
+  x 0 0x123 - == "int64_test: error 30" assert_msg ;
+  x_ 0 == "int64_test: error 31" assert_msg ;
+
+  @x 0x12312745 = ;
+  @x_ 0x2137 = ;
+  @y 0x3445 = ;
+  @y_ 0 = ;
+  @x @y i64_mul ;
+  x 0xe3399999 == "int64_test: error 32" assert_msg ;
+  x_ 0x6c82389 == "int64_test: error 33" assert_msg ;
+
+  @y 0x12312745 = ;
+  @y_ 0x2137 = ;
+  @x 0x3445 = ;
+  @x_ 0 = ;
+  @x @y i64_mul ;
+  x 0xe3399999 == "int64_test: error 34" assert_msg ;
+  x_ 0x6c82389 == "int64_test: error 35" assert_msg ;
 
   "Tests for int64 successfully passed!\n" 1 platform_log ;
 }

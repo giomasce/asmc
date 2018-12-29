@@ -15,6 +15,7 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+  ;; Bitwise operations are pretty straightforward
 i64_not:
   mov eax, [esp+4]
   not DWORD [eax]
@@ -48,14 +49,18 @@ i64_xor:
   xor [eax+4], edx
   ret
 
+  ;; For logical operations, the complicated part is normalizing input
+  ;; values: this is done by or-ing the two dwords together, then
+  ;; applying test, sete and movzx on the result; after that,
+  ;; logical operations can be done bitwise
 i64_lnot:
   mov eax, [esp+4]
   mov ecx, [eax]
   or ecx, [eax+4]
-  xor edx, edx
   mov [eax+4], edx
   test ecx, ecx
   sete dl
+  movzx edx, dl
   mov [eax], edx
   ret
 
@@ -95,4 +100,44 @@ i64_lor:
   xor edx, edx
   mov [eax], ecx
   mov [eax+4], edx
+  ret
+
+  ;; First we add the lower dwords, then add with carry the upper dwords
+i64_add:
+  mov eax, [esp+4]
+  mov ecx, [eax]
+  mov edx, [eax+4]
+  mov eax, [esp+8]
+  add [eax], ecx
+  adc [eax+4], edx
+  ret
+
+  ;; First we subtract the lower dwords, then subtract with borrow the upper dwords
+i64_sub:
+  mov eax, [esp+4]
+  mov ecx, [eax]
+  mov edx, [eax+4]
+  mov eax, [esp+8]
+  sub [eax], ecx
+  sbb [eax+4], edx
+  ret
+
+i64_mul:
+  push ebx
+  push esi
+  mov ecx, [esp+12]
+  mov ebx, [esp+16]
+  mov eax, [ecx]
+  mul DWORD [ebx]
+  mov esi, eax
+  mov eax, [ecx]
+  mov ecx, [ecx+4]
+  imul eax, [ebx+4]
+  imul ecx, [ebx]
+  add edx, eax
+  add edx, ecx
+  mov [ebx], esi
+  mov [ebx+4], edx
+  pop esi
+  pop ebx
   ret
