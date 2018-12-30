@@ -123,10 +123,15 @@ fun map_erase 2 {
   }
 }
 
-fun map_size 1 {
-  $map
-  @map 0 param = ;
-  map vector_size ret ;
+fun _map_size_closure 3 {
+  $ctx
+  $key
+  $value
+  @ctx 2 param = ;
+  @key 1 param = ;
+  @value 0 param = ;
+
+  ctx ctx ** 1 + = ;
 }
 
 fun map_foreach 3 {
@@ -147,4 +152,13 @@ fun map_foreach 3 {
     }
     @i i 1 + = ;
   }
+}
+
+fun map_size 1 {
+  $map
+  @map 0 param = ;
+  $size
+  @size 0 = ;
+  map @_map_size_closure @size map_foreach ;
+  size ret ;
 }
