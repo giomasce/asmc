@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-fun test_print_closure 3 {
+fun map_test_print_closure 3 {
   $ctx
   $key
   $value
@@ -23,18 +23,41 @@ fun test_print_closure 3 {
   @key 1 param = ;
   @value 0 param = ;
 
-  key 1 platform_log ;
-  ": " 1 platform_log ;
-  value itoa 1 platform_log ;
-  "\n" 1 platform_log ;
+  ctx key map_has ! "map_test_print_closure: value already seen" assert_msg ;
+  ctx key value map_set ;
+}
+
+fun map_test_print_closure2 3 {
+  $ctx
+  $key
+  $value
+  @ctx 2 param = ;
+  @key 1 param = ;
+  @value 0 param = ;
+
+  ctx key map_has "map_test_print_closure2: value not seen" assert_msg ;
 }
 
 fun map_test 0 {
   $map
   @map map_init = ;
-  map "one" 1 map_set ;
-  map "two" 2 map_set ;
-  map "three" 3 map_set ;
-  map @test_print_closure 0 map_foreach ;
+
+  $i
+  @i 0 = ;
+  while i 1000 < {
+    map i itoa i map_set ;
+    @i i 1 + = ;
+  }
+
+  $check_map
+  @check_map map_init = ;
+  map @map_test_print_closure check_map map_foreach ;
+  map @map_test_print_closure2 check_map map_foreach ;
+
+  map map_size check_map map_size == "map_test: sizes do not match" assert_msg ;
+
+  check_map map_destroy ;
   map map_destroy ;
+
+  "Map tests successfully passed!\n" 1 platform_log ;
 }
