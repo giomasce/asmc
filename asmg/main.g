@@ -21,6 +21,7 @@ const RUN_C 0
 const RUN_MESCC 0
 const RUN_MCPP 0
 const RUN_TINYCC 0
+const TEST_MAP 1
 const TEST_INT64 1
 const TEST_C 1
 
@@ -109,11 +110,11 @@ fun main 0 {
     "done!\n" 1 platform_log ;
   }
 
-  # "Compiling map_test.g... " 1 platform_log ;
-  # "map_test.g" platform_g_compile ;
-  # "done!\n" 1 platform_log ;
-
-  # 0 "map_test" platform_get_symbol \0 ;
+  if TEST_MAP {
+    "Compiling map_test.g... " 1 platform_log ;
+    "map_test.g" platform_g_compile ;
+    "done!\n" 1 platform_log ;
+  }
 
   "Compiling utils2.g... " 1 platform_log ;
   "utils2.g" platform_g_compile ;
@@ -253,6 +254,10 @@ fun main 0 {
 
     if RUN_C {
       "/disk1/tests/test.c" 0 "parse_c" platform_get_symbol \1 ;
+    }
+
+    if TEST_MAP {
+      0 "map_test" platform_get_symbol \0 ;
     }
 
     if TEST_INT64 {
