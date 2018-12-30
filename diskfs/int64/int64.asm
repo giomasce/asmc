@@ -141,3 +141,60 @@ i64_mul:
   pop esi
   pop ebx
   ret
+
+i64_shl:
+  push ebx
+  mov eax, [esp+12]
+  mov ecx, [esp+8]
+  mov ecx, [ecx]
+  mov ebx, [eax]
+  mov edx, [eax+4]
+  shld edx, ebx, cl
+  shl ebx, cl
+  cmp cl, 32
+  jb i64_shl_little
+  mov edx, ebx
+  xor ebx, ebx
+i64_shl_little:
+  mov [eax], ebx
+  mov [eax+4], edx
+  pop ebx
+  ret
+
+i64_shr:
+  push ebx
+  mov eax, [esp+12]
+  mov ecx, [esp+8]
+  mov ecx, [ecx]
+  mov ebx, [eax]
+  mov edx, [eax+4]
+  shrd ebx, edx, cl
+  shr edx, cl
+  cmp cl, 32
+  jb i64_shr_little
+  mov ebx, edx
+  xor edx, edx
+i64_shr_little:
+  mov [eax], ebx
+  mov [eax+4], edx
+  pop ebx
+  ret
+
+i64_sar:
+  push ebx
+  mov eax, [esp+12]
+  mov ecx, [esp+8]
+  mov ecx, [ecx]
+  mov ebx, [eax]
+  mov edx, [eax+4]
+  shrd ebx, edx, cl
+  sar edx, cl
+  cmp cl, 32
+  jb i64_shr_little
+  mov ebx, edx
+  sar edx, 31
+i64_sar_little:
+  mov [eax], ebx
+  mov [eax+4], edx
+  pop ebx
+  ret
