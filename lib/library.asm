@@ -49,10 +49,8 @@
   ITOA_BUF_LEN equ 32
 
   INPUT_BUF_LEN equ 1024
-  MAX_SYMBOL_NAME_LEN equ 128
+  MAX_SYMBOL_NAME_LEN equ 64
   SYMBOL_TABLE_LEN equ 4096
-  ;; SYMBOL_TABLE_SIZE = SYMBOL_TABLE_LEN * MAX_SYMBOL_NAME_LEN
-  SYMBOL_TABLE_SIZE equ 524288
 
   section .bss
 
@@ -464,7 +462,10 @@ memcpy_end:
   global init_symbols
 init_symbols:
   ;; Allocate symbol names table
-  push SYMBOL_TABLE_SIZE
+  mov eax, SYMBOL_TABLE_LEN
+  mov edx, MAX_SYMBOL_NAME_LEN
+  mul edx
+  push eax
   call platform_allocate
   add esp, 4
   mov ecx, symbol_names_ptr
@@ -473,7 +474,7 @@ init_symbols:
   ;; Allocate symbol locations table
   mov eax, SYMBOL_TABLE_LEN
   mov edx, 4
-  mul eax
+  mul edx
   push eax
   call platform_allocate
   add esp, 4
@@ -483,7 +484,7 @@ init_symbols:
   ;; Allocate symbol arities table
   mov eax, SYMBOL_TABLE_LEN
   mov edx, 4
-  mul eax
+  mul edx
   push eax
   call platform_allocate
   add esp, 4
