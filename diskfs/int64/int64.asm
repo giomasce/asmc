@@ -219,3 +219,139 @@ i64_sar_little:
   mov [eax+4], edx
   pop ebx
   ret
+
+  ;; Helpers for comparison functions
+i64_ret_true:
+  xor edx, edx
+  mov [eax+4], edx
+  inc edx
+  mov [eax], edx
+  ret
+
+i64_ret_false:
+  xor edx, edx
+  mov [eax+4], edx
+  mov [eax], edx
+  ret
+
+  ;; Comparison are many, but straightforward: first compare upper
+  ;; dwords and, if needed, then compare lower dwords; leave address
+  ;; of return value in EAX, so that i64_ret_true and i64_ret_false
+  ;; do the right thing
+i64_eq:
+  mov eax, [esp+8]
+  mov edx, [esp+4]
+  mov ecx, [eax+4]
+  cmp ecx, [edx+4]
+  jne i64_ret_false
+  mov ecx, [eax]
+  cmp ecx, [edx]
+  jne i64_ret_false
+  jmp i64_ret_true
+
+i64_neq:
+  mov eax, [esp+8]
+  mov edx, [esp+4]
+  mov ecx, [eax+4]
+  cmp ecx, [edx+4]
+  jne i64_ret_true
+  mov ecx, [eax]
+  cmp ecx, [edx]
+  jne i64_ret_true
+  jmp i64_ret_false
+
+i64_le:
+  mov eax, [esp+8]
+  mov edx, [esp+4]
+  mov ecx, [eax+4]
+  cmp ecx, [edx+4]
+  jg i64_ret_false
+  jl i64_ret_true
+  mov ecx, [eax]
+  cmp ecx, [edx]
+  ja i64_ret_false
+  jmp i64_ret_true
+
+i64_ule:
+  mov eax, [esp+8]
+  mov edx, [esp+4]
+  mov ecx, [eax+4]
+  cmp ecx, [edx+4]
+  ja i64_ret_false
+  jb i64_ret_true
+  mov ecx, [eax]
+  cmp ecx, [edx]
+  ja i64_ret_false
+  jmp i64_ret_true
+
+i64_l:
+  mov eax, [esp+8]
+  mov edx, [esp+4]
+  mov ecx, [eax+4]
+  cmp ecx, [edx+4]
+  jg i64_ret_false
+  jl i64_ret_true
+  mov ecx, [eax]
+  cmp ecx, [edx]
+  jae i64_ret_false
+  jmp i64_ret_true
+
+i64_ul:
+  mov eax, [esp+8]
+  mov edx, [esp+4]
+  mov ecx, [eax+4]
+  cmp ecx, [edx+4]
+  ja i64_ret_false
+  jb i64_ret_true
+  mov ecx, [eax]
+  cmp ecx, [edx]
+  jae i64_ret_false
+  jmp i64_ret_true
+
+i64_ge:
+  mov eax, [esp+8]
+  mov edx, [esp+4]
+  mov ecx, [eax+4]
+  cmp ecx, [edx+4]
+  jg i64_ret_true
+  jl i64_ret_false
+  mov ecx, [eax]
+  cmp ecx, [edx]
+  jae i64_ret_true
+  jmp i64_ret_false
+
+i64_uge:
+  mov eax, [esp+8]
+  mov edx, [esp+4]
+  mov ecx, [eax+4]
+  cmp ecx, [edx+4]
+  ja i64_ret_true
+  jb i64_ret_false
+  mov ecx, [eax]
+  cmp ecx, [edx]
+  jae i64_ret_true
+  jmp i64_ret_false
+
+i64_g:
+  mov eax, [esp+8]
+  mov edx, [esp+4]
+  mov ecx, [eax+4]
+  cmp ecx, [edx+4]
+  jg i64_ret_true
+  jl i64_ret_false
+  mov ecx, [eax]
+  cmp ecx, [edx]
+  ja i64_ret_true
+  jmp i64_ret_false
+
+i64_ug:
+  mov eax, [esp+8]
+  mov edx, [esp+4]
+  mov ecx, [eax+4]
+  cmp ecx, [edx+4]
+  ja i64_ret_true
+  jb i64_ret_false
+  mov ecx, [eax]
+  cmp ecx, [edx]
+  ja i64_ret_true
+  jmp i64_ret_false

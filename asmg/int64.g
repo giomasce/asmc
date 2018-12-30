@@ -28,6 +28,16 @@ $_i64_mul
 $_i64_shl
 $_i64_shr
 $_i64_sar
+$_i64_eq
+$_i64_neq
+$_i64_le
+$_i64_ule
+$_i64_l
+$_i64_ul
+$_i64_ge
+$_i64_uge
+$_i64_g
+$_i64_ug
 
 fun int64_init 0 {
   $int64_runtime
@@ -53,6 +63,16 @@ fun int64_init 0 {
   @_i64_shl int64_runtime "i64_shl" asmctx_get_symbol_addr = ;
   @_i64_shr int64_runtime "i64_shr" asmctx_get_symbol_addr = ;
   @_i64_sar int64_runtime "i64_sar" asmctx_get_symbol_addr = ;
+  @_i64_eq int64_runtime "i64_eq" asmctx_get_symbol_addr = ;
+  @_i64_neq int64_runtime "i64_neq" asmctx_get_symbol_addr = ;
+  @_i64_le int64_runtime "i64_le" asmctx_get_symbol_addr = ;
+  @_i64_ule int64_runtime "i64_ule" asmctx_get_symbol_addr = ;
+  @_i64_l int64_runtime "i64_l" asmctx_get_symbol_addr = ;
+  @_i64_ul int64_runtime "i64_ul" asmctx_get_symbol_addr = ;
+  @_i64_ge int64_runtime "i64_ge" asmctx_get_symbol_addr = ;
+  @_i64_uge int64_runtime "i64_uge" asmctx_get_symbol_addr = ;
+  @_i64_g int64_runtime "i64_g" asmctx_get_symbol_addr = ;
+  @_i64_ug int64_runtime "i64_ug" asmctx_get_symbol_addr = ;
 
   int64_runtime asmctx_destroy ;
 }
@@ -68,15 +88,6 @@ fun i64_copy 2 {
   @from 0 param = ;
 
   8 from to memcpy ;
-}
-
-fun i64_eq 2 {
-  $x
-  $y
-  @x 1 param = ;
-  @y 0 param = ;
-
-  x ** y ** == x 4 + ** y 4 + ** == && ret ;
 }
 
 fun i64_not 1 {
@@ -129,6 +140,227 @@ fun i64_shr 2 {
 
 fun i64_sar 2 {
   1 param 0 param _i64_sar \2 ;
+}
+
+fun i64_eq 2 {
+  1 param 0 param _i64_eq \2 ;
+}
+
+fun i64_neq 2 {
+  1 param 0 param _i64_neq \2 ;
+}
+
+fun i64_le 2 {
+  1 param 0 param _i64_le \2 ;
+}
+
+fun i64_ule 2 {
+  1 param 0 param _i64_ule \2 ;
+}
+
+fun i64_l 2 {
+  1 param 0 param _i64_l \2 ;
+}
+
+fun i64_ul 2 {
+  1 param 0 param _i64_ul \2 ;
+}
+
+fun i64_ge 2 {
+  1 param 0 param _i64_ge \2 ;
+}
+
+fun i64_uge 2 {
+  1 param 0 param _i64_uge \2 ;
+}
+
+fun i64_g 2 {
+  1 param 0 param _i64_g \2 ;
+}
+
+fun i64_ug 2 {
+  1 param 0 param _i64_ug \2 ;
+}
+
+fun int64_test_comparison 0 {
+  $numbers
+
+  $i
+  $j
+
+  # First fill it with unsigned numbers, in order
+  @numbers 8 vector_init = ;
+  numbers 0 vector_push_back ;
+  numbers numbers vector_size 1 - vector_at_addr 0 = ;
+  numbers numbers vector_size 1 - vector_at_addr 4 + 0 = ;
+  numbers 0 vector_push_back ;
+  numbers numbers vector_size 1 - vector_at_addr 1 = ;
+  numbers numbers vector_size 1 - vector_at_addr 4 + 0 = ;
+  numbers 0 vector_push_back ;
+  numbers numbers vector_size 1 - vector_at_addr 100 = ;
+  numbers numbers vector_size 1 - vector_at_addr 4 + 0 = ;
+  numbers 0 vector_push_back ;
+  numbers numbers vector_size 1 - vector_at_addr 0 = ;
+  numbers numbers vector_size 1 - vector_at_addr 4 + 1 = ;
+  numbers 0 vector_push_back ;
+  numbers numbers vector_size 1 - vector_at_addr 1 = ;
+  numbers numbers vector_size 1 - vector_at_addr 4 + 1 = ;
+  numbers 0 vector_push_back ;
+  numbers numbers vector_size 1 - vector_at_addr 100 = ;
+  numbers numbers vector_size 1 - vector_at_addr 4 + 1 = ;
+  numbers 0 vector_push_back ;
+  numbers numbers vector_size 1 - vector_at_addr 0 = ;
+  numbers numbers vector_size 1 - vector_at_addr 4 + 100 = ;
+  numbers 0 vector_push_back ;
+  numbers numbers vector_size 1 - vector_at_addr 1 = ;
+  numbers numbers vector_size 1 - vector_at_addr 4 + 100 = ;
+  numbers 0 vector_push_back ;
+  numbers numbers vector_size 1 - vector_at_addr 100 = ;
+  numbers numbers vector_size 1 - vector_at_addr 4 + 100 = ;
+  numbers 0 vector_push_back ;
+  numbers numbers vector_size 1 - vector_at_addr 0 = ;
+  numbers numbers vector_size 1 - vector_at_addr 4 + 0xf0000000 = ;
+  numbers 0 vector_push_back ;
+  numbers numbers vector_size 1 - vector_at_addr 1 = ;
+  numbers numbers vector_size 1 - vector_at_addr 4 + 0xf0000000 = ;
+  numbers 0 vector_push_back ;
+  numbers numbers vector_size 1 - vector_at_addr 100 = ;
+  numbers numbers vector_size 1 - vector_at_addr 4 + 0xf0000000 = ;
+
+  # Then do all possible pairwise comparisons
+  @i 0 = ;
+  while i numbers vector_size < {
+    @j 0 = ;
+    $y_
+    $y
+    @y numbers i vector_at_addr i64_copy ;
+    while j numbers vector_size < {
+      $x_
+      $x
+
+      @x numbers j vector_at_addr i64_copy ;
+      @x @y i64_eq ;
+      x_ 0 == "int64_test_comparison: error 1" assert_msg ;
+      x j i == == "int64_test_comparison: error 2" assert_msg ;
+
+      @x numbers j vector_at_addr i64_copy ;
+      @x @y i64_neq ;
+      x_ 0 == "int64_test_comparison: error 3" assert_msg ;
+      x j i != == "int64_test_comparison: error 4" assert_msg ;
+
+      @x numbers j vector_at_addr i64_copy ;
+      @x @y i64_ul ;
+      x_ 0 == "int64_test_comparison: error 5" assert_msg ;
+      x j i < == "int64_test_comparison: error 6" assert_msg ;
+
+      @x numbers j vector_at_addr i64_copy ;
+      @x @y i64_ule ;
+      x_ 0 == "int64_test_comparison: error 7" assert_msg ;
+      x j i <= == "int64_test_comparison: error 8" assert_msg ;
+
+      @x numbers j vector_at_addr i64_copy ;
+      @x @y i64_ug ;
+      x_ 0 == "int64_test_comparison: error 9" assert_msg ;
+      x j i > == "int64_test_comparison: error 10" assert_msg ;
+
+      @x numbers j vector_at_addr i64_copy ;
+      @x @y i64_uge ;
+      x_ 0 == "int64_test_comparison: error 11" assert_msg ;
+      x j i >= == "int64_test_comparison: error 12" assert_msg ;
+
+      @j j 1 + = ;
+    }
+    @i i 1 + = ;
+  }
+
+  numbers vector_destroy ;
+
+  # Then again with signed numbers
+  @numbers 8 vector_init = ;
+  numbers 0 vector_push_back ;
+  numbers numbers vector_size 1 - vector_at_addr 0 = ;
+  numbers numbers vector_size 1 - vector_at_addr 4 + 0xf0000000 = ;
+  numbers 0 vector_push_back ;
+  numbers numbers vector_size 1 - vector_at_addr 1 = ;
+  numbers numbers vector_size 1 - vector_at_addr 4 + 0xf0000000 = ;
+  numbers 0 vector_push_back ;
+  numbers numbers vector_size 1 - vector_at_addr 100 = ;
+  numbers numbers vector_size 1 - vector_at_addr 4 + 0xf0000000 = ;
+  numbers 0 vector_push_back ;
+  numbers numbers vector_size 1 - vector_at_addr 0 = ;
+  numbers numbers vector_size 1 - vector_at_addr 4 + 0 = ;
+  numbers 0 vector_push_back ;
+  numbers numbers vector_size 1 - vector_at_addr 1 = ;
+  numbers numbers vector_size 1 - vector_at_addr 4 + 0 = ;
+  numbers 0 vector_push_back ;
+  numbers numbers vector_size 1 - vector_at_addr 100 = ;
+  numbers numbers vector_size 1 - vector_at_addr 4 + 0 = ;
+  numbers 0 vector_push_back ;
+  numbers numbers vector_size 1 - vector_at_addr 0 = ;
+  numbers numbers vector_size 1 - vector_at_addr 4 + 1 = ;
+  numbers 0 vector_push_back ;
+  numbers numbers vector_size 1 - vector_at_addr 1 = ;
+  numbers numbers vector_size 1 - vector_at_addr 4 + 1 = ;
+  numbers 0 vector_push_back ;
+  numbers numbers vector_size 1 - vector_at_addr 100 = ;
+  numbers numbers vector_size 1 - vector_at_addr 4 + 1 = ;
+  numbers 0 vector_push_back ;
+  numbers numbers vector_size 1 - vector_at_addr 0 = ;
+  numbers numbers vector_size 1 - vector_at_addr 4 + 100 = ;
+  numbers 0 vector_push_back ;
+  numbers numbers vector_size 1 - vector_at_addr 1 = ;
+  numbers numbers vector_size 1 - vector_at_addr 4 + 100 = ;
+  numbers 0 vector_push_back ;
+  numbers numbers vector_size 1 - vector_at_addr 100 = ;
+  numbers numbers vector_size 1 - vector_at_addr 4 + 100 = ;
+
+  # Then do all possible pairwise comparisons
+  @i 0 = ;
+  while i numbers vector_size < {
+    @j 0 = ;
+    $y_
+    $y
+    @y numbers i vector_at_addr i64_copy ;
+    while j numbers vector_size < {
+      $x_
+      $x
+
+      @x numbers j vector_at_addr i64_copy ;
+      @x @y i64_eq ;
+      x_ 0 == "int64_test_comparison: error 13" assert_msg ;
+      x j i == == "int64_test_comparison: error 14" assert_msg ;
+
+      @x numbers j vector_at_addr i64_copy ;
+      @x @y i64_neq ;
+      x_ 0 == "int64_test_comparison: error 15" assert_msg ;
+      x j i != == "int64_test_comparison: error 16" assert_msg ;
+
+      @x numbers j vector_at_addr i64_copy ;
+      @x @y i64_l ;
+      x_ 0 == "int64_test_comparison: error 17" assert_msg ;
+      x j i < == "int64_test_comparison: error 18" assert_msg ;
+
+      @x numbers j vector_at_addr i64_copy ;
+      @x @y i64_le ;
+      x_ 0 == "int64_test_comparison: error 19" assert_msg ;
+      x j i <= == "int64_test_comparison: error 20" assert_msg ;
+
+      @x numbers j vector_at_addr i64_copy ;
+      @x @y i64_g ;
+      x_ 0 == "int64_test_comparison: error 21" assert_msg ;
+      x j i > == "int64_test_comparison: error 22" assert_msg ;
+
+      @x numbers j vector_at_addr i64_copy ;
+      @x @y i64_ge ;
+      x_ 0 == "int64_test_comparison: error 23" assert_msg ;
+      x j i >= == "int64_test_comparison: error 24" assert_msg ;
+
+      @j j 1 + = ;
+    }
+    @i i 1 + = ;
+  }
+
+  numbers vector_destroy ;
 }
 
 fun int64_test 0 {
@@ -351,6 +583,8 @@ fun int64_test 0 {
   @x @y i64_sar ;
   x 0xf9234567 == "int64_test: error 54" assert_msg ;
   x_ 0xffffffff == "int64_test: error 55" assert_msg ;
+
+  int64_test_comparison ;
 
   "Tests for int64 successfully passed!\n" 1 platform_log ;
 }
