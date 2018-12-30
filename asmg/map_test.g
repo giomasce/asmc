@@ -42,19 +42,39 @@ fun map_test 0 {
   $map
   @map map_init = ;
 
+  $elem_num
+  @elem_num 1000 = ;
+
   $i
   @i 0 = ;
-  while i 1000 < {
+  while i elem_num < {
     map i itoa i map_set ;
     @i i 1 + = ;
   }
 
   $check_map
   @check_map map_init = ;
+
   map @map_test_print_closure check_map map_foreach ;
   map @map_test_print_closure2 check_map map_foreach ;
 
-  map map_size check_map map_size == "map_test: sizes do not match" assert_msg ;
+  map map_size elem_num == "map_test: size unexpected" assert_msg ;
+  check_map map_size elem_num == "map_test: check size unexpected" assert_msg ;
+
+  check_map map_destroy ;
+  @check_map map_init = ;
+
+  @i 1 = ;
+  while i elem_num < {
+    map i itoa map_erase ;
+    @i i 2 + = ;
+  }
+
+  map @map_test_print_closure check_map map_foreach ;
+  map @map_test_print_closure2 check_map map_foreach ;
+
+  map map_size elem_num 2 / == "map_test: size unexpected" assert_msg ;
+  check_map map_size elem_num 2 / == "map_test: check size unexpected" assert_msg ;
 
   check_map map_destroy ;
   map map_destroy ;
