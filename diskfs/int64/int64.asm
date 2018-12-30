@@ -122,6 +122,16 @@ i64_sub:
   sbb [eax+4], edx
   ret
 
+  ;; Multiplication is a bit more complicated: first of all, we treat
+  ;; the operation as unsigned, since we are going to retain only
+  ;; the lower 64 bits, so signedness does not matter; suppose the
+  ;; two operands are AB and CD (A is the lower dword of the first
+  ;; operand, B is the upper dword of the first operand and so
+  ;; on). Suppose that the unsigned multiplication of A and C gives
+  ;; the result EF. Then the product of AB and CD is EG, where G =
+  ;; F + A*D + B*C (in these last two multiplications the upper
+  ;; dwords of the results are discarded; for this reason, we can
+  ;; use the two operands form of imul).
 i64_mul:
   push ebx
   push esi
@@ -142,6 +152,12 @@ i64_mul:
   pop ebx
   ret
 
+  ;; Left shifts are done independently on the two dwords, except that
+  ;; for the upper dword we have to shift in bits from the lower
+  ;; dword using shld; if the shift count is 32 or more, we also
+  ;; have to move the upper dword to the lower one, and then reset
+  ;; the upper one (x86 architecture guarantees that shifts are
+  ;; done modulo 32 anyway)
 i64_shl:
   push ebx
   mov eax, [esp+12]
@@ -161,6 +177,8 @@ i64_shl_little:
   pop ebx
   ret
 
+  ;; Logical right shift is similar to left shift; notice that lower
+  ;; and upper dwords have to be inverted
 i64_shr:
   push ebx
   mov eax, [esp+12]
@@ -180,6 +198,9 @@ i64_shr_little:
   pop ebx
   ret
 
+  ;; Arithmetic right shift is similar to logic right shift, but when
+  ;; the count is 32 or more the upper word has to be filled with
+  ;; the sign, not with zero
 i64_sar:
   push ebx
   mov eax, [esp+12]
