@@ -32,6 +32,7 @@ const USE_KMALLOC 1
 
 const USE_SIMPLE_MAP 0
 const USE_AVL_MAP 1
+const USE_RB_MAP 0
 
 fun main 0 {
   "Hello, G!\n" 1 platform_log ;
@@ -107,6 +108,12 @@ fun main 0 {
   if USE_AVL_MAP {
     "Compiling avl_map.g... " 1 platform_log ;
     "avl_map.g" platform_g_compile ;
+    "done!\n" 1 platform_log ;
+  }
+
+  if USE_RB_MAP {
+    "Compiling rb_map.g... " 1 platform_log ;
+    "rb_map.g" platform_g_compile ;
     "done!\n" 1 platform_log ;
   }
 
