@@ -255,8 +255,8 @@ fun rb_verify_properties 1 {
   $t
   @t 0 param = ;
 
-  # Uncomment to disable verification
-  #ret ;
+  # Comment to enable verification
+  ret ;
 
   t MAP_ROOT take rb_verify_property_1 ;
   t MAP_ROOT take rb_verify_property_2 ;
