@@ -15,6 +15,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+# Despite the file name, this is not a true AVL implementation: it
+# implements a (hopefully) correct binary search tree, but there are
+# not AVL rotations, so the tree is not guaranteed to remain
+# balanced. At the beginning I planned to eventually add rotation, but
+# at some point I decided to switch to red-black trees, for which I
+# found a ready-to-use free implementation on the Internet. So this
+# file was left behind. It still works, but it will probably never be
+# completed.
+
 const AVL_LEFT 0
 const AVL_RIGHT 4
 const AVL_KEY 8

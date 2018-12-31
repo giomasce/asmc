@@ -31,8 +31,8 @@ const USE_CHECKED_MALLOC 0
 const USE_KMALLOC 1
 
 const USE_SIMPLE_MAP 0
-const USE_AVL_MAP 1
-const USE_RB_MAP 0
+const USE_AVL_MAP 0
+const USE_RB_MAP 1
 
 fun main 0 {
   "Hello, G!\n" 1 platform_log ;
@@ -223,6 +223,10 @@ fun main 0 {
   0 platform_allocate itoa 1 platform_log ;
   "\n" 1 platform_log ;
 
+  if TEST_MAP {
+    0 "map_test" platform_get_symbol \0 ;
+  }
+
   "Initializing Virtual File System...\n" 1 platform_log ;
   0 "vfs_init" platform_get_symbol \0 ;
   "Virtual File System initialized!\n" 1 platform_log ;
@@ -261,10 +265,6 @@ fun main 0 {
 
     if RUN_C {
       "/disk1/tests/test.c" 0 "parse_c" platform_get_symbol \1 ;
-    }
-
-    if TEST_MAP {
-      0 "map_test" platform_get_symbol \0 ;
     }
 
     if TEST_INT64 {

@@ -38,8 +38,8 @@ const SIZEOF_MAP 8
 
 ifun rb_rbtree_create 0
 ifun rb_rbtree_lookup 3
-ifun rb_rbtree_insert 4
-ifun rb_rbtree_delete 3
+ifun rb_rbtree_insert 6
+ifun rb_rbtree_delete 4
 
 ifun rb_grandparent 1
 ifun rb_sibling 1
@@ -76,6 +76,7 @@ fun rb_rbtree_create 0 {
   $t
   @t SIZEOF_MAP malloc = ;
   t MAP_ROOT take_addr 0 = ;
+  # XXX Initialize size to zero
   t MAP_SIZE take_addr 0 = ;
   t rb_verify_properties ;
   t ret ;
@@ -96,18 +97,24 @@ fun rb_rbtree_lookup 3 {
   n RB_VALUE take ret ;
 }
 
-fun rb_rbtree_insert 4 {
+# XXX Add support for key_init and key_destroy
+fun rb_rbtree_insert 6 {
   $t
   $key
   $value
   $compare
-  @t 3 param = ;
-  @key 2 param = ;
-  @value 1 param = ;
-  @compare 0 param = ;
+  $key_init
+  $key_destroy
+  @t 5 param = ;
+  @key 4 param = ;
+  @value 3 param = ;
+  @compare 2 param = ;
+  @key_init 1 param = ;
+  @key_destroy 0 param = ;
 
+  # XXX Init key
   $inserted_node
-  @inserted_node key value RB_RED 0 0 rb_new_node = ;
+  @inserted_node key key_init \1 value RB_RED 0 0 rb_new_node = ;
   if t MAP_ROOT take 0 == {
     t MAP_ROOT take_addr inserted_node = ;
   } else {
@@ -121,7 +128,9 @@ fun rb_rbtree_insert 4 {
       @comp_result key n RB_KEY take compare \2 = ;
       if comp_result 0 == {
         n RB_VALUE take_addr value = ;
-        # FIXME reference lost!
+        # XXX Destory node, otherwise there is a resourse leak
+        inserted_node RB_KEY take key_destroy \1 ;
+        inserted_node free ;
         ret ;
       } else {
         if comp_result 0 < {
@@ -144,25 +153,33 @@ fun rb_rbtree_insert 4 {
     }
     inserted_node RB_PARENT take_addr n = ;
   }
+  # XXX Update size
+  t MAP_SIZE take_addr t MAP_SIZE take 1 + = ;
   t inserted_node rb_insert_case1 ;
   t rb_verify_properties ;
 }
 
-fun rb_rbtree_delete 3 {
+# XXX Add support for key_destroy
+fun rb_rbtree_delete 4 {
   $t
   $key
   $compare
-  @t 2 param = ;
-  @key 1 param = ;
-  @compare 0 param = ;
+  $key_destroy
+  @t 3 param = ;
+  @key 2 param = ;
+  @compare 1 param = ;
+  @key_destroy 0 param = ;
 
   $child
   $n
   @n t key compare rb_lookup_node = ;
   if n 0 == {
-    # XXX Return zero to indicate that no deletion took place
-    0 ret ;
+    ret ;
   }
+
+  # XXX Update size
+  t MAP_SIZE take_addr t MAP_SIZE take 1 - = ;
+
   if n RB_LEFT take 0 != n RB_RIGHT take 0 != && {
     $pred
     @pred n RB_LEFT take rb_maximum_node = ;
@@ -194,7 +211,8 @@ fun rb_rbtree_delete 3 {
     child RB_COLOR take_addr RB_BLACK = ;
   }
 
-  # FIXME
+  # XXX Destroy key
+  n RB_KEY take key_destroy \1 ;
   n free ;
 
   t rb_verify_properties ;
@@ -488,7 +506,7 @@ fun rb_insert_case4 2 {
     t n RB_PARENT take rb_rotate_left ;
     @n n RB_LEFT take = ;
   } else {
-    if n n RB_PARENT take RB_LEFT take == n RB_PARENT take n rb_grandparent RB_LEFT take == && {
+    if n n RB_PARENT take RB_LEFT take == n RB_PARENT take n rb_grandparent RB_RIGHT take == && {
       t n RB_PARENT take rb_rotate_right ;
       @n n RB_RIGHT take = ;
     }
@@ -631,4 +649,119 @@ fun rb_delete_case6 2 {
     n rb_sibling RB_LEFT take RB_COLOR take_addr RB_BLACK = ;
     t n RB_PARENT take rb_rotate_right ;
   }
+}
+
+
+# Implement the same interface from map.g
+
+fun _map_comp 2 {
+  1 param 0 param strcmp ret ;
+}
+
+fun _map_key_init 1 {
+  0 param strdup ret ;
+}
+
+fun _map_key_destroy 1 {
+  0 param free ;
+}
+
+fun map_init 0 {
+  rb_rbtree_create ret ;
+}
+
+fun _map_destroy 1 {
+  $node
+  @node 0 param = ;
+
+  if node 0 == {
+    ret ;
+  }
+
+  node RB_KEY take free ;
+  node RB_LEFT take _map_destroy ;
+  node RB_RIGHT take _map_destroy ;
+  node free ;
+}
+
+fun map_destroy 1 {
+  $map
+  @map 0 param = ;
+
+  # Original code does not implement proper destruction, so we do that
+  # here
+  map MAP_ROOT take _map_destroy ;
+  map free ;
+}
+
+fun map_at 2 {
+  $map
+  $key
+  @map 1 param = ;
+  @key 0 param = ;
+
+  map key @_map_comp rb_rbtree_lookup ret ;
+}
+
+fun map_has 2 {
+  $map
+  $key
+  @map 1 param = ;
+  @key 0 param = ;
+
+  map key @_map_comp rb_lookup_node 0 != ret ;
+}
+
+fun map_set 3 {
+  $map
+  $key
+  $value
+  @map 2 param = ;
+  @key 1 param = ;
+  @value 0 param = ;
+
+  map key value @_map_comp @_map_key_init @_map_key_destroy rb_rbtree_insert ;
+}
+
+fun map_size 1 {
+  $map
+  @map 0 param = ;
+
+  map MAP_SIZE take ret ;
+}
+
+fun map_erase 2 {
+  $map
+  $key
+  @map 1 param = ;
+  @key 0 param = ;
+
+  map key @_map_comp @_map_key_destroy rb_rbtree_delete ;
+}
+
+fun _map_foreach 3 {
+  $node
+  $func
+  $ctx
+  @node 2 param = ;
+  @func 1 param = ;
+  @ctx 0 param = ;
+
+  if node 0 == {
+    ret ;
+  }
+  node RB_LEFT take func ctx _map_foreach ;
+  ctx node RB_KEY take node RB_VALUE take func \3 ;
+  node RB_RIGHT take func ctx _map_foreach ;
+}
+
+fun map_foreach 3 {
+  $map
+  $func
+  $ctx
+  @map 2 param = ;
+  @func 1 param = ;
+  @ctx 0 param = ;
+
+  map MAP_ROOT take func ctx _map_foreach ;
 }
