@@ -127,6 +127,11 @@ fun _atapio_out_sector 2 {
   base ATAPIO_PORT_COMMAND + inb ;
   base ATAPIO_PORT_COMMAND + inb ;
 
+  # FIXME There is a bug around: if I comment the following line, or
+  # if I remove the newline, then the driver randomly blocks. I do not
+  # understand why. The read part, instead, seems to always work
+  # fine. I have no idea of what is happening, but since the write
+  # part is just for debugging, I ignore this for the moment.
   ".\n" 1 platform_log ;
 }
 
@@ -203,7 +208,7 @@ fun atapio_read_sect 2 {
   } else {
     base ATAPIO_PORT_DRIVE + 0xf0 lba 24 >> | outb ;
   }
-  #base ATAPIO_PORT_FEATURES_ERROR + 0 outb ;
+  base ATAPIO_PORT_FEATURES_ERROR + 0 outb ;
   base ATAPIO_PORT_SECTOR_COUNT + 1 outb ;
   base ATAPIO_PORT_LBA_LO + lba outb ;
   base ATAPIO_PORT_LBA_MID + lba 8 >> outb ;
@@ -251,7 +256,7 @@ fun atapio_write_sect 3 {
   } else {
     base ATAPIO_PORT_DRIVE + 0xf0 lba 24 >> | outb ;
   }
-  #base ATAPIO_PORT_FEATURES_ERROR + 0 outb ;
+  base ATAPIO_PORT_FEATURES_ERROR + 0 outb ;
   base ATAPIO_PORT_SECTOR_COUNT + 1 outb ;
   base ATAPIO_PORT_LBA_LO + lba outb ;
   base ATAPIO_PORT_LBA_MID + lba 8 >> outb ;

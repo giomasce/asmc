@@ -856,7 +856,7 @@ fun preproc_process_undef 4 {
   intoks iptr discard_white_tokens ;
 }
 
-ifun preproc_file 3
+ifun _preproc_file 3
 
 fun preproc_process_include 4 {
   $ctx
@@ -911,13 +911,19 @@ fun preproc_process_include 4 {
   }
   found "preproc_process_include: cannot find file" filename assert_msg_str ;
 
-  if ctx PPCTX_VERBOSE take {
+  if ctx PPCTX_VERBOSE take 1 == {
+    '[' 1 platform_write_char ;
+  }
+  if ctx PPCTX_VERBOSE take 2 == {
     "Including file " 1 platform_log ;
     filename 1 platform_log ;
     "\n" 1 platform_log ;
   }
-  tokens ctx filename preproc_file ;
-  if ctx PPCTX_VERBOSE take {
+  tokens ctx filename _preproc_file ;
+  if ctx PPCTX_VERBOSE take 1 == {
+    ']' 1 platform_write_char ;
+  }
+  if ctx PPCTX_VERBOSE take 2 == {
     "Finished including file " 1 platform_log ;
     filename 1 platform_log ;
     "\n" 1 platform_log ;
@@ -1270,13 +1276,14 @@ fun is_including 1 {
   1 ret ;
 }
 
-fun preproc_file 3 {
+fun _preproc_file 3 {
+  $tokens
   $ctx
   $filename
-  $tokens
+  @tokens 2 param = ;
   @ctx 1 param = ;
   @filename 0 param = ;
-  @tokens 2 param = ;
+
   $intoks
   @intoks filename tokenize_file = ;
   # All incoming tokens are accumulated in ready_toks; before each
@@ -1385,9 +1392,9 @@ fun preproc_file 3 {
         @processed 1 = ;
       }
       if processed ! {
-        0 "preproc_file: invalid preprocessor directive" assert_msg ;
+        0 "_preproc_file: invalid preprocessor directive" assert_msg ;
       }
-      intoks i vector_at "\n" strcmp 0 == "preproc_file: error 1" assert_msg ;
+      intoks i vector_at "\n" strcmp 0 == "_preproc_file: error 1" assert_msg ;
     } else {
       if including {
         ready_toks tok vector_push_back ;
@@ -1401,9 +1408,23 @@ fun preproc_file 3 {
   ctx ready_toks tokens preproc_expand ;
   ready_toks vector_clear ;
   ready_toks vector_destroy ;
-  if_stack vector_size 1 == "preproc_file: some #if was not closed" assert_msg ;
+  if_stack vector_size 1 == "_preproc_file: some #if was not closed" assert_msg ;
   if_stack vector_destroy ;
   intoks free_vect_of_ptrs ;
+}
+
+fun preproc_file 3 {
+  $tokens
+  $ctx
+  $filename
+  @tokens 2 param = ;
+  @ctx 1 param = ;
+  @filename 0 param = ;
+
+  tokens ctx filename _preproc_file ;
+  if ctx PPCTX_VERBOSE take 1 == {
+    '\n' 1 platform_write_char ;
+  }
 }
 
 fun remove_whites 1 {
