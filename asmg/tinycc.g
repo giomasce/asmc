@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+const TINYCC_LOAD_TOKENS 0
+
 fun compile_tinycc 0 {
   $filename
   @filename "/disk1/tinycc/tcc.c" = ;
@@ -22,23 +24,24 @@ fun compile_tinycc 0 {
   # Preprocessing
   $ctx
   @ctx ppctx_init = ;
-  # ctx "ONE_SOURCE" "1" ppctx_define ;
-  # ctx "USE_SOFTFLOAT" "1" ppctx_define ;
-  # ctx filename ppctx_set_base_filename ;
-  # ctx "/disk1/tinycc/softfloat/" ppctx_add_include_path ;
-  # ctx "/disk1/tinycc/softfloat/include/" ppctx_add_include_path ;
-  # ctx "/disk1/tinycc/softfloat/8086/" ppctx_add_include_path ;
-  # #ctx PPCTX_VERBOSE take_addr 0 = ;
-  # $tokens
-  # @tokens 4 vector_init = ;
-  # tokens ctx filename preproc_file ;
-  # @tokens tokens remove_whites = ;
-  # "Finished preprocessing\n" 1 platform_log ;
-  # tokens dump_token_list_to_debugfs ;
-
-  # Load tokens from diskfs (for debug)
   $tokens
-  @tokens load_token_list_from_diskfs = ;
+
+  if TINYCC_LOAD_TOKENS {
+    @tokens load_token_list_from_diskfs = ;
+  } else {
+    ctx "ONE_SOURCE" "1" ppctx_define ;
+    ctx "USE_SOFTFLOAT" "1" ppctx_define ;
+    ctx filename ppctx_set_base_filename ;
+    ctx "/disk1/tinycc/softfloat/" ppctx_add_include_path ;
+    ctx "/disk1/tinycc/softfloat/include/" ppctx_add_include_path ;
+    ctx "/disk1/tinycc/softfloat/8086/" ppctx_add_include_path ;
+    #ctx PPCTX_VERBOSE take_addr 0 = ;
+    @tokens 4 vector_init = ;
+    tokens ctx filename preproc_file ;
+    @tokens tokens remove_whites = ;
+    "Finished preprocessing\n" 1 platform_log ;
+    tokens dump_token_list_to_debugfs ;
+  }
 
   # Compilation
   $cctx

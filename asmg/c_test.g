@@ -145,6 +145,8 @@ fun c_run_testcases 0 {
   tests "/disk1/tests/test_llong.c" "test_llong_sum" 1 "" c_run_testcase ;
   tests "/disk1/tests/test_llong.c" "test_llong_sum2" 1 "" c_run_testcase ;
 
+  tests "/disk1/tests/test_anon_struct.c" "test_anon_struct" 1 "" c_run_testcase ;
+
   tests "/disk1/tests/test_stdio.c" "test_fputs" 1 "This is a test string\n" c_run_testcase ;
   tests "/disk1/tests/test_stdio.c" "test_puts" 1 "This is a test string\n" c_run_testcase ;
   tests "/disk1/tests/test_stdio.c" "test_putchar" 1 "X" c_run_testcase ;

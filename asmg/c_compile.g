@@ -201,7 +201,12 @@ fun type_dump 1 {
     @offs type TYPE_FIELDS_OFFS take = ;
     while i names vector_size < {
       " " 1 platform_log ;
-      names i vector_at 1 platform_log ;
+      $name
+      @name names i vector_at = ;
+      if name **c '\0' == {
+        @name "<anonymous>" = ;
+      }
+      name 1 platform_log ;
       " (@" 1 platform_log ;
       offs i vector_at itoa 1 platform_log ;
       " #" 1 platform_log ;
@@ -217,12 +222,21 @@ fun type_dump 1 {
     @i 0 = ;
     $names
     $type_idxs
+    $offs
     @names type TYPE_FIELDS_NAMES take = ;
     @type_idxs type TYPE_FIELDS_TYPE_IDXS take = ;
+    @offs type TYPE_FIELDS_OFFS take = ;
     while i names vector_size < {
       " " 1 platform_log ;
-      names i vector_at 1 platform_log ;
-      " (#" 1 platform_log ;
+      $name
+      @name names i vector_at = ;
+      if name **c '\0' == {
+        @name "<anonymous>" = ;
+      }
+      name 1 platform_log ;
+      " (@" 1 platform_log ;
+      offs i vector_at itoa 1 platform_log ;
+      " #" 1 platform_log ;
       type_idxs i vector_at itoa 1 platform_log ;
       ")" 1 platform_log ;
       @i i 1 + = ;
@@ -716,6 +730,41 @@ fun cctx_construct_struct_type 3 {
   }
   type TYPE_SIZE take_addr off = ;
 
+  # Inherit labels from anonymous subtypes
+  @i 0 = ;
+  $orig_len
+  @orig_len names vector_size = ;
+  while i orig_len < {
+    if names i vector_at **c '\0' == {
+      $base_off
+      @base_off offs i vector_at = ;
+      $type_idx
+      $type
+      @type_idx type_idxs i vector_at = ;
+      @type ctx type_idx cctx_get_type = ;
+      type TYPE_KIND take TYPE_KIND_STRUCT == type TYPE_KIND take TYPE_KIND_UNION == || "cctx_construct_struct_type: anonymous field is not union or strucr" assert_msg ;
+      $sub_type_idxs
+      $sub_names
+      $sub_offs
+      @sub_type_idxs type TYPE_FIELDS_TYPE_IDXS take = ;
+      @sub_names type TYPE_FIELDS_NAMES take = ;
+      @sub_offs type TYPE_FIELDS_OFFS take = ;
+      $j
+      @j 0 = ;
+      while j sub_names vector_size < {
+        $sub_name
+        @sub_name sub_names j vector_at = ;
+        if sub_name **c '\0' != {
+          names sub_name strdup vector_push_back ;
+          type_idxs sub_type_idxs j vector_at vector_push_back ;
+          offs sub_offs j vector_at base_off + vector_push_back ;
+        }
+        @j j 1 + = ;
+      }
+    }
+    @i i 1 + = ;
+  }
+
   type ret ;
 }
 
@@ -762,6 +811,41 @@ fun cctx_construct_union_type 3 {
     @i i 1 + = ;
   }
   type TYPE_SIZE take_addr size = ;
+
+  # Inherit labels from anonymous subtypes
+  @i 0 = ;
+  $orig_len
+  @orig_len names vector_size = ;
+  while i orig_len < {
+    if names i vector_at **c '\0' == {
+      $base_off
+      @base_off offs i vector_at = ;
+      $type_idx
+      $type
+      @type_idx type_idxs i vector_at = ;
+      @type ctx type_idx cctx_get_type = ;
+      type TYPE_KIND take TYPE_KIND_STRUCT == type TYPE_KIND take TYPE_KIND_UNION == || "cctx_construct_struct_type: anonymous field is not union or strucr" assert_msg ;
+      $sub_type_idxs
+      $sub_names
+      $sub_offs
+      @sub_type_idxs type TYPE_FIELDS_TYPE_IDXS take = ;
+      @sub_names type TYPE_FIELDS_NAMES take = ;
+      @sub_offs type TYPE_FIELDS_OFFS take = ;
+      $j
+      @j 0 = ;
+      while j sub_names vector_size < {
+        $sub_name
+        @sub_name sub_names j vector_at = ;
+        if sub_name **c '\0' != {
+          names sub_name strdup vector_push_back ;
+          type_idxs sub_type_idxs j vector_at vector_push_back ;
+          offs sub_offs j vector_at base_off + vector_push_back ;
+        }
+        @j j 1 + = ;
+      }
+    }
+    @i i 1 + = ;
+  }
 
   type ret ;
 }
@@ -1085,7 +1169,14 @@ fun cctx_parse_struct 3 {
       while cont2 {
         $actual_type_idx
         $name
-        ctx type_idx @actual_type_idx @name 0 cctx_parse_declarator "cctx_parse_struct: could not parse declarator" assert_msg ;
+        if ctx type_idx @actual_type_idx @name 0 cctx_parse_declarator ! {
+          # If the declarator parsing fails, then we assume that this
+          # is an annonymous struct or union, which for the moment we
+          # just represent as having an empty name; names will be
+          # fixed later, when the type is actually created
+          @name "" = ;
+          @actual_type_idx type_idx = ;
+        }
         type_idxs actual_type_idx vector_push_back ;
         names name strdup vector_push_back ;
         @tok ctx cctx_get_token_or_fail = ;
@@ -1367,8 +1458,6 @@ fun cctx_parse_type 1 {
     0xffffffff ret ;
   }
 }
-
-ifun cctx_parse_declarator 5
 
 fun _cctx_parse_function_arguments 3 {
   $ctx
