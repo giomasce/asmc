@@ -1,5 +1,5 @@
 # This file is part of asmc, a bootstrapping OS with minimal seed
-# Copyright (C) 2018 Giovanni Mascellani <gio@debian.org>
+# Copyright (C) 2018-2019 Giovanni Mascellani <gio@debian.org>
 # https://gitlab.com/giomasce/asmc
 
 # This program is free software: you can redistribute it and/or modify
@@ -18,10 +18,11 @@
 const AST_TYPE 0             # 0 for operand, 1 for operator
 const AST_NAME 4             # char*
 const AST_LEFT 8             # AST*
-const AST_RIGHT 12           # AST*
-const AST_TYPE_IDX 16        # int
-const AST_ORIG_TYPE_IDX 20   # int
-const SIZEOF_AST 24
+const AST_CENTER 12          # AST*
+const AST_RIGHT 16           # AST*
+const AST_TYPE_IDX 20        # int
+const AST_ORIG_TYPE_IDX 24   # int
+const SIZEOF_AST 28
 
 fun ast_init 0 {
   $ptr
@@ -29,6 +30,7 @@ fun ast_init 0 {
   ptr AST_TYPE take_addr 0 = ;
   ptr AST_NAME take_addr 0 = ;
   ptr AST_LEFT take_addr 0 = ;
+  ptr AST_CENTER take_addr 0 = ;
   ptr AST_RIGHT take_addr 0 = ;
   ptr AST_TYPE_IDX take_addr 0xffffffff = ;
   ptr AST_ORIG_TYPE_IDX take_addr 0xffffffff = ;
@@ -41,6 +43,9 @@ fun ast_destroy 1 {
   ptr AST_NAME take free ;
   if ptr AST_LEFT take {
     ptr AST_LEFT take ast_destroy ;
+  }
+  if ptr AST_CENTER take {
+    ptr AST_CENTER take ast_destroy ;
   }
   if ptr AST_RIGHT take {
     ptr AST_RIGHT take ast_destroy ;
@@ -77,6 +82,7 @@ fun ast_is_operator 1 {
     str "|" strcmp 0 == ||
     str "&&" strcmp 0 == ||
     str "||" strcmp 0 == ||
+    str "?" strcmp 0 == ||
     str "=" strcmp 0 == ||
     str "+=" strcmp 0 == ||
     str "-=" strcmp 0 == ||
@@ -130,6 +136,7 @@ fun ast_get_priority 1 {
   if str "|" strcmp 0 == { 10 ret ; }
   if str "&&" strcmp 0 == { 11 ret ; }
   if str "||" strcmp 0 == { 12 ret ; }
+  if str "?" strcmp 0 == { 13 ret ; }
   if str "=" strcmp 0 == { 14 ret ; }
   if str "+=" strcmp 0 == { 14 ret ; }
   if str "-=" strcmp 0 == { 14 ret ; }
@@ -186,6 +193,7 @@ fun ast_get_ass_direction 1 {
   if str "|" strcmp 0 == { 1 ret ; }
   if str "&&" strcmp 0 == { 1 ret ; }
   if str "||" strcmp 0 == { 1 ret ; }
+  if str "?" strcmp 0 == { 0 ret ; }
   if str "=" strcmp 0 == { 0 ret ; }
   if str "+=" strcmp 0 == { 0 ret ; }
   if str "-=" strcmp 0 == { 0 ret ; }
@@ -202,13 +210,16 @@ fun ast_get_ass_direction 1 {
   0 "Not an operator" assert_msg ;
 }
 
-fun ast_rewind_stack 2 {
+fun ast_rewind_stack 3 {
   $operator_stack
   $operand_stack
-  @operator_stack 1 param = ;
-  @operand_stack 0 param = ;
+  $center_stack
+  @operator_stack 2 param = ;
+  @operand_stack 1 param = ;
+  @center_stack 0 param = ;
 
   operand_stack vector_size operator_stack vector_size == "Stacks do not have the same size" assert_msg ;
+  operand_stack vector_size center_stack vector_size == "Stacks do not have the same size" assert_msg ;
 
   $cont
   @cont 1 = ;
@@ -223,17 +234,28 @@ fun ast_rewind_stack 2 {
       $ast
       @ast ast_init = ;
       $tmp
+      $tmp2
       @tmp operator_stack vector_pop_back = ;
+      @tmp2 center_stack vector_pop_back = ;
       ast AST_TYPE take_addr 1 = ;
       ast AST_RIGHT take_addr operand_stack vector_pop_back = ;
       ast AST_LEFT take_addr operand_stack vector_pop_back = ;
       ast AST_NAME take_addr operator_stack vector_pop_back = ;
+      ast AST_CENTER take_addr center_stack vector_pop_back = ;
       operand_stack ast vector_push_back ;
       operator_stack tmp vector_push_back ;
+      center_stack tmp2 vector_push_back ;
+      # Sanity check
+      if ast AST_NAME take "?" strcmp 0 == {
+        ast AST_CENTER take 0 != "ast_rewind_stack: ternary operator misses center operand" assert_msg ;
+      } else {
+        ast AST_CENTER take 0 == "ast_rewind_stack: center operand for non-ternary operator" assert_msg ;
+      }
     } else {
       @cont 0 = ;
     }
     operand_stack vector_size operator_stack vector_size == "Stacks do not have the same size" assert_msg ;
+    operand_stack vector_size center_stack vector_size == "Stacks do not have the same size" assert_msg ;
   }
 }
 
@@ -255,6 +277,8 @@ fun ast_parse2 3 {
   @operator_stack 4 vector_init = ;
   $operand_stack
   @operand_stack 4 vector_init = ;
+  $center_stack
+  @center_stack 4 vector_init = ;
   # "Beginning parse\n" 1 platform_log ;
   while cont {
     $tok
@@ -290,6 +314,8 @@ fun ast_parse2 3 {
         # "\n" 1 platform_log ;
         if expect_operator {
           if is_operator {
+            $center_ast
+            @center_ast 0 = ;
             # Operator as we expect, push it in the operator stack.
             # If the operator is postfix, mangle it and push
             # a placeholder operand in the operand stack
@@ -303,8 +329,14 @@ fun ast_parse2 3 {
               @tok "--_POST" = ;
               @is_postfix 1 = ;
             }
+            # If this is the ternary operator, parse the center part
+            # immediately
+            if tok "?" strcmp 0 == {
+              @center_ast intoks iptr ":" ast_parse = ;
+            }
             operator_stack tok strdup vector_push_back ;
-            operator_stack operand_stack ast_rewind_stack ;
+            center_stack center_ast vector_push_back ;
+            operator_stack operand_stack center_stack ast_rewind_stack ;
             if is_postfix {
               operand_stack ast_init vector_push_back ;
             } else {
@@ -330,13 +362,15 @@ fun ast_parse2 3 {
                 @ast intoks iptr ")" ast_parse = ;
               }
               operator_stack tok strdup vector_push_back ;
-              operator_stack operand_stack ast_rewind_stack ;
+              center_stack 0 vector_push_back ;
+              operator_stack operand_stack center_stack ast_rewind_stack ;
               operand_stack ast vector_push_back ;
             } else {
               if tok "[" strcmp 0 == {
                 @ast intoks iptr "]" ast_parse = ;
                 operator_stack tok strdup vector_push_back ;
-                operator_stack operand_stack ast_rewind_stack ;
+                center_stack 0 vector_push_back ;
+                operator_stack operand_stack center_stack ast_rewind_stack ;
                 operand_stack ast vector_push_back ;
               } else {
                 # Operand instead of operator: error!
@@ -390,6 +424,7 @@ fun ast_parse2 3 {
             found "Expect prefix operator" assert_msg ;
             operator_stack tok strdup vector_push_back ;
             operand_stack ast_init vector_push_back ;
+            center_stack 0 vector_push_back ;
           } else {
             $ast
             if tok "(" strcmp 0 == {
@@ -400,13 +435,13 @@ fun ast_parse2 3 {
               ast AST_TYPE take_addr 0 = ;
               ast AST_NAME take_addr tok strdup = ;
             }
-                        operand_stack ast vector_push_back ;
+            operand_stack ast vector_push_back ;
             @expect_operator 1 = ;
           }
         }
         # Partially rewind the stack so that priority is decreasing
         if expect_operator ! {
-          operator_stack operand_stack ast_rewind_stack ;
+          operator_stack operand_stack center_stack ast_rewind_stack ;
         }
       }
     }
@@ -419,17 +454,22 @@ fun ast_parse2 3 {
   $tmp
   @tmp " " strdup = ;
   operator_stack tmp vector_push_back ;
-  operator_stack operand_stack ast_rewind_stack ;
-  operand_stack vector_size 1 == "Internal error" assert_msg ;
-  operator_stack vector_size 1 == "Internal error" assert_msg ;
+  center_stack 0 vector_push_back ;
+  operator_stack operand_stack center_stack ast_rewind_stack ;
   operator_stack vector_pop_back tmp == "Internal error" assert_msg ;
   tmp free ;
+  center_stack vector_pop_back 0 == "Internal error" assert_msg ;
 
   $res
   @res operand_stack vector_pop_back = ;
 
+  operand_stack vector_size 0 == "Internal error" assert_msg ;
+  operator_stack vector_size 0 == "Internal error" assert_msg ;
+  center_stack vector_size 0 == "Internal error" assert_msg ;
+
   operand_stack vector_destroy ;
   operator_stack vector_destroy ;
+  center_stack vector_destroy ;
 
   # "Ending parse\n" 1 platform_log ;
 

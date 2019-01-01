@@ -1,5 +1,5 @@
 # This file is part of asmc, a bootstrapping OS with minimal seed
-# Copyright (C) 2018 Giovanni Mascellani <gio@debian.org>
+# Copyright (C) 2018-2019 Giovanni Mascellani <gio@debian.org>
 # https://gitlab.com/giomasce/asmc
 
 # This program is free software: you can redistribute it and/or modify
@@ -863,6 +863,8 @@ fun cctx_get_incomplete_union_type 1 {
 }
 
 const TYPE_VOID 0
+
+const TYPE_FIRST_INTEGER 1
 const TYPE_CHAR 1
 const TYPE_SCHAR 2
 const TYPE_UCHAR 3
@@ -872,13 +874,16 @@ const TYPE_LONG 6
 const TYPE_USHORT 7
 const TYPE_UINT 8
 const TYPE_ULONG 9
-const TYPE_CHAR_ARRAY 10
-const TYPE_VOID_PTR 11
+const TYPE_BOOL 10
+const TYPE_LAST_INTEGER 10
+
+const TYPE_CHAR_ARRAY 11
+const TYPE_VOID_PTR 12
 
 fun is_integer_type 1 {
   $idx
   @idx 0 param = ;
-  TYPE_CHAR idx <= TYPE_ULONG idx >= && ret ;
+  TYPE_FIRST_INTEGER idx <= TYPE_LAST_INTEGER idx >= && ret ;
 }
 
 fun cctx_create_basic_type 3 {
@@ -916,6 +921,7 @@ fun cctx_create_basic_types 1 {
   ctx TYPE_USHORT 2 cctx_create_basic_type ;
   ctx TYPE_UINT 4 cctx_create_basic_type ;
   ctx TYPE_ULONG 8 cctx_create_basic_type ;
+  ctx TYPE_BOOL 4 cctx_create_basic_type ;
 
   ctx TYPE_CHAR 0xffffffff cctx_get_array_type TYPE_CHAR_ARRAY == "cctx_create_basic_types: error 1" assert_msg ;
   ctx TYPE_VOID cctx_get_pointer_type TYPE_VOID_PTR == "cctx_create_basic_types: error 2" assert_msg ;
@@ -1302,6 +1308,7 @@ fun cctx_parse_type 1 {
   }
 
   if tok "void" strcmp 0 == { TYPE_VOID ret ; }
+  if tok "_Bool" strcmp 0 == { TYPE_BOOL ret ; }
   if tok "char" strcmp 0 == { TYPE_CHAR ret ; }
   if tok "short" strcmp 0 == { TYPE_SHORT ret ; }
   if tok "int" strcmp 0 == { TYPE_INT ret ; }
@@ -2277,18 +2284,20 @@ fun promote_integer_type 1 {
   0 "promote_integer_type: not an integer type" assert_msg ;
 }
 
-fun ast_arith_conv 3 {
-  $ast
+fun ast_arith_conv 4 {
+  $ast1
+  $ast2
   $ctx
   $lctx
-  @ast 2 param = ;
+  @ast1 3 param = ;
+  @ast2 2 param = ;
   @ctx 1 param = ;
   @lctx 0 param = ;
 
   $type1
   $type2
-  @type1 ast AST_LEFT take ctx lctx ast_eval_type = ;
-  @type2 ast AST_RIGHT take ctx lctx ast_eval_type = ;
+  @type1 ast1 ctx lctx ast_eval_type = ;
+  @type2 ast2 ctx lctx ast_eval_type = ;
 
   @type1 type1 promote_integer_type = ;
   @type2 type2 promote_integer_type = ;
@@ -2406,7 +2415,7 @@ fun ast_eval_type 3 {
        name "^" strcmp 0 == ||
        name "|" strcmp 0 == ||
        processed ! && {
-      @type_idx ast ctx lctx ast_arith_conv = ;
+      @type_idx ast AST_LEFT take ast AST_RIGHT take ctx lctx ast_arith_conv = ;
       @processed 1 = ;
     }
 
@@ -2528,6 +2537,24 @@ fun ast_eval_type 3 {
       @field struct_type name type_get_idx = ;
       field 0xffffffff != "ast_eval_type: specified field does not exist" assert_msg ;
       @type_idx struct_type TYPE_FIELDS_TYPE_IDXS take field vector_at = ;
+      @processed 1 = ;
+    }
+
+    if name "?" strcmp 0 == {
+      $processed2
+      @processed2 0 = ;
+
+      $type1
+      $type2
+      @type1 ast AST_CENTER take ctx lctx ast_eval_type = ;
+      @type2 ast AST_RIGHT take ctx lctx ast_eval_type = ;
+
+      if type1 is_integer_type type2 is_integer_type && {
+        @type_idx ast AST_CENTER take ast AST_RIGHT take ctx lctx ast_arith_conv = ;
+        @processed2 1 = ;
+      }
+
+      processed2 "ast_eval_type: not implemented form of ternary operator" assert_msg ;
       @processed 1 = ;
     }
 
@@ -2735,7 +2762,7 @@ fun lctx_int_convert 4 {
             # cdq
             ctx 0x99 cctx_emit ;
           } else {
-            if from_idx TYPE_UINT == {
+            if from_idx TYPE_UINT == from_idx TYPE_BOOL == || {
               # xor edx, edx
               ctx 0x31 cctx_emit ;
               ctx 0xd2 cctx_emit ;
@@ -2746,6 +2773,18 @@ fun lctx_int_convert 4 {
         }
       }
     }
+  }
+
+  if to_idx TYPE_BOOL == {
+    # or eax, edx; setne al; movzx eax, al
+    ctx 0x09 cctx_emit ;
+    ctx 0xd0 cctx_emit ;
+    ctx 0x0f cctx_emit ;
+    ctx 0x95 cctx_emit ;
+    ctx 0xc0 cctx_emit ;
+    ctx 0x0f cctx_emit ;
+    ctx 0xb6 cctx_emit ;
+    ctx 0xc0 cctx_emit ;
   }
 
   if ctx to_idx cctx_type_footprint 4 == {
@@ -3740,6 +3779,38 @@ fun ast_push_value 3 {
       @processed 1 = ;
     }
 
+    if name "?" strcmp 0 == {
+      $else_lab
+      $end_lab
+      @else_lab lctx ctx lctx_gen_label = ;
+      @end_lab lctx ctx lctx_gen_label = ;
+
+      # Evaluate guard expression
+      ast AST_LEFT take ctx lctx ast_push_value ;
+      lctx ctx ast AST_LEFT take ctx lctx ast_eval_type TYPE_BOOL lctx_convert_stack ;
+
+      # pop eax; test eax, eax; cctx_gen_label_jump
+      ctx 0x58 cctx_emit ;
+      ctx 0x85 cctx_emit ;
+      ctx 0xc0 cctx_emit ;
+      ctx lctx else_lab JUMP_TYPE_JZ 0 cctx_gen_label_jump ;
+
+      # Evaluate center expression
+      ast AST_CENTER take ctx lctx ast_push_value ;
+      lctx ctx ast AST_CENTER take ctx lctx ast_eval_type type_idx lctx_convert_stack ;
+
+      # cctx_gen_label_jump
+      ctx lctx end_lab JUMP_TYPE_JMP 0 cctx_gen_label_jump ;
+
+      # Evaluate right expression
+      lctx ctx else_lab lctx_fix_label ;
+      ast AST_RIGHT take ctx lctx ast_push_value ;
+      lctx ctx ast AST_RIGHT take ctx lctx ast_eval_type type_idx lctx_convert_stack ;
+      lctx ctx end_lab lctx_fix_label ;
+
+      @processed 1 = ;
+    }
+
     processed "ast_push_value: not implemented" assert_msg ;
   }
 }
@@ -3853,7 +3924,7 @@ fun cctx_compile_statement 2 {
     # Compile guard expression
     @tok ctx cctx_get_token_or_fail = ;
     tok "(" strcmp 0 == "cctx_compile_statement: ( expected" assert_msg ;
-    ctx lctx TYPE_UINT ")" cctx_compile_expression ;
+    ctx lctx TYPE_BOOL ")" cctx_compile_expression ;
     @tok ctx cctx_get_token_or_fail = ;
     tok ")" strcmp 0 == "cctx_compile_statement: ) expected" assert_msg ;
 
@@ -3878,6 +3949,7 @@ fun cctx_compile_statement 2 {
       ctx cctx_give_back_token ;
     }
     lctx ctx end_lab lctx_fix_label ;
+
     @processed 1 = ;
   }
 
@@ -3902,7 +3974,7 @@ fun cctx_compile_statement 2 {
 
     # Compile guard expression
     lctx ctx restart_lab lctx_fix_label ;
-    ctx lctx TYPE_UINT ";" cctx_compile_expression ;
+    ctx lctx TYPE_BOOL ";" cctx_compile_expression ;
     @tok ctx cctx_get_token_or_fail = ;
     tok ";" strcmp 0 == "cctx_compile_statement: second ; expected after for" assert_msg ;
 
@@ -3953,7 +4025,7 @@ fun cctx_compile_statement 2 {
     lctx ctx continue_lab lctx_fix_label ;
     @tok ctx cctx_get_token_or_fail = ;
     tok "(" strcmp 0 == "cctx_compile_statement: ( expected after while" assert_msg ;
-    ctx lctx TYPE_UINT ")" cctx_compile_expression ;
+    ctx lctx TYPE_BOOL ")" cctx_compile_expression ;
     @tok ctx cctx_get_token_or_fail = ;
     tok ")" strcmp 0 == "cctx_compile_statement: ) expected after while" assert_msg ;
 
