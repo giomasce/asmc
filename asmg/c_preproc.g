@@ -655,6 +655,47 @@ fun process_token 4 {
   changed ret ;
 }
 
+fun load_token_list_from_diskfs 0 {
+  $fd
+  @fd "/disk1/tokens" vfs_open = ;
+  $tokens
+  @tokens 4 vector_init = ;
+
+  $c
+  @c fd vfs_read = ;
+  $tok_size
+  $tok_cap
+  $tok
+  @tok_size 0 = ;
+  @tok_cap 4 = ;
+  @tok tok_cap malloc = ;
+
+  while c 0xffffffff != {
+    if tok_size tok_cap == {
+      @tok_cap tok_cap 2 * = ;
+      @tok tok_cap tok realloc = ;
+    }
+    tok_size tok_cap < "load_token_list_from_diskfs: error 1" assert_msg ;
+    if c '\n' == {
+      tok tok_size + '\0' =c ;
+      tokens tok vector_push_back ;
+      @tok_size 0 = ;
+      @tok_cap 4 = ;
+      @tok tok_cap malloc = ;
+    } else {
+      tok tok_size + c =c ;
+      @tok_size tok_size 1 + = ;
+    }
+    @c fd vfs_read = ;
+  }
+
+  tok free ;
+  tok_size 0 == "load_token_list_from_diskfs: file does not finish with a newline" assert_msg ;
+
+  fd vfs_close ;
+  tokens ret ;
+}
+
 fun dump_token_list_to_debugfs 1 {
   $tokens
   @tokens 0 param = ;
