@@ -264,9 +264,9 @@ fun ast_rewind_stack 3 {
   }
 }
 
-ifun ast_parse 2
+ifun ast_parse1 2
 
-fun ast_parse2 2 {
+fun ast_parsev 2 {
   $int
   $end_toks
   @int 1 param = ;
@@ -334,8 +334,8 @@ fun ast_parse2 2 {
             # If this is the ternary operator, parse the center part
             # immediately
             if tok "?" strcmp 0 == {
-              @center_ast int ":" ast_parse = ;
-              int int ASTINT_GET_TOKEN_OR_FAIL take \1 ":" strcmp 0 == "ast_parse2: error 1" assert_msg ;
+              @center_ast int ":" ast_parse1 = ;
+              int int ASTINT_GET_TOKEN_OR_FAIL take \1 ":" strcmp 0 == "ast_parsev: error 1" assert_msg ;
             }
             operator_stack tok strdup vector_push_back ;
             center_stack center_ast vector_push_back ;
@@ -360,8 +360,8 @@ fun ast_parse2 2 {
               } else {
                 # Roll back token and parse arguments
                 int int ASTINT_GIVE_BACK_TOKEN take \1 ;
-                @ast int ")" ast_parse = ;
-                int int ASTINT_GET_TOKEN_OR_FAIL take \1 ")" strcmp 0 == "ast_parse2: error 2" assert_msg ;
+                @ast int ")" ast_parse1 = ;
+                int int ASTINT_GET_TOKEN_OR_FAIL take \1 ")" strcmp 0 == "ast_parsev: error 2" assert_msg ;
               }
               operator_stack tok strdup vector_push_back ;
               center_stack 0 vector_push_back ;
@@ -369,8 +369,8 @@ fun ast_parse2 2 {
               operand_stack ast vector_push_back ;
             } else {
               if tok "[" strcmp 0 == {
-                @ast int "]" ast_parse = ;
-                int int ASTINT_GET_TOKEN_OR_FAIL take \1 "]" strcmp 0 == "ast_parse2: error 3" assert_msg ;
+                @ast int "]" ast_parse1 = ;
+                int int ASTINT_GET_TOKEN_OR_FAIL take \1 "]" strcmp 0 == "ast_parsev: error 3" assert_msg ;
                 operator_stack tok strdup vector_push_back ;
                 center_stack 0 vector_push_back ;
                 operator_stack operand_stack center_stack ast_rewind_stack ;
@@ -431,8 +431,8 @@ fun ast_parse2 2 {
           } else {
             $ast
             if tok "(" strcmp 0 == {
-              @ast int ")" ast_parse = ;
-              int int ASTINT_GET_TOKEN_OR_FAIL take \1 ")" strcmp 0 == "ast_parse2: error 4" assert_msg ;
+              @ast int ")" ast_parse1 = ;
+              int int ASTINT_GET_TOKEN_OR_FAIL take \1 ")" strcmp 0 == "ast_parsev: error 4" assert_msg ;
             } else {
               # Operand as we expect, push it in the operand stack
               @ast ast_init = ;
@@ -480,7 +480,7 @@ fun ast_parse2 2 {
   res ret ;
 }
 
-fun ast_parse 2 {
+fun ast_parse1 2 {
   $int
   $end_tok
   @int 1 param = ;
@@ -490,12 +490,12 @@ fun ast_parse 2 {
   @end_toks 4 vector_init = ;
   end_toks end_tok vector_push_back ;
   $res
-  @res int end_toks ast_parse2 = ;
+  @res int end_toks ast_parsev = ;
   end_toks vector_destroy ;
   res ret ;
 }
 
-fun ast_parse3 3 {
+fun ast_parse2 3 {
   $int
   $end_tok1
   $end_tok2
@@ -508,12 +508,12 @@ fun ast_parse3 3 {
   end_toks end_tok1 vector_push_back ;
   end_toks end_tok2 vector_push_back ;
   $res
-  @res int end_toks ast_parse2 = ;
+  @res int end_toks ast_parsev = ;
   end_toks vector_destroy ;
   res ret ;
 }
 
-fun ast_parse4 4 {
+fun ast_parse3 4 {
   $int
   $end_tok1
   $end_tok2
@@ -529,7 +529,7 @@ fun ast_parse4 4 {
   end_toks end_tok2 vector_push_back ;
   end_toks end_tok3 vector_push_back ;
   $res
-  @res int end_toks ast_parse2 = ;
+  @res int end_toks ast_parsev = ;
   end_toks vector_destroy ;
   res ret ;
 }

@@ -1280,7 +1280,7 @@ fun cctx_parse_ast1 2 {
   }
 
   $res
-  @res ctx CCTX_ASTINT take term ast_parse = ;
+  @res ctx CCTX_ASTINT take term ast_parse1 = ;
 
   if ctx CCTX_VERBOSE take {
     " </pa1>" 1 platform_log ;
@@ -1302,7 +1302,7 @@ fun cctx_parse_ast2 3 {
   }
 
   $res
-  @res ctx CCTX_ASTINT take term1 term2 ast_parse3 = ;
+  @res ctx CCTX_ASTINT take term1 term2 ast_parse2 = ;
 
   if ctx CCTX_VERBOSE take {
     " </pa2>" 1 platform_log ;
@@ -1326,7 +1326,7 @@ fun cctx_parse_ast3 4 {
   }
 
   $res
-  @res ctx CCTX_ASTINT take term1 term2 term3 ast_parse4 = ;
+  @res ctx CCTX_ASTINT take term1 term2 term3 ast_parse3 = ;
 
   if ctx CCTX_VERBOSE take {
     " </pa3>" 1 platform_log ;

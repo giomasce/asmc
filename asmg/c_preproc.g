@@ -1080,7 +1080,7 @@ fun preproc_eval 2 {
           @i 0 1 - = ;
           $int
           @int repl @i ppctx_astint_init = ;
-          @ast2 int ";;" ast_parse = ;
+          @ast2 int ";;" ast_parse1 = ;
           int ppctx_astint_destroy ;
           $res
           @res ctx ast2 preproc_eval = ;
@@ -1296,7 +1296,7 @@ fun preproc_process_elif 5 {
   $ast
   $int
   @int intoks iptr ppctx_astint_init = ;
-  @ast int "\n" ast_parse = ;
+  @ast int "\n" ast_parse1 = ;
   int ppctx_astint_destroy ;
   #ast ast_dump ;
   $value
@@ -1331,7 +1331,7 @@ fun preproc_process_if 5 {
   $ast
   $int
   @int intoks iptr ppctx_astint_init = ;
-  @ast int "\n" ast_parse = ;
+  @ast int "\n" ast_parse1 = ;
   int ppctx_astint_destroy ;
   #ast ast_dump ;
   $value
