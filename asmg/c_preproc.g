@@ -111,6 +111,10 @@ fun ppctx_astint_init 2 {
   int PPCTX_ASTINT_PARSE_TYPE take_addr @ppctx_astint_parse_type = ;
   int PPCTX_ASTINT_INTOKS take_addr intoks = ;
   int PPCTX_ASTINT_IPTR take_addr iptr = ;
+
+  # When initialized, the index pointer is one token behind
+  int PPCTX_ASTINT_IPTR take int PPCTX_ASTINT_IPTR take ** 1 + = ;
+
   int ret ;
 }
 

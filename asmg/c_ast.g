@@ -158,7 +158,7 @@ fun ast_get_priority 1 {
   if str "|=" strcmp 0 == { 14 ret ; }
   if str "," strcmp 0 == { 15 ret ; }
   if str " " strcmp 0 == { 100 ret ; }
-  0 "Not an operator" assert_msg ;
+  0 "Not an operator" str assert_msg_str ;
 }
 
 # See http://en.cppreference.com/w/c/language/operator_precedence
@@ -216,7 +216,7 @@ fun ast_get_ass_direction 1 {
   if str "|=" strcmp 0 == { 0 ret ; }
   if str "," strcmp 0 == { 1 ret ; }
   if str " " strcmp 0 == { 0 ret ; }
-  0 "Not an operator" assert_msg ;
+  0 "Not an operator" str assert_msg_str ;
 }
 
 fun ast_rewind_stack 3 {

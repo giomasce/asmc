@@ -133,17 +133,18 @@ int test_strings() {
 
 #define YES
 #undef NO
+#define TEST 1 < 2
 
 int test_define() {
   int i = 0;
-#ifdef NO
+#if defined(NO)
   return 0;
 #ifdef YES
   return 0;
 #endif
 #endif
   i = i + 1;
-#ifdef NO
+#if !defined(YES)
   return 0;
 #else
   i = i + 1;
@@ -153,9 +154,15 @@ int test_define() {
   return 0;
 #endif
 #endif
-#ifdef YES
+#if defined(YES)
   i = i + 1;
 #else
+ return 0;
+#endif
+#if TEST
+ i = i + 1;
+#endif
+#if !TEST
  return 0;
 #endif
  return i;
@@ -163,6 +170,7 @@ int test_define() {
 
 #undef YES
 #undef NO
+#undef TEST
 
 int test_extension() {
   char c = -1;
