@@ -93,8 +93,10 @@ int test_array() {
   *x = 100;
   //*(x+1) = 200;
   *(x+2) = 300;
+  x[3] = 400;
+  if (3[x] != 400) return 0;
   //return (x+2)-x;
-  return *(1+x);
+  return x[1];
 }
 
 int test_struct() {

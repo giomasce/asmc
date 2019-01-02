@@ -2567,12 +2567,21 @@ fun ast_eval_type 3 {
       @processed 1 = ;
     }
 
-    if name "*_PRE" strcmp 0 == {
+    if name "*_PRE" strcmp 0 == name "[" strcmp 0 == || {
       $ptr_idx
       $ptr_type
-      @ptr_idx ast AST_RIGHT take ctx lctx ast_eval_type = ;
+      $ptr_ast
+      @ptr_ast ast AST_RIGHT take = ;
+      if name "[" strcmp 0 == {
+        @ptr_idx ptr_ast ctx lctx ast_eval_type = ;
+        @ptr_type ctx ptr_idx cctx_get_type = ;
+        if ptr_type TYPE_KIND take TYPE_KIND_POINTER != {
+          @ptr_ast ast AST_LEFT take = ;
+        }
+      }
+      @ptr_idx ptr_ast ctx lctx ast_eval_type = ;
       @ptr_type ctx ptr_idx cctx_get_type = ;
-      ptr_type TYPE_KIND take TYPE_KIND_POINTER == "ast_eval_type: right is not a pointer" assert_msg ;
+      ptr_type TYPE_KIND take TYPE_KIND_POINTER == "ast_eval_type: arg not a pointer" assert_msg ;
       @type_idx ptr_type TYPE_BASE take = ;
       @processed 1 = ;
     }
@@ -2642,7 +2651,7 @@ fun ast_eval_type 3 {
       @processed 1 = ;
     }
 
-    processed "ast_eval_type: not implemented" assert_msg ;
+    processed "ast_eval_type: not implemented" name assert_msg_str ;
   }
 
   # Process decaying
@@ -2671,6 +2680,7 @@ fun ast_eval_type 3 {
 }
 
 ifun ast_push_value 3
+ifun ast_push_value_ptr 3
 
 fun ast_push_addr 3 {
   $ast
@@ -2775,6 +2785,10 @@ fun ast_push_addr 3 {
       ctx 0x50 cctx_emit ;
 
       @processed 1 = ;
+    }
+
+    if name "[" strcmp 0 == {
+      @processed ast ctx lctx ast_push_value_ptr = ;
     }
 
     processed "ast_push_addr: not implemented" assert_msg ;
@@ -3569,7 +3583,7 @@ fun ast_push_value_ptr 3 {
 
   $sum
   $subtract
-  @sum name "+" strcmp 0 == = ;
+  @sum name "+" strcmp 0 == name "[" strcmp 0 == || = ;
   @subtract name "-" strcmp 0 == = ;
 
   sum subtract || "ast_push_value_ptr: not a sum or a subtraction" assert_msg ;
@@ -3806,7 +3820,7 @@ fun ast_push_value 3 {
       @processed 1 = ;
     }
 
-    if name "*_PRE" strcmp 0 == {
+    if name "*_PRE" strcmp 0 == name "[" strcmp 0 == || {
       # Push the address
       ast ctx lctx ast_push_addr ;
       # pop eax
