@@ -1056,7 +1056,21 @@ fun preproc_process_include 4 {
   intoks iptr discard_white_tokens ;
 }
 
+ifun preproc_eval_ext 2
+
 fun preproc_eval 2 {
+  $ctx
+  $ast
+  @ctx 1 param = ;
+  @ast 0 param = ;
+
+  $value
+  @value ast @preproc_eval_ext ctx ast_eval = ;
+  value "preproc_eval: failed" assert_msg ;
+  value ** ret ;
+}
+
+fun preproc_eval_ext 2 {
   $ctx
   $ast
   @ctx 1 param = ;
@@ -1069,6 +1083,8 @@ fun preproc_eval 2 {
 
   if ast AST_TYPE take 0 == {
     # Operand
+    $value
+    @value i64_init = ;
     if name is_valid_identifier {
       if defs name map_has {
         $subst
@@ -1077,7 +1093,7 @@ fun preproc_eval 2 {
         @repl subst SUBST_REPLACEMENT take = ;
         subst SUBST_IS_FUNCTION take ! "preproc_eval: not supported" assert_msg ;
         if repl vector_size 1 == repl 0 vector_at is_valid_identifier ! && {
-          repl 0 vector_at atoi ret ;
+          value repl 0 vector_at atoi i64_from_u32 ;
         } else {
           $ast2
           $i
@@ -1089,103 +1105,30 @@ fun preproc_eval 2 {
           $res
           @res ctx ast2 preproc_eval = ;
           ast2 ast_destroy ;
-          res ret ;
+          value res i64_from_u32 ;
         }
       } else {
-        0 ret ;
+        value 0 i64_from_u32 ;
       }
     } else {
-      name atoi ret ;
+      value name atoi i64_from_u32 ;
     }
+    value ret ;
   } else {
-    # Operator
-    ast AST_TYPE take 1 == "preproc_eval: error 1" assert_msg ;
-
-    if name "&&" strcmp 0 == {
-      ctx ast AST_LEFT take preproc_eval ctx ast AST_RIGHT take preproc_eval && ret ;
-    }
-
-    if name "||" strcmp 0 == {
-      ctx ast AST_LEFT take preproc_eval ctx ast AST_RIGHT take preproc_eval || ret ;
-    }
-
-    if name "&" strcmp 0 == {
-      ctx ast AST_LEFT take preproc_eval ctx ast AST_RIGHT take preproc_eval & ret ;
-    }
-
-    if name "|" strcmp 0 == {
-      ctx ast AST_LEFT take preproc_eval ctx ast AST_RIGHT take preproc_eval | ret ;
-    }
-
-    if name "==" strcmp 0 == {
-      ctx ast AST_LEFT take preproc_eval ctx ast AST_RIGHT take preproc_eval == ret ;
-    }
-
-    if name "!=" strcmp 0 == {
-      ctx ast AST_LEFT take preproc_eval ctx ast AST_RIGHT take preproc_eval != ret ;
-    }
-
-    if name ">=" strcmp 0 == {
-      ctx ast AST_LEFT take preproc_eval ctx ast AST_RIGHT take preproc_eval >= ret ;
-    }
-
-    if name "<=" strcmp 0 == {
-      ctx ast AST_LEFT take preproc_eval ctx ast AST_RIGHT take preproc_eval <= ret ;
-    }
-
-    if name ">" strcmp 0 == {
-      ctx ast AST_LEFT take preproc_eval ctx ast AST_RIGHT take preproc_eval > ret ;
-    }
-
-    if name "<" strcmp 0 == {
-      ctx ast AST_LEFT take preproc_eval ctx ast AST_RIGHT take preproc_eval < ret ;
-    }
-
-    if name "+" strcmp 0 == {
-      ctx ast AST_LEFT take preproc_eval ctx ast AST_RIGHT take preproc_eval + ret ;
-    }
-
-    if name "-" strcmp 0 == {
-      ctx ast AST_LEFT take preproc_eval ctx ast AST_RIGHT take preproc_eval - ret ;
-    }
-
-    if name "*" strcmp 0 == {
-      ctx ast AST_LEFT take preproc_eval ctx ast AST_RIGHT take preproc_eval * ret ;
-    }
-
-    if name "/" strcmp 0 == {
-      ctx ast AST_LEFT take preproc_eval ctx ast AST_RIGHT take preproc_eval / ret ;
-    }
-
-    if name "%" strcmp 0 == {
-      ctx ast AST_LEFT take preproc_eval ctx ast AST_RIGHT take preproc_eval % ret ;
-    }
-
-    if name "^" strcmp 0 == {
-      ctx ast AST_LEFT take preproc_eval ctx ast AST_RIGHT take preproc_eval ^ ret ;
-    }
-
+    # Operator: the only special operator here is "defined"
     if name "defined_PRE" strcmp 0 == {
+      $value
+      @value i64_init = ;
       $child
       @child ast AST_RIGHT take = ;
       child AST_TYPE take 0 == "preproc_eval: not an identifier" assert_msg ;
       $ident
       @ident child AST_NAME take = ;
-      defs ident map_has ret ;
+      value defs ident map_has i64_from_u32 ;
+      value ret ;
     }
 
-    if name "!_PRE" strcmp 0 == {
-      ctx ast AST_RIGHT take preproc_eval ! ret ;
-    }
-
-    if name "-_PRE" strcmp 0 == {
-      0 ctx ast AST_RIGHT take preproc_eval - ret ;
-    }
-
-    "Please implement " 1 platform_log ;
-    name 1 platform_log ;
-    "\n" 1 platform_log ;
-    0 "preproc_eval: unsupported operation" assert_msg ;
+    0 ret ;
   }
 }
 

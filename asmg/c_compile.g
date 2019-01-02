@@ -2209,7 +2209,21 @@ fun cctx_gen_string 3 {
   str_label ret ;
 }
 
+ifun ast_eval_compile_ext 2
+
 fun ast_eval_compile 2 {
+  $ctx
+  $ast
+  @ctx 1 param = ;
+  @ast 0 param = ;
+
+  $value
+  @value ast @ast_eval_compile_ext ctx ast_eval = ;
+  value "ast_eval_compile: failed" assert_msg ;
+  value ** ret ;
+}
+
+fun ast_eval_compile_ext 2 {
   $ctx
   $ast
   @ctx 1 param = ;
@@ -2218,7 +2232,13 @@ fun ast_eval_compile 2 {
   $name
   @name ast AST_NAME take = ;
 
+  # "ast_eval_compile_ext: " 1 platform_log ;
+  # name 1 platform_log ;
+  # "\n" 1 platform_log ;
+
   if ast AST_TYPE take 0 == {
+    $value
+    @value i64_init = ;
     # Operand
     if name is_valid_identifier {
       $enum_consts
@@ -2235,102 +2255,28 @@ fun ast_eval_compile 2 {
         $type
         @type ctx type_idx cctx_get_type = ;
         if type TYPE_KIND take TYPE_KIND_ARRAY == type TYPE_KIND take TYPE_KIND_FUNCTION == || {
-          loc ret ;
+          value loc i64_from_u32 ;
         } else {
-          ctx type_idx cctx_type_footprint 4 == "ast_eval_compile: unsupported global" assert_msg ;
-          loc ** ret ;
+          ctx type_idx cctx_type_footprint 4 == "ast_eval_compile_ext: unsupported global" assert_msg ;
+          value loc ** i64_from_u32 ;
         }
       }
     } else {
       if name **c '\"' == {
         $str_label
         @str_label ctx 0 name cctx_gen_string = ;
-        ctx 0 str_label cctx_get_label_addr ret ;
+        value ctx 0 str_label cctx_get_label_addr i64_from_u32 ;
       } else {
-        name atoi_c ret ;
+        value name atoi_c i64_from_u32 ;
       }
     }
+    value ret ;
   } else {
-    # Operator
-    ast AST_TYPE take 1 == "ast_eval_compile: error 1" assert_msg ;
-
-    if name "&&" strcmp 0 == {
-      ctx ast AST_LEFT take ast_eval_compile ctx ast AST_RIGHT take ast_eval_compile && ret ;
-    }
-
-    if name "||" strcmp 0 == {
-      ctx ast AST_LEFT take ast_eval_compile ctx ast AST_RIGHT take ast_eval_compile || ret ;
-    }
-
-    if name "&" strcmp 0 == {
-      ctx ast AST_LEFT take ast_eval_compile ctx ast AST_RIGHT take ast_eval_compile & ret ;
-    }
-
-    if name "|" strcmp 0 == {
-      ctx ast AST_LEFT take ast_eval_compile ctx ast AST_RIGHT take ast_eval_compile | ret ;
-    }
-
-    if name "==" strcmp 0 == {
-      ctx ast AST_LEFT take ast_eval_compile ctx ast AST_RIGHT take ast_eval_compile == ret ;
-    }
-
-    if name "!=" strcmp 0 == {
-      ctx ast AST_LEFT take ast_eval_compile ctx ast AST_RIGHT take ast_eval_compile != ret ;
-    }
-
-    if name ">=" strcmp 0 == {
-      ctx ast AST_LEFT take ast_eval_compile ctx ast AST_RIGHT take ast_eval_compile >= ret ;
-    }
-
-    if name "<=" strcmp 0 == {
-      ctx ast AST_LEFT take ast_eval_compile ctx ast AST_RIGHT take ast_eval_compile <= ret ;
-    }
-
-    if name ">" strcmp 0 == {
-      ctx ast AST_LEFT take ast_eval_compile ctx ast AST_RIGHT take ast_eval_compile > ret ;
-    }
-
-    if name "<" strcmp 0 == {
-      ctx ast AST_LEFT take ast_eval_compile ctx ast AST_RIGHT take ast_eval_compile < ret ;
-    }
-
-    if name "+" strcmp 0 == {
-      ctx ast AST_LEFT take ast_eval_compile ctx ast AST_RIGHT take ast_eval_compile + ret ;
-    }
-
-    if name "-" strcmp 0 == {
-      ctx ast AST_LEFT take ast_eval_compile ctx ast AST_RIGHT take ast_eval_compile - ret ;
-    }
-
-    if name "*" strcmp 0 == {
-      ctx ast AST_LEFT take ast_eval_compile ctx ast AST_RIGHT take ast_eval_compile * ret ;
-    }
-
-    if name "/" strcmp 0 == {
-      ctx ast AST_LEFT take ast_eval_compile ctx ast AST_RIGHT take ast_eval_compile / ret ;
-    }
-
-    if name "%" strcmp 0 == {
-      ctx ast AST_LEFT take ast_eval_compile ctx ast AST_RIGHT take ast_eval_compile % ret ;
-    }
-
-    if name "^" strcmp 0 == {
-      ctx ast AST_LEFT take ast_eval_compile ctx ast AST_RIGHT take ast_eval_compile ^ ret ;
-    }
-
-    if name "!_PRE" strcmp 0 == {
-      ctx ast AST_RIGHT take ast_eval_compile ! ret ;
-    }
-
-    if name "-_PRE" strcmp 0 == {
-      0 ctx ast AST_RIGHT take ast_eval_compile - ret ;
-    }
-
-    "Please implement " 1 platform_log ;
-    name 1 platform_log ;
-    "\n" 1 platform_log ;
-    0 "ast_eval_compile: unsupported operation" assert_msg ;
+    # Operator: all operators are handler by generic code
+    0 ret ;
   }
+
+  0 "ast_eval_compile_ext: should not arrive here" assert_msg ;
 }
 
 ifun ast_eval_type 3
@@ -4048,7 +3994,7 @@ fun ast_push_value 3 {
   }
 }
 
-fun ast_eval 3 {
+fun ast_c_eval 3 {
   $ast
   $ctx
   $lctx
@@ -4087,7 +4033,7 @@ fun cctx_compile_expression 2 {
   @ast ctx end_tok cctx_parse_ast1 = ;
   #ast ctx lctx ast_eval_type ;
   if target_type_idx TYPE_VOID == {
-    ast ctx lctx ast_eval ;
+    ast ctx lctx ast_c_eval ;
   } else {
     ast ctx lctx ast_push_value ;
     lctx ctx ast ctx lctx ast_eval_type target_type_idx lctx_convert_stack ;
@@ -4321,7 +4267,7 @@ fun cctx_compile_statement 2 {
           ast AST_NAME take_addr "=" strdup = ;
           ast AST_RIGHT take_addr right_ast = ;
           ast AST_LEFT take_addr left_ast = ;
-          ast ctx lctx ast_eval ;
+          ast ctx lctx ast_c_eval ;
           ast ast_destroy ;
         } else {
           ctx cctx_give_back_token ;

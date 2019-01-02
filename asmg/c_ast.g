@@ -602,3 +602,166 @@ fun ast_dump_int 2 {
 fun ast_dump 1 {
   0 param 0 ast_dump_int ;
 }
+
+fun ast_eval 3 {
+  $ast
+  $ext
+  $ctx
+  @ast 2 param = ;
+  @ext 1 param = ;
+  @ctx 0 param = ;
+
+  # Already evaluated: return directly
+  if ast AST_VALUE take 0 != {
+    ast AST_VALUE take ret ;
+  }
+
+  # Try to hand over to extension: if it succeeds, return directly
+  $res
+  @res ctx ast ext \2 = ;
+  if res 0 != {
+    ast AST_VALUE take_addr res = ;
+    res ret ;
+  }
+
+  # No success so far: we have to try to do something ourselves
+  $name
+  @name ast AST_NAME take = ;
+
+  # "ast_eval: " 1 platform_log ;
+  # name 1 platform_log ;
+  # "\n" 1 platform_log ;
+
+  if ast AST_TYPE take 0 == {
+    # We have no idea of how to treat an operand in general...
+    0 ret ;
+  } else {
+    # Operator: first evaluate the right operand, and fail if it fails
+    $right_value
+    @right_value ast AST_RIGHT take ext ctx ast_eval = ;
+    if right_value 0 == {
+      0 ret ;
+    }
+
+    $value
+    @value i64_init = ;
+    value right_value i64_copy ;
+    ast AST_VALUE take_addr value = ;
+
+    # Then execute prefix operators
+    if name "!_PRE" strcmp 0 == {
+      value i64_lnot ;
+      value ret ;
+    }
+
+    # Then execute prefix operators
+    if name "~_PRE" strcmp 0 == {
+      value i64_not ;
+      value ret ;
+    }
+
+    # Then execute prefix operators
+    if name "-_PRE" strcmp 0 == {
+      value i64_neg ;
+      value ret ;
+    }
+
+    # If nothing matched, evaluate left operand and try with infix
+    # operators
+    $left_value
+    @left_value ast AST_LEFT take ext ctx ast_eval = ;
+    if left_value 0 == {
+      value i64_destroy ;
+      ast AST_VALUE take_addr 0 = ;
+      0 ret ;
+    }
+    value left_value i64_copy ;
+
+    if name "&&" strcmp 0 == {
+      value right_value i64_land ;
+      value ret ;
+    }
+
+    if name "||" strcmp 0 == {
+      value right_value i64_lor ;
+      value ret ;
+    }
+
+    if name "&" strcmp 0 == {
+      value right_value i64_and ;
+      value ret ;
+    }
+
+    if name "|" strcmp 0 == {
+      value right_value i64_or ;
+      value ret ;
+    }
+
+    if name "^" strcmp 0 == {
+      value right_value i64_xor ;
+      value ret ;
+    }
+
+    if name "==" strcmp 0 == {
+      value right_value i64_eq ;
+      value ret ;
+    }
+
+    if name "!=" strcmp 0 == {
+      value right_value i64_neq ;
+      value ret ;
+    }
+
+    if name ">=" strcmp 0 == {
+      value right_value i64_ge ;
+      value ret ;
+    }
+
+    if name "<=" strcmp 0 == {
+      value right_value i64_le ;
+      value ret ;
+    }
+
+    if name ">" strcmp 0 == {
+      value right_value i64_g ;
+      value ret ;
+    }
+
+    if name "<" strcmp 0 == {
+      value right_value i64_l ;
+      value ret ;
+    }
+
+    if name "+" strcmp 0 == {
+      value right_value i64_add ;
+      value ret ;
+    }
+
+    if name "-" strcmp 0 == {
+      value right_value i64_sub ;
+      value ret ;
+    }
+
+    if name "*" strcmp 0 == {
+      value right_value i64_mul ;
+      value ret ;
+    }
+
+    if name "/" strcmp 0 == {
+      value right_value i64_udiv ;
+      value ret ;
+    }
+
+    if name "%" strcmp 0 == {
+      value right_value i64_umod ;
+      value ret ;
+    }
+
+    # Nothing matched, so we declare failure
+    value i64_destroy ;
+    ast AST_VALUE take_addr 0 = ;
+    0 ret ;
+  }
+
+  0 "ast_eval: should not arrive here" assert_msg ;
+}
