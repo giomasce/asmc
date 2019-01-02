@@ -3689,13 +3689,15 @@ fun ast_push_value 3 {
   # In case of type decaying, return the address
   $orig_type_idx
   @orig_type_idx ast AST_ORIG_TYPE_IDX take = ;
-  $orig_type
-  @orig_type ctx orig_type_idx cctx_get_type = ;
-  $orig_kind
-  @orig_kind orig_type TYPE_KIND take = ;
-  if orig_kind TYPE_KIND_FUNCTION == orig_kind TYPE_KIND_ARRAY == || {
-    ast ctx lctx ast_push_addr ;
-    ret ;
+  if orig_type_idx 0xffffffff != {
+    $orig_type
+    @orig_type ctx orig_type_idx cctx_get_type = ;
+    $orig_kind
+    @orig_kind orig_type TYPE_KIND take = ;
+    if orig_kind TYPE_KIND_FUNCTION == orig_kind TYPE_KIND_ARRAY == || {
+      ast ctx lctx ast_push_addr ;
+      ret ;
+    }
   }
 
   if ast AST_TYPE take 0 == {

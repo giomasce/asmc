@@ -57,6 +57,7 @@ fun vector_at_addr 2 {
   $idx
   @vptr 1 param = ;
   @idx 0 param = ;
+  idx 0 >= "vector_at_addr: negative vector access" idx vptr VECTOR_SIZE take assert_msg_int_int ;
   idx vptr VECTOR_SIZE take < "vector_at_addr: vector access out of bounds" idx vptr VECTOR_SIZE take assert_msg_int_int ;
   vptr VECTOR_DATA take idx vptr VECTOR_SIZEOF_ELEM take * + ret ;
 }
@@ -66,6 +67,7 @@ fun vector_at 2 {
   $idx
   @vptr 1 param = ;
   @idx 0 param = ;
+  idx 0 >= "vector_at: negative vector access" idx vptr VECTOR_SIZE take assert_msg_int_int ;
   idx vptr VECTOR_SIZE take < "vector_at: vector access out of bounds" idx vptr VECTOR_SIZE take assert_msg_int_int ;
   vptr VECTOR_DATA take idx vptr VECTOR_SIZEOF_ELEM take * + ** ret ;
 }
