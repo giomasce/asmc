@@ -1,5 +1,5 @@
 # This file is part of asmc, a bootstrapping OS with minimal seed
-# Copyright (C) 2018 Giovanni Mascellani <gio@debian.org>
+# Copyright (C) 2018-2019 Giovanni Mascellani <gio@debian.org>
 # https://gitlab.com/giomasce/asmc
 
 # This program is free software: you can redistribute it and/or modify
@@ -82,12 +82,6 @@ fun read_ret_instr 0 {
   __ret_instr ret ;
 }
 
-$assert_pos
-
-fun set_assert_pos 1 {
-  @assert_pos 0 param = ;
-}
-
 fun assert 1 {
   if 0 param ! {
     "\nASSERTION FAILED\n" 1 platform_log ;
@@ -98,9 +92,7 @@ fun assert 1 {
 
 fun assert_msg 2 {
   if 1 param ! {
-    "\nASSERTION FAILED at line " 1 platform_log ;
-    assert_pos itoa 1 platform_log ;
-    "\n" 1 platform_log ;
+    "\nASSERTION FAILED\n" 1 platform_log ;
     0 param 1 platform_log ;
     "\n" 1 platform_log ;
     dump_stacktrace ;
@@ -110,9 +102,7 @@ fun assert_msg 2 {
 
 fun assert_msg_str 3 {
   if 2 param ! {
-    "\nASSERTION FAILED at line " 1 platform_log ;
-    assert_pos itoa 1 platform_log ;
-    "\n" 1 platform_log ;
+    "\nASSERTION FAILED\n" 1 platform_log ;
     1 param 1 platform_log ;
     "\n" 1 platform_log ;
     0 param 1 platform_log ;
@@ -124,9 +114,7 @@ fun assert_msg_str 3 {
 
 fun assert_msg_int_int 4 {
   if 3 param ! {
-    "\nASSERTION FAILED at line " 1 platform_log ;
-    assert_pos itoa 1 platform_log ;
-    "\n" 1 platform_log ;
+    "\nASSERTION FAILED\n" 1 platform_log ;
     2 param 1 platform_log ;
     "\n" 1 platform_log ;
     1 param itoa 1 platform_log ;

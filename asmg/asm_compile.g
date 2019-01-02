@@ -575,7 +575,6 @@ fun asmctx_compile 1 {
       if line_num 1000 % 0 == ctx ASMCTX_VERBOSE take && {
         "." 1 platform_log ;
       }
-      line_num set_assert_pos ;
       @cont ctx opcode_map asmctx_parse_line = ;
       @line_num line_num 1 + = ;
     }
