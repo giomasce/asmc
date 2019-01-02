@@ -28,6 +28,7 @@ $_i64_add
 $_i64_sub
 $_i64_neg
 $_i64_mul
+$_i64_udiv_64_by_32
 $_i64_shl
 $_i64_shr
 $_i64_sar
@@ -66,6 +67,7 @@ fun int64_init 0 {
   @_i64_sub int64_runtime "i64_sub" asmctx_get_symbol_addr = ;
   @_i64_neg int64_runtime "i64_neg" asmctx_get_symbol_addr = ;
   @_i64_mul int64_runtime "i64_mul" asmctx_get_symbol_addr = ;
+  @_i64_udiv_64_by_32 int64_runtime "i64_udiv_64_by_32" asmctx_get_symbol_addr = ;
   @_i64_shl int64_runtime "i64_shl" asmctx_get_symbol_addr = ;
   @_i64_shr int64_runtime "i64_shr" asmctx_get_symbol_addr = ;
   @_i64_sar int64_runtime "i64_sar" asmctx_get_symbol_addr = ;
@@ -166,6 +168,10 @@ fun i64_neg 1 {
 
 fun i64_mul 2 {
   1 param 0 param _i64_mul \2 ;
+}
+
+fun i64_udiv_64_by_32 2 {
+  1 param 0 param _i64_udiv_64_by_32 \2 ret ;
 }
 
 fun i64_shl 2 {

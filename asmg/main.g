@@ -185,6 +185,10 @@ fun main 0 {
     "Compiling int64.g... " 1 platform_log ;
     "int64.g" platform_g_compile ;
     "done!\n" 1 platform_log ;
+
+    "Compiling int64_div.g... " 1 platform_log ;
+    "int64_div.g" platform_g_compile ;
+    "done!\n" 1 platform_log ;
   }
 
   if compile_c {
@@ -273,6 +277,7 @@ fun main 0 {
 
     if TEST_INT64 {
       0 "int64_test" platform_get_symbol \0 ;
+      0 "int64_test_div" platform_get_symbol \0 ;
     }
 
     if TEST_C {

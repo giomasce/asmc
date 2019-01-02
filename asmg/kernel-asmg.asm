@@ -317,6 +317,25 @@ mod:
   mov eax, edx
   ret
 
+str_uover:
+  db '/u'
+  db 0
+uover:
+  mov edx, 0
+  mov eax, [esp+8]
+  div DWORD [esp+4]
+  ret
+
+str_umod:
+  db '%u'
+  db 0
+umod:
+  mov edx, 0
+  mov eax, [esp+8]
+  div DWORD [esp+4]
+  mov eax, edx
+  ret
+
 str_eq:
   db '=='
   db 0
@@ -655,6 +674,18 @@ init_g_operations:
   push 2
   push mod
   push str_mod
+  call add_symbol
+  add esp, 12
+
+  push 2
+  push uover
+  push str_uover
+  call add_symbol
+  add esp, 12
+
+  push 2
+  push umod
+  push str_umod
   call add_symbol
   add esp, 12
 

@@ -176,6 +176,20 @@ i64_mul:
   pop ebx
   ret
 
+  ;; Division is not implemented directly in Assembly, because that
+  ;; would require a lot of obscure code; instead, here we
+  ;; implement only the unsigned division of a 64 bits number by a
+  ;; 32 bits number. The rest is implemented in G.
+i64_udiv_64_by_32:
+  mov ecx, [esp+8]
+  mov edx, [ecx+4]
+  mov eax, [ecx]
+  div [esp+4]
+  xor edx, edx
+  mov [ecx+4], edx
+  mov [ecx], eax
+  ret
+
   ;; Left shifts are done independently on the two dwords, except that
   ;; for the upper dword we have to shift in bits from the lower
   ;; dword using shld; if the shift count is 32 or more, we also
