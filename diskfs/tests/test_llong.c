@@ -15,6 +15,10 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
+long long square(long long x) {
+    return x*x;
+}
+
 int test_llong() {
     long long x = 10;
     int y = x;
@@ -33,5 +37,6 @@ int test_llong_sum2() {
     unsigned long long y = 4000000000;
     unsigned long long z = x + y;
     unsigned long long w = 2 * x;
+    long long sq = square(2);
     return z == w;
 }

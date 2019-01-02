@@ -3560,8 +3560,12 @@ fun ast_gen_function_call 3 {
   if type_idx TYPE_VOID != {
     $res_footprint
     @res_footprint ctx ast ctx lctx ast_eval_type cctx_type_footprint = ;
-    res_footprint 4 == res_footprint 0 == || "ast_gen_function_call: return type is not scalar" assert_msg ;
-    if res_footprint 4 == {
+    res_footprint 4 == res_footprint 0 == || res_footprint 8 == || "ast_gen_function_call: return type is not scalar" assert_msg ;
+    if res_footprint 4 >= {
+      if res_footprint 8 == {
+        # push edx
+        ctx 0x52 cctx_emit ;
+      }
       # push eax
       ctx 0x50 cctx_emit ;
     }
@@ -3996,10 +4000,15 @@ fun cctx_compile_statement 2 {
     $ret_type
     @ret_type lctx LCTX_RETURN_TYPE_IDX take = ;
     if ret_type TYPE_VOID != {
-      ctx ret_type cctx_type_footprint 4 == "cctx_compile_statement: only returned scalar types are supported" assert_msg ;
       ctx lctx ret_type ";" cctx_compile_expression ;
       # pop eax
       ctx 0x58 cctx_emit ;
+      if ctx ret_type cctx_type_footprint 8 == {
+        # pop edx
+        ctx 0x5a cctx_emit ;
+      } else {
+        ctx ret_type cctx_type_footprint 4 == "cctx_compile_statement: only returned scalar types are supported" assert_msg ;
+      }
     }
     ctx lctx lctx LCTX_RETURN_LABEL take JUMP_TYPE_JMP 1 cctx_gen_label_jump ;
     @processed 1 = ;
