@@ -15,6 +15,23 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+  ;; Easy conversions from 32 bits numbers
+i64_from_32:
+  mov ecx, [esp+8]
+  mov eax, [esp+4]
+  cdq
+  mov [ecx], eax
+  mov [ecx+4], edx
+  ret
+
+i64_from_u32:
+  mov ecx, [esp+8]
+  mov eax, [esp+4]
+  xor edx, edx
+  mov [ecx], eax
+  mov [ecx+4], edx
+  ret
+
   ;; Bitwise operations are pretty straightforward
 i64_not:
   mov eax, [esp+4]

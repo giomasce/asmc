@@ -188,6 +188,10 @@ fun main 0 {
   }
 
   if compile_c {
+    "Compiling c_utils.g... " 1 platform_log ;
+    "c_utils.g" platform_g_compile ;
+    "done!\n" 1 platform_log ;
+
     "Compiling c_ast.g... " 1 platform_log ;
     "c_ast.g" platform_g_compile ;
     "done!\n" 1 platform_log ;

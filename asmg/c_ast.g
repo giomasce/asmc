@@ -28,7 +28,8 @@ const AST_RIGHT 16           # AST*
 const AST_TYPE_IDX 20        # int
 const AST_ORIG_TYPE_IDX 24   # int
 const AST_CAST_TYPE_IDX 28   # int
-const SIZEOF_AST 32
+const AST_VALUE 32           # int64*
+const SIZEOF_AST 36
 
 fun ast_init 0 {
   $ptr
@@ -41,6 +42,7 @@ fun ast_init 0 {
   ptr AST_TYPE_IDX take_addr 0xffffffff = ;
   ptr AST_ORIG_TYPE_IDX take_addr 0xffffffff = ;
   ptr AST_CAST_TYPE_IDX take_addr 0xffffffff = ;
+  ptr AST_VALUE take_addr 0 = ;
   ptr ret ;
 }
 
@@ -56,6 +58,9 @@ fun ast_destroy 1 {
   }
   if ptr AST_RIGHT take {
     ptr AST_RIGHT take ast_destroy ;
+  }
+  if ptr AST_VALUE take {
+    ptr AST_VALUE take i64_destroy ;
   }
   ptr free ;
 }

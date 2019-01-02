@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+$_i64_from_32
+$_i64_from_u32
 $_i64_not
 $_i64_and
 $_i64_or
@@ -50,6 +52,8 @@ fun int64_init 0 {
   int64_runtime asmctx_compile ;
   fd vfs_close ;
 
+  @_i64_from_32 int64_runtime "i64_from_32" asmctx_get_symbol_addr = ;
+  @_i64_from_u32 int64_runtime "i64_from_u32" asmctx_get_symbol_addr = ;
   @_i64_not int64_runtime "i64_not" asmctx_get_symbol_addr = ;
   @_i64_and int64_runtime "i64_and" asmctx_get_symbol_addr = ;
   @_i64_or int64_runtime "i64_or" asmctx_get_symbol_addr = ;
@@ -81,6 +85,26 @@ fun int64_destroy 0 {
   #int64_runtime asmctx_destroy ;
 }
 
+fun i64_init 0 {
+  $i
+  @i 8 malloc = ;
+  i 0 = ;
+  i 4 + 0 = ;
+  i ret ;
+}
+
+fun i64_destroy 1 {
+  0 param free ;
+}
+
+fun i64_to_32 1 {
+  0 param ** ret ;
+}
+
+fun i64_to_upper32 1 {
+  0 param 4 + ** ret ;
+}
+
 fun i64_copy 2 {
   $to
   $from
@@ -88,6 +112,14 @@ fun i64_copy 2 {
   @from 0 param = ;
 
   8 from to memcpy ;
+}
+
+fun i64_from_32 2 {
+  1 param 0 param _i64_from_32 \2 ;
+}
+
+fun i64_from_u32 2 {
+  1 param 0 param _i64_from_u32 \2 ;
 }
 
 fun i64_not 1 {

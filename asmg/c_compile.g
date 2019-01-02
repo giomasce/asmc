@@ -2388,6 +2388,118 @@ fun ast_arith_conv 4 {
   }
 }
 
+fun i64_fits_in 2 {
+  $i
+  $type_idx
+  @i 1 param = ;
+  @type_idx 0 param = ;
+
+  if type_idx TYPE_ULONG == { 1 ret ; }
+  if type_idx TYPE_LONG == { i i64_to_upper32 0x80000000 & 0 == ret ; }
+  if type_idx TYPE_UINT == { i i64_to_upper32 0 == ret ; }
+  if type_idx TYPE_INT == { i i64_to_upper32 0 == i i64_to_32 0x80000000 & 0 == && ret ; }
+
+  0 "i64_fits_in: unsupported type" assert_msg ;
+}
+
+fun ast_strtoll 1 {
+  $ast
+  @ast 0 param = ;
+
+  $suffix
+  $value
+  @value ast AST_NAME take @suffix c_strtoll = ;
+  ast AST_VALUE take_addr value = ;
+
+  # Decode suffix
+  $u_num
+  $l_num
+  @u_num 0 = ;
+  @l_num 0 = ;
+  while suffix **c '\0' != {
+    $c
+    @c suffix **c = ;
+    if c 'u' == c 'U' == || {
+      @u_num u_num 1 + = ;
+    } else {
+      if c 'l' == c 'L' == || {
+        @l_num l_num 1 + = ;
+      } else {
+        0 "ast_strtoll: invalid suffix letter" assert_msg ;
+      }
+    }
+    @suffix suffix 1 + = ;
+  }
+  0 u_num <= u_num 1 <= && "ast_strotoll: too many U suffixes" assert_msg ;
+  0 l_num <= l_num 2 <= && "ast_strotoll: too many L suffixes" assert_msg ;
+
+  # (Re)decode prefix
+  $dec
+  @dec ast AST_NAME take **c '0' != = ;
+
+  # Ok, now we are ready to assign a type to the expression
+  $type_idx
+  if u_num 1 == {
+    if l_num 1 <= {
+       @type_idx TYPE_ULONG = ;
+    } else {
+      if value TYPE_UINT i64_fits_in {
+        @type_idx TYPE_UINT = ;
+      } else {
+        @type_idx TYPE_ULONG = ;
+      }
+    }
+  } else {
+    if l_num 2 == {
+      if dec {
+        @type_idx TYPE_LONG = ;
+      } else {
+        if value TYPE_LONG i64_fits_in {
+          @type_idx TYPE_LONG = ;
+        } else {
+          @type_idx TYPE_ULONG = ;
+        }
+      }
+    } else {
+      if l_num 1 == {
+        if value TYPE_LONG i64_fits_in {
+          @type_idx TYPE_LONG = ;
+        } else {
+          @type_idx TYPE_ULONG = ;
+        }
+      } else {
+        if dec {
+          if value TYPE_INT i64_fits_in {
+            @type_idx TYPE_INT = ;
+          } else {
+            if value TYPE_LONG i64_fits_in {
+              @type_idx TYPE_LONG = ;
+            } else {
+              @type_idx TYPE_ULONG = ;
+            }
+          }
+        } else {
+          if value TYPE_INT i64_fits_in {
+            @type_idx TYPE_INT = ;
+          } else {
+            if value TYPE_UINT i64_fits_in {
+              @type_idx TYPE_UINT = ;
+            } else {
+              if value TYPE_LONG i64_fits_in {
+                @type_idx TYPE_LONG = ;
+              } else {
+                @type_idx TYPE_ULONG = ;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  ast AST_TYPE_IDX take_addr type_idx = ;
+}
+
 fun ast_eval_type 3 {
   $ast
   $ctx
@@ -2430,7 +2542,8 @@ fun ast_eval_type 3 {
         if name **c '\'' == {
           @type_idx TYPE_INT = ;
         } else {
-          @type_idx TYPE_INT = ;
+          ast ast_strtoll ;
+          @type_idx ast AST_TYPE_IDX take = ;
         }
       }
     }
@@ -3736,7 +3849,6 @@ fun ast_push_value 3 {
         ctx ctx type_idx cctx_type_footprint cctx_gen_push_data ;
       }
     } else {
-      $value
       if name **c '\"' == {
         0 "ast_push_value: error 1" assert_msg ;
       } else {
@@ -3751,15 +3863,26 @@ fun ast_push_value 3 {
           to @data 1 + == "ast_push_value: invalid character literal 1" assert_msg ;
           from **c '\'' == "ast_push_value: invalid character literal 2" assert_msg ;
           from 1 + **c 0 == "ast_push_value: invalid character literal 3" assert_msg ;
-          @value data = ;
+          $value
+          @value i64_init = ;
+          value data i64_from_32 ;
+          ast AST_VALUE take_addr value = ;
         } else {
-          @value name atoi_c = ;
+          # Value is already encoded in the AST
         }
       }
 
-      # push value
+      if ctx type_idx cctx_type_footprint 8 == {
+        # push upper32
+        ctx 0x68 cctx_emit ;
+        ctx ast AST_VALUE take i64_to_upper32 cctx_emit32 ;
+      } else {
+        ctx type_idx cctx_type_footprint 4 == "ast_push_value: error 2" assert_msg ;
+      }
+
+      # push lower32
       ctx 0x68 cctx_emit ;
-      ctx value cctx_emit32 ;
+      ctx ast AST_VALUE take i64_to_32 cctx_emit32 ;
     }
   } else {
     # Operator
