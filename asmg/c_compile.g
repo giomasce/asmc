@@ -2637,6 +2637,11 @@ fun ast_eval_type 3 {
       @processed 1 = ;
     }
 
+    if name "(_PRE" strcmp 0 == {
+      @type_idx ast AST_CAST_TYPE_IDX take = ;
+      @processed 1 = ;
+    }
+
     processed "ast_eval_type: not implemented" assert_msg ;
   }
 
@@ -3887,6 +3892,12 @@ fun ast_push_value 3 {
       lctx ctx ast AST_RIGHT take ctx lctx ast_eval_type type_idx lctx_convert_stack ;
       lctx ctx end_lab lctx_fix_label ;
 
+      @processed 1 = ;
+    }
+
+    if name "(_PRE" strcmp 0 == {
+      ast AST_RIGHT take ctx lctx ast_push_value ;
+      lctx ctx ast AST_RIGHT take ctx lctx ast_eval_type type_idx lctx_convert_stack ;
       @processed 1 = ;
     }
 

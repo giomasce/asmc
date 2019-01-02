@@ -27,7 +27,8 @@ const AST_CENTER 12          # AST*
 const AST_RIGHT 16           # AST*
 const AST_TYPE_IDX 20        # int
 const AST_ORIG_TYPE_IDX 24   # int
-const SIZEOF_AST 28
+const AST_CAST_TYPE_IDX 28   # int
+const SIZEOF_AST 32
 
 fun ast_init 0 {
   $ptr
@@ -39,6 +40,7 @@ fun ast_init 0 {
   ptr AST_RIGHT take_addr 0 = ;
   ptr AST_TYPE_IDX take_addr 0xffffffff = ;
   ptr AST_ORIG_TYPE_IDX take_addr 0xffffffff = ;
+  ptr AST_CAST_TYPE_IDX take_addr 0xffffffff = ;
   ptr ret ;
 }
 
@@ -120,6 +122,7 @@ fun ast_get_priority 1 {
   if str "-_PRE" strcmp 0 == { 2 ret ; }
   if str "!_PRE" strcmp 0 == { 2 ret ; }
   if str "~_PRE" strcmp 0 == { 2 ret ; }
+  if str "(_PRE" strcmp 0 == { 2 ret ; }
   if str "*_PRE" strcmp 0 == { 2 ret ; }
   if str "&_PRE" strcmp 0 == { 2 ret ; }
   if str "sizeof" strcmp 0 == { 2 ret ; }
@@ -177,6 +180,7 @@ fun ast_get_ass_direction 1 {
   if str "-_PRE" strcmp 0 == { 0 ret ; }
   if str "!_PRE" strcmp 0 == { 0 ret ; }
   if str "~_PRE" strcmp 0 == { 0 ret ; }
+  if str "(_PRE" strcmp 0 == { 0 ret ; }
   if str "*_PRE" strcmp 0 == { 0 ret ; }
   if str "&_PRE" strcmp 0 == { 0 ret ; }
   if str "sizeof" strcmp 0 == { 0 ret ; }
@@ -240,21 +244,28 @@ fun ast_rewind_stack 3 {
       @ast ast_init = ;
       $tmp
       $tmp2
+      $center
       @tmp operator_stack vector_pop_back = ;
       @tmp2 center_stack vector_pop_back = ;
       ast AST_TYPE take_addr 1 = ;
       ast AST_RIGHT take_addr operand_stack vector_pop_back = ;
       ast AST_LEFT take_addr operand_stack vector_pop_back = ;
       ast AST_NAME take_addr operator_stack vector_pop_back = ;
-      ast AST_CENTER take_addr center_stack vector_pop_back = ;
+      @center center_stack vector_pop_back = ;
       operand_stack ast vector_push_back ;
       operator_stack tmp vector_push_back ;
       center_stack tmp2 vector_push_back ;
       # Sanity check
       if ast AST_NAME take "?" strcmp 0 == {
-        ast AST_CENTER take 0 != "ast_rewind_stack: ternary operator misses center operand" assert_msg ;
+        center 0 != "ast_rewind_stack: ternary operator misses center operand" assert_msg ;
+        ast AST_CENTER take_addr center = ;
       } else {
-        ast AST_CENTER take 0 == "ast_rewind_stack: center operand for non-ternary operator" assert_msg ;
+        if ast AST_NAME take "(_PRE" strcmp 0 == {
+          center 0xffffffff 0 != "ast_rewind_stack: cast operator misses type index" assert_msg ;
+          ast AST_CAST_TYPE_IDX take_addr center = ;
+        } else {
+          ast AST_CENTER take 0 == "ast_rewind_stack: center operand for non-ternary operator" assert_msg ;
+        }
       }
     } else {
       @cont 0 = ;
@@ -431,16 +442,31 @@ fun ast_parsev 2 {
           } else {
             $ast
             if tok "(" strcmp 0 == {
-              @ast int ")" ast_parse1 = ;
-              int int ASTINT_GET_TOKEN_OR_FAIL take \1 ")" strcmp 0 == "ast_parsev: error 4" assert_msg ;
+              # This might be a grouping parenthesis or a cast
+              # operator; I try to parse a type: if it works, it is a
+              # cast (and I have to treat it as a prefix operator),
+              # otherwise it is a grouping parenthesis
+              $type_idx
+              @type_idx int int ASTINT_PARSE_TYPE take \1 = ;
+              if type_idx 0xffffffff == {
+                @ast int ")" ast_parse1 = ;
+                int int ASTINT_GET_TOKEN_OR_FAIL take \1 ")" strcmp 0 == "ast_parsev: error 4" assert_msg ;
+                operand_stack ast vector_push_back ;
+                @expect_operator 1 = ;
+              } else {
+                int int ASTINT_GET_TOKEN_OR_FAIL take \1 ")" strcmp 0 == "ast_parsev: error 5" assert_msg ;
+                operator_stack "(_PRE" strdup vector_push_back ;
+                operand_stack ast_init vector_push_back ;
+                center_stack type_idx vector_push_back ;
+              }
             } else {
               # Operand as we expect, push it in the operand stack
               @ast ast_init = ;
               ast AST_TYPE take_addr 0 = ;
               ast AST_NAME take_addr tok strdup = ;
+              operand_stack ast vector_push_back ;
+              @expect_operator 1 = ;
             }
-            operand_stack ast vector_push_back ;
-            @expect_operator 1 = ;
           }
         }
         # Partially rewind the stack so that priority is decreasing
