@@ -1,5 +1,5 @@
 # This file is part of asmc, a bootstrapping OS with minimal seed
-# Copyright (C) 2018 Giovanni Mascellani <gio@debian.org>
+# Copyright (C) 2018-2019 Giovanni Mascellani <gio@debian.org>
 # https://gitlab.com/giomasce/asmc
 
 # This program is free software: you can redistribute it and/or modify
@@ -41,6 +41,84 @@ fun is_valid_identifier 1 {
   if first '0' >= first '9' <= && { 0 ret ; }
   #"is_valid_identifier: return true\n" 1 platform_log ;
   1 ret ;
+}
+
+const PPCTX_ASTINT_GET_TOKEN 0
+const PPCTX_ASTINT_GET_TOKEN_OR_FAIL 4
+const PPCTX_ASTINT_GIVE_BACK_TOKEN 8
+const PPCTX_ASTINT_PARSE_TYPE 12
+const PPCTX_ASTINT_INTOKS 16
+const PPCTX_ASTINT_IPTR 20
+const SIZEOF_PPCTX_ASTINT 24
+
+fun ppctx_astint_get_token 1 {
+  $int
+  @int 0 param = ;
+
+  $intoks
+  $iptr
+  @intoks int PPCTX_ASTINT_INTOKS take = ;
+  @iptr int PPCTX_ASTINT_IPTR take = ;
+
+  if iptr ** intoks vector_size < {
+    $tok
+    @tok intoks iptr ** vector_at = ;
+    iptr iptr ** 1 + = ;
+    tok ret ;
+  } else {
+    0 ret ;
+  }
+}
+
+fun ppctx_astint_get_token_or_fail 1 {
+  $int
+  @int 0 param = ;
+
+  $res
+  @res int ppctx_astint_get_token = ;
+  res 0 != "ppctx_astint_get_token_or_fail: missing token" assert_msg ;
+  res ret ;
+}
+
+fun ppctx_astint_give_back_token 1 {
+  $int
+  @int 0 param = ;
+
+  $iptr
+  @iptr int PPCTX_ASTINT_IPTR take = ;
+
+  iptr iptr ** 1 - = ;
+}
+
+fun ppctx_astint_parse_type 1 {
+  $int
+  @int 0 param = ;
+
+  0xffffffff ret ;
+}
+
+fun ppctx_astint_init 2 {
+  $intoks
+  $iptr
+  @intoks 1 param = ;
+  @iptr 0 param = ;
+
+  $int
+  @int SIZEOF_PPCTX_ASTINT malloc = ;
+  int PPCTX_ASTINT_GET_TOKEN take_addr @ppctx_astint_get_token = ;
+  int PPCTX_ASTINT_GET_TOKEN_OR_FAIL take_addr @ppctx_astint_get_token_or_fail = ;
+  int PPCTX_ASTINT_GIVE_BACK_TOKEN take_addr @ppctx_astint_give_back_token = ;
+  int PPCTX_ASTINT_PARSE_TYPE take_addr @ppctx_astint_parse_type = ;
+  int PPCTX_ASTINT_INTOKS take_addr intoks = ;
+  int PPCTX_ASTINT_IPTR take_addr iptr = ;
+  int ret ;
+}
+
+fun ppctx_astint_destroy 1 {
+  $int
+  @int 0 param = ;
+
+  int free ;
 }
 
 const SUBST_IS_FUNCTION 0   # bool
@@ -1000,7 +1078,10 @@ fun preproc_eval 2 {
           $ast2
           $i
           @i 0 1 - = ;
-          @ast2 repl @i ";;" ast_parse = ;
+          $int
+          @int repl @i ppctx_astint_init = ;
+          @ast2 int ";;" ast_parse = ;
+          int ppctx_astint_destroy ;
           $res
           @res ctx ast2 preproc_eval = ;
           ast2 ast_destroy ;
@@ -1213,7 +1294,10 @@ fun preproc_process_elif 5 {
   @if_stack 0 param = ;
 
   $ast
-  @ast intoks iptr "\n" ast_parse = ;
+  $int
+  @int intoks iptr ppctx_astint_init = ;
+  @ast int "\n" ast_parse = ;
+  int ppctx_astint_destroy ;
   #ast ast_dump ;
   $value
   @value ctx ast preproc_eval ! ! = ;
@@ -1245,7 +1329,10 @@ fun preproc_process_if 5 {
   @if_stack 0 param = ;
 
   $ast
-  @ast intoks iptr "\n" ast_parse = ;
+  $int
+  @int intoks iptr ppctx_astint_init = ;
+  @ast int "\n" ast_parse = ;
+  int ppctx_astint_destroy ;
   #ast ast_dump ;
   $value
   @value ctx ast preproc_eval ! ! = ;

@@ -299,6 +299,67 @@ fun global_dump 1 {
   global GLOBAL_LOC take itoa 1 platform_log ;
 }
 
+const CCTX_ASTINT_GET_TOKEN 0
+const CCTX_ASTINT_GET_TOKEN_OR_FAIL 4
+const CCTX_ASTINT_GIVE_BACK_TOKEN 8
+const CCTX_ASTINT_PARSE_TYPE 12
+const CCTX_ASTINT_CTX 16
+const SIZEOF_CCTX_ASTINT 20
+
+ifun cctx_get_token 1
+ifun cctx_give_back_token 1
+ifun cctx_get_token_or_fail 1
+ifun cctx_parse_type 1
+
+fun cctx_astint_get_token 1 {
+  $int
+  @int 0 param = ;
+
+  int CCTX_ASTINT_CTX take cctx_get_token ret ;
+}
+
+fun cctx_astint_get_token_or_fail 1 {
+  $int
+  @int 0 param = ;
+
+  int CCTX_ASTINT_CTX take cctx_get_token_or_fail ret ;
+}
+
+fun cctx_astint_give_back_token 1 {
+  $int
+  @int 0 param = ;
+
+  int CCTX_ASTINT_CTX take cctx_give_back_token ;
+}
+
+fun cctx_astint_parse_type 1 {
+  $int
+  @int 0 param = ;
+
+  int CCTX_ASTINT_CTX take cctx_parse_type ret ;
+}
+
+fun cctx_astint_init 1 {
+  $ctx
+  @ctx 0 param = ;
+
+  $int
+  @int SIZEOF_CCTX_ASTINT malloc = ;
+  int CCTX_ASTINT_GET_TOKEN take_addr @cctx_astint_get_token = ;
+  int CCTX_ASTINT_GET_TOKEN_OR_FAIL take_addr @cctx_astint_get_token_or_fail = ;
+  int CCTX_ASTINT_GIVE_BACK_TOKEN take_addr @cctx_astint_give_back_token = ;
+  int CCTX_ASTINT_PARSE_TYPE take_addr @cctx_astint_parse_type = ;
+  int CCTX_ASTINT_CTX take_addr ctx = ;
+  int ret ;
+}
+
+fun cctx_astint_destroy 1 {
+  $int
+  @int 0 param = ;
+
+  int free ;
+}
+
 const CCTX_TYPES 0
 const CCTX_TYPENAMES 4
 const CCTX_GLOBALS 8
@@ -315,7 +376,8 @@ const CCTX_ENUM_CONSTS 48
 const CCTX_HANDLES 52
 const CCTX_VERBOSE 56
 const CCTX_RUNTIME 60
-const SIZEOF_CCTX 64
+const CCTX_ASTINT 64
+const SIZEOF_CCTX 68
 
 fun cctx_init_types 1 {
   $ctx
@@ -374,6 +436,7 @@ fun cctx_init 1 {
   ctx CCTX_HANDLES take_addr 4 vector_init = ;
   ctx CCTX_VERBOSE take_addr 1 = ;
   ctx CCTX_RUNTIME take_addr asmctx_init = ;
+  ctx CCTX_ASTINT take_addr ctx cctx_astint_init = ;
 
   ctx cctx_setup_handles ;
   #ctx cctx_setup_runtime ;
@@ -436,6 +499,7 @@ fun cctx_destroy 1 {
   ctx CCTX_LABEL_BUF take free ;
   ctx CCTX_HANDLES take vector_destroy ;
   ctx CCTX_RUNTIME take asmctx_destroy ;
+  ctx CCTX_ASTINT take cctx_astint_destroy ;
 
   ctx free ;
 }
@@ -1212,12 +1276,17 @@ fun cctx_parse_ast1 2 {
   @term 0 param = ;
 
   if ctx CCTX_VERBOSE take {
-    " <pa>" 1 platform_log ;
+    " <pa1>" 1 platform_log ;
   }
 
-  # Bad hack to fix ast_parse interface
-  ctx cctx_give_back_token ;
-  ctx CCTX_TOKENS take ctx CCTX_TOKENS_POS take_addr term ast_parse ret ;
+  $res
+  @res ctx CCTX_ASTINT take term ast_parse = ;
+
+  if ctx CCTX_VERBOSE take {
+    " </pa1>" 1 platform_log ;
+  }
+
+  res ret ;
 }
 
 fun cctx_parse_ast2 3 {
@@ -1229,12 +1298,17 @@ fun cctx_parse_ast2 3 {
   @term2 0 param = ;
 
   if ctx CCTX_VERBOSE take {
-    " <pa>" 1 platform_log ;
+    " <pa2>" 1 platform_log ;
   }
 
-  # Bad hack to fix ast_parse interface
-  ctx cctx_give_back_token ;
-  ctx CCTX_TOKENS take ctx CCTX_TOKENS_POS take_addr term1 term2 ast_parse3 ret ;
+  $res
+  @res ctx CCTX_ASTINT take term1 term2 ast_parse3 = ;
+
+  if ctx CCTX_VERBOSE take {
+    " </pa2>" 1 platform_log ;
+  }
+
+  res ret ;
 }
 
 fun cctx_parse_ast3 4 {
@@ -1248,12 +1322,17 @@ fun cctx_parse_ast3 4 {
   @term3 0 param = ;
 
   if ctx CCTX_VERBOSE take {
-    " <pa>" 1 platform_log ;
+    " <pa3>" 1 platform_log ;
   }
 
-  # Bad hack to fix ast_parse interface
-  ctx cctx_give_back_token ;
-  ctx CCTX_TOKENS take ctx CCTX_TOKENS_POS take_addr term1 term2 term3 ast_parse4 ret ;
+  $res
+  @res ctx CCTX_ASTINT take term1 term2 term3 ast_parse4 = ;
+
+  if ctx CCTX_VERBOSE take {
+    " </pa3>" 1 platform_log ;
+  }
+
+  res ret ;
 }
 
 fun cctx_parse_enum 1 {

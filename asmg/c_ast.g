@@ -15,6 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+const ASTINT_GET_TOKEN 0
+const ASTINT_GET_TOKEN_OR_FAIL 4
+const ASTINT_GIVE_BACK_TOKEN 8
+const ASTINT_PARSE_TYPE 12
+
 const AST_TYPE 0             # 0 for operand, 1 for operator
 const AST_NAME 4             # char*
 const AST_LEFT 8             # AST*
@@ -259,14 +264,12 @@ fun ast_rewind_stack 3 {
   }
 }
 
-ifun ast_parse 3
+ifun ast_parse 2
 
-fun ast_parse2 3 {
-  $intoks
-  $iptr
+fun ast_parse2 2 {
+  $int
   $end_toks
-  @intoks 2 param = ;
-  @iptr 1 param = ;
+  @int 1 param = ;
   @end_toks 0 param = ;
 
   $cont
@@ -282,18 +285,17 @@ fun ast_parse2 3 {
   # "Beginning parse\n" 1 platform_log ;
   while cont {
     $tok
-    iptr iptr ** 1 + = ;
     $stop
     @stop 0 = ;
-    if iptr ** intoks vector_size >= {
+    @tok int int ASTINT_GET_TOKEN take \1 = ;
+    if tok 0 == {
       @stop 1 = ;
-    } else {
-      @tok intoks iptr ** vector_at = ;
     }
     $i
     @i 0 = ;
     while i end_toks vector_size < stop ! && {
       if end_toks i vector_at tok strcmp 0 == {
+        int int ASTINT_GIVE_BACK_TOKEN take \1 ;
         @stop 1 = ;
       }
       @i i 1 + = ;
@@ -332,7 +334,8 @@ fun ast_parse2 3 {
             # If this is the ternary operator, parse the center part
             # immediately
             if tok "?" strcmp 0 == {
-              @center_ast intoks iptr ":" ast_parse = ;
+              @center_ast int ":" ast_parse = ;
+              int int ASTINT_GET_TOKEN_OR_FAIL take \1 ":" strcmp 0 == "ast_parse2: error 1" assert_msg ;
             }
             operator_stack tok strdup vector_push_back ;
             center_stack center_ast vector_push_back ;
@@ -350,16 +353,15 @@ fun ast_parse2 3 {
             # we hope that no sane program relies on that.
             if tok "(" strcmp 0 == {
               $tok2
-              iptr iptr ** 1 + = ;
-              iptr ** intoks vector_size < "ast_parse2: token expected" assert_msg ;
-              @tok2 intoks iptr ** vector_at = ;
+              @tok2 int int ASTINT_GET_TOKEN_OR_FAIL take \1 = ;
               if tok2 ")" strcmp 0 == {
                 # No arguments, push a placeholder
                 @ast ast_init = ;
               } else {
                 # Roll back token and parse arguments
-                iptr iptr ** 1 - = ;
-                @ast intoks iptr ")" ast_parse = ;
+                int int ASTINT_GIVE_BACK_TOKEN take \1 ;
+                @ast int ")" ast_parse = ;
+                int int ASTINT_GET_TOKEN_OR_FAIL take \1 ")" strcmp 0 == "ast_parse2: error 2" assert_msg ;
               }
               operator_stack tok strdup vector_push_back ;
               center_stack 0 vector_push_back ;
@@ -367,7 +369,8 @@ fun ast_parse2 3 {
               operand_stack ast vector_push_back ;
             } else {
               if tok "[" strcmp 0 == {
-                @ast intoks iptr "]" ast_parse = ;
+                @ast int "]" ast_parse = ;
+                int int ASTINT_GET_TOKEN_OR_FAIL take \1 "]" strcmp 0 == "ast_parse2: error 3" assert_msg ;
                 operator_stack tok strdup vector_push_back ;
                 center_stack 0 vector_push_back ;
                 operator_stack operand_stack center_stack ast_rewind_stack ;
@@ -428,7 +431,8 @@ fun ast_parse2 3 {
           } else {
             $ast
             if tok "(" strcmp 0 == {
-              @ast intoks iptr ")" ast_parse = ;
+              @ast int ")" ast_parse = ;
+              int int ASTINT_GET_TOKEN_OR_FAIL take \1 ")" strcmp 0 == "ast_parse2: error 4" assert_msg ;
             } else {
               # Operand as we expect, push it in the operand stack
               @ast ast_init = ;
@@ -476,30 +480,26 @@ fun ast_parse2 3 {
   res ret ;
 }
 
-fun ast_parse 3 {
-  $intoks
-  $iptr
+fun ast_parse 2 {
+  $int
   $end_tok
-  @intoks 2 param = ;
-  @iptr 1 param = ;
+  @int 1 param = ;
   @end_tok 0 param = ;
 
   $end_toks
   @end_toks 4 vector_init = ;
   end_toks end_tok vector_push_back ;
   $res
-  @res intoks iptr end_toks ast_parse2 = ;
+  @res int end_toks ast_parse2 = ;
   end_toks vector_destroy ;
   res ret ;
 }
 
-fun ast_parse3 4 {
-  $intoks
-  $iptr
+fun ast_parse3 3 {
+  $int
   $end_tok1
   $end_tok2
-  @intoks 3 param = ;
-  @iptr 2 param = ;
+  @int 2 param = ;
   @end_tok1 1 param = ;
   @end_tok2 0 param = ;
 
@@ -508,19 +508,17 @@ fun ast_parse3 4 {
   end_toks end_tok1 vector_push_back ;
   end_toks end_tok2 vector_push_back ;
   $res
-  @res intoks iptr end_toks ast_parse2 = ;
+  @res int end_toks ast_parse2 = ;
   end_toks vector_destroy ;
   res ret ;
 }
 
-fun ast_parse4 5 {
-  $intoks
-  $iptr
+fun ast_parse4 4 {
+  $int
   $end_tok1
   $end_tok2
   $end_tok3
-  @intoks 4 param = ;
-  @iptr 3 param = ;
+  @int 3 param = ;
   @end_tok1 2 param = ;
   @end_tok2 1 param = ;
   @end_tok3 0 param = ;
@@ -531,7 +529,7 @@ fun ast_parse4 5 {
   end_toks end_tok2 vector_push_back ;
   end_toks end_tok3 vector_push_back ;
   $res
-  @res intoks iptr end_toks ast_parse2 = ;
+  @res int end_toks ast_parse2 = ;
   end_toks vector_destroy ;
   res ret ;
 }
