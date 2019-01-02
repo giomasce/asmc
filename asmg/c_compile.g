@@ -2285,7 +2285,8 @@ fun promote_integer_type 1 {
   $type
   @type 0 param = ;
 
-  if type TYPE_CHAR ==
+  if type TYPE_BOOL ==
+     type TYPE_CHAR == ||
      type TYPE_SCHAR == ||
      type TYPE_UCHAR == ||
      type TYPE_SHORT == ||
@@ -2327,11 +2328,41 @@ fun ast_arith_conv 4 {
   @type1 type1 promote_integer_type = ;
   @type2 type2 promote_integer_type = ;
 
-  if type1 TYPE_UINT == type2 TYPE_UINT == || {
-    TYPE_UINT ret ;
-  } else {
-    TYPE_INT ret ;
+  if type1 type2 == {
+    type1 ret ;
   }
+
+  if type1 TYPE_UINT == type2 TYPE_INT == &&
+     type2 TYPE_UINT == type1 TYPE_INT == && || {
+    TYPE_UINT ret ;
+  }
+
+  if type1 TYPE_ULONG == type2 TYPE_ULONG == &&
+     type2 TYPE_ULONG == type1 TYPE_ULONG == && || {
+    TYPE_ULONG ret ;
+  }
+
+  if type1 TYPE_UINT == type2 TYPE_ULONG == &&
+     type2 TYPE_UINT == type1 TYPE_ULONG == && || {
+    TYPE_ULONG ret ;
+  }
+
+  if type1 TYPE_INT == type2 TYPE_LONG == &&
+     type2 TYPE_INT == type1 TYPE_LONG == && || {
+    TYPE_LONG ret ;
+  }
+
+  if type1 TYPE_INT == type2 TYPE_ULONG == &&
+     type2 TYPE_INT == type1 TYPE_ULONG == && || {
+    TYPE_ULONG ret ;
+  }
+
+  if type1 TYPE_UINT == type2 TYPE_LONG == &&
+     type2 TYPE_UINT == type1 TYPE_LONG == && || {
+    TYPE_LONG ret ;
+  }
+
+  0 "ast_arith_conv: error 1" assert_msg ;
 }
 
 fun i64_fits_in 2 {
