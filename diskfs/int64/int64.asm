@@ -1,5 +1,5 @@
 ;; This file is part of asmc, a bootstrapping OS with minimal seed
-;; Copyright (C) 2018 Giovanni Mascellani <gio@debian.org>
+;; Copyright (C) 2018-2019 Giovanni Mascellani <gio@debian.org>
 ;; https://gitlab.com/giomasce/asmc
 
 ;; This program is free software: you can redistribute it and/or modify
@@ -137,6 +137,13 @@ i64_sub:
   mov eax, [esp+8]
   sub [eax], ecx
   sbb [eax+4], edx
+  ret
+
+i64_neg:
+  mov eax, [esp+4]
+  neg [eax]
+  adc DWORD [eax+4], 0
+  neg [eax+4]
   ret
 
   ;; Multiplication is a bit more complicated: first of all, we treat

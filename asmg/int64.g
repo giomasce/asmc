@@ -1,5 +1,5 @@
 # This file is part of asmc, a bootstrapping OS with minimal seed
-# Copyright (C) 2018 Giovanni Mascellani <gio@debian.org>
+# Copyright (C) 2018-2019 Giovanni Mascellani <gio@debian.org>
 # https://gitlab.com/giomasce/asmc
 
 # This program is free software: you can redistribute it and/or modify
@@ -26,6 +26,7 @@ $_i64_land
 $_i64_lor
 $_i64_add
 $_i64_sub
+$_i64_neg
 $_i64_mul
 $_i64_shl
 $_i64_shr
@@ -63,6 +64,7 @@ fun int64_init 0 {
   @_i64_lor int64_runtime "i64_lor" asmctx_get_symbol_addr = ;
   @_i64_add int64_runtime "i64_add" asmctx_get_symbol_addr = ;
   @_i64_sub int64_runtime "i64_sub" asmctx_get_symbol_addr = ;
+  @_i64_neg int64_runtime "i64_neg" asmctx_get_symbol_addr = ;
   @_i64_mul int64_runtime "i64_mul" asmctx_get_symbol_addr = ;
   @_i64_shl int64_runtime "i64_shl" asmctx_get_symbol_addr = ;
   @_i64_shr int64_runtime "i64_shr" asmctx_get_symbol_addr = ;
@@ -156,6 +158,10 @@ fun i64_add 2 {
 
 fun i64_sub 2 {
   1 param 0 param _i64_sub \2 ;
+}
+
+fun i64_neg 1 {
+  0 param _i64_neg \1 ;
 }
 
 fun i64_mul 2 {
@@ -615,6 +621,12 @@ fun int64_test 0 {
   @x @y i64_sar ;
   x 0xf9234567 == "int64_test: error 54" assert_msg ;
   x_ 0xffffffff == "int64_test: error 55" assert_msg ;
+
+  @x 0x123 = ;
+  @x_ 0 = ;
+  @x i64_neg ;
+  x 0 0x123 - == "int64_test: error 56" assert_msg ;
+  x_ 0 1 - == "int64_test: error 57" assert_msg ;
 
   int64_test_comparison ;
 
