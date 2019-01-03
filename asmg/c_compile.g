@@ -2554,12 +2554,10 @@ fun ast_eval_type 3 {
 
     $sum
     $subtract
-    $sum_assign
-    $subtract_assign
-    @sum name "+" strcmp 0 == = ;
-    @subtract name "-" strcmp 0 == = ;
-    @sum_assign name "+=" strcmp 0 == = ;
-    @subtract_assign name "-=" strcmp 0 == = ;
+    $assign
+    @sum name "+" strcmp 0 == name "+=" strcmp 0 == || = ;
+    @subtract name "-" strcmp 0 == name "-=" strcmp 0 == || = ;
+    @assign name "+=" strcmp 0 == name "-=" strcmp 0 == || = ;
 
     if sum subtract ||
        processed ! && {
@@ -2582,10 +2580,13 @@ fun ast_eval_type 3 {
       if sum {
         left_ptr right_ptr && ! "ast_eval_type: cannot take sum of two pointers" assert_msg ;
         if left_ptr {
+          right_idx is_integer_type "ast_eval_type: cannot add pointer and non-integer" assert_msg ;
           @type_idx left_idx = ;
           @processed 1 = ;
         }
         if right_ptr {
+          assign ! "ast_eval_type: right of sum-assign must be integer" assert_msg ;
+          left_idx is_integer_type "ast_eval_type: cannot add pointer and non-integer" assert_msg ;
           @type_idx right_idx = ;
           @processed 1 = ;
         }
@@ -2593,26 +2594,16 @@ fun ast_eval_type 3 {
         left_ptr ! right_ptr && ! "ast_eval_type: cannot take different of a non-pointer and a pointer" assert_msg ;
         if left_ptr {
           if right_ptr {
+            assign ! "ast_eval_type: right of subtract-assign must be integer" assert_msg ;
             left_size right_size == "ast_eval_type: cannot take difference of pointers to types of different size" assert_msg ;
             @type_idx TYPE_INT = ;
           } else {
+            right_idx is_integer_type "ast_eval_type: cannot subtract pointer and non-integer" assert_msg ;
             @type_idx left_idx = ;
           }
           @processed 1 = ;
         }
       }
-    }
-
-    if sum_assign subtract_assign ||
-       processed ! && {
-      $left_idx
-      $right_idx
-      @left_idx ast AST_LEFT take ctx lctx ast_eval_type = ;
-      @right_idx ast AST_RIGHT take ctx lctx ast_eval_type = ;
-      ctx left_idx cctx_get_type TYPE_KIND take TYPE_KIND_POINTER == "ast_eval_type: left must be pointer" assert_msg ;
-      right_idx is_integer_type "ast_eval_type: right must be integer" assert_msg ;
-      @type_idx left_idx = ;
-      @processed 1 = ;
     }
 
     if name "*" strcmp 0 ==
@@ -4144,16 +4135,10 @@ fun ast_push_value 3 {
     $processed
     @processed 0 = ;
 
-    $sum
-    $subtract
-    $sum_assign
-    $subtract_assign
-    @sum name "+" strcmp 0 == = ;
-    @subtract name "-" strcmp 0 == = ;
-    @sum_assign name "+=" strcmp 0 == = ;
-    @subtract_assign name "-=" strcmp 0 == = ;
-
-    if sum subtract || sum_assign || subtract_assign ||
+    if name "+" strcmp 0 ==
+       name "-" strcmp 0 == ||
+       name "+=" strcmp 0 == ||
+       name "-=" strcmp 0 == ||
        processed ! && {
       @processed ast ctx lctx ast_push_value_ptr = ;
     }
