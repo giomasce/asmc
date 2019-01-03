@@ -26,3 +26,33 @@ int test_ptr_assign() {
     if (y != 9920) return 0;
     return 1;
 }
+
+int test_int_assign() {
+    int x = 1000;
+    if (x != 1000) return 0;
+    if ((x += 50) != 1050) return 0;
+    if (x != 1050) return 0;
+
+    long y = 10000;
+    if (y != 10000) return 0;
+    if ((y -= 10) != 9990) return 0;
+    if (y != 9990) return 0;
+
+    long y = 10000;
+    if (y != 10000) return 0;
+    if ((y <<= 4) != 16 * 10000) return 0;
+    if (y != 16 * 10000) return 0;
+
+    // Test that writes smaller than a dword are done correctly
+    short ar[10];
+    int i;
+    for (i = 0; i < 10; i += 1) {
+        ar[i] = i;
+    }
+    ar[5] *= 1;
+    for (i = 0; i < 10; i += 1) {
+        if (ar[i] != i) return 0;
+    }
+
+    return 1;
+}

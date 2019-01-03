@@ -2614,6 +2614,14 @@ fun ast_eval_type 3 {
        name "&" strcmp 0 == ||
        name "^" strcmp 0 == ||
        name "|" strcmp 0 == ||
+       name "*=" strcmp 0 == ||
+       name "/=" strcmp 0 == ||
+       name "%=" strcmp 0 == ||
+       name "+=" strcmp 0 == ||
+       name "-=" strcmp 0 == ||
+       name "&=" strcmp 0 == ||
+       name "^=" strcmp 0 == ||
+       name "|=" strcmp 0 == ||
        processed ! && {
       @type_idx ast AST_LEFT take ast AST_RIGHT take ctx lctx ast_arith_conv = ;
       @common_type_idx type_idx = ;
@@ -2622,6 +2630,8 @@ fun ast_eval_type 3 {
 
     if name "<<" strcmp 0 ==
        name ">>" strcmp 0 == ||
+       name "<<=" strcmp 0 == ||
+       name ">>=" strcmp 0 == ||
        processed ! && {
       $type1
       $type2
@@ -3606,6 +3616,9 @@ fun ast_push_value_arith64 4 {
   }
 }
 
+ifun cctx_gen_push_data 2
+ifun cctx_gen_move_data 2
+
 fun ast_push_value_arith 3 {
   $ast
   $ctx
@@ -3621,6 +3634,22 @@ fun ast_push_value_arith 3 {
              name "-_PRE" strcmp 0 == ||
              name "~_PRE" strcmp 0 == ||
              name "!_PRE" strcmp 0 == || = ;
+  $assign
+  @assign name "*=" strcmp 0 ==
+          name "/=" strcmp 0 == ||
+          name "%=" strcmp 0 == ||
+          name "+=" strcmp 0 == ||
+          name "-=" strcmp 0 == ||
+          name "&=" strcmp 0 == ||
+          name "^=" strcmp 0 == ||
+          name "|=" strcmp 0 == ||
+          name "<<=" strcmp 0 == ||
+          name ">>=" strcmp 0 == || = ;
+  @name name strdup = ;
+  if assign {
+    is_prefix ! "ast_push_value_arith: error 2" assert_msg ;
+    name name strlen + 1 - '\0' =c ;
+  }
 
   $type1
   $type2
@@ -3635,7 +3664,17 @@ fun ast_push_value_arith 3 {
 
   # Recursively evalute both operands
   if is_prefix ! {
-    ast AST_LEFT take ctx lctx ast_push_value ;
+    if assign {
+      # See the comment for sum-assigning
+      # ast_push_addr; mov eax, [esp], cctx_gen_push_data
+      ast AST_LEFT take ctx lctx ast_push_addr ;
+      ctx 0x8b cctx_emit ;
+      ctx 0x04 cctx_emit ;
+      ctx 0x24 cctx_emit ;
+      ctx ctx type1 cctx_type_footprint cctx_gen_push_data ;
+    } else {
+      ast AST_LEFT take ctx lctx ast_push_value ;
+    }
     lctx ctx type1 common_type_idx lctx_int_convert ;
   }
   ast AST_RIGHT take ctx lctx ast_push_value ;
@@ -3649,8 +3688,39 @@ fun ast_push_value_arith 3 {
   }
 
   if type_idx common_type_idx != {
+    assign ! "ast_push_value_arith: error 3" assert_msg ;
     lctx ctx common_type_idx type_idx lctx_int_convert ;
   }
+
+  if assign {
+    ctx type1 cctx_type_size ctx type_idx cctx_type_size <= "ast_push_value_arith: error 3" assert_msg ;
+    type_idx common_type_idx == "ast_push_value_arith: error 4" assert_msg ;
+
+    # First remove the address from the stack (it is not on the top of
+    # the stack, though)
+    # pop eax
+    ctx 0x58 cctx_emit ;
+    if ctx type_idx cctx_type_footprint 8 == {
+      # pop edx
+      ctx 0x5a cctx_emit ;
+    }
+    # pop ecx
+    ctx 0x59 cctx_emit ;
+    if ctx type_idx cctx_type_footprint 8 == {
+      # push edx
+      ctx 0x52 cctx_emit ;
+    }
+    # push eax
+    ctx 0x50 cctx_emit ;
+
+    # Then do the assignment
+    # mov eax, ecx; cctx_gen_move_data
+    ctx 0x89 cctx_emit ;
+    ctx 0xc8 cctx_emit ;
+    ctx ctx type1 cctx_type_size cctx_gen_move_data ;
+  }
+
+  name free ;
 }
 
 fun cctx_gen_push_data 2 {
@@ -4148,17 +4218,27 @@ fun ast_push_value 3 {
        name "%" strcmp 0 == ||
        name "+" strcmp 0 == ||
        name "-" strcmp 0 == ||
+       name "&" strcmp 0 == ||
+       name "^" strcmp 0 == ||
+       name "|" strcmp 0 == ||
+       name "<<" strcmp 0 == ||
+       name ">>" strcmp 0 == ||
+       name "*=" strcmp 0 == ||
+       name "/=" strcmp 0 == ||
+       name "%=" strcmp 0 == ||
+       name "+=" strcmp 0 == ||
+       name "-=" strcmp 0 == ||
+       name "&=" strcmp 0 == ||
+       name "^=" strcmp 0 == ||
+       name "|=" strcmp 0 == ||
+       name "<<=" strcmp 0 == ||
+       name ">>=" strcmp 0 == ||
        name "<" strcmp 0 == ||
        name ">" strcmp 0 == ||
        name "<=" strcmp 0 == ||
        name ">=" strcmp 0 == ||
        name "==" strcmp 0 == ||
        name "!=" strcmp 0 == ||
-       name "&" strcmp 0 == ||
-       name "^" strcmp 0 == ||
-       name "|" strcmp 0 == ||
-       name "<<" strcmp 0 == ||
-       name ">>" strcmp 0 == ||
        name "+_PRE" strcmp 0 == ||
        name "-_PRE" strcmp 0 == ||
        name "~_PRE" strcmp 0 == ||
