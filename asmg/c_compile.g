@@ -2092,12 +2092,12 @@ const JUMP_TYPE_CALL 1
 const JUMP_TYPE_JZ 2
 const JUMP_TYPE_JNZ 3
 
-fun cctx_gen_jump 3 {
+fun cctx_gen_jump_loc 3 {
   $ctx
-  $name
+  $target_loc
   $type
   @ctx 2 param = ;
-  @name 1 param = ;
+  @target_loc 1 param = ;
   @type 0 param = ;
 
   if type JUMP_TYPE_JMP == {
@@ -2124,15 +2124,27 @@ fun cctx_gen_jump 3 {
     }
   }
 
-  $global
-  @global ctx name cctx_get_global = ;
-  $target_loc
-  @target_loc global GLOBAL_LOC take = ;
   $current_loc
   @current_loc ctx CCTX_CURRENT_LOC take 4 + = ;
   $rel
   @rel target_loc current_loc - = ;
   ctx rel cctx_emit32 ;
+}
+
+fun cctx_gen_jump 3 {
+  $ctx
+  $name
+  $type
+  @ctx 2 param = ;
+  @name 1 param = ;
+  @type 0 param = ;
+
+  $global
+  @global ctx name cctx_get_global = ;
+  $target_loc
+  @target_loc global GLOBAL_LOC take = ;
+
+  ctx target_loc type cctx_gen_jump_loc ;
 }
 
 fun cctx_gen_label_jump 5 {
@@ -2325,6 +2337,15 @@ fun ast_arith_conv 4 {
   @type1 ast1 ctx lctx ast_eval_type = ;
   @type2 ast2 ctx lctx ast_eval_type = ;
 
+  # As an exception to the standard, automatically convert every
+  # pointer to an unsigned int
+  if ctx type1 cctx_get_type TYPE_KIND take TYPE_KIND_POINTER == {
+    @type1 TYPE_UINT = ;
+  }
+  if ctx type2 cctx_get_type TYPE_KIND take TYPE_KIND_POINTER == {
+    @type2 TYPE_UINT = ;
+  }
+
   @type1 type1 promote_integer_type = ;
   @type2 type2 promote_integer_type = ;
 
@@ -2337,8 +2358,8 @@ fun ast_arith_conv 4 {
     TYPE_UINT ret ;
   }
 
-  if type1 TYPE_ULONG == type2 TYPE_ULONG == &&
-     type2 TYPE_ULONG == type1 TYPE_ULONG == && || {
+  if type1 TYPE_ULONG == type2 TYPE_LONG == &&
+     type2 TYPE_ULONG == type1 TYPE_LONG == && || {
     TYPE_ULONG ret ;
   }
 
@@ -2362,7 +2383,7 @@ fun ast_arith_conv 4 {
     TYPE_LONG ret ;
   }
 
-  0 "ast_arith_conv: error 1" assert_msg ;
+  0 "ast_arith_conv: error 1" type1 type2 assert_msg_int_int ;
 }
 
 fun i64_fits_in 2 {
@@ -2492,6 +2513,8 @@ fun ast_eval_type 3 {
   $name
   @name ast AST_NAME take = ;
   $type_idx
+  $common_type_idx
+  @common_type_idx 0xffffffff = ;
   if ast AST_TYPE take 0 == {
     # Operand
     if name is_valid_identifier {
@@ -2585,6 +2608,7 @@ fun ast_eval_type 3 {
        name "|" strcmp 0 == ||
        processed ! && {
       @type_idx ast AST_LEFT take ast AST_RIGHT take ctx lctx ast_arith_conv = ;
+      @common_type_idx type_idx = ;
       @processed 1 = ;
     }
 
@@ -2598,6 +2622,7 @@ fun ast_eval_type 3 {
       @type1 type1 promote_integer_type = ;
       @type2 type2 promote_integer_type = ;
       @type_idx type1 = ;
+      @common_type_idx type_idx = ;
       @processed 1 = ;
     }
 
@@ -2606,6 +2631,7 @@ fun ast_eval_type 3 {
        name "~_PRE" strcmp 0 == ||
        processed ! && {
       @type_idx ast AST_RIGHT take ctx lctx ast_eval_type promote_integer_type = ;
+      @common_type_idx type_idx = ;
       @processed 1 = ;
     }
 
@@ -2625,6 +2651,7 @@ fun ast_eval_type 3 {
       type1 is_integer_type ctx type1 cctx_get_type TYPE_KIND take TYPE_KIND_POINTER == || "ast_eval_type: left is neither integer nor pointer" assert_msg ;
       type2 is_integer_type ctx type2 cctx_get_type TYPE_KIND take TYPE_KIND_POINTER == || "ast_eval_type: left is neither integer nor pointer" assert_msg ;
       @type_idx TYPE_INT = ;
+      @common_type_idx ast AST_LEFT take ast AST_RIGHT take ctx lctx ast_arith_conv = ;
       @processed 1 = ;
     }
 
@@ -2634,6 +2661,7 @@ fun ast_eval_type 3 {
       @type ast AST_RIGHT take ctx lctx ast_eval_type = ;
       type is_integer_type ctx type cctx_get_type TYPE_KIND take TYPE_KIND_POINTER == || "ast_eval_type: operand is neither integer nor pointer" assert_msg ;
       @type_idx TYPE_INT = ;
+      @common_type_idx type = ;
       @processed 1 = ;
     }
 
@@ -2766,6 +2794,7 @@ fun ast_eval_type 3 {
 
   ast AST_TYPE_IDX take_addr type_idx = ;
   ast AST_ORIG_TYPE_IDX take_addr orig_type_idx = ;
+  ast AST_COMMON_TYPE_IDX take_addr common_type_idx = ;
   type_idx ret ;
 }
 
@@ -3090,62 +3119,27 @@ fun ast_push_value_logic 3 {
   ctx 0x50 cctx_emit ;
 }
 
-fun ast_push_value_arith 3 {
-  $ast
+fun ast_push_value_arith32 4 {
   $ctx
-  $lctx
-  @ast 2 param = ;
-  @ctx 1 param = ;
-  @lctx 0 param = ;
-
   $name
-  @name ast AST_NAME take = ;
-  $is_prefix
-  @is_prefix name "+_PRE" strcmp 0 ==
-             name "-_PRE" strcmp 0 == ||
-             name "~_PRE" strcmp 0 == ||
-             name "!_PRE" strcmp 0 == || = ;
-
-  $type1
-  $type2
   $type_idx
-  $large_idx
-  if is_prefix ! {
-    @type1 ast AST_LEFT take ctx lctx ast_eval_type = ;
-  }
-  @type2 ast AST_RIGHT take ctx lctx ast_eval_type = ;
-  @type_idx ast ctx lctx ast_eval_type = ;
-  if type_idx TYPE_LONG == type_idx TYPE_ULONG == || {
-    @large_idx type_idx = ;
-  } else {
-    @large_idx TYPE_LONG = ;
-  }
-  ctx large_idx cctx_type_footprint 8 == "ast_push_value_arith: error 1" assert_msg ;
+  $is_prefix
+  @ctx 3 param = ;
+  @name 2 param = ;
+  @type_idx 1 param = ;
+  @is_prefix 0 param = ;
 
-  # push ebx
-  ctx 0x53 cctx_emit ;
-
-  # Recursively evalute both operands
-  if is_prefix ! {
-    ast AST_LEFT take ctx lctx ast_push_value ;
-    lctx ctx type1 large_idx lctx_int_convert ;
-  }
-  ast AST_RIGHT take ctx lctx ast_push_value ;
-  lctx ctx type2 large_idx lctx_int_convert ;
-
-  # Pop right result and store in EBX:ECX
-  # pop ecx; pop ebx
+  # Pop right result and store in ECX
+  # pop ecx
   ctx 0x59 cctx_emit ;
-  ctx 0x5b cctx_emit ;
 
-  # Pop left result and store in EDX:EAX
+  # Pop left result and store in EAX
   if is_prefix ! {
-    # pop eax; pop edx
+    # pop eax
     ctx 0x58 cctx_emit ;
-    ctx 0x5a cctx_emit ;
   }
 
-  # Invoke the operation specific operation
+  # Invoke the specific operation code
   $processed
   @processed 0 = ;
 
@@ -3242,14 +3236,7 @@ fun ast_push_value_arith 3 {
     @processed 1 = ;
   }
 
-  if name "*" strcmp 0 == type_idx TYPE_UINT == && {
-    # mul ecx
-    ctx 0xf7 cctx_emit ;
-    ctx 0xe1 cctx_emit ;
-    @processed 1 = ;
-  }
-
-  if name "*" strcmp 0 == type_idx TYPE_INT == && {
+  if name "*" strcmp 0 == {
     # imul ecx
     ctx 0xf7 cctx_emit ;
     ctx 0xe9 cctx_emit ;
@@ -3414,18 +3401,241 @@ fun ast_push_value_arith 3 {
     @processed 1 = ;
   }
 
-  processed "ast_push_value_arith: not implemented" assert_msg ;
+  processed "ast_push_value_arith32: not implemented" name assert_msg_str ;
 
-  # pop ebx
-  ctx 0x5b cctx_emit ;
-
-  # Push result stored in EDX:EAX
-  # push edx; push eax
-  ctx 0x52 cctx_emit ;
+  # push eax
   ctx 0x50 cctx_emit ;
+}
 
-  # Convert result to the output type
-  lctx ctx large_idx type_idx lctx_int_convert ;
+fun ast_push_value_arith64 4 {
+  $ctx
+  $name
+  $type_idx
+  $is_prefix
+  @ctx 3 param = ;
+  @name 2 param = ;
+  @type_idx 1 param = ;
+  @is_prefix 0 param = ;
+
+  # Push arguments addresses on the stack, so that we can call i64_* routines
+  if is_prefix {
+    # lea edx, [esp]; push edx
+    ctx 0x8d cctx_emit ;
+    ctx 0x14 cctx_emit ;
+    ctx 0x24 cctx_emit ;
+    ctx 0x52 cctx_emit ;
+  } else {
+    # lea eax, [esp+8]; lea edx, [esp]; push eax; push edx
+    ctx 0x8d cctx_emit ;
+    ctx 0x44 cctx_emit ;
+    ctx 0x24 cctx_emit ;
+    ctx 0x08 cctx_emit ;
+    ctx 0x8d cctx_emit ;
+    ctx 0x14 cctx_emit ;
+    ctx 0x24 cctx_emit ;
+    ctx 0x50 cctx_emit ;
+    ctx 0x52 cctx_emit ;
+  }
+
+  # Invoke the specific operation code
+  $processed
+  @processed 0 = ;
+
+  if name "+" strcmp 0 == {
+    ctx _i64_add JUMP_TYPE_CALL cctx_gen_jump_loc ;
+    @processed 1 = ;
+  }
+
+  if name "-" strcmp 0 == {
+    ctx _i64_sub JUMP_TYPE_CALL cctx_gen_jump_loc ;
+    @processed 1 = ;
+  }
+
+  if name "&" strcmp 0 == {
+    ctx _i64_and JUMP_TYPE_CALL cctx_gen_jump_loc ;
+    @processed 1 = ;
+  }
+
+  if name "|" strcmp 0 == {
+    ctx _i64_or JUMP_TYPE_CALL cctx_gen_jump_loc ;
+    @processed 1 = ;
+  }
+
+  if name "^" strcmp 0 == {
+    ctx _i64_xor JUMP_TYPE_CALL cctx_gen_jump_loc ;
+    @processed 1 = ;
+  }
+
+  if name "<<" strcmp 0 == {
+    ctx _i64_shl JUMP_TYPE_CALL cctx_gen_jump_loc ;
+    @processed 1 = ;
+  }
+
+  if name ">>" strcmp 0 == type_idx TYPE_ULONG == && {
+    ctx _i64_shr JUMP_TYPE_CALL cctx_gen_jump_loc ;
+    @processed 1 = ;
+  }
+
+  if name ">>" strcmp 0 == type_idx TYPE_LONG == && {
+    ctx _i64_sar JUMP_TYPE_CALL cctx_gen_jump_loc ;
+    @processed 1 = ;
+  }
+
+  if name "+_PRE" strcmp 0 == {
+    @processed 1 = ;
+  }
+
+  if name "-_PRE" strcmp 0 == {
+    ctx _i64_neg JUMP_TYPE_CALL cctx_gen_jump_loc ;
+    @processed 1 = ;
+  }
+
+  if name "~_PRE" strcmp 0 == {
+    ctx _i64_not JUMP_TYPE_CALL cctx_gen_jump_loc ;
+    @processed 1 = ;
+  }
+
+  if name "!_PRE" strcmp 0 == {
+    ctx _i64_lnot JUMP_TYPE_CALL cctx_gen_jump_loc ;
+    @processed 1 = ;
+  }
+
+  if name "*" strcmp 0 == {
+    ctx _i64_mul JUMP_TYPE_CALL cctx_gen_jump_loc ;
+    @processed 1 = ;
+  }
+
+  if name "/" strcmp 0 == type_idx TYPE_ULONG == && {
+    ctx @i64_udiv JUMP_TYPE_CALL cctx_gen_jump_loc ;
+    @processed 1 = ;
+  }
+
+  if name "/" strcmp 0 == type_idx TYPE_LONG == && {
+    ctx @i64_sdiv JUMP_TYPE_CALL cctx_gen_jump_loc ;
+    @processed 1 = ;
+  }
+
+  if name "%" strcmp 0 == type_idx TYPE_ULONG == && {
+    ctx @i64_umod JUMP_TYPE_CALL cctx_gen_jump_loc ;
+    @processed 1 = ;
+  }
+
+  if name "%" strcmp 0 == type_idx TYPE_LONG == && {
+    ctx @i64_smod JUMP_TYPE_CALL cctx_gen_jump_loc ;
+    @processed 1 = ;
+  }
+
+  if name "==" strcmp 0 == {
+    ctx _i64_eq JUMP_TYPE_CALL cctx_gen_jump_loc ;
+    @processed 1 = ;
+  }
+
+  if name "!=" strcmp 0 == {
+    ctx _i64_neq JUMP_TYPE_CALL cctx_gen_jump_loc ;
+    @processed 1 = ;
+  }
+
+  if name "<" strcmp 0 == type_idx TYPE_ULONG == && {
+    ctx _i64_ul JUMP_TYPE_CALL cctx_gen_jump_loc ;
+    @processed 1 = ;
+  }
+
+  if name "<=" strcmp 0 == type_idx TYPE_ULONG == && {
+    ctx _i64_ule JUMP_TYPE_CALL cctx_gen_jump_loc ;
+    @processed 1 = ;
+  }
+
+  if name ">" strcmp 0 == type_idx TYPE_ULONG == && {
+    ctx _i64_ug JUMP_TYPE_CALL cctx_gen_jump_loc ;
+    @processed 1 = ;
+  }
+
+  if name ">=" strcmp 0 == type_idx TYPE_ULONG == && {
+    ctx _i64_uge JUMP_TYPE_CALL cctx_gen_jump_loc ;
+    @processed 1 = ;
+  }
+
+  if name "<" strcmp 0 == type_idx TYPE_LONG == && {
+    ctx _i64_l JUMP_TYPE_CALL cctx_gen_jump_loc ;
+    @processed 1 = ;
+  }
+
+  if name "<=" strcmp 0 == type_idx TYPE_LONG == && {
+    ctx _i64_le JUMP_TYPE_CALL cctx_gen_jump_loc ;
+    @processed 1 = ;
+  }
+
+  if name ">" strcmp 0 == type_idx TYPE_LONG == && {
+    ctx _i64_g JUMP_TYPE_CALL cctx_gen_jump_loc ;
+    @processed 1 = ;
+  }
+
+  if name ">=" strcmp 0 == type_idx TYPE_LONG == && {
+    ctx _i64_ge JUMP_TYPE_CALL cctx_gen_jump_loc ;
+    @processed 1 = ;
+  }
+
+  processed "ast_push_value_arith64: not implemented" name assert_msg_str ;
+
+  # Discard the addresses and possibly the second operand
+  if is_prefix {
+    # add esp, 4
+    ctx 0x83 cctx_emit ;
+    ctx 0xc4 cctx_emit ;
+    ctx 0x04 cctx_emit ;
+  } else {
+    # add esp, 16
+    ctx 0x83 cctx_emit ;
+    ctx 0xc4 cctx_emit ;
+    ctx 0x10 cctx_emit ;
+  }
+}
+
+fun ast_push_value_arith 3 {
+  $ast
+  $ctx
+  $lctx
+  @ast 2 param = ;
+  @ctx 1 param = ;
+  @lctx 0 param = ;
+
+  $name
+  @name ast AST_NAME take = ;
+  $is_prefix
+  @is_prefix name "+_PRE" strcmp 0 ==
+             name "-_PRE" strcmp 0 == ||
+             name "~_PRE" strcmp 0 == ||
+             name "!_PRE" strcmp 0 == || = ;
+
+  $type1
+  $type2
+  $type_idx
+  $common_type_idx
+  if is_prefix ! {
+    @type1 ast AST_LEFT take ctx lctx ast_eval_type = ;
+  }
+  @type2 ast AST_RIGHT take ctx lctx ast_eval_type = ;
+  @type_idx ast ctx lctx ast_eval_type = ;
+  @common_type_idx ast AST_COMMON_TYPE_IDX take = ;
+
+  # Recursively evalute both operands
+  if is_prefix ! {
+    ast AST_LEFT take ctx lctx ast_push_value ;
+    lctx ctx type1 common_type_idx lctx_int_convert ;
+  }
+  ast AST_RIGHT take ctx lctx ast_push_value ;
+  lctx ctx type2 common_type_idx lctx_int_convert ;
+
+  if ctx common_type_idx cctx_type_footprint 4 == {
+    ctx name common_type_idx is_prefix ast_push_value_arith32 ;
+  } else {
+    ctx common_type_idx cctx_type_footprint 8 == "ast_push_value_arith: error 1" assert_msg ;
+    ctx name common_type_idx is_prefix ast_push_value_arith64 ;
+  }
+
+  if type_idx common_type_idx != {
+    lctx ctx common_type_idx type_idx lctx_int_convert ;
+  }
 }
 
 fun cctx_gen_push_data 2 {

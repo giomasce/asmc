@@ -143,7 +143,8 @@ fun c_run_testcases 0 {
 
   tests "/disk1/tests/test_llong.c" "test_llong" 1 "" c_run_testcase ;
   tests "/disk1/tests/test_llong.c" "test_llong_sum" 1 "" c_run_testcase ;
-  tests "/disk1/tests/test_llong.c" "test_llong_sum2" 1 "" c_run_testcase ;
+  tests "/disk1/tests/test_llong.c" "test_llong_ops" 1 "" c_run_testcase ;
+  tests "/disk1/tests/test_llong.c" "test_llong_mul_div" 1 "" c_run_testcase ;
 
   tests "/disk1/tests/test_anon_struct.c" "test_anon_struct" 1 "" c_run_testcase ;
 
