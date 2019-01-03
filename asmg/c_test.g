@@ -103,9 +103,6 @@ fun c_run_testcase 3 {
   @function_addr function_global GLOBAL_LOC take = ;
   $res
   @res function_addr \0 = ;
-  #"It returned " 1 platform_log ;
-  #res itoa 1 platform_log ;
-  #"\n" 1 platform_log ;
 
   # Cleanup
   tokens free_vect_of_ptrs ;
@@ -118,6 +115,11 @@ fun c_run_testcase 3 {
     tests TESTS_SUCCESSFUL take_addr tests TESTS_SUCCESSFUL take 1 + = ;
   } else {
     " FAILED!\n" 1 platform_log ;
+    " -> Returned " 1 platform_log ;
+    res itoa 1 platform_log ;
+    " instead of " 1 platform_log ;
+    result itoa 1 platform_log ;
+    "\n" 1 platform_log ;
   }
 }
 
@@ -152,6 +154,8 @@ fun c_run_testcases 0 {
   tests "/disk1/tests/test_ternary.c" "test_bool" 1 "" c_run_testcase ;
 
   tests "/disk1/tests/test_cast.c" "test_cast" 1 "" c_run_testcase ;
+
+  tests "/disk1/tests/test_op_assign.c" "test_ptr_assign" 1 "" c_run_testcase ;
 
   tests "/disk1/tests/test_stdio.c" "test_fputs" 1 "This is a test string\n" c_run_testcase ;
   tests "/disk1/tests/test_stdio.c" "test_puts" 1 "This is a test string\n" c_run_testcase ;

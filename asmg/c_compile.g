@@ -2554,10 +2554,15 @@ fun ast_eval_type 3 {
 
     $sum
     $subtract
+    $sum_assign
+    $subtract_assign
     @sum name "+" strcmp 0 == = ;
     @subtract name "-" strcmp 0 == = ;
+    @sum_assign name "+=" strcmp 0 == = ;
+    @subtract_assign name "-=" strcmp 0 == = ;
 
-    if sum subtract || {
+    if sum subtract ||
+       processed ! && {
       $left_idx
       $right_idx
       @left_idx ast AST_LEFT take ctx lctx ast_eval_type = ;
@@ -2596,6 +2601,18 @@ fun ast_eval_type 3 {
           @processed 1 = ;
         }
       }
+    }
+
+    if sum_assign subtract_assign ||
+       processed ! && {
+      $left_idx
+      $right_idx
+      @left_idx ast AST_LEFT take ctx lctx ast_eval_type = ;
+      @right_idx ast AST_RIGHT take ctx lctx ast_eval_type = ;
+      ctx left_idx cctx_get_type TYPE_KIND take TYPE_KIND_POINTER == "ast_eval_type: left must be pointer" assert_msg ;
+      right_idx is_integer_type "ast_eval_type: right must be integer" assert_msg ;
+      @type_idx left_idx = ;
+      @processed 1 = ;
     }
 
     if name "*" strcmp 0 ==
@@ -3053,6 +3070,13 @@ fun lctx_convert_stack 4 {
     # Permit any implicit converstion of integers to pointers
     ctx from_idx cctx_type_footprint 4 == "lctx_convert_stack: error 5" assert_msg ;
     ctx to_idx cctx_type_footprint 4 == "lctx_convert_stack: error 6" assert_msg ;
+    ret ;
+  }
+
+  if from_type TYPE_KIND take TYPE_KIND_POINTER == to_idx is_integer_type && {
+    # Permit any implicit conversion of pointers to integers
+    ctx from_idx cctx_type_footprint 4 == "lctx_convert_stack: error 3" assert_msg ;
+    ctx to_idx cctx_type_footprint 4 == "lctx_convert_stack: error 4" assert_msg ;
     ret ;
   }
 
@@ -3887,8 +3911,10 @@ fun ast_push_value_ptr 3 {
 
   $sum
   $subtract
-  @sum name "+" strcmp 0 == name "[" strcmp 0 == || = ;
-  @subtract name "-" strcmp 0 == = ;
+  $assign
+  @sum name "+" strcmp 0 == name "[" strcmp 0 == || name "+=" strcmp 0 == || = ;
+  @subtract name "-" strcmp 0 == name "-=" strcmp 0 == || = ;
+  @assign name "+=" strcmp 0 == name "-=" strcmp 0 == || = ;
 
   sum subtract || "ast_push_value_ptr: not a sum or a subtraction" assert_msg ;
 
@@ -3913,10 +3939,24 @@ fun ast_push_value_ptr 3 {
   }
 
   if sum {
-    left_ptr right_ptr && ! "ast_eval_type: cannot take sum of two pointers" assert_msg ;
+    left_ptr right_ptr && ! "ast_push_value_ptr: cannot take sum of two pointers" assert_msg ;
     if left_ptr {
-      # ast_push_value; ast_push_value; push size
-      ast AST_LEFT take ctx lctx ast_push_value ;
+      if assign {
+        # When sum-assigning, push both the address and the value on
+        # the stack: first we use the value to do the computation,
+        # then the address to assign
+        # ast_push_addr; mov eax, [esp]; push [eax]
+        ast AST_LEFT take ctx lctx ast_push_addr ;
+        ctx 0x8b cctx_emit ;
+        ctx 0x04 cctx_emit ;
+        ctx 0x24 cctx_emit ;
+        ctx 0xff cctx_emit ;
+        ctx 0x30 cctx_emit ;
+      } else {
+        # ast_push_value
+        ast AST_LEFT take ctx lctx ast_push_value ;
+      }
+      # ast_push_value; lctx_convert_stack; push size
       ast AST_RIGHT take ctx lctx ast_push_value ;
       lctx ctx ast AST_RIGHT take ctx lctx ast_eval_type TYPE_UINT lctx_convert_stack ;
       ctx 0x68 cctx_emit ;
@@ -3924,7 +3964,8 @@ fun ast_push_value_ptr 3 {
       @processed 1 = ;
     }
     if right_ptr {
-      # ast_push_value; ast_push_value; push size
+      assign ! "ast_push_value_ptr: right of sum-assign must be integer" assert_msg ;
+      # ast_push_value; ast_push_value; lctx_convert_stack; push size
       ast AST_RIGHT take ctx lctx ast_push_value ;
       ast AST_LEFT take ctx lctx ast_push_value ;
       lctx ctx ast AST_LEFT take ctx lctx ast_eval_type TYPE_UINT lctx_convert_stack ;
@@ -3933,7 +3974,7 @@ fun ast_push_value_ptr 3 {
       @processed 1 = ;
     }
     if processed {
-      # pop eax; pop edx; imul edx; pop ecx; add eax, ecx; push eax
+      # pop eax; pop edx; imul edx; pop ecx; add eax, ecx
       ctx 0x58 cctx_emit ;
       ctx 0x5a cctx_emit ;
       ctx 0xf7 cctx_emit ;
@@ -3941,13 +3982,21 @@ fun ast_push_value_ptr 3 {
       ctx 0x59 cctx_emit ;
       ctx 0x01 cctx_emit ;
       ctx 0xc8 cctx_emit ;
+      if assign {
+        # pop edx; mov [edx], eax
+        ctx 0x5a cctx_emit ;
+        ctx 0x89 cctx_emit ;
+        ctx 0x02 cctx_emit ;
+      }
+      # push eax
       ctx 0x50 cctx_emit ;
     }
   } else {
-    left_ptr ! right_ptr && ! "ast_eval_type: cannot take different of a non-pointer and a pointer" assert_msg ;
+    left_ptr ! right_ptr && ! "ast_push_value_ptr: cannot take different of a non-pointer and a pointer" assert_msg ;
     if left_ptr {
       if right_ptr {
-        left_size right_size == "ast_eval_type: cannot take difference of pointers to types of different size" assert_msg ;
+        assign ! "ast_push_value_ptr: right of subtract-assign must be integer" assert_msg ;
+        left_size right_size == "ast_push_value_ptr: cannot take difference of pointers to types of different size" assert_msg ;
         # push size; ast_push_value; ast_push_value
         ctx 0x68 cctx_emit ;
         ctx left_size cctx_emit32 ;
@@ -3965,14 +4014,26 @@ fun ast_push_value_ptr 3 {
         ctx 0xf9 cctx_emit ;
         ctx 0x50 cctx_emit ;
       } else {
-        # ast_push_value; ast_push_value; push size
-        ast AST_LEFT take ctx lctx ast_push_value ;
+        if assign {
+          # See the comment for sum-assigning
+          # ast_push_addr; mov eax, [esp]; push [eax]
+          ast AST_LEFT take ctx lctx ast_push_addr ;
+          ctx 0x8b cctx_emit ;
+          ctx 0x04 cctx_emit ;
+          ctx 0x24 cctx_emit ;
+          ctx 0xff cctx_emit ;
+          ctx 0x30 cctx_emit ;
+        } else {
+          # ast_push_value
+          ast AST_LEFT take ctx lctx ast_push_value ;
+        }
+        # ast_push_value; lctx_convert_stack; push size
         ast AST_RIGHT take ctx lctx ast_push_value ;
         lctx ctx ast AST_RIGHT take ctx lctx ast_eval_type TYPE_UINT lctx_convert_stack ;
         ctx 0x68 cctx_emit ;
         ctx left_size cctx_emit32 ;
 
-        # pop eax; pop edx; imul edx; pop ecx; neg eax; add eax, ecx; push eax
+        # pop eax; pop edx; imul edx; pop ecx; neg eax; add eax, ecx
         ctx 0x58 cctx_emit ;
         ctx 0x5a cctx_emit ;
         ctx 0xf7 cctx_emit ;
@@ -3982,6 +4043,13 @@ fun ast_push_value_ptr 3 {
         ctx 0xd8 cctx_emit ;
         ctx 0x01 cctx_emit ;
         ctx 0xc8 cctx_emit ;
+        if assign {
+          # pop edx; mov [edx], eax
+          ctx 0x5a cctx_emit ;
+          ctx 0x89 cctx_emit ;
+          ctx 0x02 cctx_emit ;
+        }
+        # push eax
         ctx 0x50 cctx_emit ;
       }
       @processed 1 = ;
@@ -4078,10 +4146,15 @@ fun ast_push_value 3 {
 
     $sum
     $subtract
+    $sum_assign
+    $subtract_assign
     @sum name "+" strcmp 0 == = ;
     @subtract name "-" strcmp 0 == = ;
+    @sum_assign name "+=" strcmp 0 == = ;
+    @subtract_assign name "-=" strcmp 0 == = ;
 
-    if sum subtract || {
+    if sum subtract || sum_assign || subtract_assign ||
+       processed ! && {
       @processed ast ctx lctx ast_push_value_ptr = ;
     }
 
