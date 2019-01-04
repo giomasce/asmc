@@ -158,6 +158,8 @@ fun c_run_testcases 0 {
   tests "/disk1/tests/test_op_assign.c" "test_ptr_assign" 1 "" c_run_testcase ;
   tests "/disk1/tests/test_op_assign.c" "test_int_assign" 1 "" c_run_testcase ;
 
+  tests "/disk1/tests/test_ret_obj.c" "test_ret_obj" 1 "" c_run_testcase ;
+
   tests "/disk1/tests/test_stdio.c" "test_fputs" 1 "This is a test string\n" c_run_testcase ;
   tests "/disk1/tests/test_stdio.c" "test_puts" 1 "This is a test string\n" c_run_testcase ;
   tests "/disk1/tests/test_stdio.c" "test_putchar" 1 "X" c_run_testcase ;

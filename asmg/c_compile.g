@@ -1787,7 +1787,8 @@ const LCTX_RETURN_TYPE_IDX 4
 const LCTX_RETURN_LABEL 8
 const LCTX_BREAK_LABEL 12
 const LCTX_CONTINUE_LABEL 16
-const SIZEOF_LCTX 20
+const LCTX_RETURNS_OBJ 20
+const SIZEOF_LCTX 24
 
 fun lctx_init 0 {
   $lctx
@@ -1961,6 +1962,22 @@ fun lctx_prime_stack 3 {
   $stack
   @stack lctx LCTX_STACK take = ;
 
+  $return_type_idx
+  @return_type_idx type TYPE_BASE take = ;
+  $return_type
+  @return_type ctx return_type_idx cctx_get_type = ;
+  lctx LCTX_RETURNS_OBJ take_addr return_type TYPE_KIND take TYPE_KIND_STRUCT == return_type TYPE_KIND take TYPE_KIND_UNION == || = ;
+  return_type_idx TYPE_VOID == return_type_idx is_integer_type || return_type TYPE_KIND take TYPE_KIND_POINTER == || return_type TYPE_KIND take TYPE_KIND_STRUCT == || return_type TYPE_KIND take TYPE_KIND_UNION == || "cctx_compile_function: return type must be void, integer, pointer, struct or union" assert_msg ;
+
+  # Base footprint contains the saved EBP and return value; if the
+  # function returns an object, it contains also the returned value
+  # address
+  $base_footprint
+  @base_footprint 8 = ;
+  if return_type TYPE_KIND take TYPE_KIND_UNION == return_type TYPE_KIND take TYPE_KIND_STRUCT == || {
+    @base_footprint base_footprint 4 + = ;
+  }
+
   $i
   @i 0 = ;
   $total_footprint
@@ -1970,7 +1987,7 @@ fun lctx_prime_stack 3 {
     @i i 1 + = ;
   }
   $loc
-  @loc total_footprint 8 + = ;
+  @loc total_footprint base_footprint + = ;
   @i args vector_size 1 - = ;
   while i 0 >= {
     $this_type_idx
@@ -1987,7 +2004,7 @@ fun lctx_prime_stack 3 {
     stack elem vector_push_back ;
     @i i 1 - = ;
   }
-  loc 8 == "lctx_prime_stack: error 2" assert_msg ;
+  loc base_footprint == "lctx_prime_stack: error 2" assert_msg ;
 
   # Add a fictious element to mark the beginning of local variables
   $elem
@@ -2016,9 +2033,20 @@ fun lctx_gen_epilogue 2 {
   @lctx 1 param = ;
   @ctx 0 param = ;
 
-  # pop ebp; ret
-  ctx 0x5d cctx_emit ;
-  ctx 0xc3 cctx_emit ;
+  if lctx LCTX_RETURNS_OBJ take {
+    # mov eax, [ebp+8]; pop ebp; ret 4
+    ctx 0x8b cctx_emit ;
+    ctx 0x45 cctx_emit ;
+    ctx 0x08 cctx_emit ;
+    ctx 0x5d cctx_emit ;
+    ctx 0xc2 cctx_emit ;
+    ctx 0x04 cctx_emit ;
+    ctx 0x00 cctx_emit ;
+  } else {
+    # pop ebp; ret
+    ctx 0x5d cctx_emit ;
+    ctx 0xc3 cctx_emit ;
+  }
 }
 
 fun cctx_write_label 2 {
@@ -3869,14 +3897,28 @@ fun ast_gen_function_call 3 {
   $fun_ptr_type
   $fun_idx
   $fun_type
+  $return_type_idx
+  $return_type
   @fun_ptr_idx ast AST_LEFT take ctx lctx ast_eval_type = ;
   @fun_ptr_type ctx fun_ptr_idx cctx_get_type = ;
   fun_ptr_type TYPE_KIND take TYPE_KIND_POINTER == "ast_gen_function_call: left is not a pointer" assert_msg ;
   @fun_idx fun_ptr_type TYPE_BASE take = ;
   @fun_type ctx fun_idx cctx_get_type = ;
   fun_type TYPE_KIND take TYPE_KIND_FUNCTION == "ast_gen_function_call: left is not a pointer to function" assert_msg ;
+  @return_type_idx fun_type TYPE_BASE take = ;
+  @return_type ctx return_type_idx cctx_get_type = ;
   $args
   @args fun_type TYPE_ARGS take = ;
+
+  # If the function will return an object, immediately allocate it
+  $returns_obj
+  @returns_obj return_type TYPE_KIND take TYPE_KIND_STRUCT == return_type TYPE_KIND take TYPE_KIND_UNION == || = ;
+  if returns_obj {
+    # sub esp, footprint
+    ctx 0x81 cctx_emit ;
+    ctx 0xec cctx_emit ;
+    ctx ctx return_type_idx cctx_type_footprint cctx_emit32 ;
+  }
 
   # Passed arguments are stored in reverse order
   $passed_args
@@ -3928,6 +3970,16 @@ fun ast_gen_function_call 3 {
     @i i 1 + = ;
   }
 
+  # If the function will return an object, push the returned value address
+  if returns_obj {
+    # lea eax, [esp+rewind]; push eax
+    ctx 0x8d cctx_emit ;
+    ctx 0x84 cctx_emit ;
+    ctx 0x24 cctx_emit ;
+    ctx rewind cctx_emit32 ;
+    ctx 0x50 cctx_emit ;
+  }
+
   # Call function
   # ast_push_value; pop eax; call eax
   left ctx lctx ast_push_value ;
@@ -3941,8 +3993,8 @@ fun ast_gen_function_call 3 {
   ctx 0xc4 cctx_emit ;
   ctx rewind cctx_emit32 ;
 
-  # Push result
-  if type_idx TYPE_VOID != {
+  # Push result if there is one and it is not an object
+  if type_idx TYPE_VOID != returns_obj ! && {
     $res_footprint
     @res_footprint ctx ast ctx lctx ast_eval_type cctx_type_footprint = ;
     res_footprint 4 == res_footprint 0 == || res_footprint 8 == || "ast_gen_function_call: return type is not scalar" assert_msg ;
@@ -4449,13 +4501,24 @@ fun cctx_compile_statement 2 {
     @ret_type lctx LCTX_RETURN_TYPE_IDX take = ;
     if ret_type TYPE_VOID != {
       ctx lctx ret_type ";" cctx_compile_expression ;
-      # pop eax
-      ctx 0x58 cctx_emit ;
-      if ctx ret_type cctx_type_footprint 8 == {
-        # pop edx
-        ctx 0x5a cctx_emit ;
+      if lctx LCTX_RETURNS_OBJ take {
+        # mov eax, [ebp+8]; cctx_gen_move_data; add esp, size
+        ctx 0x8b cctx_emit ;
+        ctx 0x45 cctx_emit ;
+        ctx 0x08 cctx_emit ;
+        ctx ctx ret_type cctx_type_size cctx_gen_move_data ;
+	ctx 0x81 cctx_emit ;
+	ctx 0xc4 cctx_emit ;
+	ctx ctx ret_type cctx_type_footprint cctx_emit32 ;
       } else {
-        ctx ret_type cctx_type_footprint 4 == "cctx_compile_statement: only returned scalar types are supported" assert_msg ;
+        # pop eax
+        ctx 0x58 cctx_emit ;
+        if ctx ret_type cctx_type_footprint 8 == {
+          # pop edx
+          ctx 0x5a cctx_emit ;
+        } else {
+          ctx ret_type cctx_type_footprint 4 == "cctx_compile_statement: error 1" assert_msg ;
+        }
       }
     }
     ctx lctx lctx LCTX_RETURN_LABEL take JUMP_TYPE_JMP 1 cctx_gen_label_jump ;
@@ -4721,12 +4784,9 @@ fun cctx_compile_function 3 {
   $lctx
   @lctx lctx_init = ;
   lctx LCTX_RETURN_LABEL take_addr lctx ctx lctx_gen_label = ;
+  lctx LCTX_RETURN_TYPE_IDX take_addr ctx type_idx cctx_get_type TYPE_BASE take = ;
+
   lctx ctx type_idx arg_names lctx_prime_stack ;
-
-  $return_type_idx
-  @return_type_idx ctx type_idx cctx_get_type TYPE_BASE take = ;
-  lctx LCTX_RETURN_TYPE_IDX take_addr return_type_idx = ;
-
   lctx ctx lctx_gen_prologue ;
   ctx lctx cctx_compile_block ;
   lctx ctx lctx LCTX_RETURN_LABEL take lctx_fix_label ;
