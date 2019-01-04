@@ -1788,12 +1788,14 @@ const LCTX_RETURN_LABEL 8
 const LCTX_BREAK_LABEL 12
 const LCTX_CONTINUE_LABEL 16
 const LCTX_RETURNS_OBJ 20
-const SIZEOF_LCTX 24
+const LCTX_GOTO_LABELS 24
+const SIZEOF_LCTX 28
 
 fun lctx_init 0 {
   $lctx
   @lctx SIZEOF_LCTX malloc = ;
   lctx LCTX_STACK take_addr 4 vector_init = ;
+  lctx LCTX_GOTO_LABELS take_addr map_init = ;
   lctx ret ;
 }
 
@@ -1811,6 +1813,7 @@ fun lctx_destroy 1 {
   }
 
   lctx LCTX_STACK take vector_destroy ;
+  lctx LCTX_GOTO_LABELS take map_destroy ;
   lctx free ;
 }
 
@@ -2086,6 +2089,11 @@ fun cctx_gen_label 3 {
     idx label_pos vector_size < "cctx_gen_label: error 1" assert_msg ;
     if pos 0xffffffff != {
       label_pos idx vector_at pos == "cctx_gen_label: error 3" assert_msg ;
+    }
+    if ctx CCTX_STAGE take 2 == {
+      # Check that in the end the label position has been set
+      # (otherwise the label was never actually defined)
+      label_pos idx vector_at 0xffffffff != "cctx_gen_label: label never defined" assert_msg ;
     }
     ctx name loc TYPE_VOID cctx_add_global ;
   }
@@ -4495,6 +4503,12 @@ fun cctx_compile_statement 2 {
   $expect_semicolon
   @expect_semicolon 0 = ;
 
+  # Allow and ignore empty statements
+  if tok ";" strcmp 0 == processed ! && {
+    @expect_semicolon 0 = ;
+    @processed 1 = ;
+  }
+
   # Parse return
   if tok "return" strcmp 0 == processed ! && {
     $ret_type
@@ -4677,6 +4691,41 @@ fun cctx_compile_statement 2 {
 
     lctx ctx break_lab lctx_fix_label ;
     @processed 1 = ;
+  }
+
+  # Parse goto
+  if tok "goto" strcmp 0 == processed ! && {
+    @tok ctx cctx_get_token_or_fail = ;
+    $lab
+    if lctx LCTX_GOTO_LABELS take tok map_has {
+      @lab lctx LCTX_GOTO_LABELS take tok map_at = ;
+    } else {
+      @lab lctx ctx lctx_gen_label = ;
+      lctx LCTX_GOTO_LABELS take tok lab map_set ;
+    }
+    # cctx_gen_label_jump
+    ctx lctx lab JUMP_TYPE_JMP 1 cctx_gen_label_jump ;
+    @processed 1 = ;
+  }
+
+  # Consider one more token to see if it is a goto label
+  if processed ! {
+    $tok2
+    @tok2 ctx cctx_get_token_or_fail = ;
+    if tok2 ":" strcmp 0 == {
+      $lab
+      if lctx LCTX_GOTO_LABELS take tok map_has {
+        @lab lctx LCTX_GOTO_LABELS take tok map_at = ;
+      } else {
+        @lab lctx ctx lctx_gen_label = ;
+        lctx LCTX_GOTO_LABELS take tok lab map_set ;
+      }
+      lctx ctx lab lctx_fix_label ;
+      @expect_semicolon 0 = ;
+      @processed 1 = ;
+    } else {
+      ctx cctx_give_back_token ;
+    }
   }
 
   if processed ! {

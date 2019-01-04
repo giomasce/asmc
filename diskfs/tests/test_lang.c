@@ -228,3 +228,24 @@ int test_logic() {
   if ((2 || side_effect(&val, 3)) != 1) return 0;
   return val;
 }
+
+int test_goto() {
+    int x = 0;
+    // Check that empty statements are accepted
+    ;
+    goto test_lab;
+    return 0;
+ test_lab2:
+    if (x != 1) return 0;
+    goto finish;
+    int y = 13;
+ test_lab:
+    x = 1;
+    if (0) {
+        goto test_lab2;
+    } else {
+        goto test_lab2;
+    }
+ finish:
+    return 1;
+}
