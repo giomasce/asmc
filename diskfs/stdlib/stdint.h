@@ -37,4 +37,17 @@ typedef uint32_t uintptr_t;
 typedef int64_t intmax_t;
 typedef uint64_t uintmax_t;
 
+#define INT8_C(x) x
+#define INT16_C(x) x
+#define INT32_C(x) x
+#define INT64_C(x) x ## L
+
+#define UINT8_C(x) x
+#define UINT16_C(x) x
+#define UINT32_C(x) x ## U
+#define UINT64_C(x) x ## UL
+
+#define INTMAX_C(x) x ## L
+#define UINTMAX_C(x) x ## UL
+
 #endif
