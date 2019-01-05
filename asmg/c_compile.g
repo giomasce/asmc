@@ -2321,7 +2321,7 @@ fun ast_eval_compile_ext 2 {
       $enum_consts
       @enum_consts ctx CCTX_ENUM_CONSTS take = ;
       if enum_consts name map_has {
-        enum_consts name map_at ret ;
+        value enum_consts name map_at i64_from_32 ;
       } else {
         $global
         @global ctx name cctx_get_global = ;

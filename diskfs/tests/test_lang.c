@@ -45,6 +45,8 @@ enum Enum {
   ZERO,
   ONE,
   TWO,
+  THREE,
+  FOUR,
   TEN = 5+3+2,
   ELEVEN
 };
@@ -256,8 +258,8 @@ int test_switch() {
             j++;
             break;
             return 0;
-        case 3:
-        case 4:
+        case THREE:
+        case FOUR:
         case 5:
             j += 2;
         case 7:
