@@ -132,7 +132,7 @@ fun ast_get_priority 1 {
   if str "(_PRE" strcmp 0 == { 2 ret ; }
   if str "*_PRE" strcmp 0 == { 2 ret ; }
   if str "&_PRE" strcmp 0 == { 2 ret ; }
-  if str "sizeof" strcmp 0 == { 2 ret ; }
+  if str "sizeof_PRE" strcmp 0 == { 2 ret ; }
   if str "*" strcmp 0 == { 3 ret ; }
   if str "/" strcmp 0 == { 3 ret ; }
   if str "%" strcmp 0 == { 3 ret ; }
@@ -190,7 +190,7 @@ fun ast_get_ass_direction 1 {
   if str "(_PRE" strcmp 0 == { 0 ret ; }
   if str "*_PRE" strcmp 0 == { 0 ret ; }
   if str "&_PRE" strcmp 0 == { 0 ret ; }
-  if str "sizeof" strcmp 0 == { 0 ret ; }
+  if str "sizeof_PRE" strcmp 0 == { 0 ret ; }
   if str "*" strcmp 0 == { 1 ret ; }
   if str "/" strcmp 0 == { 1 ret ; }
   if str "%" strcmp 0 == { 1 ret ; }
@@ -400,6 +400,28 @@ fun ast_parsev 2 {
             }
           }
         } else {
+          # sizeof has two forms: one with a type name surrounded by
+          # parentheses, and another with a generic expression; so we
+          # have to do a little bit more of parsing to see what is the
+          # case here
+          $sizeof_type_idx
+          @sizeof_type_idx 0xffffffff = ;
+          if tok "sizeof" strcmp 0 == {
+            $tok2
+            @tok2 int int ASTINT_GET_TOKEN_OR_FAIL take \1 = ;
+            if tok2 "(" strcmp 0 == {
+              @sizeof_type_idx int int ASTINT_PARSE_TYPE take \1 = ;
+              if sizeof_type_idx 0xffffffff != {
+                @tok2 int int ASTINT_GET_TOKEN_OR_FAIL take \1 = ;
+                tok2 ")" strcmp 0 == "Expect ) after type name" assert_msg ;
+              } else {
+                int int ASTINT_GIVE_BACK_TOKEN take \1 ;
+              }
+            } else {
+              int int ASTINT_GIVE_BACK_TOKEN take \1 ;
+            }
+            @is_operator sizeof_type_idx 0xffffffff == = ;
+          }
           if is_operator {
             # Operator instead of operand, it must be a prefix.
             # Mangle it, push it in the operator stack
@@ -408,6 +430,10 @@ fun ast_parsev 2 {
             @found 0 = ;
             if tok "defined" strcmp 0 == {
               @tok "defined_PRE" = ;
+              @found 1 = ;
+            }
+            if tok "sizeof" strcmp 0 == {
+              @tok "sizeof_PRE" = ;
               @found 1 = ;
             }
             if tok "!" strcmp 0 == {
@@ -471,6 +497,7 @@ fun ast_parsev 2 {
               @ast ast_init = ;
               ast AST_TYPE take_addr 0 = ;
               ast AST_NAME take_addr tok strdup = ;
+              ast AST_CAST_TYPE_IDX take_addr sizeof_type_idx = ;
               operand_stack ast vector_push_back ;
               @expect_operator 1 = ;
             }

@@ -249,3 +249,21 @@ int test_goto() {
  finish:
     return 1;
 }
+
+int test_sizeof() {
+    int s = sizeof(int);
+    if (s != 4) return 0;
+    int x = 10;
+    // Check that side effect do not happen (i.e., expression is not
+    // evaluated)
+    s = sizeof --x;
+    if (s != 4) return 0;
+    if (x != 10) return 0;
+    s = sizeof(test_sizeof());
+    if (s != 4) return 0;
+
+    if (sizeof(char) != 1) return 0;
+    //if (sizeof(char*) != 4) return 0;
+
+    return 1;
+}

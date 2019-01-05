@@ -21,5 +21,6 @@ int test_cast() {
     if (y != 232) return 0;
     y = (char) x;
     if (y != -24) return 0;
+    //void *x = (void*) "test string";
     return 1;
 }

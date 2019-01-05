@@ -2557,8 +2557,8 @@ fun ast_eval_type 3 {
       # Search among enum constants
       $enum_consts
       @enum_consts ctx CCTX_ENUM_CONSTS take = ;
-      if enum_consts name map_has {
-        TYPE_UINT ret ;
+      if enum_consts name map_has name "sizeof" strcmp 0 == || {
+        @type_idx TYPE_INT = ;
       } else {
         # Search in local stack and among globals
         $elem
@@ -2844,6 +2844,11 @@ fun ast_eval_type 3 {
 
     if name "(_PRE" strcmp 0 == {
       @type_idx ast AST_CAST_TYPE_IDX take = ;
+      @processed 1 = ;
+    }
+
+    if name "sizeof_PRE" strcmp 0 == {
+      @type_idx TYPE_INT = ;
       @processed 1 = ;
     }
 
@@ -4325,17 +4330,23 @@ fun ast_push_value 3 {
     if name is_valid_identifier {
       $enum_consts
       @enum_consts ctx CCTX_ENUM_CONSTS take = ;
-      if enum_consts name map_has {
-        $value
-        @value enum_consts name map_at = ;
+      if name "sizeof" strcmp 0 == {
+        # push type_size
         ctx 0x68 cctx_emit ;
-        ctx value cctx_emit32 ;
+        ctx ctx ast AST_CAST_TYPE_IDX take cctx_type_size cctx_emit32 ;
       } else {
-        # Push the address
-        ast ctx lctx ast_push_addr ;
-        # pop eax
-        ctx 0x58 cctx_emit ;
-        ctx ctx type_idx cctx_type_footprint cctx_gen_push_data ;
+        if enum_consts name map_has {
+          $value
+          @value enum_consts name map_at = ;
+          ctx 0x68 cctx_emit ;
+          ctx value cctx_emit32 ;
+        } else {
+          # Push the address
+          ast ctx lctx ast_push_addr ;
+          # pop eax
+          ctx 0x58 cctx_emit ;
+          ctx ctx type_idx cctx_type_footprint cctx_gen_push_data ;
+        }
       }
     } else {
       if name **c '\"' == {
@@ -4555,6 +4566,13 @@ fun ast_push_value 3 {
       } else {
         lctx ctx ast AST_RIGHT take ctx lctx ast_eval_type type_idx lctx_convert_stack ;
       }
+      @processed 1 = ;
+    }
+
+    if name "sizeof_PRE" strcmp 0 == {
+      # push type_size
+      ctx 0x68 cctx_emit ;
+      ctx ctx ast AST_RIGHT take ctx lctx ast_eval_type cctx_type_size cctx_emit32 ;
       @processed 1 = ;
     }
 
