@@ -4792,15 +4792,27 @@ fun cctx_compile_statement 2 {
     # Compile initialization expression
     @tok ctx cctx_get_token_or_fail = ;
     tok "(" strcmp 0 == "cctx_compile_statement: ( expected after for" assert_msg ;
-    ctx lctx TYPE_VOID ";" cctx_compile_expression ;
     @tok ctx cctx_get_token_or_fail = ;
-    tok ";" strcmp 0 == "cctx_compile_statement: ; expected after for" assert_msg ;
+    if tok ";" strcmp 0 != {
+      ctx cctx_give_back_token ;
+      ctx lctx TYPE_VOID ";" cctx_compile_expression ;
+      @tok ctx cctx_get_token_or_fail = ;
+      tok ";" strcmp 0 == "cctx_compile_statement: ; expected after for" assert_msg ;
+    }
 
     # Compile guard expression
     lctx ctx restart_lab lctx_fix_label ;
-    ctx lctx TYPE_BOOL ";" cctx_compile_expression ;
     @tok ctx cctx_get_token_or_fail = ;
-    tok ";" strcmp 0 == "cctx_compile_statement: second ; expected after for" assert_msg ;
+    if tok ";" strcmp 0 != {
+      ctx cctx_give_back_token ;
+      ctx lctx TYPE_BOOL ";" cctx_compile_expression ;
+      @tok ctx cctx_get_token_or_fail = ;
+      tok ";" strcmp 0 == "cctx_compile_statement: second ; expected after for" assert_msg ;
+    } else {
+      # push 1
+      ctx 0x6a cctx_emit ;
+      ctx 0x01 cctx_emit ;
+    }
 
     # pop eax; test eax, eax; cctx_gen_label_jump; cctx_gen_label_jump
     ctx 0x58 cctx_emit ;
@@ -4811,9 +4823,13 @@ fun cctx_compile_statement 2 {
 
     # Compile iteration expression
     lctx ctx continue_lab lctx_fix_label ;
-    ctx lctx TYPE_VOID ")" cctx_compile_expression ;
     @tok ctx cctx_get_token_or_fail = ;
-    tok ")" strcmp 0 == "cctx_compile_statement: ) expected after for" assert_msg ;
+    if tok ")" strcmp 0 != {
+      ctx cctx_give_back_token ;
+      ctx lctx TYPE_VOID ")" cctx_compile_expression ;
+      @tok ctx cctx_get_token_or_fail = ;
+      tok ")" strcmp 0 == "cctx_compile_statement: ) expected after for" assert_msg ;
+    }
 
     # cctx_gen_label_jump
     ctx lctx restart_lab JUMP_TYPE_JMP 0 cctx_gen_label_jump ;
