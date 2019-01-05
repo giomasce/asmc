@@ -239,9 +239,11 @@ fun main 0 {
   0 "vfs_init" platform_get_symbol \0 ;
   "Virtual File System initialized!\n" 1 platform_log ;
 
-  "Initializing support for int64...\n" 1 platform_log ;
-  0 "int64_init" platform_get_symbol \0 ;
-  "Support for int64 initialized!\n" 1 platform_log ;
+  if compile_int64 {
+    "Initializing support for int64...\n" 1 platform_log ;
+    0 "int64_init" platform_get_symbol \0 ;
+    "Support for int64 initialized!\n" 1 platform_log ;
+  }
 
   # Determine if there is an actual script
   $script_file
@@ -308,9 +310,11 @@ fun main 0 {
     }
   }
 
-  "Destroying support for int64... " 1 platform_log ;
-  0 "int64_destroy" platform_get_symbol \0 ;
-  "done!\n" 1 platform_log ;
+  if compile_int64 {
+    "Destroying support for int64... " 1 platform_log ;
+    0 "int64_destroy" platform_get_symbol \0 ;
+    "done!\n" 1 platform_log ;
+  }
 
   "Destroying Virtual File System... " 1 platform_log ;
   0 "vfs_destroy" platform_get_symbol \0 ;
