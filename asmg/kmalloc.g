@@ -27,6 +27,10 @@ const KMALLOC_NBUCKETS 28
 
 $kmalloc_buckets
 $kmalloc_num
+$kmalloc_num_tot
+$kmalloc_size_tot
+$kmalloc_req_num
+$kmalloc_req_size
 
 fun _bucket_actual_size 1 {
   $bucket
@@ -49,6 +53,8 @@ fun malloc 1 {
   size 0 > "malloc: invalid negative size" assert_msg ;
 
   @kmalloc_num kmalloc_num 1 + = ;
+  @kmalloc_num_tot kmalloc_num_tot 1 + = ;
+  @kmalloc_size_tot kmalloc_size_tot size + = ;
 
   # Initialize buckets on first call
   if kmalloc_buckets 0 == {
@@ -81,6 +87,8 @@ fun malloc 1 {
   @ptr kmalloc_buckets 4 bucket * + ** = ;
   if ptr 0 == {
     @ptr actual platform_allocate = ;
+    @kmalloc_req_num kmalloc_req_num 1 + = ;
+    @kmalloc_req_size kmalloc_req_size actual + = ;
   } else {
     kmalloc_buckets 4 bucket * + ptr ** = ;
   }
@@ -130,6 +138,14 @@ fun _malloc_get_size 1 {
 }
 
 fun malloc_stats 0 {
+  kmalloc_num_tot itoa 1 platform_log ;
+  " regions were malloc-ed\n" 1 platform_log ;
+  kmalloc_size_tot itoa 1 platform_log ;
+  " bytes were malloc-ed\n" 1 platform_log ;
   kmalloc_num itoa 1 platform_log ;
   " malloc-ed regions were never free-d\n" 1 platform_log ;
+  kmalloc_req_num itoa 1 platform_log ;
+  " regions were requested from platform\n" 1 platform_log ;
+  kmalloc_req_size itoa 1 platform_log ;
+  " bytes were requested from platform\n" 1 platform_log ;
 }
