@@ -310,6 +310,7 @@ ifun cctx_get_token 1
 ifun cctx_give_back_token 1
 ifun cctx_get_token_or_fail 1
 ifun cctx_parse_type 1
+ifun cctx_parse_declarator 5
 
 fun cctx_astint_get_token 1 {
   $int
@@ -336,7 +337,21 @@ fun cctx_astint_parse_type 1 {
   $int
   @int 0 param = ;
 
-  int CCTX_ASTINT_CTX take cctx_parse_type ret ;
+  # Parse base type
+  $base_type_idx
+  @base_type_idx int CCTX_ASTINT_CTX take cctx_parse_type = ;
+  if base_type_idx 0xffffffff == {
+    base_type_idx ret ;
+  }
+
+  # Parse declarator
+  $type_idx
+  $name
+  if int CCTX_ASTINT_CTX take base_type_idx @type_idx @name 0 cctx_parse_declarator {
+    type_idx ret ;
+  } else {
+    base_type_idx ret ;
+  }
 }
 
 fun cctx_astint_init 1 {
@@ -4570,9 +4585,14 @@ fun ast_push_value 3 {
     }
 
     if name "sizeof_PRE" strcmp 0 == {
+      $sub_type_idx
+      @sub_type_idx ast AST_RIGHT take ctx lctx ast_eval_type = ;
+      if ast AST_RIGHT take AST_ORIG_TYPE_IDX take 0xffffffff != {
+        @sub_type_idx ast AST_RIGHT take AST_ORIG_TYPE_IDX take = ;
+      }
       # push type_size
       ctx 0x68 cctx_emit ;
-      ctx ctx ast AST_RIGHT take ctx lctx ast_eval_type cctx_type_size cctx_emit32 ;
+      ctx ctx sub_type_idx cctx_type_size cctx_emit32 ;
       @processed 1 = ;
     }
 

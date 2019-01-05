@@ -250,6 +250,11 @@ int test_goto() {
     return 1;
 }
 
+struct struct_size {
+    int x;
+    char y;
+};
+
 int test_sizeof() {
     int s = sizeof(int);
     if (s != 4) return 0;
@@ -263,7 +268,14 @@ int test_sizeof() {
     if (s != 4) return 0;
 
     if (sizeof(char) != 1) return 0;
-    //if (sizeof(char*) != 4) return 0;
+    if (sizeof(char*) != 4) return 0;
+    if (sizeof(char[10]) != 10) return 0;
+
+    char x[10];
+    if (sizeof(x) != 10) return 0;
+    if (sizeof(x[0]) != 1) return 0;
+
+    if (sizeof(struct struct_size) != 8) return 0;
 
     return 1;
 }
