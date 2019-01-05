@@ -2623,10 +2623,19 @@ fun ast_eval_type 3 {
       $left_size
       $right_size
       if left_ptr {
-        @left_size ctx ctx left_idx cctx_get_type TYPE_BASE take cctx_type_size = ;
+        # Allow void to be considered of size 1
+        if ctx left_idx cctx_get_type TYPE_BASE take TYPE_VOID == {
+          @left_size 1 = ;
+        } else {
+          @left_size ctx ctx left_idx cctx_get_type TYPE_BASE take cctx_type_size = ;
+        }
       }
       if right_ptr {
-        @right_size ctx ctx right_idx cctx_get_type TYPE_BASE take cctx_type_size = ;
+        if ctx right_idx cctx_get_type TYPE_BASE take TYPE_VOID == {
+          @right_size 1 = ;
+        } else {
+          @right_size ctx ctx right_idx cctx_get_type TYPE_BASE take cctx_type_size = ;
+        }
       }
       if sum {
         left_ptr right_ptr && ! "ast_eval_type: cannot take sum of two pointers" assert_msg ;
@@ -4186,10 +4195,18 @@ fun ast_push_value_ptr 3 {
   $left_size
   $right_size
   if left_ptr {
-    @left_size ctx ctx left_idx cctx_get_type TYPE_BASE take cctx_type_size = ;
+    if ctx left_idx cctx_get_type TYPE_BASE take TYPE_VOID == {
+      @left_size 1 = ;
+    } else {
+      @left_size ctx ctx left_idx cctx_get_type TYPE_BASE take cctx_type_size = ;
+    }
   }
   if right_ptr {
-    @right_size ctx ctx right_idx cctx_get_type TYPE_BASE take cctx_type_size = ;
+    if ctx right_idx cctx_get_type TYPE_BASE take TYPE_VOID == {
+      @right_size 1 = ;
+    } else {
+      @right_size ctx ctx right_idx cctx_get_type TYPE_BASE take cctx_type_size = ;
+    }
   }
 
   if sum {
