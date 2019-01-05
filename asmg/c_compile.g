@@ -2689,6 +2689,27 @@ fun ast_eval_type 3 {
       @processed 1 = ;
     }
 
+    if name "++_PRE" strcmp 0 ==
+       name "++_POST" strcmp 0 == ||
+       name "--_PRE" strcmp 0 == ||
+       name "--_POST" strcmp 0 == ||
+       processed ! && {
+      $sub_type_idx
+      if name "++_PRE" strcmp 0 == name "--_PRE" strcmp 0 == || {
+        @sub_type_idx ast AST_RIGHT take ctx lctx ast_eval_type = ;
+      } else {
+        @sub_type_idx ast AST_LEFT take ctx lctx ast_eval_type = ;
+      }
+      if sub_type_idx is_integer_type {
+        @type_idx sub_type_idx promote_integer_type = ;
+      } else {
+        ctx sub_type_idx cctx_get_type TYPE_KIND take TYPE_KIND_POINTER == "ast_eval_type: argument must be integer or pointer" assert_msg ;
+        @type_idx sub_type_idx = ;
+      }
+      @common_type_idx type_idx = ;
+      @processed 1 = ;
+    }
+
     if name "<" strcmp 0 ==
        name ">" strcmp 0 == ||
        name "<=" strcmp 0 == ||
@@ -3669,11 +3690,18 @@ fun ast_push_value_arith 3 {
   $name
   @name ast AST_NAME take = ;
   $is_prefix
+  $is_postfix
   @is_prefix name "+_PRE" strcmp 0 ==
              name "-_PRE" strcmp 0 == ||
              name "~_PRE" strcmp 0 == ||
-             name "!_PRE" strcmp 0 == || = ;
+             name "!_PRE" strcmp 0 == ||
+             name "++_PRE" strcmp 0 == ||
+             name "--_PRE" strcmp 0 == || = ;
+  @is_postfix name "++_POST" strcmp 0 ==
+              name "--_POST" strcmp 0 == || = ;
+
   $assign
+  $incdec
   @assign name "*=" strcmp 0 ==
           name "/=" strcmp 0 == ||
           name "%=" strcmp 0 == ||
@@ -3684,10 +3712,25 @@ fun ast_push_value_arith 3 {
           name "|=" strcmp 0 == ||
           name "<<=" strcmp 0 == ||
           name ">>=" strcmp 0 == || = ;
+  @incdec name "++_PRE" strcmp 0 ==
+          name "--_PRE" strcmp 0 == ||
+          name "++_POST" strcmp 0 == ||
+          name "--_POST" strcmp 0 == || = ;
+
   @name name strdup = ;
   if assign {
     is_prefix ! "ast_push_value_arith: error 2" assert_msg ;
     name name strlen + 1 - '\0' =c ;
+  }
+  if incdec {
+    name 1 + '\0' =c ;
+    is_prefix is_postfix || "ast_push_value_arith: error 6" assert_msg ;
+    is_prefix ! is_postfix ! || "ast_push_value_arith: error 7" assert_msg ;
+    assign ! "ast_push_value_arith: error 8" assert_msg ;
+  }
+  if is_postfix {
+    incdec "ast_push_value_arith: error 9" assert_msg ;
+    assign ! "ast_push_value_arith: error 10" assert_msg ;
   }
 
   $type1
@@ -3697,13 +3740,22 @@ fun ast_push_value_arith 3 {
   if is_prefix ! {
     @type1 ast AST_LEFT take ctx lctx ast_eval_type = ;
   }
-  @type2 ast AST_RIGHT take ctx lctx ast_eval_type = ;
+  if is_postfix ! {
+    @type2 ast AST_RIGHT take ctx lctx ast_eval_type = ;
+  }
+  if incdec {
+    if is_prefix {
+      @type1 type2 = ;
+    } else {
+      @type2 type1 = ;
+    }
+  }
   @type_idx ast ctx lctx ast_eval_type = ;
   @common_type_idx ast AST_COMMON_TYPE_IDX take = ;
 
   # Recursively evalute both operands
   if is_prefix ! {
-    if assign {
+    if assign incdec || {
       # See the comment for sum-assigning
       # ast_push_addr; mov eax, [esp], cctx_gen_push_data
       ast AST_LEFT take ctx lctx ast_push_addr ;
@@ -3716,14 +3768,61 @@ fun ast_push_value_arith 3 {
     }
     lctx ctx type1 common_type_idx lctx_int_convert ;
   }
-  ast AST_RIGHT take ctx lctx ast_push_value ;
-  lctx ctx type2 common_type_idx lctx_int_convert ;
+  if is_postfix ! {
+    if incdec {
+      # See the comment for sum-assigning
+      # ast_push_addr; mov eax, [esp], cctx_gen_push_data
+      ast AST_RIGHT take ctx lctx ast_push_addr ;
+      ctx 0x8b cctx_emit ;
+      ctx 0x04 cctx_emit ;
+      ctx 0x24 cctx_emit ;
+      ctx ctx type2 cctx_type_footprint cctx_gen_push_data ;
+    } else {
+      ast AST_RIGHT take ctx lctx ast_push_value ;
+    }
+    lctx ctx type2 common_type_idx lctx_int_convert ;
+  }
 
+  # If postincrement or postdecrement, put a further copy of the
+  # operand on the stack, which will be returned in the end; so the
+  # stack is: value to be returned, address to be assigned, operand
+  if incdec is_postfix && {
+    if ctx common_type_idx cctx_type_footprint 4 == {
+      # pop eax; pop ecx; push eax; push ecx; push eax
+      ctx 0x58 cctx_emit ;
+      ctx 0x59 cctx_emit ;
+      ctx 0x50 cctx_emit ;
+      ctx 0x51 cctx_emit ;
+      ctx 0x50 cctx_emit ;
+    } else {
+      # pop eax; pop edx; pop ecx; push edx; push eax; push ecx; push edx; push eax
+      ctx 0x58 cctx_emit ;
+      ctx 0x5a cctx_emit ;
+      ctx 0x59 cctx_emit ;
+      ctx 0x52 cctx_emit ;
+      ctx 0x50 cctx_emit ;
+      ctx 0x51 cctx_emit ;
+      ctx 0x52 cctx_emit ;
+      ctx 0x50 cctx_emit ;
+    }
+  }
+
+  # If increment or decrement, then push 1 of the appropriate type
+  if incdec {
+    type1 type2 == "ast_push_value_arith: error 11" assert_msg ;
+    # push 1
+    ctx 0x6a cctx_emit ;
+    ctx 0x01 cctx_emit ;
+    lctx ctx TYPE_INT common_type_idx lctx_int_convert ;
+  }
+
+  # Incdec operators must not be considered as prefix, because we have
+  # pushed a second operand on the stack
   if ctx common_type_idx cctx_type_footprint 4 == {
-    ctx name common_type_idx is_prefix ast_push_value_arith32 ;
+    ctx name common_type_idx is_prefix incdec ! && ast_push_value_arith32 ;
   } else {
     ctx common_type_idx cctx_type_footprint 8 == "ast_push_value_arith: error 1" assert_msg ;
-    ctx name common_type_idx is_prefix ast_push_value_arith64 ;
+    ctx name common_type_idx is_prefix incdec ! && ast_push_value_arith64 ;
   }
 
   if type_idx common_type_idx != {
@@ -3731,8 +3830,9 @@ fun ast_push_value_arith 3 {
     lctx ctx common_type_idx type_idx lctx_int_convert ;
   }
 
-  if assign {
-    ctx type1 cctx_type_size ctx type_idx cctx_type_size <= "ast_push_value_arith: error 3" assert_msg ;
+  # Do the assignment if needed
+  if assign incdec || {
+    ctx type1 cctx_type_size ctx type_idx cctx_type_size <= "ast_push_value_arith: error 5" assert_msg ;
     type_idx common_type_idx == "ast_push_value_arith: error 4" assert_msg ;
 
     # First remove the address from the stack (it is not on the top of
@@ -3757,6 +3857,16 @@ fun ast_push_value_arith 3 {
     ctx 0x89 cctx_emit ;
     ctx 0xc8 cctx_emit ;
     ctx ctx type1 cctx_type_size cctx_gen_move_data ;
+  }
+
+  # If postincrement or postdecrement, remove the result of the
+  # operation, because the copy of the operand already pushed on the
+  # stack will be returned
+  if incdec is_postfix && {
+    # add esp, footprint
+    ctx 0x81 cctx_emit ;
+    ctx 0xc4 cctx_emit ;
+    ctx ctx common_type_idx cctx_type_footprint cctx_emit32 ;
   }
 
   name free ;
@@ -4306,6 +4416,10 @@ fun ast_push_value 3 {
        name "-_PRE" strcmp 0 == ||
        name "~_PRE" strcmp 0 == ||
        name "!_PRE" strcmp 0 == ||
+       name "++_PRE" strcmp 0 == ||
+       name "--_PRE" strcmp 0 == ||
+       name "++_POST" strcmp 0 == ||
+       name "--_POST" strcmp 0 == ||
        processed ! && {
       ast ctx lctx ast_push_value_arith ;
       @processed 1 = ;
@@ -4721,6 +4835,7 @@ fun cctx_compile_statement 2 {
     # cctx_gen_label_jump
     ctx lctx lab JUMP_TYPE_JMP 1 cctx_gen_label_jump ;
     @processed 1 = ;
+    @expect_semicolon 1 = ;
   }
 
   # Consider one more token to see if it is a goto label
@@ -4736,6 +4851,7 @@ fun cctx_compile_statement 2 {
         lctx LCTX_GOTO_LABELS take tok lab map_set ;
       }
       lctx ctx lab lctx_fix_label ;
+      ctx lctx cctx_compile_statement_or_block ;
       @expect_semicolon 0 = ;
       @processed 1 = ;
     } else {

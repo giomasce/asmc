@@ -56,3 +56,23 @@ int test_int_assign() {
 
     return 1;
 }
+
+int test_int_prepost() {
+    int x = 100;
+    int y = x++;
+    if (x != 101) return 0;
+    if (y != 100) return 0;
+    x = 100;
+    y = ++x;
+    if (x != 101) return 0;
+    if (y != 101) return 0;
+    x = 100;
+    y = x--;
+    if (x != 99) return 0;
+    if (y != 100) return 0;
+    x = 100;
+    y = --x;
+    if (x != 99) return 0;
+    if (y != 99) return 0;
+    return 1;
+}

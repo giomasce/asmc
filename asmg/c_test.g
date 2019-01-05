@@ -158,6 +158,7 @@ fun c_run_testcases 0 {
 
   tests "/disk1/tests/test_op_assign.c" "test_ptr_assign" 1 "" c_run_testcase ;
   tests "/disk1/tests/test_op_assign.c" "test_int_assign" 1 "" c_run_testcase ;
+  tests "/disk1/tests/test_op_assign.c" "test_int_prepost" 1 "" c_run_testcase ;
 
   tests "/disk1/tests/test_ret_obj.c" "test_ret_obj" 1 "" c_run_testcase ;
 
