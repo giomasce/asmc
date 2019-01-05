@@ -75,6 +75,20 @@ int test_while() {
   return sum;
 }
 
+int test_do_while() {
+    int i;
+    int sum;
+    i = 0;
+    sum = 0;
+    do {
+        i = i + 1;
+        if (i == 10) continue;
+        sum = do_sum(sum, i);
+        if (i == 100) break;
+    } while (i < 200 && i != 0);
+    return sum;
+}
+
 int test_for() {
   int i;
   int sum;
@@ -83,6 +97,9 @@ int test_for() {
     if (i == 10) continue;
     sum = do_sum(sum, i);
     if (i == 100) break;
+  }
+  for (;;) {
+      break;
   }
   return sum;
 }
