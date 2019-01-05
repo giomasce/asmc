@@ -143,6 +143,7 @@ fun c_run_testcases 0 {
   tests "/disk1/tests/test_lang.c" "test_unary" 1 "" c_run_testcase ;
   tests "/disk1/tests/test_lang.c" "test_shifts" 1 "" c_run_testcase ;
   tests "/disk1/tests/test_lang.c" "test_logic" 1 "" c_run_testcase ;
+  tests "/disk1/tests/test_lang.c" "test_switch" 1 "" c_run_testcase ;
   tests "/disk1/tests/test_lang.c" "test_goto" 1 "" c_run_testcase ;
   tests "/disk1/tests/test_lang.c" "test_sizeof" 1 "" c_run_testcase ;
 

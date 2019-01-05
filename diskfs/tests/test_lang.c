@@ -246,6 +246,36 @@ int test_logic() {
   return val;
 }
 
+int test_switch() {
+    int i;
+    int j = 0;
+    for (i = 0; i < 10; i++) {
+        switch (i) {
+            return 0;
+        case 1:
+            j++;
+            break;
+            return 0;
+        case 3:
+        case 4:
+        case 5:
+            j += 2;
+        case 7:
+            j++;
+            break;
+            return 0;
+        case 1:
+        case 6:
+            break;
+        case 100:
+            return 0;
+        default:
+            j += 10;
+        }
+    }
+    return j == 51;
+}
+
 int test_goto() {
     int x = 0;
     // Check that empty statements are accepted

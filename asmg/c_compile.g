@@ -1804,13 +1804,17 @@ const LCTX_BREAK_LABEL 12
 const LCTX_CONTINUE_LABEL 16
 const LCTX_RETURNS_OBJ 20
 const LCTX_GOTO_LABELS 24
-const SIZEOF_LCTX 28
+const LCTX_DEFAULT_LABEL 28
+const LCTX_CASE_LABELS 32
+const SIZEOF_LCTX 36
 
 fun lctx_init 0 {
   $lctx
   @lctx SIZEOF_LCTX malloc = ;
   lctx LCTX_STACK take_addr 4 vector_init = ;
   lctx LCTX_GOTO_LABELS take_addr map_init = ;
+  lctx LCTX_DEFAULT_LABEL take_addr 0xffffffff = ;
+  lctx LCTX_CASE_LABELS take_addr 0 = ;
   lctx ret ;
 }
 
@@ -2223,11 +2227,21 @@ fun cctx_gen_label_jump 5 {
   $name
   @name ctx idx cctx_write_label = ;
 
-  # add esp, pos_diff; cctx_gen_jump
+  # When rewinding on a conditional jump, the add will modify the
+  # flags, so we have to back them up
   if rewind {
+    if type JUMP_TYPE_JZ == type JUMP_TYPE_JNZ == || {
+      # lahf
+      ctx 0x9f cctx_emit ;
+    }
+    # add esp, pos_diff; cctx_gen_jump
     ctx 0x81 cctx_emit ;
     ctx 0xc4 cctx_emit ;
     ctx pos_diff cctx_emit32 ;
+    if type JUMP_TYPE_JZ == type JUMP_TYPE_JNZ == || {
+      # sahf
+      ctx 0x9e cctx_emit ;
+    }
   }
   ctx name type cctx_gen_jump ;
 }
@@ -2458,6 +2472,10 @@ fun ast_strtoll 1 {
   $suffix
   $value
   @value ast AST_NAME take @suffix c_strtoll = ;
+  # FIXME Why is it called twice on the same AST?
+  if ast AST_VALUE take 0 != {
+    ast AST_VALUE take i64_destroy ;
+  }
   ast AST_VALUE take_addr value = ;
 
   # Decode suffix
@@ -2479,8 +2497,8 @@ fun ast_strtoll 1 {
     }
     @suffix suffix 1 + = ;
   }
-  0 u_num <= u_num 1 <= && "ast_strotoll: too many U suffixes" assert_msg ;
-  0 l_num <= l_num 2 <= && "ast_strotoll: too many L suffixes" assert_msg ;
+  0 u_num <= u_num 1 <= && "ast_strtoll: too many U suffixes" assert_msg ;
+  0 l_num <= l_num 2 <= && "ast_strtoll: too many L suffixes" assert_msg ;
 
   # (Re)decode prefix
   $dec
@@ -4938,6 +4956,132 @@ fun cctx_compile_statement 2 {
 
     lctx ctx break_lab lctx_fix_label ;
     @expect_semicolon 1 = ;
+    @processed 1 = ;
+  }
+
+  # Parse switch
+  if tok "switch" strcmp 0 == processed ! && {
+    $break_lab
+    $logic_lab
+    @break_lab lctx ctx lctx_gen_label = ;
+    @logic_lab lctx ctx lctx_gen_label = ;
+
+    # Compile switch expression
+    @tok ctx cctx_get_token_or_fail = ;
+    tok "(" strcmp 0 == "cctx_compile_statement: ( expected after switch" assert_msg ;
+    $ast
+    @ast ctx ")" cctx_parse_ast1 = ;
+    $type_idx
+    @type_idx ast ctx lctx ast_eval_type promote_integer_type = ;
+    ast ctx lctx ast_push_value ;
+    lctx ctx ast ctx lctx ast_eval_type type_idx lctx_convert_stack ;
+    lctx ctx type_idx TYPE_ULONG lctx_convert_stack ;
+    ast ast_destroy ;
+    @tok ctx cctx_get_token_or_fail = ;
+    tok ")" strcmp 0 == "cctx_compile_statement: ) expected after switch" assert_msg ;
+
+    # Jump to the switch logic, which is at the end (because for the
+    # moment we have no idea of which labels will appear)
+    ctx lctx logic_lab JUMP_TYPE_JMP 0 cctx_gen_label_jump ;
+
+    # Compile the body
+    $old_break_lab
+    @old_break_lab lctx LCTX_BREAK_LABEL take = ;
+    lctx LCTX_BREAK_LABEL take_addr break_lab = ;
+    lctx LCTX_DEFAULT_LABEL take_addr 0xffffffff = ;
+    lctx LCTX_CASE_LABELS take_addr 8 vector_init = ;
+    ctx lctx cctx_compile_statement_or_block ;
+    lctx LCTX_BREAK_LABEL take_addr old_break_lab = ;
+
+    # Jump to the break, to avoid doing the switch logic again
+    ctx lctx break_lab JUMP_TYPE_JMP 0 cctx_gen_label_jump ;
+
+    # Switch logic
+    lctx ctx logic_lab lctx_fix_label ;
+    $i
+    @i 0 = ;
+    $labs
+    @labs lctx LCTX_CASE_LABELS take = ;
+    while i labs vector_size < {
+      $ast
+      $lab
+      @ast labs i vector_at_addr ** = ;
+      @lab labs i vector_at_addr 4 + ** = ;
+      ast ctx lctx ast_push_value ;
+      lctx ctx ast ctx lctx ast_eval_type type_idx lctx_convert_stack ;
+      lctx ctx type_idx TYPE_ULONG lctx_convert_stack ;
+      # cctx_gen_label_jump with conditional jump and stack rewind
+      # modifies EAX
+      # pop eax; pop edx; sub eax, [esp]; sub edx, [esp+4]; or eax, edx; pop ecx; pop edx; cctx_gen_label_jump; push edx; push ecx
+      ctx 0x58 cctx_emit ;
+      ctx 0x5a cctx_emit ;
+      ctx 0x2b cctx_emit ;
+      ctx 0x04 cctx_emit ;
+      ctx 0x24 cctx_emit ;
+      ctx 0x2b cctx_emit ;
+      ctx 0x54 cctx_emit ;
+      ctx 0x24 cctx_emit ;
+      ctx 0x04 cctx_emit ;
+      ctx 0x09 cctx_emit ;
+      ctx 0xd0 cctx_emit ;
+      ctx 0x59 cctx_emit ;
+      ctx 0x5a cctx_emit ;
+      ctx lctx lab JUMP_TYPE_JZ 1 cctx_gen_label_jump ;
+      ctx 0x52 cctx_emit ;
+      ctx 0x51 cctx_emit ;
+      ast ast_destroy ;
+      @i i 1 + = ;
+    }
+    # Discard the switch value
+    # pop eax; pop edx
+    ctx 0x58 cctx_emit ;
+    ctx 0x5a cctx_emit ;
+    if lctx LCTX_DEFAULT_LABEL take 0xffffffff != {
+      # cctx_gen_label_jump
+      ctx lctx lctx LCTX_DEFAULT_LABEL take JUMP_TYPE_JMP 1 cctx_gen_label_jump ;
+    }
+    lctx LCTX_CASE_LABELS take vector_destroy ;
+    lctx LCTX_DEFAULT_LABEL take_addr 0xffffffff = ;
+    lctx LCTX_CASE_LABELS take_addr 0 = ;
+
+    # Finally, fix break label
+    lctx ctx break_lab lctx_fix_label ;
+    @processed 1 = ;
+  }
+
+  # Parse case
+  if tok "case" strcmp 0 == processed ! && {
+    $labs
+    @labs lctx LCTX_CASE_LABELS take = ;
+    $ast
+    @ast ctx ":" cctx_parse_ast1 = ;
+    # Evaluate the AST to check that it is constant
+    ctx ast ast_eval_compile ;
+    @tok ctx cctx_get_token_or_fail = ;
+    tok ":" strcmp 0 == "cctx_compile_statement: expected : after case" assert_msg ;
+    labs 0 != "cctx_compile_statement: not in a switch block" assert_msg ;
+    $lab
+    @lab lctx ctx lctx_gen_label = ;
+    lctx ctx lab lctx_fix_label ;
+    labs ast vector_push_back ;
+    labs labs vector_size 1 - vector_at_addr 4 + lab = ;
+    ctx lctx cctx_compile_statement_or_block ;
+    @expect_semicolon 0 = ;
+    @processed 1 = ;
+  }
+
+  # Parse default
+  if tok "default" strcmp 0 == processed ! && {
+    @tok ctx cctx_get_token_or_fail = ;
+    tok ":" strcmp 0 == "cctx_compile_statement: expected : after default" assert_msg ;
+    lctx LCTX_CASE_LABELS take 0 != "cctx_compile_statement: not in a switch block" assert_msg ;
+    lctx LCTX_DEFAULT_LABEL take 0xffffffff == "cctx_compile_statement: default label already seen" assert_msg ;
+    $lab
+    @lab lctx ctx lctx_gen_label = ;
+    lctx ctx lab lctx_fix_label ;
+    lctx LCTX_DEFAULT_LABEL take_addr lab = ;
+    ctx lctx cctx_compile_statement_or_block ;
+    @expect_semicolon 0 = ;
     @processed 1 = ;
   }
 
