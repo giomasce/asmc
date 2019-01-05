@@ -1048,7 +1048,24 @@ fun cctx_add_global 4 {
   $global
   if present {
     @global globals name map_at = ;
-    ctx global GLOBAL_TYPE_IDX take type_idx cctx_type_compare "cctx_add_global: types do not match" assert_msg ;
+    # Check that the type are identical, or at worst they are two
+    # array types with the same base type and one of the two has no
+    # length specification
+    if ctx global GLOBAL_TYPE_IDX take type_idx cctx_type_compare ! {
+      $ok
+      @ok 0 = ;
+      $type
+      @type ctx type_idx cctx_get_type = ;
+      $glob_type
+      @glob_type ctx global GLOBAL_TYPE_IDX take cctx_get_type = ;
+      if type TYPE_KIND take TYPE_KIND_ARRAY == glob_type TYPE_KIND take TYPE_KIND_ARRAY == && {
+        if ctx type TYPE_BASE take glob_type TYPE_BASE take cctx_type_compare type TYPE_LENGTH take 0xffffffff == && {
+          @ok 1 = ;
+        }
+      } else {
+        ok "cctx_add_global: types do not match" assert_msg ;
+      }
+    }
   } else {
     ctx CCTX_STAGE take 0 == "cctx_add_global: error 1" assert_msg ;
     @global global_init = ;
