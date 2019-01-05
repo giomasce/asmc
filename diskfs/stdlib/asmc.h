@@ -48,15 +48,38 @@ FILE *stderr;
 
 int main(int, char *[]);
 
+#include "setjmp.h"
+
+int __return_code;
+int __aborted;
+jmp_buf __return_jump_buf;
+
 void __init_stdlib() {
   __handles = &__builtin_handles;
+  __aborted = 0;
   stdout = &__stdout;
   stderr = &__stderr;
 }
 
+// Nothing to do, for the moment
+void __cleanup_stdlib() {
+}
+
+int fputs(const char *s, FILE *stream);
+
+#include "stdio.h"
+
 int _start(int argc, char *argv[]) {
   __init_stdlib();
-  return main(argc, argv);
+  if (setjmp(__return_jump_buf) == 0) {
+      __return_code = main(argc, argv);
+  }
+  if (__aborted) {
+      fputs("ABORT\n", stderr);
+  } else {
+      __cleanup_stdlib();
+  }
+  return __return_code;
 }
 
 #endif

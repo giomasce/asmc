@@ -1,8 +1,6 @@
 #ifndef __SETJMP_H
 #define __SETJMP_H
 
-#include "asmc.h"
-
 typedef struct {
   unsigned int eax;
   unsigned int ebx;
@@ -15,11 +13,14 @@ typedef struct {
   unsigned int eip;
 } jmp_buf;
 
+#define setjmp(env) (__handles->platform_setjmp(&(env)))
+void longjmp(jmp_buf env, int status);
+
+#include "asmc.h"
+
 void longjmp(jmp_buf env, int status) {
   if (status == 0) status = 1;
   __handles->platform_longjmp(&env, status);
 }
-
-#define setjmp(env) (__handles->platform_setjmp(&(env)))
 
 #endif

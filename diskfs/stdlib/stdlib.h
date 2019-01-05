@@ -19,4 +19,15 @@ void *realloc(void *ptr, size_t new_size) {
   return __handles->realloc(ptr, new_size);
 }
 
+void exit(int return_code) {
+    __return_code = return_code;
+    longjmp(__return_jump_buf, 1);
+}
+
+void abort() {
+    __return_code = -1;
+    __aborted = 1;
+    longjmp(__return_jump_buf, 1);
+}
+
 #endif
