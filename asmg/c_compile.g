@@ -1010,7 +1010,7 @@ fun cctx_get_global 2 {
 
   $globals
   @globals ctx CCTX_GLOBALS take = ;
-  globals name map_has "cctx_get_global: global does not exist" assert_msg ;
+  globals name map_has "cctx_get_global: global does not exist" name assert_msg_str ;
   $global
   @global globals name map_at = ;
   global ret ;
@@ -2716,6 +2716,9 @@ fun ast_eval_type 3 {
       type is_integer_type ctx type cctx_get_type TYPE_KIND take TYPE_KIND_POINTER == || "ast_eval_type: operand is neither integer nor pointer" assert_msg ;
       @type_idx TYPE_INT = ;
       @common_type_idx type = ;
+      if ctx type cctx_get_type TYPE_KIND take TYPE_KIND_POINTER == {
+        @common_type_idx TYPE_UINT = ;
+      }
       @processed 1 = ;
     }
 
@@ -2983,8 +2986,8 @@ fun lctx_int_convert 4 {
     @from_idx TYPE_INT = ;
   }
 
-  from_idx is_integer_type "lctx_int_convert: source is not an integer type" assert_msg ;
-  to_idx is_integer_type "lctx_int_convert: target is not an integer type" assert_msg ;
+  from_idx is_integer_type "lctx_int_convert: source is not an integer type" from_idx to_idx assert_msg_int_int ;
+  to_idx is_integer_type "lctx_int_convert: target is not an integer type" from_idx to_idx assert_msg_int_int ;
 
   if ctx from_idx cctx_type_footprint 4 == {
     # pop eax
@@ -3117,7 +3120,7 @@ fun lctx_convert_stack 4 {
     ret ;
   }
 
-  0 "lctx_convert_stack: not implemented" assert_msg ;
+  0 "lctx_convert_stack: not implemented" from_idx to_idx assert_msg_int_int ;
 }
 
 fun ast_push_value_logic 3 {
@@ -4425,7 +4428,19 @@ fun ast_push_value 3 {
 
     if name "(_PRE" strcmp 0 == {
       ast AST_RIGHT take ctx lctx ast_push_value ;
-      lctx ctx ast AST_RIGHT take ctx lctx ast_eval_type type_idx lctx_convert_stack ;
+      if type_idx TYPE_VOID == {
+        # Cast to void, discard the return value
+        $right_type
+        @right_type ast AST_RIGHT take ctx lctx ast_eval_type = ;
+        if right_type TYPE_VOID != {
+          # add esp, footprint
+          ctx 0x81 cctx_emit ;
+          ctx 0xc4 cctx_emit ;
+          ctx ctx right_type cctx_type_footprint cctx_emit32 ;
+        }
+      } else {
+        lctx ctx ast AST_RIGHT take ctx lctx ast_eval_type type_idx lctx_convert_stack ;
+      }
       @processed 1 = ;
     }
 
@@ -4471,13 +4486,13 @@ fun cctx_compile_expression 2 {
   $ast
   @ast ctx end_tok cctx_parse_ast1 = ;
   #ast ctx lctx ast_eval_type ;
+  #ast ast_dump ;
   if target_type_idx TYPE_VOID == {
     ast ctx lctx ast_c_eval ;
   } else {
     ast ctx lctx ast_push_value ;
     lctx ctx ast ctx lctx ast_eval_type target_type_idx lctx_convert_stack ;
   }
-  #ast ast_dump ;
   ast ast_destroy ;
 }
 
@@ -4896,18 +4911,24 @@ fun assign_with_size 3 {
   @size 0 param = ;
 
   if size 1 == {
-    loc value =c ;
+    loc value ** =c ;
     ret ;
   }
 
   if size 2 == {
-    loc value =c ;
-    loc 1 + value 8 >> =c ;
+    loc value ** =c ;
+    loc 1 + value ** 8 >> =c ;
     ret ;
   }
 
   if size 4 == {
-    loc value = ;
+    loc value ** = ;
+    ret ;
+  }
+
+  if size 8 == {
+    loc value ** = ;
+    loc 4 + value 4 + ** = ;
     ret ;
   }
 
@@ -4930,12 +4951,11 @@ fun cctx_parse_initializer 3 {
   if type_idx is_integer_type type TYPE_KIND take TYPE_KIND_POINTER == || {
     $ast
     @ast ctx "," "}" ";" cctx_parse_ast3 = ;
-    $value
-    @value ctx ast ast_eval_compile = ;
+    ctx ast ast_eval_compile ;
     ast ast_destroy ;
     $size
     @size ctx type_idx cctx_type_size = ;
-    loc value size assign_with_size ;
+    loc ast AST_VALUE take size assign_with_size ;
     ret ;
   }
 
@@ -5179,7 +5199,7 @@ fun parse_c 1 {
   tokens ctx filename preproc_file ;
   @tokens tokens remove_whites = ;
   "Finished preprocessing\n" 1 platform_log ;
-  tokens print_token_list ;
+  #tokens print_token_list ;
 
   # Compilation
   $cctx

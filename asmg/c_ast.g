@@ -585,6 +585,16 @@ fun ast_dump_int 2 {
     } else {
       "Operand of type #" 1 platform_log ;
       ast AST_TYPE_IDX take itoa 1 platform_log ;
+      if ast AST_ORIG_TYPE_IDX take 0xffffffff != {
+        " (orig: #" 1 platform_log ;
+        ast AST_ORIG_TYPE_IDX take itoa 1 platform_log ;
+        ")" 1 platform_log ;
+      }
+      if ast AST_COMMON_TYPE_IDX take 0xffffffff != {
+        " (common: #" 1 platform_log ;
+        ast AST_COMMON_TYPE_IDX take itoa 1 platform_log ;
+        ")" 1 platform_log ;
+      }
       ": " 1 platform_log ;
       ast AST_NAME take 1 platform_log ;
     }
@@ -593,6 +603,16 @@ fun ast_dump_int 2 {
     ast AST_TYPE take 1 == "ast_dump_int: error 1" assert_msg ;
     "Operator of type #" 1 platform_log ;
     ast AST_TYPE_IDX take itoa 1 platform_log ;
+    if ast AST_ORIG_TYPE_IDX take 0xffffffff != {
+      " (orig: #" 1 platform_log ;
+      ast AST_ORIG_TYPE_IDX take itoa 1 platform_log ;
+      ")" 1 platform_log ;
+    }
+    if ast AST_COMMON_TYPE_IDX take 0xffffffff != {
+      " (common: #" 1 platform_log ;
+      ast AST_COMMON_TYPE_IDX take itoa 1 platform_log ;
+      ")" 1 platform_log ;
+    }
     ": " 1 platform_log ;
     ast AST_NAME take 1 platform_log ;
     "\n" 1 platform_log ;

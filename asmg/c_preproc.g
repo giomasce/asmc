@@ -488,18 +488,51 @@ fun discard_white_newline_tokens 2 {
   }
 }
 
-# Check that the argument string has no " or \
-fun check_string 1 {
+# Put a \ before all " and \
+fun stringify_patch_string 1 {
   $s
   @s 0 param = ;
 
-  while 1 {
-    if s **c 0 == {
-      ret ;
+  # Do a first string scan to compute the output string length
+  $len
+  @len 0 = ;
+  $i
+  @i 0 = ;
+  while s i + **c '\0' != {
+    $c
+    @c s i + **c = ;
+    if c '\"' == c '\\' == || {
+      @len len 1 + = ;
     }
-    s **c '\"' == s **c '\\' == || ! "check_string: string is not valid" assert_msg ;
-    @s s 1 + = ;
+    @len len 1 + = ;
+    @i i 1 + = ;
   }
+  @len len 1 + = ;
+
+  # Allocate the new string
+  $r
+  @r len malloc = ;
+  $j
+  @i 0 = ;
+  @j 0 = ;
+
+  # Do a second scan to fill the output string
+  while s i + **c '\0' != {
+    $c
+    @c s i + **c = ;
+    if c '\"' == c '\\' == || {
+      r j + '\\' =c ;
+      @j j 1 + = ;
+    }
+    r j + c =c ;
+    @i i 1 + = ;
+    @j j 1 + = ;
+  }
+  r j + '\0' =c ;
+  @j j 1 + = ;
+  len j == "stringify_path_string: error 1" assert_msg ;
+
+  r ret ;
 }
 
 fun process_token_stringify 2 {
@@ -528,8 +561,10 @@ fun process_token_stringify 2 {
       if whites {
         @res res " " append_to_str = ;
       }
-      tok check_string ;
-      @res res tok append_to_str = ;
+      $patched
+      @patched tok stringify_patch_string = ;
+      @res res patched append_to_str = ;
+      patched free ;
     }
     @i i 1 + = ;
   }
