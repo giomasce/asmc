@@ -4775,7 +4775,7 @@ fun cctx_compile_statement 2 {
           # pop edx
           ctx 0x5a cctx_emit ;
         } else {
-          ctx ret_type cctx_type_footprint 4 == "cctx_compile_statement: error 1" assert_msg ;
+          ctx ret_type cctx_type_footprint 4 == "cctx_compile_statement: error 2" assert_msg ;
         }
       }
     }

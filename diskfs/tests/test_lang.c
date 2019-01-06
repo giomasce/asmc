@@ -331,7 +331,7 @@ int test_sizeof() {
 
 int test_comma() {
     int x = 2;
-    int y = x++, 10;
+    int y = (x++, 10);
     if (x != 3) return 0;
     if (y != 10) return 0;
     return 1;
