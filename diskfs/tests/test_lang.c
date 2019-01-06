@@ -146,7 +146,7 @@ int test_enum() {
   return ELEVEN;
 }
 
-char *global_str = "global test string\n";
+char *global_str = "global test string\n" "other piece\n";
 
 int test_strings() {
   if (*global_str != 'g') return 0;

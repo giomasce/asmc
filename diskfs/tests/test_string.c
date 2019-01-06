@@ -32,3 +32,7 @@ int test_strcmp3() {
 int test_strcmp4() {
   return strcmp("hello", "hella") > 0;
 }
+
+int test_strcmp5() {
+  return strcmp("hel" "l" "o", "hel" "lo") == 0;
+}

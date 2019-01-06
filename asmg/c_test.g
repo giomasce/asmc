@@ -66,6 +66,7 @@ fun c_run_testcase 3 {
   @tokens 4 vector_init = ;
   tokens ctx filename preproc_file ;
   @tokens tokens remove_whites = ;
+  @tokens tokens collapse_strings = ;
   #"Finished preprocessing\n" 1 platform_log ;
   #tokens print_token_list ;
 
@@ -181,6 +182,7 @@ fun c_run_testcases 0 {
   tests "/disk1/tests/test_string.c" "test_strcmp2" 1 "" c_run_testcase ;
   tests "/disk1/tests/test_string.c" "test_strcmp3" 1 "" c_run_testcase ;
   tests "/disk1/tests/test_string.c" "test_strcmp4" 1 "" c_run_testcase ;
+  tests "/disk1/tests/test_string.c" "test_strcmp5" 1 "" c_run_testcase ;
 
   tests "/disk1/tests/test_setjmp.c" "test_setjmp" 0 "" c_run_testcase ;
   tests "/disk1/tests/test_setjmp.c" "test_setjmp2" 0 "called\ncalled\ncalled\n" c_run_testcase ;

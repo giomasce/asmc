@@ -5647,6 +5647,7 @@ fun parse_c 1 {
   @tokens 4 vector_init = ;
   tokens ctx filename preproc_file ;
   @tokens tokens remove_whites = ;
+  @tokens tokens collapse_strings = ;
   "Finished preprocessing\n" 1 platform_log ;
   #tokens print_token_list ;
 

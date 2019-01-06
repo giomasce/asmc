@@ -1563,3 +1563,40 @@ fun remove_whites 1 {
   intoks vector_destroy ;
   outtoks ret ;
 }
+
+fun collapse_strings 1 {
+  $intoks
+  @intoks 0 param = ;
+
+  $outtoks
+  @outtoks 4 vector_init = ;
+  $i
+  @i 0 = ;
+  $oldtok
+  @oldtok 0 = ;
+  while i intoks vector_size < {
+    $tok
+    @tok intoks i vector_at = ;
+    if oldtok {
+      if tok **c '\"' == oldtok **c '\"' == && {
+        $oldtok_len
+        @oldtok_len oldtok strlen = ;
+        oldtok oldtok_len + 1 - **c '\"' "collapse_string: string token is not valid" assert_msg ;
+        oldtok oldtok_len + 1 - '\0' =c ;
+        @oldtok oldtok tok 1 + append_to_str = ;
+        tok free ;
+      } else {
+        outtoks oldtok vector_push_back ;
+        @oldtok tok = ;
+      }
+    } else {
+      @oldtok tok = ;
+    }
+    @i i 1 + = ;
+  }
+  if oldtok 0 != {
+    outtoks oldtok vector_push_back ;
+  }
+  intoks vector_destroy ;
+  outtoks ret ;
+}
