@@ -20,7 +20,7 @@ typedef char *(*(**foo [][2*3+1])())[];
 
 int;
 
-int array_without_length[] = {1, 2, 3};
+int array_without_length[] = {1, 2, 3, ' '};
 
 struct OtherStruct {
   int x, y, z;

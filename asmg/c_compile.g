@@ -2305,6 +2305,8 @@ fun ast_eval_compile 2 {
   value ** ret ;
 }
 
+ifun ast_strtoll 1
+
 fun ast_eval_compile_ext 2 {
   $ctx
   $ast
@@ -2349,12 +2351,14 @@ fun ast_eval_compile_ext 2 {
         @str_label ctx 0 name cctx_gen_string = ;
         value ctx 0 str_label cctx_get_label_addr i64_from_u32 ;
       } else {
-        value name atoi_c i64_from_u32 ;
+        value i64_destroy ;
+        ast ast_strtoll ;
+        @value ast AST_VALUE take = ;
       }
     }
     value ret ;
   } else {
-    # Operator: all operators are handler by generic code
+    # Operator: all operators are handled by generic code
     0 ret ;
   }
 
@@ -2474,9 +2478,30 @@ fun ast_strtoll 1 {
   $ast
   @ast 0 param = ;
 
+  $name
+  @name ast AST_NAME take = ;
+  if name **c '\'' == {
+    $data
+    $from
+    $to
+    @data 0 = ;
+    @from name 1 + = ;
+    @to @data = ;
+    @from @to 0 escape_char ;
+    to @data 1 + == "ast_push_value: invalid character literal 1" assert_msg ;
+    from **c '\'' == "ast_push_value: invalid character literal 2" assert_msg ;
+    from 1 + **c 0 == "ast_push_value: invalid character literal 3" assert_msg ;
+    $value
+    @value i64_init = ;
+    value data i64_from_32 ;
+    ast AST_VALUE take_addr value = ;
+    ast AST_TYPE_IDX take_addr TYPE_INT = ;
+    ret ;
+  }
+
   $suffix
   $value
-  @value ast AST_NAME take @suffix c_strtoll = ;
+  @value name @suffix c_strtoll = ;
   # FIXME Why is it called twice on the same AST?
   if ast AST_VALUE take 0 != {
     ast AST_VALUE take i64_destroy ;
@@ -2613,12 +2638,8 @@ fun ast_eval_type 3 {
       if name **c '\"' == {
         @type_idx TYPE_CHAR_ARRAY = ;
       } else {
-        if name **c '\'' == {
-          @type_idx TYPE_INT = ;
-        } else {
-          ast ast_strtoll ;
-          @type_idx ast AST_TYPE_IDX take = ;
-        }
+        ast ast_strtoll ;
+        @type_idx ast AST_TYPE_IDX take = ;
       }
     }
   } else {
@@ -4416,24 +4437,7 @@ fun ast_push_value 3 {
       if name **c '\"' == {
         0 "ast_push_value: error 1" assert_msg ;
       } else {
-        if name **c '\'' == {
-          $data
-          $from
-          $to
-          @data 0 = ;
-          @from name 1 + = ;
-          @to @data = ;
-          @from @to 0 escape_char ;
-          to @data 1 + == "ast_push_value: invalid character literal 1" assert_msg ;
-          from **c '\'' == "ast_push_value: invalid character literal 2" assert_msg ;
-          from 1 + **c 0 == "ast_push_value: invalid character literal 3" assert_msg ;
-          $value
-          @value i64_init = ;
-          value data i64_from_32 ;
-          ast AST_VALUE take_addr value = ;
-        } else {
-          # Value is already encoded in the AST
-        }
+        # Value is already encoded in the AST
       }
 
       if ctx type_idx cctx_type_footprint 8 == {
