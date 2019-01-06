@@ -15,6 +15,7 @@ int strcmp(const char *x, const char *y) {
   }
 }
 
+// From PDClib
 void * memcpy( void * s1, const void * s2, size_t n )
 {
     char * dest = (char *) s1;
@@ -26,6 +27,74 @@ void * memcpy( void * s1, const void * s2, size_t n )
         src += 1;
     }
     return s1;
+}
+
+// From PDClib
+size_t strlen( const char * s )
+{
+    size_t rc = 0;
+    while ( s[rc] )
+    {
+        ++rc;
+    }
+    return rc;
+}
+
+// From PDClib
+void * memmove( void * s1, const void * s2, size_t n )
+{
+    char * dest = (char *) s1;
+    const char * src = (const char *) s2;
+    if ( dest <= src )
+    {
+        while ( n-- )
+        {
+            *dest = *src;
+            dest += 1;
+            src += 1;
+        }
+    }
+    else
+    {
+        src += n;
+        dest += n;
+        while ( n-- )
+        {
+            dest -= 1;
+            src -= 1;
+            *dest = *src;
+        }
+    }
+    return s1;
+}
+
+// From PDClib
+void * memset( void * s, int c, size_t n )
+{
+    unsigned char * p = (unsigned char *) s;
+    while ( n-- )
+    {
+        *p = (unsigned char) c;
+        p += 1;
+    }
+    return s;
+}
+
+// From PDClib
+int memcmp( const void * s1, const void * s2, size_t n )
+{
+    const unsigned char * p1 = (const unsigned char *) s1;
+    const unsigned char * p2 = (const unsigned char *) s2;
+    while ( n-- )
+    {
+        if ( *p1 != *p2 )
+        {
+            return *p1 - *p2;
+        }
+        p1 += 1;
+        p2 += 1;
+    }
+    return 0;
 }
 
 #endif

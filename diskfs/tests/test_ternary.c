@@ -30,6 +30,14 @@ int test_ternary() {
     return 1;
 }
 
+int test_ternary_ptr() {
+    char x = 'x';
+    char y = 'y';
+    if (*(1 ? &x : &y) != 'x') return 0;
+    if (*(0 ? &x : &y) != 'y') return 0;
+    return 1;
+}
+
 int test_bool() {
     bool x = 0;
     if (x != 0) return 0;

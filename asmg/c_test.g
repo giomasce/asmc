@@ -157,6 +157,7 @@ fun c_run_testcases 0 {
   tests "/disk1/tests/test_anon_struct.c" "test_anon_struct" 1 "" c_run_testcase ;
 
   tests "/disk1/tests/test_ternary.c" "test_ternary" 1 "" c_run_testcase ;
+  tests "/disk1/tests/test_ternary.c" "test_ternary_ptr" 1 "" c_run_testcase ;
   tests "/disk1/tests/test_ternary.c" "test_bool" 1 "" c_run_testcase ;
 
   tests "/disk1/tests/test_cast.c" "test_cast" 1 "" c_run_testcase ;
@@ -183,6 +184,8 @@ fun c_run_testcases 0 {
   tests "/disk1/tests/test_string.c" "test_strcmp3" 1 "" c_run_testcase ;
   tests "/disk1/tests/test_string.c" "test_strcmp4" 1 "" c_run_testcase ;
   tests "/disk1/tests/test_string.c" "test_strcmp5" 1 "" c_run_testcase ;
+
+  tests "/disk1/tests/test_stdarg.c" "test_stdarg" 1 "" c_run_testcase ;
 
   tests "/disk1/tests/test_setjmp.c" "test_setjmp" 0 "" c_run_testcase ;
   tests "/disk1/tests/test_setjmp.c" "test_setjmp2" 0 "called\ncalled\ncalled\n" c_run_testcase ;

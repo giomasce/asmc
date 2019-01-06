@@ -2921,6 +2921,17 @@ fun ast_eval_type 3 {
         @processed2 1 = ;
       }
 
+      $t1
+      $t2
+      @t1 ctx type1 cctx_get_type = ;
+      @t2 ctx type2 cctx_get_type = ;
+      if t1 TYPE_KIND take TYPE_KIND_POINTER == t2 TYPE_KIND take TYPE_KIND_POINTER == && {
+        if ctx t1 TYPE_BASE take t2 TYPE_BASE take cctx_type_compare {
+          @type_idx type1 = ;
+          @processed2 1 = ;
+        }
+      }
+
       processed2 "ast_eval_type: not implemented form of ternary operator" assert_msg ;
       @processed 1 = ;
     }
