@@ -5185,7 +5185,7 @@ fun cctx_compile_statement 2 {
           $right_ast
           $left_ast
           $ast
-          @right_ast ctx ";" cctx_parse_ast1 = ;
+          @right_ast ctx "," ";" cctx_parse_ast2 = ;
           @left_ast ast_init = ;
           left_ast AST_TYPE take_addr 0 = ;
           left_ast AST_NAME take_addr name strdup = ;
