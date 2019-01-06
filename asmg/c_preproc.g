@@ -758,12 +758,12 @@ fun process_token 4 {
       }
       if different {
         @changed 1 = ;
-        $j
-        @j 0 = ;
-        while j repl vector_size < {
-          tokens repl j vector_at strdup vector_push_back ;
-          @j j 1 + = ;
-        }
+      }
+      $j
+      @j 0 = ;
+      while j repl vector_size < {
+        tokens repl j vector_at strdup vector_push_back ;
+        @j j 1 + = ;
       }
     }
   } else {
