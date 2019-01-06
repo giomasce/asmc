@@ -392,7 +392,8 @@ const CCTX_HANDLES 52
 const CCTX_VERBOSE 56
 const CCTX_RUNTIME 60
 const CCTX_ASTINT 64
-const SIZEOF_CCTX 68
+const CCTX_ARRAY_LENS 68
+const SIZEOF_CCTX 72
 
 fun cctx_init_types 1 {
   $ctx
@@ -452,6 +453,7 @@ fun cctx_init 1 {
   ctx CCTX_VERBOSE take_addr 1 = ;
   ctx CCTX_RUNTIME take_addr asmctx_init = ;
   ctx CCTX_ASTINT take_addr ctx cctx_astint_init = ;
+  ctx CCTX_ARRAY_LENS take_addr map_init = ;
 
   ctx cctx_setup_handles ;
   #ctx cctx_setup_runtime ;
@@ -515,6 +517,7 @@ fun cctx_destroy 1 {
   ctx CCTX_HANDLES take vector_destroy ;
   ctx CCTX_RUNTIME take asmctx_destroy ;
   ctx CCTX_ASTINT take cctx_astint_destroy ;
+  ctx CCTX_ARRAY_LENS take map_destroy ;
 
   ctx free ;
 }
@@ -1061,6 +1064,7 @@ fun cctx_add_global 4 {
       if type TYPE_KIND take TYPE_KIND_ARRAY == glob_type TYPE_KIND take TYPE_KIND_ARRAY == && {
         if ctx type TYPE_BASE take glob_type TYPE_BASE take cctx_type_compare type TYPE_LENGTH take 0xffffffff == && {
           @ok 1 = ;
+          @type_idx global GLOBAL_TYPE_IDX take = ;
         }
       } else {
         ok "cctx_add_global: types do not match" assert_msg ;
@@ -1092,6 +1096,8 @@ fun cctx_add_global 4 {
       global GLOBAL_LOC take loc == "cctx_add_global: error 3" assert_msg ;
     }
   }
+
+  type_idx ret ;
 }
 
 fun cctx_emit 2 {
@@ -5323,13 +5329,19 @@ fun cctx_mangle_function_type 2 {
   ctx base_idx new_args ellipsis cctx_get_function_type ret ;
 }
 
-fun assign_with_size 3 {
+fun cctx_assign_with_size 4 {
+  $ctx
   $loc
   $value
   $size
+  @ctx 3 param = ;
   @loc 2 param = ;
   @value 1 param = ;
   @size 0 param = ;
+
+  if ctx CCTX_STAGE take 2 != {
+    ret ;
+  }
 
   if size 1 == {
     loc value ** =c ;
@@ -5353,7 +5365,7 @@ fun assign_with_size 3 {
     ret ;
   }
 
-  0 "assign_with_size: invalid size" assert_msg ;
+  0 "cctx_assign_with_size: invalid size" assert_msg ;
 }
 
 fun cctx_parse_initializer 3 {
@@ -5364,8 +5376,6 @@ fun cctx_parse_initializer 3 {
   @type_idx 1 param = ;
   @loc 0 param = ;
 
-  # Check that the type is complete
-  ctx type_idx cctx_type_footprint ;
   $type
   @type ctx type_idx cctx_get_type = ;
 
@@ -5373,11 +5383,11 @@ fun cctx_parse_initializer 3 {
     $ast
     @ast ctx "," "}" ";" cctx_parse_ast3 = ;
     ctx ast ast_eval_compile ;
-    ast ast_destroy ;
     $size
     @size ctx type_idx cctx_type_size = ;
-    loc ast AST_VALUE take size assign_with_size ;
-    ret ;
+    ctx loc ast AST_VALUE take size cctx_assign_with_size ;
+    ast ast_destroy ;
+    0xffffffff ret ;
   }
 
   if type TYPE_KIND take TYPE_KIND_STRUCT == {
@@ -5407,7 +5417,7 @@ fun cctx_parse_initializer 3 {
       }
     }
     tok "}" strcmp 0 == "cctx_parse_initializer: initializer has too many entries" assert_msg ;
-    ret ;
+    0xffffffff ret ;
   }
 
   if type TYPE_KIND take TYPE_KIND_ARRAY == {
@@ -5422,24 +5432,30 @@ fun cctx_parse_initializer 3 {
     @base_type_idx type TYPE_BASE take = ;
     $base_size
     @base_size ctx base_type_idx cctx_type_size = ;
-    while i len < {
+    while i len < len 0xffffffff == || {
       @tok ctx cctx_get_token_or_fail = ;
       if tok "}" strcmp 0 == {
+        if len 0xffffffff == {
+          @len i = ;
+        }
         @i len = ;
       } else {
         ctx cctx_give_back_token ;
         ctx base_type_idx loc i base_size * + cctx_parse_initializer ;
         @tok ctx cctx_get_token_or_fail = ;
+        @i i 1 + = ;
         if tok "}" strcmp 0 == {
+          if len 0xffffffff == {
+            @len i = ;
+          }
           @i len = ;
         } else {
           tok "," strcmp 0 == "cctx_parse_initializer: , or } expected" assert_msg ;
-          @i i 1 + = ;
         }
       }
     }
     tok "}" strcmp 0 == "cctx_parse_initializer: initializer has too many entries" assert_msg ;
-    ret ;
+    len ret ;
   }
 
   0 "cctx_parse_initializer: not implemented" assert_msg ;
@@ -5540,14 +5556,44 @@ fun cctx_compile_line 1 {
         # If it is anything else, register it and allocate its size
         $loc
         @loc ctx CCTX_CURRENT_LOC take = ;
-        ctx name loc actual_type_idx cctx_add_global ;
-        ctx ctx actual_type_idx cctx_type_footprint cctx_emit_zeros ;
-        # Check if there is an initializer
+        $initializer
+        @initializer 0 = ;
         @tok ctx cctx_get_token_or_fail = ;
         if tok "=" strcmp 0 == {
-          ctx actual_type_idx loc cctx_parse_initializer ;
+          @initializer 1 = ;
         } else {
           ctx cctx_give_back_token ;
+        }
+        if ctx CCTX_STAGE take 0 == {
+          # During stage 0, if there is an initializer parse it
+          # immediately, because it might encode the length of an
+          # array
+          if initializer {
+            $actual_len
+            @actual_len ctx actual_type_idx loc cctx_parse_initializer = ;
+            if type TYPE_KIND take TYPE_KIND_ARRAY == type TYPE_LENGTH take 0xffffffff == && {
+              actual_len 0xffffffff != "cctx_compile_line: error 1" assert_msg ;
+              ctx CCTX_ARRAY_LENS take name actual_len map_set ;
+              @actual_type_idx ctx type TYPE_BASE take actual_len cctx_get_array_type = ;
+              @type ctx actual_type_idx cctx_get_type = ;
+            }
+          }
+          #type type_dump ;
+          ctx name loc actual_type_idx cctx_add_global ;
+          ctx ctx actual_type_idx cctx_type_footprint cctx_emit_zeros ;
+        } else {
+          if initializer type TYPE_KIND take TYPE_KIND_ARRAY == && type TYPE_LENGTH take 0xffffffff == && {
+            $actual_len
+            @actual_len ctx CCTX_ARRAY_LENS take name map_at = ;
+            @actual_type_idx ctx type TYPE_BASE take actual_len cctx_get_array_type = ;
+            @type ctx actual_type_idx cctx_get_type = ;
+          }
+          #type type_dump ;
+          ctx name loc actual_type_idx cctx_add_global ;
+          ctx ctx actual_type_idx cctx_type_footprint cctx_emit_zeros ;
+          if initializer {
+            ctx actual_type_idx loc cctx_parse_initializer ;
+          }
         }
       }
     }
