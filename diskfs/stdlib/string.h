@@ -15,4 +15,17 @@ int strcmp(const char *x, const char *y) {
   }
 }
 
+void * memcpy( void * s1, const void * s2, size_t n )
+{
+    char * dest = (char *) s1;
+    const char * src = (const char *) s2;
+    while ( n-- )
+    {
+        *dest = *src;
+        dest += 1;
+        src += 1;
+    }
+    return s1;
+}
+
 #endif
