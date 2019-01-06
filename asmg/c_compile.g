@@ -1578,16 +1578,32 @@ fun _cctx_parse_function_arguments 3 {
   $args
   @args 4 vector_init = ;
   while 1 {
+    $tok
+    @tok ctx cctx_get_token_or_fail = ;
+    if tok "void" strcmp 0 == {
+      @tok ctx cctx_get_token_or_fail = ;
+      if tok ")" strcmp 0 == {
+        args vector_size 0 == "_cctx_parse_function_arguments: void only valid in first position" assert_msg ;
+        args ret ;
+      } else {
+        ctx cctx_give_back_token ;
+        ctx cctx_give_back_token ;
+      }
+    } else {
+      ctx cctx_give_back_token ;
+    }
     $type_idx
     @type_idx ctx cctx_parse_type = ;
     if type_idx 0xffffffff == {
-      $tok
       @tok ctx cctx_get_token_or_fail = ;
       if tok "..." strcmp 0 == {
         ret_ellipsis 1 = ;
         @tok ctx cctx_get_token_or_fail = ;
       }
       tok ")" strcmp 0 == "_cctx_parse_function_arguments: ) or type expected" assert_msg ;
+      if args vector_size 0 == {
+        ret_ellipsis 1 = ;
+      }
       args vector_size 0 == ret_ellipsis ** || "_cctx_parse_function_arguments: unexpected )" assert_msg ;
       args ret ;
     }
@@ -1600,7 +1616,6 @@ fun _cctx_parse_function_arguments 3 {
     if ret_arg_names 0 != {
       ret_arg_names name vector_push_back ;
     }
-    $tok
     @tok ctx cctx_get_token_or_fail = ;
     if tok ")" strcmp 0 == {
       args ret ;

@@ -53,11 +53,11 @@ enum Enum {
   ELEVEN
 };
 
-int test_false() {
+int test_false(void) {
   return 0;
 }
 
-int test_true() {
+int test_true(void) {
   return 1;
 }
 
