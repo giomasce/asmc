@@ -2911,6 +2911,15 @@ fun ast_eval_type 3 {
       @processed 1 = ;
     }
 
+    if name "," strcmp 0 == {
+      $type1
+      $type2
+      @type1 ast AST_LEFT take ctx lctx ast_eval_type = ;
+      @type2 ast AST_RIGHT take ctx lctx ast_eval_type = ;
+      @type_idx type2 = ;
+      @processed 1 = ;
+    }
+
     processed "ast_eval_type: not implemented" name assert_msg_str ;
   }
 
@@ -4648,7 +4657,23 @@ fun ast_push_value 3 {
       @processed 1 = ;
     }
 
-    processed "ast_push_value: not implemented" assert_msg ;
+    if name "," strcmp 0 == {
+      # Push left and discard
+      ast AST_LEFT take ctx lctx ast_push_value ;
+      if ast AST_LEFT take ctx lctx ast_eval_type TYPE_VOID != {
+        $footprint
+        @footprint ctx ast AST_LEFT take ctx lctx ast_eval_type cctx_type_footprint = ;
+        # add esp, footprint
+        ctx 0x81 cctx_emit ;
+        ctx 0xc4 cctx_emit ;
+        ctx footprint cctx_emit32 ;
+      }
+      # Push right
+      ast AST_RIGHT take ctx lctx ast_push_value ;
+      @processed 1 = ;
+    }
+
+    processed "ast_push_value: not implemented" name assert_msg_str ;
   }
 }
 
