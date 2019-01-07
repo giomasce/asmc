@@ -152,6 +152,29 @@ int test_strings() {
   return 1;
 }
 
+// Test compile-time evaluation
+#if 0
+type_does_not_exist;
+#endif
+#if 1
+typedef int type_must_exist1;
+#endif
+#if 1 ? 1 : 0
+typedef int type_must_exist2;
+#endif
+#if 1 ? 0 : 1
+type_does_not_exist;
+#endif
+#if 0 ? 1 : 0
+type_does_not_exist;
+#endif
+#if 0 ? 0 : 1
+typedef int type_must_exist3;
+#endif
+type_must_exist1;
+type_must_exist2;
+type_must_exist3;
+
 #define YES
 #undef NO
 #define TEST 1 < 2
@@ -342,13 +365,19 @@ int test_comma() {
     return 1;
 }
 
+int array_with_length[4] = {1, 2, 3, ' '};
 int array_without_length[] = {1, 2, 3, ' '};
+int array_with_length_and_comma[4] = {1, 2, 3, ' ', };
+int array_without_length_with_comma[] = {1, 2, 3, ' ', };
 char string_without_length[] = "test\n\f\r";
 char string_in_array_form[] = {1, 2, 3};
 char strings[][6] = { "one", "two", "three" };
 
 int test_initializers() {
+    if (sizeof(array_with_length) != 4*4) return 0;
     if (sizeof(array_without_length) != 4*4) return 0;
+    if (sizeof(array_with_length_and_comma) != 4*4) return 0;
+    if (sizeof(array_without_length_with_comma) != 4*4) return 0;
     if (sizeof(string_without_length) != 8) return 0;
     if (sizeof(string_in_array_form) != 3) return 0;
     if (string_without_length[0] != 't') return 0;

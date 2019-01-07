@@ -109,6 +109,30 @@ fun i64_to_upper32 1 {
   0 param 4 + ** ret ;
 }
 
+fun i64_to_bool 1 {
+  0 param ** 0 param 4 + ** || ret ;
+}
+
+fun i64_cast_to_u8 1 {
+  $v
+  @v 0 param = ;
+  v v ** 0xff & = ;
+  v 4 + 0 = ;
+}
+
+fun i64_cast_to_u16 1 {
+  $v
+  @v 0 param = ;
+  v v ** 0xffff & = ;
+  v 4 + 0 = ;
+}
+
+fun i64_cast_to_u32 1 {
+  $v
+  @v 0 param = ;
+  v 4 + 0 = ;
+}
+
 fun i64_copy 2 {
   $to
   $from

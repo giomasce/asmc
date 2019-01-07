@@ -34,4 +34,9 @@ off_t lseek(int fildes, off_t offset, int whence) {
     return -1;
 }
 
+int close(int fildes) {
+    errno = ENOTIMPL;
+    return -1;
+}
+
 #endif

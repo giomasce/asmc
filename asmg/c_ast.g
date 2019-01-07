@@ -683,14 +683,12 @@ fun ast_eval 3 {
 
   if ast AST_TYPE take 0 == {
     # We have no idea of how to treat an operand in general...
-    0 ret ;
+    0 "ast_eval: failed with operand" name assert_msg_str ;
   } else {
     # Operator: first evaluate the right operand, and fail if it fails
     $right_value
+    ast AST_RIGHT take AST_NAME take 0 != "ast_eval: right missing" name assert_msg_str ;
     @right_value ast AST_RIGHT take ext ctx ast_eval = ;
-    if right_value 0 == {
-      0 ret ;
-    }
 
     $value
     @value i64_init = ;
@@ -718,12 +716,8 @@ fun ast_eval 3 {
     # If nothing matched, evaluate left operand and try with infix
     # operators
     $left_value
+    ast AST_LEFT take AST_NAME take 0 != "ast_eval: left missing" name assert_msg_str ;
     @left_value ast AST_LEFT take ext ctx ast_eval = ;
-    if left_value 0 == {
-      value i64_destroy ;
-      ast AST_VALUE take_addr 0 = ;
-      0 ret ;
-    }
     value left_value i64_copy ;
 
     if name "&&" strcmp 0 == {
@@ -806,10 +800,33 @@ fun ast_eval 3 {
       value ret ;
     }
 
+    if name "<<" strcmp 0 == {
+      value right_value i64_shl ;
+      value ret ;
+    }
+
+    if name ">>" strcmp 0 == {
+      value right_value i64_shr ;
+      value ret ;
+    }
+
+    # If nothing matched, evaluate center operand and try with the
+    # ternary operator
+    $center_value
+    ast AST_CENTER take AST_NAME take 0 != "ast_eval: center missing" name assert_msg_str ;
+    @center_value ast AST_CENTER take ext ctx ast_eval = ;
+
+    if name "?" strcmp 0 == {
+      if left_value i64_to_bool {
+        value center_value i64_copy ;
+      } else {
+        value right_value i64_copy ;
+      }
+      value ret ;
+    }
+
     # Nothing matched, so we declare failure
-    value i64_destroy ;
-    ast AST_VALUE take_addr 0 = ;
-    0 ret ;
+    0 "ast_eval: failed with operator" name assert_msg_str ;
   }
 
   0 "ast_eval: should not arrive here" assert_msg ;

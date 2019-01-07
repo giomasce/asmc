@@ -875,7 +875,14 @@ fun cctx_get_incomplete_struct_type 1 {
   type TYPE_KIND take_addr TYPE_KIND_STRUCT = ;
   type TYPE_SIZE take_addr 0xffffffff = ;
 
-  ctx type cctx_add_type ret ;
+  $r
+  @r ctx type cctx_add_type = ;
+
+  # To work around some deficiencies in the implementation,
+  # immediately add the pointer type too
+  ctx r cctx_get_pointer_type ;
+
+  r ret ;
 }
 
 fun cctx_construct_union_type 3 {
@@ -1084,7 +1091,7 @@ fun cctx_add_global 4 {
 
   if ctx CCTX_STAGE take 1 == {
     if loc 0xffffffff != {
-      global GLOBAL_LOC take 0xffffffff == "cctx_add_global: global is defined more than once" assert_msg ;
+      global GLOBAL_LOC take 0xffffffff == "cctx_add_global: global is defined more than once" name assert_msg_str ;
       global GLOBAL_LOC take_addr loc = ;
     }
   }
@@ -2445,6 +2452,76 @@ fun ast_eval_compile_ext 2 {
         @sub_type_idx ast AST_RIGHT take AST_ORIG_TYPE_IDX take = ;
       }
       value ctx sub_type_idx cctx_type_size i64_from_u32 ;
+      value ret ;
+    }
+
+    if name "(_PRE" strcmp 0 == {
+      $type_idx
+      @type_idx ast AST_CAST_TYPE_IDX take = ;
+      $type
+      @type ctx type_idx cctx_get_type = ;
+      if type TYPE_KIND take TYPE_KIND_POINTER == {
+        @type_idx TYPE_UINT = ;
+      }
+      type_idx is_integer_type "ast_eval_compile_ext: invalid cast to non-integer type" assert_msg ;
+      $value
+      @value i64_init = ;
+      value ast AST_RIGHT take @ast_eval_compile_ext extctx ast_eval i64_copy ;
+      $size
+      @size ctx type_idx cctx_type_size = ;
+      if size 1 == {
+        value i64_cast_to_u8 ;
+      } else {
+        if size 2 == {
+          value i64_cast_to_u16 ;
+        } else {
+          if size 4 == {
+            value i64_cast_to_u32 ;
+          } else {
+            if size 8 == {
+              # Nothing to do here...
+            } else {
+              0 "ast_eval_compile_ext: error 1" assert_msg ;
+            }
+          }
+        }
+      }
+      value ret ;
+    }
+
+    # Implement the special case &(((type*)x)->y) which is used in macro
+    # offsetof()
+    if name "&_PRE" strcmp 0 == {
+      $ast2
+      @ast2 ast AST_RIGHT take = ;
+      $name2
+      @name2 ast2 AST_NAME take = ;
+      name2 "->" strcmp 0 == "ast_eval_compile_ext: & not taken on ->" name2 assert_msg_str ;
+      $field
+      @field ast2 AST_RIGHT take AST_NAME take = ;
+      $ast3
+      @ast3 ast2 AST_LEFT take = ;
+      $name3
+      @name3 ast3 AST_NAME take = ;
+      name3 "(_PRE" strcmp 0 == "ast_eval_compile_ext: & not taken on cast" name3 assert_msg_str ;
+      $type_idx
+      @type_idx ast3 AST_CAST_TYPE_IDX take = ;
+      $type
+      @type ctx type_idx cctx_get_type = ;
+      type TYPE_KIND take TYPE_KIND_POINTER == "ast_eval_compile_ext: & not taken on cast to pointer" assert_msg ;
+      $base_type
+      @base_type ctx type TYPE_BASE take cctx_get_type = ;
+      base_type TYPE_KIND take TYPE_KIND_STRUCT == base_type TYPE_KIND take TYPE_KIND_UNION == || "ast_eval_compile_ext: & not taken on cast to pointer to struct" assert_msg ;
+      $idx
+      @idx base_type field type_get_idx = ;
+      $value2
+      @value2 i64_init = ;
+      value2 base_type TYPE_FIELDS_OFFS take idx vector_at i64_from_u32 ;
+      $value
+      @value i64_init = ;
+      value ast3 @ast_eval_compile_ext extctx ast_eval i64_copy ;
+      value value2 i64_add ;
+      value2 i64_destroy ;
       value ret ;
     }
 
@@ -5556,6 +5633,7 @@ fun cctx_parse_initializer 3 {
   if type_idx is_integer_type type TYPE_KIND take TYPE_KIND_POINTER == || {
     $ast
     @ast ctx "," "}" ";" cctx_parse_ast3 = ;
+    #ast ast_dump ;
     ctx 0 ast ast_eval_compile ;
     $size
     @size ctx type_idx cctx_type_size = ;
@@ -5664,6 +5742,9 @@ fun cctx_parse_initializer 3 {
           tok "," strcmp 0 == "cctx_parse_initializer: , or } expected" assert_msg ;
         }
       }
+    }
+    if tok "," strcmp 0 == {
+      @tok ctx cctx_get_token_or_fail = ;
     }
     tok "}" strcmp 0 == "cctx_parse_initializer: initializer has too many entries" assert_msg ;
     len ret ;
@@ -5833,7 +5914,6 @@ fun cctx_compile 1 {
     if ctx CCTX_VERBOSE take {
       "Compilation stage " 1 platform_log ;
       ctx CCTX_STAGE take 1 + itoa 1 platform_log ;
-      #"\n" 1 platform_log ;
     }
     ctx CCTX_CURRENT_LOC take_addr start_loc = ;
     ctx CCTX_TOKENS_POS take_addr 0 = ;
@@ -5843,6 +5923,9 @@ fun cctx_compile 1 {
     ctx "__builtin_handles" ctx CCTX_HANDLES take vector_data TYPE_VOID_PTR cctx_add_global ;
     while ctx cctx_is_eof ! {
       ctx cctx_compile_line ;
+    }
+    if ctx CCTX_VERBOSE take {
+      "\n" 1 platform_log ;
     }
     if ctx CCTX_STAGE take 0 == {
       @size ctx CCTX_CURRENT_LOC take start_loc - = ;

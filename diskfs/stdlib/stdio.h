@@ -3,6 +3,7 @@
 
 #include "asmc.h"
 #include "stdlib.h"
+#include "stdarg.h"
 
 #define EOF (0-1)
 
@@ -43,11 +44,19 @@ int snprintf(char *buffer, size_t bufsz, const char *format, ...) {
     abort();
 }
 
+int vsnprintf(char *buffer, size_t bufsz, const char *format, va_list vlist) {
+    abort();
+}
+
 int printf(const char *format, ...) {
     abort();
 }
 
 int fprintf(FILE *stream, const char *format, ...) {
+    abort();
+}
+
+int sscanf(const char *buffer, const char *format, ...) {
     abort();
 }
 
