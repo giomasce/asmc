@@ -81,3 +81,23 @@ fun dup_vect_of_ptrs 1 {
   }
   newvect ret ;
 }
+
+fun cmp_vect_of_ptrs 2 {
+  $v1
+  $v2
+  @v1 1 param = ;
+  @v2 0 param = ;
+
+  if v1 vector_size v2 vector_size != {
+    0 ret ;
+  }
+  $i
+  @i 0 = ;
+  while i v1 vector_size < {
+    if v1 i vector_at v2 i vector_at strcmp 0 != {
+      0 ret ;
+    }
+    @i i 1 + = ;
+  }
+  1 ret ;
+}

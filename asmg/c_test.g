@@ -74,6 +74,7 @@ fun c_run_testcase 3 {
   $cctx
   @cctx tokens cctx_init = ;
   cctx CCTX_VERBOSE take_addr 0 = ;
+  cctx CCTX_DEBUG take_addr 0 = ;
   cctx cctx_compile ;
 
   # Hack the handles in order to intercept calls to platform_write_char

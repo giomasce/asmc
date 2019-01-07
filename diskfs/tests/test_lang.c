@@ -328,6 +328,9 @@ int test_sizeof() {
 
     if (sizeof(struct struct_size) != 8) return 0;
 
+    short static_sizeof[sizeof s];
+    if (sizeof static_sizeof != 8) return 0;
+
     return 1;
 }
 

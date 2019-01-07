@@ -67,6 +67,14 @@ fun escape_char 2 {
       to ** '\f' =c ;
       @processed 1 = ;
     }
+    if c 'a' == {
+      to ** 0x07 =c ;
+      @processed 1 = ;
+    }
+    if c 'b' == {
+      to ** 0x08 =c ;
+      @processed 1 = ;
+    }
     if c '\\' == {
       to ** '\\' =c ;
       @processed 1 = ;
@@ -310,7 +318,7 @@ ifun cctx_get_token 1
 ifun cctx_give_back_token 1
 ifun cctx_get_token_or_fail 1
 ifun cctx_parse_type 1
-ifun cctx_parse_declarator 5
+ifun cctx_parse_declarator 6
 
 fun cctx_astint_get_token 1 {
   $int
@@ -347,7 +355,7 @@ fun cctx_astint_parse_type 1 {
   # Parse declarator
   $type_idx
   $name
-  if int CCTX_ASTINT_CTX take base_type_idx @type_idx @name 0 cctx_parse_declarator {
+  if int CCTX_ASTINT_CTX take 0 base_type_idx @type_idx @name 0 cctx_parse_declarator {
     type_idx ret ;
   } else {
     base_type_idx ret ;
@@ -393,7 +401,10 @@ const CCTX_VERBOSE 56
 const CCTX_RUNTIME 60
 const CCTX_ASTINT 64
 const CCTX_ARRAY_LENS 68
-const SIZEOF_CCTX 72
+const CCTX_DEBUG 72
+const CCTX_DOT_POS 76
+const CCTX_DEBUG_AFTER 80
+const SIZEOF_CCTX 84
 
 fun cctx_init_types 1 {
   $ctx
@@ -451,6 +462,9 @@ fun cctx_init 1 {
   ctx CCTX_LABEL_POS take_addr 4 vector_init = ;
   ctx CCTX_HANDLES take_addr 4 vector_init = ;
   ctx CCTX_VERBOSE take_addr 1 = ;
+  ctx CCTX_DEBUG take_addr 1 = ;
+  ctx CCTX_DOT_POS take_addr 0 = ;
+  ctx CCTX_DEBUG_AFTER take_addr 0 1 - = ;
   ctx CCTX_RUNTIME take_addr asmctx_init = ;
   ctx CCTX_ASTINT take_addr ctx cctx_astint_init = ;
   ctx CCTX_ARRAY_LENS take_addr map_init = ;
@@ -1051,7 +1065,7 @@ fun cctx_add_global 4 {
   $global
   if present {
     @global globals name map_at = ;
-    ctx global GLOBAL_TYPE_IDX take type_idx cctx_type_compare "cctx_add_global: types do not match" assert_msg ;
+    ctx global GLOBAL_TYPE_IDX take type_idx cctx_type_compare "cctx_add_global: types do not match" name assert_msg_str ;
   } else {
     ctx CCTX_STAGE take 0 == "cctx_add_global: error 1" assert_msg ;
     @global global_init = ;
@@ -1149,11 +1163,21 @@ fun cctx_get_token 1 {
   } else {
     $tok
     @tok ctx CCTX_TOKENS take ctx CCTX_TOKENS_POS take vector_at = ;
-    ctx CCTX_TOKENS_POS take_addr ctx CCTX_TOKENS_POS take 1 + = ;
-    if ctx CCTX_VERBOSE take {
+    if ctx CCTX_DEBUG take {
       " " 1 platform_log ;
       tok 1 platform_log ;
+    } else {
+      if ctx CCTX_VERBOSE take {
+        if ctx CCTX_TOKENS_POS take ctx CCTX_DEBUG_AFTER take == {
+          ctx CCTX_DEBUG take_addr 1 = ;
+        }
+        if ctx CCTX_TOKENS_POS take ctx CCTX_DOT_POS take == {
+          "." 1 platform_log ;
+          ctx CCTX_DOT_POS take_addr ctx CCTX_DOT_POS take 1000 + = ;
+        }
+      }
     }
+    ctx CCTX_TOKENS_POS take_addr ctx CCTX_TOKENS_POS take 1 + = ;
     tok ret ;
   }
 }
@@ -1162,7 +1186,7 @@ fun cctx_give_back_token 1 {
   $ctx
   @ctx 0 param = ;
 
-  if ctx CCTX_VERBOSE take {
+  if ctx CCTX_DEBUG take {
     " <gb>" 1 platform_log ;
   }
   ctx CCTX_TOKENS_POS take 0 > "cctx_give_back_token: error 1" assert_msg ;
@@ -1227,7 +1251,6 @@ fun cctx_print_token_pos 1 {
 }
 
 ifun cctx_parse_type 1
-ifun cctx_parse_declarator 5
 
 fun cctx_parse_struct 3 {
   $ctx
@@ -1259,7 +1282,7 @@ fun cctx_parse_struct 3 {
       while cont2 {
         $actual_type_idx
         $name
-        if ctx type_idx @actual_type_idx @name 0 cctx_parse_declarator ! {
+        if ctx 0 type_idx @actual_type_idx @name 0 cctx_parse_declarator ! {
           # If the declarator parsing fails, then we assume that this
           # is an annonymous struct or union, which for the moment we
           # just represent as having an empty name; names will be
@@ -1287,7 +1310,7 @@ fun cctx_parse_struct 3 {
   names_ptr names = ;
 }
 
-ifun ast_eval_compile 2
+ifun ast_eval_compile 3
 
 fun cctx_parse_ast1 2 {
   $ctx
@@ -1295,14 +1318,14 @@ fun cctx_parse_ast1 2 {
   @ctx 1 param = ;
   @term 0 param = ;
 
-  if ctx CCTX_VERBOSE take {
+  if ctx CCTX_DEBUG take {
     " <pa1>" 1 platform_log ;
   }
 
   $res
   @res ctx CCTX_ASTINT take term ast_parse1 = ;
 
-  if ctx CCTX_VERBOSE take {
+  if ctx CCTX_DEBUG take {
     " </pa1>" 1 platform_log ;
   }
 
@@ -1317,14 +1340,14 @@ fun cctx_parse_ast2 3 {
   @term1 1 param = ;
   @term2 0 param = ;
 
-  if ctx CCTX_VERBOSE take {
+  if ctx CCTX_DEBUG take {
     " <pa2>" 1 platform_log ;
   }
 
   $res
   @res ctx CCTX_ASTINT take term1 term2 ast_parse2 = ;
 
-  if ctx CCTX_VERBOSE take {
+  if ctx CCTX_DEBUG take {
     " </pa2>" 1 platform_log ;
   }
 
@@ -1341,14 +1364,14 @@ fun cctx_parse_ast3 4 {
   @term2 1 param = ;
   @term3 0 param = ;
 
-  if ctx CCTX_VERBOSE take {
+  if ctx CCTX_DEBUG take {
     " <pa3>" 1 platform_log ;
   }
 
   $res
   @res ctx CCTX_ASTINT take term1 term2 term3 ast_parse3 = ;
 
-  if ctx CCTX_VERBOSE take {
+  if ctx CCTX_DEBUG take {
     " </pa3>" 1 platform_log ;
   }
 
@@ -1378,7 +1401,7 @@ fun cctx_parse_enum 1 {
       if tok "=" strcmp 0 == {
         $ast
         @ast ctx "}" "," cctx_parse_ast2 = ;
-        @val ctx ast ast_eval_compile = ;
+        @val ctx 0 ast ast_eval_compile = ;
         ast ast_destroy ;
         @tok ctx cctx_get_token_or_fail = ;
       }
@@ -1609,7 +1632,7 @@ fun _cctx_parse_function_arguments 3 {
     }
     $name
     $actual_type_idx
-    if ctx type_idx @actual_type_idx @name 0 cctx_parse_declarator ! {
+    if ctx 0 type_idx @actual_type_idx @name 0 cctx_parse_declarator ! {
       @actual_type_idx type_idx = ;
     }
     args actual_type_idx vector_push_back ;
@@ -1624,13 +1647,15 @@ fun _cctx_parse_function_arguments 3 {
   }
 }
 
-fun _cctx_parse_declarator 5 {
+fun _cctx_parse_declarator 6 {
   $ctx
+  $lctx
   $type_idx
   $ret_type_idx
   $ret_name
   $ret_arg_names
-  @ctx 4 param = ;
+  @ctx 5 param = ;
+  @lctx 4 param = ;
   @type_idx 3 param = ;
   @ret_type_idx 2 param = ;
   @ret_name 1 param = ;
@@ -1651,7 +1676,7 @@ fun _cctx_parse_declarator 5 {
   # Parse pointer declaration
   if tok "*" strcmp 0 == {
     @type_idx ctx type_idx cctx_get_pointer_type = ;
-    if ctx type_idx ret_type_idx ret_name ret_arg_names _cctx_parse_declarator ! {
+    if ctx lctx type_idx ret_type_idx ret_name ret_arg_names _cctx_parse_declarator ! {
       ret_type_idx type_idx = ;
     }
     @processed 1 = ;
@@ -1688,7 +1713,7 @@ fun _cctx_parse_declarator 5 {
       $args
       $ellipsis
       @args ctx ret_arg_names @ellipsis _cctx_parse_function_arguments = ;
-      if ctx type_idx ret_type_idx ret_name 0 _cctx_parse_declarator {
+      if ctx lctx type_idx ret_type_idx ret_name 0 _cctx_parse_declarator {
         @type_idx ret_type_idx ** = ;
       }
       ret_type_idx ctx type_idx args ellipsis cctx_get_function_type = ;
@@ -1700,12 +1725,12 @@ fun _cctx_parse_declarator 5 {
       @inside_pos ctx cctx_save_token_pos = ;
       ctx "(" ")" cctx_go_to_matching ;
       @outside_pos ctx cctx_save_token_pos = ;
-      if ctx type_idx ret_type_idx ret_name 0 _cctx_parse_declarator {
+      if ctx lctx type_idx ret_type_idx ret_name 0 _cctx_parse_declarator {
         @type_idx ret_type_idx ** = ;
       }
       @end_pos ctx cctx_save_token_pos = ;
       ctx inside_pos cctx_restore_token_pos ;
-      ctx type_idx ret_type_idx ret_name ret_arg_names _cctx_parse_declarator "_cctx_parse_declarator: invalid syntax 1" assert_msg ;
+      ctx lctx type_idx ret_type_idx ret_name ret_arg_names _cctx_parse_declarator "_cctx_parse_declarator: invalid syntax 1" assert_msg ;
       @tok ctx cctx_get_token_or_fail = ;
       tok ")" strcmp 0 == "_cctx_parse_declarator: error 1" assert_msg ;
       outside_pos ctx cctx_save_token_pos == "_cctx_parse_declarator: invalid syntax 2" assert_msg ;
@@ -1724,12 +1749,12 @@ fun _cctx_parse_declarator 5 {
       ctx cctx_give_back_token ;
       $ast
       @ast ctx "]" cctx_parse_ast1 = ;
-      @length ctx ast ast_eval_compile = ;
+      @length ctx lctx ast ast_eval_compile = ;
       ast ast_destroy ;
       @tok ctx cctx_get_token_or_fail = ;
     }
     tok "]" strcmp 0 == "_cctx_parse_declarator: expected ] after array subscript" assert_msg ;
-    if ctx type_idx ret_type_idx ret_name 0 _cctx_parse_declarator {
+    if ctx lctx type_idx ret_type_idx ret_name 0 _cctx_parse_declarator {
       @type_idx ret_type_idx ** = ;
     }
     ret_type_idx ctx type_idx length cctx_get_array_type = ;
@@ -1738,7 +1763,7 @@ fun _cctx_parse_declarator 5 {
 
   # Parse the actual declarator identifier
   if tok is_valid_identifier {
-    if ctx type_idx ret_type_idx ret_name ret_arg_names _cctx_parse_declarator ! {
+    if ctx lctx type_idx ret_type_idx ret_name ret_arg_names _cctx_parse_declarator ! {
       ret_type_idx type_idx = ;
     }
     ret_name ** 0 == "_cctx_parse_declarator: more than one identifier found" assert_msg ;
@@ -1756,20 +1781,22 @@ fun _cctx_parse_declarator 5 {
   1 ret ;
 }
 
-fun cctx_parse_declarator 5 {
+fun cctx_parse_declarator 6 {
   $ctx
+  $lctx
   $type_idx
   $ret_type_idx
   $ret_name
   $ret_arg_names
-  @ctx 4 param = ;
+  @ctx 5 param = ;
+  @lctx 4 param = ;
   @type_idx 3 param = ;
   @ret_type_idx 2 param = ;
   @ret_name 1 param = ;
   @ret_arg_names 0 param = ;
 
   ret_name 0 = ;
-  ctx type_idx ret_type_idx ret_name ret_arg_names _cctx_parse_declarator ret ;
+  ctx lctx type_idx ret_type_idx ret_name ret_arg_names _cctx_parse_declarator ret ;
 }
 
 fun cctx_type_footprint 2 {
@@ -2308,25 +2335,39 @@ fun cctx_gen_string 3 {
 
 ifun ast_eval_compile_ext 2
 
-fun ast_eval_compile 2 {
+fun ast_eval_compile 3 {
   $ctx
+  $lctx
   $ast
-  @ctx 1 param = ;
+  @ctx 2 param = ;
+  @lctx 1 param = ;
   @ast 0 param = ;
 
+  $extctx
+  @extctx 8 malloc = ;
+  extctx ctx = ;
+  extctx 4 + lctx = ;
+
   $value
-  @value ast @ast_eval_compile_ext ctx ast_eval = ;
+  @value ast @ast_eval_compile_ext extctx ast_eval = ;
   value "ast_eval_compile: failed" assert_msg ;
+  extctx free ;
   value ** ret ;
 }
 
 ifun ast_strtoll 1
+ifun ast_eval_type 3
 
 fun ast_eval_compile_ext 2 {
-  $ctx
+  $extctx
   $ast
-  @ctx 1 param = ;
+  @extctx 1 param = ;
   @ast 0 param = ;
+
+  $ctx
+  $lctx
+  @ctx extctx ** = ;
+  @lctx extctx 4 + ** = ;
 
   $name
   @name ast AST_NAME take = ;
@@ -2373,14 +2414,25 @@ fun ast_eval_compile_ext 2 {
     }
     value ret ;
   } else {
-    # Operator: all operators are handled by generic code
+    # Operator
+
+    if name "sizeof_PRE" strcmp 0 == {
+      $value
+      @value i64_init = ;
+      $sub_type_idx
+      @sub_type_idx ast AST_RIGHT take ctx lctx ast_eval_type = ;
+      if ast AST_RIGHT take AST_ORIG_TYPE_IDX take 0xffffffff != {
+        @sub_type_idx ast AST_RIGHT take AST_ORIG_TYPE_IDX take = ;
+      }
+      value ctx sub_type_idx cctx_type_size i64_from_u32 ;
+      value ret ;
+    }
+
     0 ret ;
   }
 
   0 "ast_eval_compile_ext: should not arrive here" assert_msg ;
 }
-
-ifun ast_eval_type 3
 
 fun promote_integer_type 1 {
   $type
@@ -2640,7 +2692,11 @@ fun ast_eval_type 3 {
       } else {
         # Search in local stack and among globals
         $elem
-        @elem lctx name lctx_get_variable = ;
+        if lctx 0 != {
+          @elem lctx name lctx_get_variable = ;
+        } else {
+          @elem 0 = ;
+        }
         if elem {
           @type_idx elem STACK_ELEM_TYPE_IDX take = ;
         } else {
@@ -2928,11 +2984,15 @@ fun ast_eval_type 3 {
       if t1 TYPE_KIND take TYPE_KIND_POINTER == t2 TYPE_KIND take TYPE_KIND_POINTER == && {
         if ctx t1 TYPE_BASE take t2 TYPE_BASE take cctx_type_compare {
           @type_idx type1 = ;
-          @processed2 1 = ;
+        } else {
+          # If the pointed types are different, do not bother too much
+          # and just return void*
+          @type_idx TYPE_VOID_PTR = ;
         }
+        @processed2 1 = ;
       }
 
-      processed2 "ast_eval_type: not implemented form of ternary operator" assert_msg ;
+      processed2 "ast_eval_type: not implemented form of ternary operator" type1 type2 assert_msg_int_int ;
       @processed 1 = ;
     }
 
@@ -3218,34 +3278,22 @@ fun lctx_convert_stack 4 {
     ret ;
   }
 
-  if from_idx is_integer_type to_idx is_integer_type && {
-    lctx ctx from_idx to_idx lctx_int_convert ;
-    ret ;
-  }
-
   $from_type
   $to_type
   @from_type ctx from_idx cctx_get_type = ;
   @to_type ctx to_idx cctx_get_type = ;
 
-  if from_type TYPE_KIND take TYPE_KIND_POINTER == to_type TYPE_KIND take TYPE_KIND_POINTER == && {
-    # Permit any implicit conversion between any two pointers of any type
-    ctx from_idx cctx_type_footprint 4 == "lctx_convert_stack: error 3" assert_msg ;
-    ctx to_idx cctx_type_footprint 4 == "lctx_convert_stack: error 4" assert_msg ;
-    ret ;
+  # Permit all conversions between integers and pointers, just to make
+  # it easy
+  if from_type TYPE_KIND take TYPE_KIND_POINTER == {
+    @from_idx TYPE_UINT = ;
+  }
+  if to_type TYPE_KIND take TYPE_KIND_POINTER == {
+    @to_idx TYPE_UINT = ;
   }
 
-  if from_idx is_integer_type to_type TYPE_KIND take TYPE_KIND_POINTER == && {
-    # Permit any implicit converstion of integers to pointers
-    ctx from_idx cctx_type_footprint 4 == "lctx_convert_stack: error 5" assert_msg ;
-    ctx to_idx cctx_type_footprint 4 == "lctx_convert_stack: error 6" assert_msg ;
-    ret ;
-  }
-
-  if from_type TYPE_KIND take TYPE_KIND_POINTER == to_idx is_integer_type && {
-    # Permit any implicit conversion of pointers to integers
-    ctx from_idx cctx_type_footprint 4 == "lctx_convert_stack: error 3" assert_msg ;
-    ctx to_idx cctx_type_footprint 4 == "lctx_convert_stack: error 4" assert_msg ;
+  if from_idx is_integer_type to_idx is_integer_type && {
+    lctx ctx from_idx to_idx lctx_int_convert ;
     ret ;
   }
 
@@ -4821,6 +4869,7 @@ fun cctx_compile_expression 2 {
 }
 
 ifun cctx_compile_statement_or_block 2
+ifun cctx_compile_block 2
 
 fun cctx_compile_statement 2 {
   $ctx
@@ -4844,7 +4893,13 @@ fun cctx_compile_statement 2 {
 
   # Allow and ignore empty statements
   if tok ";" strcmp 0 == processed ! && {
-    @expect_semicolon 0 = ;
+    @processed 1 = ;
+  }
+
+  # Allow a block to be began at every point (with this
+  # cctx_compile_statement_or_block could be simplified)
+  if tok "{" strcmp 0 == processed ! && {
+    ctx lctx cctx_compile_block ;
     @processed 1 = ;
   }
 
@@ -5193,7 +5248,7 @@ fun cctx_compile_statement 2 {
     $ast
     @ast ctx ":" cctx_parse_ast1 = ;
     # Evaluate the AST to check that it is constant
-    ctx ast ast_eval_compile ;
+    ctx lctx ast ast_eval_compile ;
     @tok ctx cctx_get_token_or_fail = ;
     tok ":" strcmp 0 == "cctx_compile_statement: expected : after case" assert_msg ;
     labs 0 != "cctx_compile_statement: not in a switch block" assert_msg ;
@@ -5272,7 +5327,7 @@ fun cctx_compile_statement 2 {
       while cont {
         $actual_type_idx
         $name
-        ctx type_idx @actual_type_idx @name 0 cctx_parse_declarator "cctx_compile_statement: error 1" assert_msg ;
+        ctx lctx type_idx @actual_type_idx @name 0 cctx_parse_declarator "cctx_compile_statement: error 1" assert_msg ;
         name 0 != "cctx_compile_statement: cannot instantiate variable without name" assert_msg ;
         lctx ctx actual_type_idx name lctx_push_var ;
         @tok ctx cctx_get_token_or_fail = ;
@@ -5471,7 +5526,7 @@ fun cctx_parse_initializer 3 {
   if type_idx is_integer_type type TYPE_KIND take TYPE_KIND_POINTER == || {
     $ast
     @ast ctx "," "}" ";" cctx_parse_ast3 = ;
-    ctx ast ast_eval_compile ;
+    ctx 0 ast ast_eval_compile ;
     $size
     @size ctx type_idx cctx_type_size = ;
     ctx loc ast AST_VALUE take size cctx_assign_with_size ;
@@ -5565,7 +5620,7 @@ fun cctx_compile_line 1 {
     while cont {
       $actual_type_idx
       $name
-      ctx type_idx @actual_type_idx @name 0 cctx_parse_declarator "cctx_compile_line: could not parse declarator after typedef" assert_msg ;
+      ctx 0 type_idx @actual_type_idx @name 0 cctx_parse_declarator "cctx_compile_line: could not parse declarator after typedef" assert_msg ;
       name 0 != "cctx_compile_line: cannot define type without name" assert_msg ;
       $typenames
       @typenames ctx CCTX_TYPENAMES take = ;
@@ -5618,7 +5673,7 @@ fun cctx_compile_line 1 {
     $name
     $arg_names
     @arg_names 4 vector_init = ;
-    ctx type_idx @actual_type_idx @name arg_names cctx_parse_declarator "cctx_compile_line: could not parse declarator" assert_msg ;
+    ctx 0 type_idx @actual_type_idx @name arg_names cctx_parse_declarator "cctx_compile_line: could not parse declarator" assert_msg ;
     $type
     @type ctx actual_type_idx cctx_get_type = ;
     name 0 != "cctx_compile_line: cannot instantiate variable without name" assert_msg ;
@@ -5711,7 +5766,7 @@ fun cctx_compile 1 {
     if ctx CCTX_VERBOSE take {
       "Compilation stage " 1 platform_log ;
       ctx CCTX_STAGE take 1 + itoa 1 platform_log ;
-      "\n" 1 platform_log ;
+      #"\n" 1 platform_log ;
     }
     ctx CCTX_CURRENT_LOC take_addr start_loc = ;
     ctx CCTX_TOKENS_POS take_addr 0 = ;
