@@ -5969,6 +5969,7 @@ fun cctx_compile 1 {
     }
     ctx CCTX_CURRENT_LOC take_addr start_loc = ;
     ctx CCTX_TOKENS_POS take_addr 0 = ;
+    ctx CCTX_DOT_POS take_addr 0 = ;
     ctx CCTX_LABEL_NUM take_addr 0 = ;
     ctx cctx_reset_types ;
     ctx cctx_clean_globals ;
@@ -5994,6 +5995,8 @@ fun cctx_compile 1 {
     " and starts at " 1 platform_log ;
     start_loc itoa 1 platform_log ;
     "\n" 1 platform_log ;
+  }
+  if ctx CCTX_DEBUG take {
     "Compiled dump:\n" 1 platform_log ;
     start_loc size dump_mem ;
     "\n" 1 platform_log ;
