@@ -20,7 +20,7 @@ const RUN_FASM 0
 const RUN_C 0
 const RUN_MESCC 0
 const RUN_MCPP 0
-const RUN_TINYCC 0
+const RUN_TINYCC 1
 const TEST_MAP 1
 const TEST_INT64 1
 const TEST_C 1

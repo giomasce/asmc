@@ -19,7 +19,7 @@ const TINYCC_LOAD_TOKENS 0
 
 fun compile_tinycc 0 {
   $filename
-  @filename "/disk1/tinycc/tcc.c" = ;
+  @filename "/disk1/tinycc/libtcc.c" = ;
 
   # Preprocessing
   $ctx
@@ -31,31 +31,27 @@ fun compile_tinycc 0 {
   } else {
     ctx "ONE_SOURCE" "1" ppctx_define ;
     ctx "USE_SOFTFLOAT" "1" ppctx_define ;
+    ctx "double" "int" ppctx_define ;
     ctx filename ppctx_set_base_filename ;
     ctx "/disk1/tinycc/softfloat/" ppctx_add_include_path ;
     ctx "/disk1/tinycc/softfloat/include/" ppctx_add_include_path ;
     ctx "/disk1/tinycc/softfloat/8086/" ppctx_add_include_path ;
-    #ctx PPCTX_VERBOSE take_addr 0 = ;
+    ctx PPCTX_VERBOSE take_addr 1 = ;
     @tokens 4 vector_init = ;
     tokens ctx filename preproc_file ;
     @tokens tokens remove_whites = ;
     @tokens tokens collapse_strings = ;
     "Finished preprocessing\n" 1 platform_log ;
-    tokens dump_token_list_to_debugfs ;
+    #tokens dump_token_list_to_debugfs ;
   }
 
   # Compilation
   $cctx
   @cctx tokens cctx_init = ;
+  cctx CCTX_VERBOSE take_addr 1 = ;
+  cctx CCTX_DEBUG take_addr 0 = ;
+  #cctx CCTX_DEBUG_AFTER take_addr 1000 "..................................................................................................................................................................................." strlen 1 - * = ;
   cctx cctx_compile ;
-
-  # Debug output
-  "TYPES TABLE\n" 1 platform_log ;
-  cctx cctx_dump_types ;
-  "TYPE NAMES TABLE\n" 1 platform_log ;
-  cctx cctx_dump_typenames ;
-  "GLOBALS TABLE\n" 1 platform_log ;
-  cctx cctx_dump_globals ;
 
   tokens free_vect_of_ptrs ;
   cctx cctx_destroy ;
