@@ -2979,6 +2979,11 @@ fun ast_eval_type 3 {
         @processed2 1 = ;
       }
 
+      if type1 TYPE_VOID == type2 TYPE_VOID == && {
+        @type_idx TYPE_VOID = ;
+        @processed2 1 = ;
+      }
+
       $t1
       $t2
       @t1 ctx type1 cctx_get_type = ;

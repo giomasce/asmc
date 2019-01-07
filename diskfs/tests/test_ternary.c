@@ -38,6 +38,18 @@ int test_ternary_ptr() {
     return 1;
 }
 
+int test_ternary_void() {
+    int x = 0;
+    int y = 0;
+    1 ? x++ : y++;
+    if (x != 1) return 0;
+    if (y != 0) return 0;
+    0 ? x++ : y++;
+    if (x != 1) return 0;
+    if (y != 1) return 0;
+    return 1;
+}
+
 int test_bool() {
     bool x = 0;
     if (x != 0) return 0;

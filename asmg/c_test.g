@@ -160,6 +160,7 @@ fun c_run_testcases 0 {
 
   tests "/disk1/tests/test_ternary.c" "test_ternary" 1 "" c_run_testcase ;
   tests "/disk1/tests/test_ternary.c" "test_ternary_ptr" 1 "" c_run_testcase ;
+  tests "/disk1/tests/test_ternary.c" "test_ternary_void" 1 "" c_run_testcase ;
   tests "/disk1/tests/test_ternary.c" "test_bool" 1 "" c_run_testcase ;
 
   tests "/disk1/tests/test_cast.c" "test_cast" 1 "" c_run_testcase ;
