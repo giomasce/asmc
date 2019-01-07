@@ -329,6 +329,8 @@ int test_sizeof() {
     short static_sizeof[sizeof s];
     if (sizeof static_sizeof != 8) return 0;
 
+    if (sizeof "1234" != 5) return 0;
+
     return 1;
 }
 

@@ -89,7 +89,7 @@ fun escape_char 2 {
       to ** '\"' =c ;
       @processed 1 = ;
     }
-    processed "escape_char: unknown escape sequence" assert_msg ;
+    processed "escape_char: unknown escape sequence" from ** assert_msg_str ;
     from from ** 1 + = ;
     to to ** 1 + = ;
   } else {
@@ -2310,6 +2310,24 @@ fun cctx_get_label_addr 3 {
   global GLOBAL_LOC take ret ;
 }
 
+fun string_unescaped_len 1 {
+  $s
+  @s 0 param = ;
+
+  $i
+  @i 0 = ;
+  s **c '\"' == "string_unescaped_len: not a string literal" assert_msg ;
+  @s s 1 + = ;
+  while s **c '\"' != {
+    @s 1 0 escape_char ;
+    @i i 1 + = ;
+  }
+  @s s 1 + = ;
+  s **c '\0' == "string_unescaped_len: illegal string literal" assert_msg ;
+
+  i ret ;
+}
+
 fun cctx_gen_string 3 {
   $ctx
   $lctx
@@ -2709,7 +2727,7 @@ fun ast_eval_type 3 {
       }
     } else {
       if name **c '\"' == {
-        @type_idx TYPE_CHAR_ARRAY = ;
+        @type_idx ctx TYPE_CHAR name string_unescaped_len 1 + cctx_get_array_type = ;
       } else {
         ast ast_strtoll ;
         @type_idx ast AST_TYPE_IDX take = ;
@@ -2974,13 +2992,14 @@ fun ast_eval_type 3 {
       @type1 ast AST_CENTER take ctx lctx ast_eval_type = ;
       @type2 ast AST_RIGHT take ctx lctx ast_eval_type = ;
 
-      if type1 is_integer_type type2 is_integer_type && {
-        @type_idx ast AST_CENTER take ast AST_RIGHT take ctx lctx ast_arith_conv = ;
+      # Always allow ternary operator between two things of the same type
+      if type1 type2 == {
+        @type_idx type1 = ;
         @processed2 1 = ;
       }
 
-      if type1 TYPE_VOID == type2 TYPE_VOID == && {
-        @type_idx TYPE_VOID = ;
+      if type1 is_integer_type type2 is_integer_type && {
+        @type_idx ast AST_CENTER take ast AST_RIGHT take ctx lctx ast_arith_conv = ;
         @processed2 1 = ;
       }
 
@@ -5185,12 +5204,15 @@ fun cctx_compile_statement 2 {
 
     # Compile the body
     $old_break_lab
+    $old_default_lab
+    $old_case_labs
     @old_break_lab lctx LCTX_BREAK_LABEL take = ;
+    @old_default_lab lctx LCTX_DEFAULT_LABEL take = ;
+    @old_case_labs lctx LCTX_CASE_LABELS take = ;
     lctx LCTX_BREAK_LABEL take_addr break_lab = ;
     lctx LCTX_DEFAULT_LABEL take_addr 0xffffffff = ;
     lctx LCTX_CASE_LABELS take_addr 8 vector_init = ;
     ctx lctx cctx_compile_statement_or_block ;
-    lctx LCTX_BREAK_LABEL take_addr old_break_lab = ;
 
     # Jump to the break, to avoid doing the switch logic again
     ctx lctx break_lab JUMP_TYPE_JMP 0 cctx_gen_label_jump ;
@@ -5240,8 +5262,9 @@ fun cctx_compile_statement 2 {
       ctx lctx lctx LCTX_DEFAULT_LABEL take JUMP_TYPE_JMP 1 cctx_gen_label_jump ;
     }
     lctx LCTX_CASE_LABELS take vector_destroy ;
-    lctx LCTX_DEFAULT_LABEL take_addr 0xffffffff = ;
-    lctx LCTX_CASE_LABELS take_addr 0 = ;
+    lctx LCTX_BREAK_LABEL take_addr old_break_lab = ;
+    lctx LCTX_DEFAULT_LABEL take_addr old_default_lab = ;
+    lctx LCTX_CASE_LABELS take_addr old_case_labs = ;
 
     # Finally, fix break label
     lctx ctx break_lab lctx_fix_label ;
