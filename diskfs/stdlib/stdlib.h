@@ -46,4 +46,12 @@ unsigned long strtoul(const char *str, char **str_end, int base) {
     abort();
 }
 
+long strtol(const char *str, char **str_end, int base) {
+    abort();
+}
+
+void qsort(void *ptr, size_t count, size_t size, int (*comp)(const void *, const void *)) {
+    abort();
+}
+
 #endif

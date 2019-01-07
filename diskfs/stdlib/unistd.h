@@ -19,4 +19,19 @@ ssize_t read(int fildes, void *buf, size_t nbyte) {
     return -1;
 }
 
+char *getcwd(char *buf, size_t size) {
+    errno = ENOTIMPL;
+    return -1;
+}
+
+int unlink(const char *path) {
+    errno = ENOTIMPL;
+    return -1;
+}
+
+off_t lseek(int fildes, off_t offset, int whence) {
+    errno = ENOTIMPL;
+    return -1;
+}
+
 #endif

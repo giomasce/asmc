@@ -39,6 +39,14 @@ int sprintf(char *buffer, const char *format, ...) {
     abort();
 }
 
+int snprintf(char *buffer, size_t bufsz, const char *format, ...) {
+    abort();
+}
+
+int printf(const char *format, ...) {
+    abort();
+}
+
 int fprintf(FILE *stream, const char *format, ...) {
     abort();
 }
@@ -47,5 +55,21 @@ int fflush(FILE *stream) {
     // Our FILE has not buffer, so there is nothing to flush
     return 0;
 }
+
+size_t fwrite(const void *buffer, size_t size, size_t count, FILE *stream) {
+    abort();
+}
+
+FILE *fdopen(int fildes, const char *mode) {
+    abort();
+}
+
+int fclose(FILE *stream) {
+    abort();
+}
+
+#define SEEK_CUR 0
+#define SEEK_END 1
+#define SEEK_SET 2
 
 #endif
