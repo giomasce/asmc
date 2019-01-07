@@ -2,6 +2,7 @@
 #define __STDIO_H
 
 #include "asmc.h"
+#include "stdlib.h"
 
 #define EOF (0-1)
 
@@ -32,6 +33,19 @@ int puts(const char *s) {
 
 char *itoa(unsigned int x) {
   return __handles->itoa(x);
+}
+
+int sprintf(char *buffer, const char *format, ...) {
+    abort();
+}
+
+int fprintf(FILE *stream, const char *format, ...) {
+    abort();
+}
+
+int fflush(FILE *stream) {
+    // Our FILE has not buffer, so there is nothing to flush
+    return 0;
 }
 
 #endif

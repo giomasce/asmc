@@ -97,4 +97,12 @@ int memcmp( const void * s1, const void * s2, size_t n )
     return 0;
 }
 
+// From PDClib
+char * strcpy( char * s1, const char * s2 )
+{
+    char * rc = s1;
+    while ( ( *s1++ = *s2++ ) );
+    return rc;
+}
+
 #endif

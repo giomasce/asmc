@@ -19,7 +19,7 @@
 // Ignore GCC __attribute__ constructs
 #define __attribute__(x)
 
-#define NULL 0
+#define NULL ((void*)0)
 
 typedef int ssize_t;
 typedef unsigned int size_t;

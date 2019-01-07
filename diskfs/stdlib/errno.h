@@ -13,4 +13,7 @@ int __errno = 0;
 // Defined by POSIX
 #define EINVAL 4
 
+// Defined by me
+#define ENOTIMPL 5
+
 #endif
