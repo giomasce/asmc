@@ -20,8 +20,6 @@ typedef char *(*(**foo [][2*3+1])())[];
 
 int;
 
-int array_without_length[] = {1, 2, 3, ' '};
-
 struct OtherStruct {
   int x, y, z;
 };
@@ -339,5 +337,21 @@ int test_comma() {
     int y = (x++, 10);
     if (x != 3) return 0;
     if (y != 10) return 0;
+    return 1;
+}
+
+int array_without_length[] = {1, 2, 3, ' '};
+char string_without_length[] = "test\n\f\r";
+char string_in_array_form[] = {1, 2, 3};
+char strings[][6] = { "one", "two", "three" };
+
+int test_initializers() {
+    if (sizeof(array_without_length) != 4*4) return 0;
+    if (sizeof(string_without_length) != 8) return 0;
+    if (sizeof(string_in_array_form) != 3) return 0;
+    if (string_without_length[0] != 't') return 0;
+    if (string_without_length[4] != '\n') return 0;
+    if (string_without_length[6] != '\r') return 0;
+    if (string_without_length[7] != 0) return 0;
     return 1;
 }

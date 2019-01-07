@@ -149,6 +149,7 @@ fun c_run_testcases 0 {
   tests "/disk1/tests/test_lang.c" "test_goto" 1 "" c_run_testcase ;
   tests "/disk1/tests/test_lang.c" "test_sizeof" 1 "" c_run_testcase ;
   tests "/disk1/tests/test_lang.c" "test_comma" 1 "" c_run_testcase ;
+  tests "/disk1/tests/test_lang.c" "test_initializers" 1 "" c_run_testcase ;
 
   tests "/disk1/tests/test_llong.c" "test_llong" 1 "" c_run_testcase ;
   tests "/disk1/tests/test_llong.c" "test_llong_sum" 1 "" c_run_testcase ;

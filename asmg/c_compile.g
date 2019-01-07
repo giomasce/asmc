@@ -27,11 +27,13 @@ fun escape_char 2 {
 
   $emit
   @emit to 0 == = ;
+  $discard
+  @discard to 1 == = ;
   $data
   @data 0 = ;
   $data_ptr
   @data_ptr @data = ;
-  if emit {
+  if emit discard || {
     @to @data_ptr = ;
   }
 
@@ -5562,6 +5564,43 @@ fun cctx_parse_initializer 3 {
     }
     tok "}" strcmp 0 == "cctx_parse_initializer: initializer has too many entries" assert_msg ;
     0xffffffff ret ;
+  }
+
+  if type TYPE_KIND take TYPE_KIND_ARRAY == type TYPE_BASE take TYPE_CHAR == && {
+    $tok
+    @tok ctx cctx_get_token_or_fail = ;
+    if tok **c '\"' == {
+      @tok tok 1 + = ;
+      $i
+      @i 0 = ;
+      $len
+      @len type TYPE_LENGTH take = ;
+      while i len 1 - < len 0xffffffff == || {
+        if tok **c '\"' == {
+          tok 1 + **c '\0' == "cctx_parse_initializer: illegal string literal" assert_msg ;
+          # Add the final blank
+          if ctx CCTX_STAGE take 0 != {
+            loc '\0' =c ;
+          }
+          if len 0xffffffff == {
+            @len i 1 + = ;
+          }
+          @i len 1 - = ;
+        } else {
+          if ctx CCTX_STAGE take 0 == {
+            @tok 1 ctx escape_char ;
+          } else {
+            @tok @loc ctx escape_char ;
+          }
+          @i i 1 + = ;
+        }
+      }
+      tok **c '\"' == "cctx_parse_initializer: initializer string is too long" assert_msg ;
+      tok 1 + **c '\0' == "cctx_parse_initializer: illegal string literal" assert_msg ;
+      len ret ;
+    } else {
+      ctx cctx_give_back_token ;
+    }
   }
 
   if type TYPE_KIND take TYPE_KIND_ARRAY == {
