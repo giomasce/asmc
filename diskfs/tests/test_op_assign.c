@@ -57,7 +57,20 @@ int test_int_assign() {
     return 1;
 }
 
-int test_int_prepost() {
+int test_ptr_incdec() {
+    int *p = 1000;
+    if (p++ != 1000) return 0;
+    if (p != 1004) return 0;
+    if (p-- != 1004) return 0;
+    if (p != 1000) return 0;
+    if (++p != 1004) return 0;
+    if (p != 1004) return 0;
+    if (--p != 1000) return 0;
+    if (p != 1000) return 0;
+    return 1;
+}
+
+int test_int_incdec() {
     int x = 100;
     int y = x++;
     if (x != 101) return 0;

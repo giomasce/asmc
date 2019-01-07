@@ -2537,7 +2537,7 @@ fun ast_strtoll 1 {
       if c 'l' == c 'L' == || {
         @l_num l_num 1 + = ;
       } else {
-        0 "ast_strtoll: invalid suffix letter" assert_msg ;
+        0 "ast_strtoll: invalid suffix letter" name assert_msg_str ;
       }
     }
     @suffix suffix 1 + = ;
@@ -4252,43 +4252,113 @@ fun ast_push_value_ptr 3 {
   @name ast AST_NAME take = ;
 
   $sum
+  $is_prefix
+  $is_postfix
+  @is_prefix name "++_PRE" strcmp 0 ==
+             name "--_PRE" strcmp 0 == || = ;
+  @is_postfix name "++_POST" strcmp 0 ==
+              name "--_POST" strcmp 0 == || = ;
+
   $subtract
   $assign
+  $incdec
   @sum name "+" strcmp 0 == name "[" strcmp 0 == || name "+=" strcmp 0 == || = ;
   @subtract name "-" strcmp 0 == name "-=" strcmp 0 == || = ;
   @assign name "+=" strcmp 0 == name "-=" strcmp 0 == || = ;
+  @incdec name "++_PRE" strcmp 0 ==
+          name "--_PRE" strcmp 0 == ||
+          name "++_POST" strcmp 0 == ||
+          name "--_POST" strcmp 0 == || = ;
 
-  sum subtract || "ast_push_value_ptr: not a sum or a subtraction" assert_msg ;
+  sum subtract || incdec || "ast_push_value_ptr: not a sum or a subtraction" assert_msg ;
+  if incdec {
+    is_prefix is_postfix || "ast_push_value_ptr: error 1" assert_msg ;
+    is_prefix ! is_postfix ! || "ast_push_value_ptr: error 2" assert_msg ;
+    assign ! "ast_push_value_ptr: error 3" assert_msg ;
+  } else {
+    is_prefix ! is_postfix ! && "ast_push_value_ptr: error 4" assert_msg ;
+  }
+
+  $left_idx
+  $right_idx
+  $left_ptr
+  $right_ptr
+  $left_size
+  $right_size
+  if is_prefix ! {
+    @left_idx ast AST_LEFT take ctx lctx ast_eval_type = ;
+    @left_ptr ctx left_idx cctx_get_type TYPE_KIND take TYPE_KIND_POINTER == = ;
+    if left_ptr {
+      if ctx left_idx cctx_get_type TYPE_BASE take TYPE_VOID == {
+        @left_size 1 = ;
+      } else {
+        @left_size ctx ctx left_idx cctx_get_type TYPE_BASE take cctx_type_size = ;
+      }
+    }
+  }
+  if is_postfix ! {
+    @right_idx ast AST_RIGHT take ctx lctx ast_eval_type = ;
+    @right_ptr ctx right_idx cctx_get_type TYPE_KIND take TYPE_KIND_POINTER == = ;
+    if right_ptr {
+      if ctx right_idx cctx_get_type TYPE_BASE take TYPE_VOID == {
+        @right_size 1 = ;
+      } else {
+        @right_size ctx ctx right_idx cctx_get_type TYPE_BASE take cctx_type_size = ;
+      }
+    }
+  }
 
   $processed
   @processed 0 = ;
 
-  $left_idx
-  $right_idx
-  @left_idx ast AST_LEFT take ctx lctx ast_eval_type = ;
-  @right_idx ast AST_RIGHT take ctx lctx ast_eval_type = ;
-  $left_ptr
-  $right_ptr
-  @left_ptr ctx left_idx cctx_get_type TYPE_KIND take TYPE_KIND_POINTER == = ;
-  @right_ptr ctx right_idx cctx_get_type TYPE_KIND take TYPE_KIND_POINTER == = ;
-  $left_size
-  $right_size
-  if left_ptr {
-    if ctx left_idx cctx_get_type TYPE_BASE take TYPE_VOID == {
-      @left_size 1 = ;
-    } else {
-      @left_size ctx ctx left_idx cctx_get_type TYPE_BASE take cctx_type_size = ;
+  if incdec {
+    processed ! "ast_push_value_ptr: error 5" assert_msg ;
+    if is_prefix right_ptr && {
+      # ast_push_addr; pop eax
+      ast AST_RIGHT take ctx lctx ast_push_addr ;
+      ctx 0x58 cctx_emit ;
+      if name **c '+' == {
+        # add [eax], size
+        ctx 0x81 cctx_emit ;
+        ctx 0x00 cctx_emit ;
+        ctx right_size cctx_emit32 ;
+      } else {
+        # sub [eax], size
+        ctx 0x81 cctx_emit ;
+        ctx 0x28 cctx_emit ;
+        ctx right_size cctx_emit32 ;
+      }
+      # push [eax]
+      ctx 0xff cctx_emit ;
+      ctx 0x30 cctx_emit ;
+      @processed 1 = ;
     }
-  }
-  if right_ptr {
-    if ctx right_idx cctx_get_type TYPE_BASE take TYPE_VOID == {
-      @right_size 1 = ;
-    } else {
-      @right_size ctx ctx right_idx cctx_get_type TYPE_BASE take cctx_type_size = ;
+
+    if is_postfix left_ptr && {
+      # ast_push_addr; pop eax; mov edx, [eax]
+      ast AST_LEFT take ctx lctx ast_push_addr ;
+      ctx 0x58 cctx_emit ;
+      ctx 0x8b cctx_emit ;
+      ctx 0x10 cctx_emit ;
+      if name **c '+' == {
+        # add [eax], size
+        ctx 0x81 cctx_emit ;
+        ctx 0x00 cctx_emit ;
+        ctx left_size cctx_emit32 ;
+      } else {
+        # sub [eax], size
+        ctx 0x81 cctx_emit ;
+        ctx 0x28 cctx_emit ;
+        ctx left_size cctx_emit32 ;
+      }
+      # push edx
+      ctx 0x52 cctx_emit ;
+      @processed 1 = ;
     }
   }
 
   if sum {
+    processed ! "ast_push_value_ptr: error 6" assert_msg ;
     left_ptr right_ptr && ! "ast_push_value_ptr: cannot take sum of two pointers" assert_msg ;
     if left_ptr {
       if assign {
@@ -4341,7 +4411,10 @@ fun ast_push_value_ptr 3 {
       # push eax
       ctx 0x50 cctx_emit ;
     }
-  } else {
+  }
+
+  if subtract {
+    processed ! "ast_push_value_ptr: error 7" assert_msg ;
     left_ptr ! right_ptr && ! "ast_push_value_ptr: cannot take different of a non-pointer and a pointer" assert_msg ;
     if left_ptr {
       if right_ptr {
@@ -4487,6 +4560,10 @@ fun ast_push_value 3 {
        name "-" strcmp 0 == ||
        name "+=" strcmp 0 == ||
        name "-=" strcmp 0 == ||
+       name "++_PRE" strcmp 0 == ||
+       name "--_PRE" strcmp 0 == ||
+       name "++_POST" strcmp 0 == ||
+       name "--_POST" strcmp 0 == ||
        processed ! && {
       @processed ast ctx lctx ast_push_value_ptr = ;
     }
