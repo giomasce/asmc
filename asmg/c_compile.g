@@ -286,7 +286,9 @@ fun type_get_idx 2 {
 
 const GLOBAL_TYPE_IDX 0
 const GLOBAL_LOC 4
-const SIZEOF_GLOBAL 8
+const GLOBAL_INITIALIZED 8
+const GLOBAL_EMITTED 12
+const SIZEOF_GLOBAL 16
 
 fun global_init 0 {
   $global
@@ -544,6 +546,26 @@ fun cctx_reset_types 1 {
 
   ctx cctx_destroy_types ;
   ctx cctx_init_types ;
+}
+
+fun cctx_clean_globals_closure 3 {
+  $ctx
+  $key
+  $value
+  @ctx 2 param = ;
+  @key 1 param = ;
+  @value 0 param = ;
+
+  value GLOBAL_EMITTED take_addr 0 = ;
+}
+
+fun cctx_clean_globals 1 {
+  $ctx
+  @ctx 0 param = ;
+
+  $globals
+  @globals ctx CCTX_GLOBALS take = ;
+  globals @cctx_clean_globals_closure ctx map_foreach ;
 }
 
 fun cctx_get_type 2 {
@@ -1080,6 +1102,8 @@ fun cctx_add_global 4 {
     @global global_init = ;
     global GLOBAL_TYPE_IDX take_addr type_idx = ;
     global GLOBAL_LOC take_addr loc = ;
+    global GLOBAL_INITIALIZED take_addr 0 = ;
+    global GLOBAL_EMITTED take_addr 0 = ;
     globals name global map_set ;
   }
 
@@ -1098,7 +1122,7 @@ fun cctx_add_global 4 {
 
   if ctx CCTX_STAGE take 2 == {
     if loc 0xffffffff != {
-      global GLOBAL_LOC take loc == "cctx_add_global: error 3" assert_msg ;
+      global GLOBAL_LOC take loc == "cctx_add_global: error 3" name assert_msg_str ;
     }
   }
 
@@ -5871,8 +5895,22 @@ fun cctx_compile_line 1 {
             }
           }
           #type type_dump ;
-          ctx name loc actual_type_idx cctx_add_global ;
-          ctx ctx actual_type_idx cctx_type_footprint cctx_emit_zeros ;
+          $found
+          @found 0 = ;
+          if static ctx name cctx_has_global && {
+            @found 1 = ;
+            $global
+            @global ctx name cctx_get_global = ;
+            ctx global GLOBAL_TYPE_IDX take actual_type_idx cctx_type_compare "cctx_compile_line: global redefined with another type" name assert_msg_str ;
+            if initializer {
+              global GLOBAL_INITIALIZED take ! "cctx_compile_line: global initialized more than once" name assert_msg_str ;
+              global GLOBAL_INITIALIZED take_addr 1 = ;
+            }
+          }
+          if found ! {
+            ctx name loc actual_type_idx cctx_add_global ;
+            ctx ctx actual_type_idx cctx_type_footprint cctx_emit_zeros ;
+          }
         } else {
           if initializer type TYPE_KIND take TYPE_KIND_ARRAY == && type TYPE_LENGTH take 0xffffffff == && {
             $actual_len
@@ -5881,8 +5919,22 @@ fun cctx_compile_line 1 {
             @type ctx actual_type_idx cctx_get_type = ;
           }
           #type type_dump ;
-          ctx name loc actual_type_idx cctx_add_global ;
-          ctx ctx actual_type_idx cctx_type_footprint cctx_emit_zeros ;
+          $emit
+          @emit 1 = ;
+          if static {
+            $global
+            @global ctx name cctx_get_global = ;
+            if global GLOBAL_EMITTED take ! {
+              global GLOBAL_EMITTED take_addr 1 = ;
+            } else {
+              @emit 0 = ;
+              @loc global GLOBAL_LOC take = ;
+            }
+          }
+          if emit {
+            ctx name loc actual_type_idx cctx_add_global ;
+            ctx ctx actual_type_idx cctx_type_footprint cctx_emit_zeros ;
+          }
           if initializer {
             ctx actual_type_idx loc cctx_parse_initializer ;
           }
@@ -5919,6 +5971,7 @@ fun cctx_compile 1 {
     ctx CCTX_TOKENS_POS take_addr 0 = ;
     ctx CCTX_LABEL_NUM take_addr 0 = ;
     ctx cctx_reset_types ;
+    ctx cctx_clean_globals ;
     ctx cctx_create_basic_types ;
     ctx "__builtin_handles" ctx CCTX_HANDLES take vector_data TYPE_VOID_PTR cctx_add_global ;
     while ctx cctx_is_eof ! {

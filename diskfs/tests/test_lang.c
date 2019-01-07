@@ -373,6 +373,13 @@ char string_without_length[] = "test\n\f\r";
 char string_in_array_form[] = {1, 2, 3};
 char strings[][6] = { "one", "two", "three" };
 
+static int st1;
+static int st1;
+static int st2 = 1;
+static int st2;
+static int st3;
+static int st3 = 1;
+
 int test_initializers() {
     if (sizeof(array_with_length) != 4*4) return 0;
     if (sizeof(array_without_length) != 4*4) return 0;
@@ -384,5 +391,8 @@ int test_initializers() {
     if (string_without_length[4] != '\n') return 0;
     if (string_without_length[6] != '\r') return 0;
     if (string_without_length[7] != 0) return 0;
+    if (st1 != 0) return 0;
+    if (st2 != 1) return 0;
+    if (st3 != 1) return 0;
     return 1;
 }
