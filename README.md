@@ -1,14 +1,15 @@
 # `asmc`, a bootstrapping OS with minimal binary seed
 
-`asmc` is a rather extremely minimal operating system, whose binary
-seed (the compiled machine code that is fed to the CPU when the system
-boots) is very small (less than 10 KiB). Such compiled code is enough
-to contain a minimal IO environment and compiler, which is used to
-compile a more powerful environment and compiler, further used to
-compile even more powerful things, until a fully running system is
-bootstrapped. In this way nearly any code running in your computer is
-compiled during the boot procedure, except the the initial seed that
-ideally is kept as small as possible.
+`asmc` is an extremely minimal operating system, whose binary seed
+(the compiled machine code that is fed to the CPU when the system
+boots) is very small (around 15 KiB, maybe could be further shrunk in
+the future). Such compiled code is enough to contain a minimal IO
+environment and compiler, which is used to compile a more powerful
+environment and compiler, further used to compile even more powerful
+things, until a fully running system is bootstrapped. In this way
+nearly any code running in your computer is compiled during the boot
+procedure, except the the initial seed that ideally is kept as small
+as possible.
 
 This at least is the plan; from the moment we are not yet at the point
 where we manage to compile a real system environment. However, work is
@@ -46,11 +47,20 @@ disk image, which you can run with QEMU:
 
     qemu-system-i386 -hda build/boot_asmg.x86 -serial stdio -device isa-debug-exit -display none
 
+(if your host system supports it, you can add `-enable-kvm -cpu host`
+to benefit of KVM acceleration; `-cpu host` is currently required
+because `asmc` currently tries to use hardware performance counters,
+but at some point this will be fixed)
+
 Unless I have broken something, this should run a little operating
-system that compiles a little (and still incomplete) C compiler, and
-later uses such compiler to compile and run some little test C
-programs. Eventually it will compile a more complete C compiler and
-then actually useful C programs. Stay tuned for updates!
+system that compiles a little C compiler, and later uses such compiler
+to compile from sources a [patched
+version](https://gitlab.com/giomasce/tinycc/tree/softfloat) of
+[tinycc](http://www.tinycc.org/), which is then used to compile a
+little test C program. In the future, tinycc will be used to continue
+the chain and build a Linux kernel and GNU userspace, so that you will
+actually have a complete operating system entirely compiled from
+scratches at computer boot!
 
 Together with `boot_asmg.x86`, there will be also `boot_empty.x86`,
 `boot_asmasm.x86` and `boot_asmg0.x86` (see below for what they are)
@@ -65,7 +75,7 @@ hardware to an experimental program whose author is not an expert
 operating system programmer: it could have bugs and overwrite your
 disk, damage the hardware and whatever. I only run it on an old
 otherwise unused laptop that once belonged to my grandmother. No
-problem has ever become apparent, but I cannot vouch for yours!
+problem has ever become apparent, but care is never too much!
 
 If you use macOS you can build the `boot_*.x86` files, but not
 `boot.iso`, because I did not find a reasonable way to install
@@ -95,13 +105,33 @@ idea of what is happening, if you use the command above to boot
    library, for example to compile other G sources). The message
    `Hello, G!` is written to the log and immediately after other G
    sources are compiled, first to introduce some library code (like
-   malloc/free, code for handling dynamic vectors and maps and other
-   utilities) and then to compile the actual C compiler.
+   malloc/free, code for handling dynamic vectors and maps, some basic
+   disk/filesystem driver and other utilities) and then to compile an
+   Assembly compiler and a C compiler. These two compilers are not
+   meant to be complete: they are just enough to build the following
+   step, which is tinycc.
 
- * At last a suite of C test programs is compiled and executed. They
-   test the parts that have already been implemented of the C compiler
-   and the C standard library. In line of principle all the test
-   should pass and all `malloc`-s should be `free`-ed.
+ * Then a suite of C test programs is compiled and executed. They test
+   part of the C compiler and the C standard library. In line of
+   principle all the test should pass and all `malloc`-s should be
+   `free`-ed.
+
+ * After all tests have passed, tinycc is finally compiled. This takes
+   a bit (around 20 seconds on my machine, my KVM enable), because the
+   previous C compiler is quite inefficient. During preprocessing
+   progress is indicated by open and closed square brackets, which
+   indicate when a new file is included or finished to include. During
+   compilation (which consists of three stages), progress is indicated
+   by dots, where each dot correspons to a thousands tokens processed.
+
+ * At last, tinycc is ran, by mean of its `libtcc` interface. A small
+   test program is compiled and executed, showing a glimpse of the
+   third level of compiled code from the beginning of the `asmc` run.
+
+ * In the end some statistics are printed, hopefully showing that all
+   allocated memory have been deallocated (not that it matters much,
+   since the machine is going to be powered off anyway, but I like
+   resources to be deinitialized properly).
 
 ### How to fiddle with flags
 
