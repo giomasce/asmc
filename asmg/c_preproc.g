@@ -663,7 +663,9 @@ fun process_token_function 5 {
       tok "," strcmp 0 == "process_token_function: , expected" assert_msg ;
     }
   }
-  iptr iptr ** 1 - = ;
+  if args map_size 0 != {
+    iptr iptr ** 1 - = ;
+  }
 
   # Output tokens
   $i
