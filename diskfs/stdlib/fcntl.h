@@ -9,6 +9,7 @@
 #define O_CREAT (1 << 2)
 #define O_TRUNC (1 << 3)
 
+// STUB
 int open(const char *path, int oflag, ...) {
     return -1;
 }

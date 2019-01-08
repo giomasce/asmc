@@ -35,10 +35,12 @@ void abort() {
     longjmp(__return_jump_buf, 1);
 }
 
+// STUB
 char *getenv(const char *name) {
     return 0;
 }
 
+// STUB
 int setenv(const char *envname, const char *envval, int overwrite) {
     errno = ENOTIMPL;
     return -1;

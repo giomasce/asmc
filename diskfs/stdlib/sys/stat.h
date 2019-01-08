@@ -20,6 +20,7 @@
 #define S_ISGID 02000
 #define S_ISVTX 01000
 
+// STUB
 int chmod(const char *path, mode_t mode) {
     errno = ENOTIMPL;
     return -1;

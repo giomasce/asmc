@@ -36,6 +36,7 @@ char *itoa(unsigned int x) {
   return __handles->itoa(x);
 }
 
+// STUB
 int sscanf(const char *buffer, const char *format, ...) {
     abort();
 }
@@ -45,14 +46,17 @@ int fflush(FILE *stream) {
     return 0;
 }
 
+// STUB
 size_t fwrite(const void *buffer, size_t size, size_t count, FILE *stream) {
     abort();
 }
 
+// STUB
 FILE *fdopen(int fildes, const char *mode) {
     abort();
 }
 
+// STUB
 int fclose(FILE *stream) {
     abort();
 }

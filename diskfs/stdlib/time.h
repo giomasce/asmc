@@ -15,10 +15,12 @@ struct tm {
     int tm_isdst;
 };
 
+// STUB
 struct tm *localtime(const time_t *time) {
     abort();
 }
 
+// STUB
 time_t time(time_t *arg) {
     abort();
 }
