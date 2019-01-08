@@ -5,8 +5,9 @@
 
 #define _GNU_SOURCE
 #include <dlfcn.h>
+//#define TCC_TARGET_I386
 #define TCC_TARGET_X86_64 1
-#define CONFIG_TRIPLET "x86_64-linux-gnu"
+//#define CONFIG_TRIPLET "x86_64-linux-gnu"
 
 #else
 
@@ -31,11 +32,17 @@ int main(int argc, char *argv[]) {
     tcc_set_options(state, "-nostdlib -nostdinc");
     tcc_set_error_func(state, NULL, receive_error);
     tcc_set_output_type(state, TCC_OUTPUT_MEMORY);
-    res = tcc_compile_string(state, "int main() { return 1234; }");
+
+    printf("I will now compile and execute a small test program with tinycc!\n");
+
+    res = tcc_compile_string(state, "int gauss_sum(int max) { int sum = 0; for (int i = 0; i <= max; i++) sum += i; return sum; }");
     if (res) {
         printf("tcc_compile_string() failed\n");
         return 1;
     }
+
+    //tcc_output_file(state, "output.o");
+
     int size = tcc_relocate(state, NULL);
     if (size == -1) {
         printf("first tcc_relocate() failed\n");
@@ -47,16 +54,16 @@ int main(int argc, char *argv[]) {
         printf("second tcc_relocate() failed\n");
         return 1;
     }
-    int (*main_symbol)(int, char**) = tcc_get_symbol(state, "main");
-    if (!main_symbol) {
+
+    int (*gauss_sum)(int) = tcc_get_symbol(state, "gauss_sum");
+    if (!gauss_sum) {
         printf("tcc_get_symbol() failed\n");
         return 1;
     }
-    int ret = main_symbol(0, 0);
-    //int ret = tcc_run(state, 0, 0);
-    printf("Returned %d\n", ret);
-    //tcc_output_file(state, "tcc.out");
+    int ret = gauss_sum(100);
+    printf("The program returned %d!\n", ret);
     free(program);
+
     tcc_delete(state);
     return 0;
 }
