@@ -19,7 +19,7 @@ const TINYCC_LOAD_TOKENS 0
 
 fun compile_tinycc 0 {
   $filename
-  @filename "/disk1/tinycc/libtcc.c" = ;
+  @filename "/disk1/run_tcc.c" = ;
 
   # Preprocessing
   $ctx
@@ -29,10 +29,9 @@ fun compile_tinycc 0 {
   if TINYCC_LOAD_TOKENS {
     @tokens load_token_list_from_diskfs = ;
   } else {
-    ctx "ONE_SOURCE" "1" ppctx_define ;
-    ctx "USE_SOFTFLOAT" "1" ppctx_define ;
     ctx "double" "int" ppctx_define ;
     ctx filename ppctx_set_base_filename ;
+    ctx "/disk1/tinycc/" ppctx_add_include_path ;
     ctx "/disk1/tinycc/softfloat/" ppctx_add_include_path ;
     ctx "/disk1/tinycc/softfloat/include/" ppctx_add_include_path ;
     ctx "/disk1/tinycc/softfloat/8086/" ppctx_add_include_path ;
@@ -54,6 +53,20 @@ fun compile_tinycc 0 {
   cctx cctx_compile ;
 
   cctx cctx_print_stats ;
+
+  # Try to execute the code
+  "Executing compiled code...\n" 1 platform_log ;
+  $main_global
+  @main_global cctx "_start" cctx_get_global = ;
+  $main_addr
+  @main_addr main_global GLOBAL_LOC take = ;
+  $arg
+  @arg "_main" = ;
+  $res
+  @res @arg 1 main_addr \2 = ;
+  "It returned " 1 platform_log ;
+  res itoa 1 platform_log ;
+  "\n" 1 platform_log ;
 
   tokens free_vect_of_ptrs ;
   cctx cctx_destroy ;

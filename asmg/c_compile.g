@@ -436,6 +436,7 @@ fun cctx_setup_handles 1 {
   handles @free vector_push_back ;
   handles @realloc vector_push_back ;
   handles @itoa vector_push_back ;
+  handles @dump_stacktrace vector_push_back ;
 }
 
 fun cctx_setup_runtime 1 {
@@ -1141,6 +1142,9 @@ fun cctx_add_global 4 {
   if ctx CCTX_STAGE take 2 == {
     if loc 0xffffffff != {
       global GLOBAL_LOC take loc == "cctx_add_global: error 3" name assert_msg_str ;
+      if name **c '.' != {
+        name loc resolve_symbol_add ;
+      }
     }
   }
 

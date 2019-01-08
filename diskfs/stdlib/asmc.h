@@ -12,6 +12,7 @@ struct __handles_t {
   void (*free)(void *ptr);
   void *(*realloc)(void *ptr, size_t new_size);
   char *(*itoa)(unsigned int x);
+  void (*dump_stacktrace)();
 };
 
 struct __handles_t *__handles;

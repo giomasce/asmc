@@ -101,3 +101,70 @@ fun cmp_vect_of_ptrs 2 {
   }
   1 ret ;
 }
+
+$ext_symbols
+
+fun resolve_symbol_ext_closure 3 {
+  $ctx
+  $key
+  $value
+  @ctx 2 param = ;
+  @key 1 param = ;
+  @value 0 param = ;
+
+  $target_value
+  $best_key
+  $best_value
+  @target_value ctx 8 + ** = ;
+  @best_key ctx 4 + ** = ;
+  @best_value ctx ** = ;
+
+  if value target_value <= {
+    if best_value value < {
+      ctx 4 + key = ;
+      ctx value = ;
+    }
+  }
+}
+
+fun resolve_symbol_ext 3 {
+  $loc
+  $nameptr
+  $offptr
+  @loc 2 param = ;
+  @nameptr 1 param = ;
+  @offptr 0 param = ;
+
+  $target_value
+  $best_key
+  $best_value
+  @target_value loc = ;
+  @best_key 0 = ;
+  @best_value 0 = ;
+
+  ext_symbols @resolve_symbol_ext_closure @best_value map_foreach ;
+
+  nameptr best_key = ;
+  offptr target_value best_value - = ;
+
+  0 best_value != ret ;
+}
+
+fun resolve_symbol_add 2 {
+  $name
+  $loc
+  @name 1 param = ;
+  @loc 0 param = ;
+
+  ext_symbols name loc map_set ;
+}
+
+fun init_resolve_symbol_ext 0 {
+  @ext_symbols map_init = ;
+  @_resolve_symbol_ext @resolve_symbol_ext = ;
+}
+
+fun destroy_resolve_symbol_ext 0 {
+  ext_symbols map_destroy ;
+  @_resolve_symbol_ext 0 = ;
+}

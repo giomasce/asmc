@@ -21,6 +21,10 @@ fun realloc 2 {
   @newsize 1 param = ;
   @ptr 0 param = ;
 
+  if ptr 0 == {
+    newsize malloc ret ;
+  }
+
   $size
   @size ptr _malloc_get_size = ;
   $newptr

@@ -32,11 +32,13 @@ $kmalloc_size_tot
 $kmalloc_req_num
 $kmalloc_req_size
 
-fun _bucket_actual_size 1 {
+fun _bucket_actual_size 2 {
+  $buf
   $bucket
+  @buf 1 param = ;
   @bucket 0 param = ;
 
-  0 bucket <= bucket KMALLOC_NBUCKETS < && "_bucket_actual_size: invalid bucket number" assert_msg ;
+  0 bucket <= bucket KMALLOC_NBUCKETS < && "_bucket_actual_size: invalid bucket number" buf bucket assert_msg_int_int ;
 
   $actual
   @actual 1 bucket 3 + << = ;
@@ -74,7 +76,7 @@ fun malloc 1 {
   $cont
   @cont 1 = ;
   while cont {
-    @actual bucket _bucket_actual_size = ;
+    @actual 0 bucket _bucket_actual_size = ;
     if size 4 + actual <= {
       @cont 0 = ;
     } else {
@@ -114,7 +116,7 @@ fun free 1 {
   $bucket
   @bucket ptr ** = ;
   # Just for checking that the bucket number is valid
-  bucket _bucket_actual_size ;
+  buf bucket _bucket_actual_size ;
 
   ptr kmalloc_buckets 4 bucket * + ** = ;
   kmalloc_buckets 4 bucket * + ptr = ;
@@ -131,7 +133,7 @@ fun _malloc_get_size 1 {
   @bucket ptr ** = ;
 
   $actual
-  @actual bucket _bucket_actual_size = ;
+  @actual buf bucket _bucket_actual_size = ;
   $size
   @size actual 4 - = ;
   size ret ;

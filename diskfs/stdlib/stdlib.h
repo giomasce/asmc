@@ -32,6 +32,7 @@ void exit(int return_code) {
 void abort() {
     __return_code = -1;
     __aborted = 1;
+    __handles->dump_stacktrace();
     longjmp(__return_jump_buf, 1);
 }
 

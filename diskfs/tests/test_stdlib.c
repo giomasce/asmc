@@ -55,6 +55,12 @@ int test_free_null() {
   return 1;
 }
 
+int test_realloc_null_free() {
+    char *ptr = realloc(NULL, 100);
+    free(ptr);
+    return ptr != NULL;
+}
+
 static int compare( const void * left, const void * right )
 {
     return *( (unsigned char *)left ) - *( (unsigned char *)right );

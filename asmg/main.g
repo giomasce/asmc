@@ -245,6 +245,10 @@ fun main 0 {
     "Support for int64 initialized!\n" 1 platform_log ;
   }
 
+  "Initializing resolve_symbol_ext...\n" 1 platform_log ;
+  0 "init_resolve_symbol_ext" platform_get_symbol \0 ;
+  "done!\n" 1 platform_log ;
+
   # Determine if there is an actual script
   $script_file
   @script_file "/init/script.g" 0 "vfs_open" platform_get_symbol \1 = ;
@@ -315,6 +319,10 @@ fun main 0 {
     0 "int64_destroy" platform_get_symbol \0 ;
     "done!\n" 1 platform_log ;
   }
+
+  "Destroying resolve_symbol_ext... " 1 platform_log ;
+  0 "destroy_resolve_symbol_ext" platform_get_symbol \0 ;
+  "done!\n" 1 platform_log ;
 
   "Destroying Virtual File System... " 1 platform_log ;
   0 "vfs_destroy" platform_get_symbol \0 ;

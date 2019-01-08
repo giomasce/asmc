@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+$_resolve_symbol_ext
+
 fun resolve_symbol 3 {
   $loc
   $nameptr
@@ -22,6 +24,15 @@ fun resolve_symbol 3 {
   @loc 2 param = ;
   @nameptr 1 param = ;
   @offptr 0 param = ;
+
+  $res
+  @res 0 = ;
+  if _resolve_symbol_ext {
+    @res loc nameptr offptr _resolve_symbol_ext \3 = ;
+  }
+  if res {
+    ret ;
+  }
 
   $i
   @i 0 = ;

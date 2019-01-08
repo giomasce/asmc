@@ -38,7 +38,7 @@ char *itoa(unsigned int x) {
 
 // STUB
 int sscanf(const char *buffer, const char *format, ...) {
-    abort();
+    return 0;
 }
 
 int fflush(FILE *stream) {
