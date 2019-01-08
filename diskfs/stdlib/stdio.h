@@ -36,32 +36,12 @@ char *itoa(unsigned int x) {
   return __handles->itoa(x);
 }
 
-int sprintf(char *buffer, const char *format, ...) {
-    abort();
-}
-
-int snprintf(char *buffer, size_t bufsz, const char *format, ...) {
-    abort();
-}
-
-int vsnprintf(char *buffer, size_t bufsz, const char *format, va_list vlist) {
-    abort();
-}
-
-int printf(const char *format, ...) {
-    abort();
-}
-
-int fprintf(FILE *stream, const char *format, ...) {
-    abort();
-}
-
 int sscanf(const char *buffer, const char *format, ...) {
     abort();
 }
 
 int fflush(FILE *stream) {
-    // Our FILE has not buffer, so there is nothing to flush
+    // Our FILE has no buffer, so there is nothing to flush
     return 0;
 }
 
@@ -76,6 +56,8 @@ FILE *fdopen(int fildes, const char *mode) {
 int fclose(FILE *stream) {
     abort();
 }
+
+#include "_printf.h"
 
 #define SEEK_CUR 0
 #define SEEK_END 1

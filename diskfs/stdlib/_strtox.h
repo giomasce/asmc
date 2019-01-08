@@ -4,10 +4,9 @@
 #include "string.h"
 #include "errno.h"
 #include "limits.h"
+#include "_digits.h"
 
 // All code in this file was taken from PDClib
-
-const char _digits[] = "0123456789abcdefghijklmnopqrstuvwxyz";
 
 intmax_t _atomax( const char * s )
 {

@@ -2,6 +2,8 @@
 #define __STDLIB_H
 
 void abort();
+int abs(int j);
+long int strtol( const char * s, char ** endptr, int base );
 
 #include "asmc.h"
 #include "errno.h"
@@ -40,6 +42,12 @@ char *getenv(const char *name) {
 int setenv(const char *envname, const char *envval, int overwrite) {
     errno = ENOTIMPL;
     return -1;
+}
+
+// From PDClib
+int abs( int j )
+{
+    return ( j >= 0 ) ? j : -j;
 }
 
 #include "_qsort.h"
