@@ -1,7 +1,7 @@
 #ifndef __STRING_H
 #define __STRING_H
 
-#include "asmc.h"
+#include "asmc_types.h"
 
 int strcmp(const char *x, const char *y) {
   while (1) {
@@ -149,6 +149,21 @@ char * strrchr( const char * s, int c )
             return (char *) s + i;
         }
     } while ( i );
+    return NULL;
+}
+
+// From PDClib
+void * memchr( const void * s, int c, size_t n )
+{
+    const unsigned char * p = (const unsigned char *) s;
+    while ( n-- )
+    {
+        if ( *p == (unsigned char) c )
+        {
+            return (void *) p;
+        }
+        ++p;
+    }
     return NULL;
 }
 
