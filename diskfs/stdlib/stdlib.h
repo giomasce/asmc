@@ -51,6 +51,12 @@ int setenv(const char *envname, const char *envval, int overwrite) {
     return -1;
 }
 
+// STUB
+int mkstemp(char *template) {
+    errno = ENOTIMPL;
+    return -1;
+}
+
 // From PDClib
 int abs( int j )
 {

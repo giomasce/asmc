@@ -167,4 +167,16 @@ void * memchr( const void * s, int c, size_t n )
     return NULL;
 }
 
+// From PDClib
+char * strcat( char * s1, const char * s2 )
+{
+    char * rc = s1;
+    if ( *s1 )
+    {
+        while ( *++s1 );
+    }
+    while ( (*s1++ = *s2++) );
+    return rc;
+}
+
 #endif

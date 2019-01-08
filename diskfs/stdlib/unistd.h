@@ -46,4 +46,10 @@ int close(int fildes) {
     return -1;
 }
 
+// STUB
+int ftruncate(int fildes, off_t length) {
+    errno = ENOTIMPL;
+    return -1;
+}
+
 #endif

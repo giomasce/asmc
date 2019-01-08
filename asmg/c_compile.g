@@ -1331,7 +1331,7 @@ fun cctx_parse_struct 3 {
       ctx cctx_give_back_token ;
       $type_idx
       @type_idx ctx cctx_parse_type = ;
-      type_idx 0xffffffff != "cctx_parse_struct: type expected" assert_msg ;
+      type_idx 0xffffffff != "cctx_parse_struct: type expected" tok assert_msg_str ;
       $cont2
       @cont2 1 = ;
       while cont2 {
@@ -5865,7 +5865,7 @@ fun cctx_compile_line 1 {
 
   $type_idx
   @type_idx ctx cctx_parse_type = ;
-  type_idx 0xffffffff != "cctx_compile: type expected" assert_msg ;
+  type_idx 0xffffffff != "cctx_compile: type expected" tok assert_msg_str ;
   @tok ctx cctx_get_token_or_fail = ;
   if tok ";" strcmp 0 == {
     @cont 0 = ;
