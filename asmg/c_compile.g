@@ -1509,7 +1509,13 @@ fun cctx_parse_type 1 {
   }
   if tok "long" strcmp 0 == {
     @tok ctx cctx_get_token_or_fail = ;
-    if tok "long" strcmp 0 == { TYPE_LONG ret ; }
+    if tok "int" strcmp 0 == { TYPE_LONG ret ; }
+    if tok "long" strcmp 0 == {
+      @tok ctx cctx_get_token_or_fail = ;
+      if tok "int" strcmp 0 == { TYPE_LONG ret ; }
+      ctx cctx_give_back_token ;
+      TYPE_LONG ret ;
+    }
     ctx cctx_give_back_token ;
     TYPE_LONG ret ;
   }

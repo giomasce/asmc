@@ -980,9 +980,9 @@ fun preproc_process_define 4 {
     $subst2
     @subst2 ctx PPCTX_DEFINES take ident map_at = ;
     # Check that the two definitions are identical
-    subst SUBST_IS_FUNCTION take subst2 SUBST_IS_FUNCTION take == "preproc_process_define: redefining macro with a different is_function value" assert_msg ;
-    subst SUBST_PARAMETERS take subst2 SUBST_PARAMETERS take cmp_vect_of_ptrs "preproc_process_define: redefining macro with different parameters" assert_msg ;
-    subst SUBST_REPLACEMENT take subst2 SUBST_REPLACEMENT take cmp_vect_of_ptrs "preproc_process_define: redefining macro with different replacement" assert_msg ;
+    subst SUBST_IS_FUNCTION take subst2 SUBST_IS_FUNCTION take == "preproc_process_define: redefining macro with a different is_function value" ident assert_msg_str ;
+    subst SUBST_PARAMETERS take subst2 SUBST_PARAMETERS take cmp_vect_of_ptrs "preproc_process_define: redefining macro with different parameters" ident assert_msg_str ;
+    subst SUBST_REPLACEMENT take subst2 SUBST_REPLACEMENT take cmp_vect_of_ptrs "preproc_process_define: redefining macro with different replacement" ident assert_msg_str ;
     subst2 subst_destroy ;
     ctx PPCTX_DEFINES take ident map_erase ;
   }
