@@ -76,7 +76,8 @@ do { \
 static void intformat( intmax_t value, struct _status_t * status )
 {
     /* At worst, we need two prefix characters (hex prefix). */
-    char preface[3] = "\0";
+    char preface[3];
+    memset(preface, 0, 3);
     size_t preidx = 0;
     if ( status->prec < 0 )
     {

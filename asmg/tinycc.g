@@ -53,6 +53,8 @@ fun compile_tinycc 0 {
   #cctx CCTX_DEBUG_AFTER take_addr 1000 "..................................................................................................................................................................................." strlen 1 - * = ;
   cctx cctx_compile ;
 
+  cctx cctx_print_stats ;
+
   tokens free_vect_of_ptrs ;
   cctx cctx_destroy ;
   ctx ppctx_destroy ;

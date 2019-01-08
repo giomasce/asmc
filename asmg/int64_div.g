@@ -153,9 +153,6 @@ fun i64_sdiv 2 {
   $tmp1
   $tmp2_
   $tmp2
-  $zero_
-  $zero
-  @zero 0 i64_from_u32 ;
 
   @tmp1 n i64_copy ;
   if tmp1_ 0x80000000 & {
@@ -169,8 +166,11 @@ fun i64_sdiv 2 {
     @sign sign 1 ^ = ;
   }
 
-  tmp1_ 0x80000000 & ! "i64_sdiv: error 1" assert_msg ;
-  tmp2_ 0x80000000 & ! "i64_sdiv: error 1" assert_msg ;
+  # If one of the operand already has the minimum possible value, it
+  # does not become positive by negation, but it becomes the right
+  # thing anyway
+  tmp1_ 0x80000000 & ! tmp1_ 0x80000000 == || "i64_sdiv: error 1" assert_msg ;
+  tmp2_ 0x80000000 & ! tmp2_ 0x80000000 == || "i64_sdiv: error 2" assert_msg ;
   @tmp1 @tmp2 i64_udiv ;
   if sign {
     @tmp1 i64_neg ;

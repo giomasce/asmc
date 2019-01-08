@@ -46,3 +46,44 @@ int test_putc() {
   ret = putc('X', stdout);
   return ret == 'X';
 }
+
+int test_sprintf() {
+    char buf[1024];
+    sprintf(buf, "%d %ld %lld", 123, 123L, 123LL);
+    if (strcmp(buf, "123 123 123") != 0) return 0;
+    sprintf(buf, "%d %ld %lld", -123, -123L, -123LL);
+    if (strcmp(buf, "-123 -123 -123") != 0) return 0;
+    sprintf(buf, "%u %lu %llu", 123U, 123UL, 123ULL);
+    if (strcmp(buf, "123 123 123") != 0) return 0;
+    return 1;
+}
+
+int test_printf() {
+    printf("hello\n");
+    char *s = "world";
+    printf("hello %s\n", s);
+    return 1;
+}
+
+int test_large_numbers() {
+    char buf[1024];
+    sprintf(buf, "%d", INT_MAX);
+    if (strtol(buf, NULL, 10) != INT_MAX) return 0;
+    sprintf(buf, "%d", INT_MIN);
+    if (strtol(buf, NULL, 10) != INT_MIN) return 0;
+    sprintf(buf, "%u", UINT_MAX);
+    if (strtoul(buf, NULL, 10) != UINT_MAX) return 0;
+    sprintf(buf, "%ld", LONG_MAX);
+    if (strtol(buf, NULL, 10) != LONG_MAX) return 0;
+    sprintf(buf, "%ld", LONG_MIN);
+    if (strtol(buf, NULL, 10) != LONG_MIN) return 0;
+    sprintf(buf, "%lu", ULONG_MAX);
+    if (strtoul(buf, NULL, 10) != ULONG_MAX) return 0;
+    sprintf(buf, "%lld", LLONG_MAX);
+    if (strtol(buf, NULL, 10) != LLONG_MAX) return 0;
+    sprintf(buf, "%lld", LLONG_MIN);
+    if (strtol(buf, NULL, 10) != LLONG_MIN) return 0;
+    sprintf(buf, "%llu", ULLONG_MAX);
+    if (strtoul(buf, NULL, 10) != ULLONG_MAX) return 0;
+    return 1;
+}

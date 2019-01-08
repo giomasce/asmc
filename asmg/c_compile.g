@@ -627,6 +627,12 @@ fun dump_global_closure 3 {
   @key 1 param = ;
   @value 0 param = ;
 
+  # Ignore globals starting with a dot, which are internal labels and
+  # unlikely to give useful insights
+  if key **c '.' == {
+    ret ;
+  }
+
   "Global " 1 platform_log ;
   key 1 platform_log ;
   ": " 1 platform_log ;
@@ -641,6 +647,18 @@ fun cctx_dump_globals 1 {
   $globals
   @globals ctx CCTX_GLOBALS take = ;
   globals @dump_global_closure 0 map_foreach ;
+}
+
+fun cctx_print_stats 1 {
+  $ctx
+  @ctx 0 param = ;
+
+  ctx CCTX_GLOBALS take map_size itoa 1 platform_log ;
+  " globals were generated (including internal labels)\n" 1 platform_log ;
+  ctx CCTX_TYPENAMES take map_size itoa 1 platform_log ;
+  " type names were generated\n" 1 platform_log ;
+  ctx CCTX_TYPES take vector_size itoa 1 platform_log ;
+  " types were generated\n" 1 platform_log ;
 }
 
 ifun cctx_type_compare 3
@@ -2731,7 +2749,7 @@ fun ast_strtoll 1 {
   # Ok, now we are ready to assign a type to the expression
   $type_idx
   if u_num 1 == {
-    if l_num 1 <= {
+    if l_num 1 >= {
        @type_idx TYPE_ULONG = ;
     } else {
       if value TYPE_UINT i64_fits_in {
@@ -3011,6 +3029,11 @@ fun ast_eval_type 3 {
 
     if name "=" strcmp 0 == {
       @type_idx ast AST_LEFT take ctx lctx ast_eval_type = ;
+      $orig_type_idx
+      @orig_type_idx ast AST_LEFT take AST_ORIG_TYPE_IDX take = ;
+      if orig_type_idx 0xffffffff != {
+        ctx orig_type_idx cctx_get_type TYPE_KIND take TYPE_KIND_ARRAY != "ast_eval_type: cannot assign to array" assert_msg ;
+      }
       @processed 1 = ;
     }
 
@@ -6028,15 +6051,17 @@ fun parse_c 1 {
   # Compilation
   $cctx
   @cctx tokens cctx_init = ;
+  cctx CCTX_DEBUG take_addr 0 = ;
   cctx cctx_compile ;
 
   # Debug output
-  "TYPES TABLE\n" 1 platform_log ;
-  cctx cctx_dump_types ;
-  "TYPE NAMES TABLE\n" 1 platform_log ;
-  cctx cctx_dump_typenames ;
-  "GLOBALS TABLE\n" 1 platform_log ;
-  cctx cctx_dump_globals ;
+  # "TYPES TABLE\n" 1 platform_log ;
+  # cctx cctx_dump_types ;
+  # "TYPE NAMES TABLE\n" 1 platform_log ;
+  # cctx cctx_dump_typenames ;
+  # "GLOBALS TABLE\n" 1 platform_log ;
+  # cctx cctx_dump_globals ;
+  cctx cctx_print_stats ;
 
   # Try to execute the code
   "Executing compiled code...\n" 1 platform_log ;

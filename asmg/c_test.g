@@ -177,11 +177,15 @@ fun c_run_testcases 0 {
   tests "/disk1/tests/test_stdio.c" "test_putchar" 1 "X" c_run_testcase ;
   tests "/disk1/tests/test_stdio.c" "test_fputc" 1 "X" c_run_testcase ;
   tests "/disk1/tests/test_stdio.c" "test_putc" 1 "X" c_run_testcase ;
+  tests "/disk1/tests/test_stdio.c" "test_sprintf" 1 "" c_run_testcase ;
+  tests "/disk1/tests/test_stdio.c" "test_printf" 1 "hello\nhello world\n" c_run_testcase ;
+  tests "/disk1/tests/test_stdio.c" "test_large_numbers" 1 "" c_run_testcase ;
 
   tests "/disk1/tests/test_stdlib.c" "test_malloc_free" 1 "" c_run_testcase ;
   tests "/disk1/tests/test_stdlib.c" "test_calloc_free" 1 "" c_run_testcase ;
   tests "/disk1/tests/test_stdlib.c" "test_malloc_realloc_free" 1 "" c_run_testcase ;
   tests "/disk1/tests/test_stdlib.c" "test_free_null" 1 "" c_run_testcase ;
+  tests "/disk1/tests/test_stdlib.c" "test_qsort" 1 "" c_run_testcase ;
 
   tests "/disk1/tests/test_string.c" "test_strcmp1" 1 "" c_run_testcase ;
   tests "/disk1/tests/test_string.c" "test_strcmp2" 1 "" c_run_testcase ;

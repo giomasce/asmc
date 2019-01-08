@@ -54,3 +54,29 @@ int test_free_null() {
   free(0);
   return 1;
 }
+
+static int compare( const void * left, const void * right )
+{
+    return *( (unsigned char *)left ) - *( (unsigned char *)right );
+}
+
+char presort[] = "shreicnyjqpvozxmbt";
+char sorted1[] = "bcehijmnopqrstvxyz";
+char sorted2[] = "bticjqnyozpvreshxm";
+
+// From PDClib
+int test_qsort() {
+    char s[19];
+    strcpy( s, presort );
+    qsort( s, 18, 1, compare );
+    if ( strcmp( s, sorted1 ) != 0 ) return 0;
+    strcpy( s, presort );
+    qsort( s, 9, 2, compare );
+    if ( strcmp( s, sorted2 ) != 0 ) return 0;
+    strcpy( s, presort );
+    qsort( s, 1, 1, compare );
+    if ( strcmp( s, presort ) != 0 ) return 0;
+    qsort( s, 100, 0, compare );
+    if ( strcmp( s, presort ) != 0 ) return 0;
+    return 1;
+}
