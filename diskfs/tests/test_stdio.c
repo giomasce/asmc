@@ -65,6 +65,15 @@ int test_printf() {
     return 1;
 }
 
+int test_sscanf() {
+    int i1, i2, i3;
+    int res = sscanf("2.3.5", "%d.%d.%d", &i1, &i2, &i3);
+    if (i1 != 2) return 0;
+    if (i2 != 3) return 0;
+    if (i3 != 5) return 0;
+    return 1;
+}
+
 int test_large_numbers() {
     char buf[1024];
     sprintf(buf, "%d", INT_MAX);

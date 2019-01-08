@@ -24,4 +24,8 @@
 typedef int ssize_t;
 typedef unsigned int size_t;
 
+typedef struct {
+  int fd;
+} FILE;
+
 #endif

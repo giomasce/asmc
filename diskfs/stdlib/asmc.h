@@ -17,10 +17,6 @@ struct __handles_t {
 
 struct __handles_t *__handles;
 
-typedef struct {
-  int fd;
-} FILE;
-
 FILE __stdout = {1};
 FILE *stdout;
 FILE __stderr = {2};

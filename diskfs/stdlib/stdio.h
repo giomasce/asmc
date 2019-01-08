@@ -4,8 +4,9 @@
 #include "asmc.h"
 #include "stdlib.h"
 #include "stdarg.h"
+#include "assert.h"
 
-#define EOF (0-1)
+#define EOF (-1)
 
 int fputc(int c, FILE *s) {
   __handles->platform_write_char(s->fd, c);
@@ -32,13 +33,18 @@ int puts(const char *s) {
   return fputs(s, stdout);
 }
 
-char *itoa(unsigned int x) {
-  return __handles->itoa(x);
+int getc(FILE *stream) {
+    // File reading has not been implemented so far
+    return EOF;
 }
 
-// STUB
-int sscanf(const char *buffer, const char *format, ...) {
-    return 0;
+int ungetc(int c, FILE *stream) {
+    // File reading has not been implemented so far
+    return EOF;
+}
+
+char *itoa(unsigned int x) {
+  return __handles->itoa(x);
 }
 
 int fflush(FILE *stream) {
@@ -46,22 +52,35 @@ int fflush(FILE *stream) {
     return 0;
 }
 
-// STUB
 size_t fwrite(const void *buffer, size_t size, size_t count, FILE *stream) {
-    abort();
+    char *buf = buffer;
+    size *= count;
+    while (size--) {
+        fputc(*buf++, stream);
+    }
 }
 
-// STUB
 FILE *fdopen(int fildes, const char *mode) {
-    abort();
+    if (*mode == 'r' && *(mode+1) == 0) {
+        FILE *ret = malloc(sizeof(FILE));
+        ret->fd = fildes;
+        return ret;
+    } else {
+        _force_assert(!"can only open file in read mode");
+    }
 }
 
-// STUB
 int fclose(FILE *stream) {
-    abort();
+    if (stream == stdout || stream == stderr) {
+        // Nothing to do here...
+    } else {
+        // FIXME: pass close to underlying fd
+        free(stream);
+    }
 }
 
 #include "_printf.h"
+#include "_scanf.h"
 
 #define SEEK_CUR 0
 #define SEEK_END 1

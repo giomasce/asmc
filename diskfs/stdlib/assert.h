@@ -7,6 +7,9 @@
 #define assert(condition) ((void)((condition) || __assertion_failed(#condition)))
 #endif
 
+#undef _force_assert
+#define _force_assert(condition) ((void)((condition) || __assertion_failed(#condition)))
+
 #ifndef __ASSERTION_FAILED
 #define __ASSERTION_FAILED
 

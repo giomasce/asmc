@@ -1,9 +1,13 @@
 #ifndef __STDLIB_H
 #define __STDLIB_H
 
+#include "asmc_types.h"
+
 void abort();
 int abs(int j);
 long int strtol( const char * s, char ** endptr, int base );
+void *malloc(size_t size);
+void free(void *ptr);
 
 #include "asmc.h"
 #include "errno.h"

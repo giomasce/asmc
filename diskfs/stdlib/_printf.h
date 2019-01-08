@@ -709,3 +709,24 @@ int sprintf( char * s, const char * format, ...)
     va_end( ap );
     return rc;
 }
+
+#undef E_minus
+#undef E_plus
+#undef E_alt
+#undef E_space
+#undef E_zero
+#undef E_done
+
+#undef E_char
+#undef E_short
+#undef E_long
+#undef E_llong
+#undef E_intmax
+#undef E_size
+#undef E_ptrdiff
+#undef E_pointer
+
+#undef E_ldouble
+
+#undef E_lower
+#undef E_unsigned
