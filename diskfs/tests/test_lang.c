@@ -362,6 +362,10 @@ int test_sizeof() {
 
     if (sizeof "1234" != 5) return 0;
 
+    if (sizeof(float) != 4) return 0;
+    if (sizeof(double) != 8) return 0;
+    if (sizeof(long double) != 12) return 0;
+
     return 1;
 }
 

@@ -1039,8 +1039,15 @@ const TYPE_ULONG 9
 const TYPE_BOOL 10
 const TYPE_LAST_INTEGER 10
 
-const TYPE_CHAR_ARRAY 11
-const TYPE_VOID_PTR 12
+# Floating point numbers are not supported, but at least the compiler
+# is able to tell their sizes
+const TYPE_FLOAT 11
+const TYPE_DOUBLE 12
+const TYPE_LDOUBLE 13
+
+# Other useful types
+const TYPE_CHAR_ARRAY 14
+const TYPE_VOID_PTR 15
 
 fun is_integer_type 1 {
   $idx
@@ -1084,6 +1091,10 @@ fun cctx_create_basic_types 1 {
   ctx TYPE_UINT 4 cctx_create_basic_type ;
   ctx TYPE_ULONG 8 cctx_create_basic_type ;
   ctx TYPE_BOOL 4 cctx_create_basic_type ;
+
+  ctx TYPE_FLOAT 4 cctx_create_basic_type ;
+  ctx TYPE_DOUBLE 8 cctx_create_basic_type ;
+  ctx TYPE_LDOUBLE 12 cctx_create_basic_type ;
 
   ctx TYPE_CHAR 0xffffffff cctx_get_array_type TYPE_CHAR_ARRAY == "cctx_create_basic_types: error 1" assert_msg ;
   ctx TYPE_VOID cctx_get_pointer_type TYPE_VOID_PTR == "cctx_create_basic_types: error 2" assert_msg ;
@@ -1505,6 +1516,8 @@ fun cctx_parse_type 1 {
   if tok "char" strcmp 0 == { TYPE_CHAR ret ; }
   if tok "short" strcmp 0 == { TYPE_SHORT ret ; }
   if tok "int" strcmp 0 == { TYPE_INT ret ; }
+  if tok "float" strcmp 0 == { TYPE_FLOAT ret ; }
+  if tok "double" strcmp 0 == { TYPE_DOUBLE ret ; }
   if tok "signed" strcmp 0 == {
     @tok ctx cctx_get_token_or_fail = ;
     if tok "char" strcmp 0 == { TYPE_SCHAR ret ; }
@@ -1548,6 +1561,7 @@ fun cctx_parse_type 1 {
   if tok "long" strcmp 0 == {
     @tok ctx cctx_get_token_or_fail = ;
     if tok "int" strcmp 0 == { TYPE_LONG ret ; }
+    if tok "double" strcmp 0 == { TYPE_LDOUBLE ret ; }
     if tok "long" strcmp 0 == {
       @tok ctx cctx_get_token_or_fail = ;
       if tok "int" strcmp 0 == { TYPE_LONG ret ; }
