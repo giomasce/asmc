@@ -20,7 +20,7 @@ int test_ptr_assign() {
     if (x != 1000) return 0;
     if ((x += 50) != 1200) return 0;
     if (x != 1200) return 0;
-    long *y = 10000;
+    long long *y = 10000;
     if (y != 10000) return 0;
     if ((y -= 10) != 9920) return 0;
     if (y != 9920) return 0;
@@ -33,12 +33,12 @@ int test_int_assign() {
     if ((x += 50) != 1050) return 0;
     if (x != 1050) return 0;
 
-    long y = 10000;
+    long long y = 10000;
     if (y != 10000) return 0;
     if ((y -= 10) != 9990) return 0;
     if (y != 9990) return 0;
 
-    long y = 10000;
+    long long y = 10000;
     if (y != 10000) return 0;
     if ((y <<= 4) != 16 * 10000) return 0;
     if (y != 16 * 10000) return 0;

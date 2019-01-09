@@ -1525,7 +1525,7 @@ fun cctx_parse_type 1 {
     if tok "int" strcmp 0 == { TYPE_INT ret ; }
     if tok "long" strcmp 0 == {
       @tok ctx cctx_get_token_or_fail = ;
-      if tok "int" strcmp 0 == { TYPE_LONG ret ; }
+      if tok "int" strcmp 0 == { TYPE_INT ret ; }
       if tok "long" strcmp 0 == {
         @tok ctx cctx_get_token_or_fail = ;
         if tok "int" strcmp 0 == { TYPE_LONG ret ; }
@@ -1533,7 +1533,7 @@ fun cctx_parse_type 1 {
         TYPE_LONG ret ;
       }
       ctx cctx_give_back_token ;
-      TYPE_LONG ret ;
+      TYPE_INT ret ;
     }
     ctx cctx_give_back_token ;
     TYPE_INT ret ;
@@ -1545,7 +1545,7 @@ fun cctx_parse_type 1 {
     if tok "int" strcmp 0 == { TYPE_UINT ret ; }
     if tok "long" strcmp 0 == {
       @tok ctx cctx_get_token_or_fail = ;
-      if tok "int" strcmp 0 == { TYPE_ULONG ret ; }
+      if tok "int" strcmp 0 == { TYPE_UINT ret ; }
       if tok "long" strcmp 0 == {
         @tok ctx cctx_get_token_or_fail = ;
         if tok "int" strcmp 0 == { TYPE_ULONG ret ; }
@@ -1553,14 +1553,14 @@ fun cctx_parse_type 1 {
         TYPE_ULONG ret ;
       }
       ctx cctx_give_back_token ;
-      TYPE_ULONG ret ;
+      TYPE_UINT ret ;
     }
     ctx cctx_give_back_token ;
     TYPE_UINT ret ;
   }
   if tok "long" strcmp 0 == {
     @tok ctx cctx_get_token_or_fail = ;
-    if tok "int" strcmp 0 == { TYPE_LONG ret ; }
+    if tok "int" strcmp 0 == { TYPE_INT ret ; }
     if tok "double" strcmp 0 == { TYPE_LDOUBLE ret ; }
     if tok "long" strcmp 0 == {
       @tok ctx cctx_get_token_or_fail = ;
@@ -1569,7 +1569,7 @@ fun cctx_parse_type 1 {
       TYPE_LONG ret ;
     }
     ctx cctx_give_back_token ;
-    TYPE_LONG ret ;
+    TYPE_INT ret ;
   }
 
   if tok "struct" strcmp 0 == {
@@ -2783,7 +2783,7 @@ fun ast_strtoll 1 {
   # Ok, now we are ready to assign a type to the expression
   $type_idx
   if u_num 1 == {
-    if l_num 1 >= {
+    if l_num 2 == {
        @type_idx TYPE_ULONG = ;
     } else {
       if value TYPE_UINT i64_fits_in {
@@ -2804,35 +2804,27 @@ fun ast_strtoll 1 {
         }
       }
     } else {
-      if l_num 1 == {
-        if value TYPE_LONG i64_fits_in {
-          @type_idx TYPE_LONG = ;
+      if dec {
+        if value TYPE_INT i64_fits_in {
+          @type_idx TYPE_INT = ;
         } else {
-          @type_idx TYPE_ULONG = ;
+          if value TYPE_LONG i64_fits_in {
+            @type_idx TYPE_LONG = ;
+          } else {
+            @type_idx TYPE_ULONG = ;
+          }
         }
       } else {
-        if dec {
-          if value TYPE_INT i64_fits_in {
-            @type_idx TYPE_INT = ;
+        if value TYPE_INT i64_fits_in {
+          @type_idx TYPE_INT = ;
+        } else {
+          if value TYPE_UINT i64_fits_in {
+            @type_idx TYPE_UINT = ;
           } else {
             if value TYPE_LONG i64_fits_in {
               @type_idx TYPE_LONG = ;
             } else {
               @type_idx TYPE_ULONG = ;
-            }
-          }
-        } else {
-          if value TYPE_INT i64_fits_in {
-            @type_idx TYPE_INT = ;
-          } else {
-            if value TYPE_UINT i64_fits_in {
-              @type_idx TYPE_UINT = ;
-            } else {
-              if value TYPE_LONG i64_fits_in {
-                @type_idx TYPE_LONG = ;
-              } else {
-                @type_idx TYPE_ULONG = ;
-              }
             }
           }
         }

@@ -29,13 +29,13 @@ int compute_int_sum(int count, ...) {
     return sum;
 }
 
-long compute_long_sum(int count, ...) {
+long long compute_llong_sum(int count, ...) {
     va_list v;
     va_start(v, count);
     int i;
-    long sum = 0;
+    long long sum = 0;
     for (i = 0; i < count; i++) {
-        sum += va_arg(v, long);
+        sum += va_arg(v, long long);
     }
     va_end(v);
     return sum;
@@ -61,7 +61,7 @@ int compute_int_sum_twice(int count, ...) {
 
 int test_stdarg() {
     if (compute_int_sum(5, 1, 2, 3, 4, 5) != 15) return 0;
-    if (compute_long_sum(5, 1l, 2l, 3l, 4l, 5l) != 15) return 0;
+    if (compute_llong_sum(5, 1ll, 2ll, 3ll, 4ll, 5ll) != 15) return 0;
     if (compute_int_sum_twice(5, 1, 2, 3, 4, 5) != 30) return 0;
     return 1;
 }

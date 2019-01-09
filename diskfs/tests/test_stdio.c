@@ -89,10 +89,10 @@ int test_large_numbers() {
     sprintf(buf, "%lu", ULONG_MAX);
     if (strtoul(buf, NULL, 10) != ULONG_MAX) return 0;
     sprintf(buf, "%lld", LLONG_MAX);
-    if (strtol(buf, NULL, 10) != LLONG_MAX) return 0;
+    if (strtoll(buf, NULL, 10) != LLONG_MAX) return 0;
     sprintf(buf, "%lld", LLONG_MIN);
-    if (strtol(buf, NULL, 10) != LLONG_MIN) return 0;
+    if (strtoll(buf, NULL, 10) != LLONG_MIN) return 0;
     sprintf(buf, "%llu", ULLONG_MAX);
-    if (strtoul(buf, NULL, 10) != ULLONG_MAX) return 0;
+    if (strtoull(buf, NULL, 10) != ULLONG_MAX) return 0;
     return 1;
 }
