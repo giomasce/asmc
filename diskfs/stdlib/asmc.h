@@ -4,15 +4,18 @@
 #include "asmc_types.h"
 
 struct __handles_t {
-  void (*platform_write_char)(int fd, char c);
-  int (*platform_setjmp)(void *env);
-  void (*platform_longjmp)(void *env, int status);
-  void *(*malloc)(size_t size);
-  void *(*calloc)(size_t num, size_t size);
-  void (*free)(void *ptr);
-  void *(*realloc)(void *ptr, size_t new_size);
-  char *(*itoa)(unsigned int x);
-  void (*dump_stacktrace)();
+    void (*platform_write_char)(int fd, char c);
+    int (*platform_setjmp)(void *env);
+    void (*platform_longjmp)(void *env, int status);
+    void *(*malloc)(size_t size);
+    void *(*calloc)(size_t num, size_t size);
+    void (*free)(void *ptr);
+    void *(*realloc)(void *ptr, size_t new_size);
+    char *(*itoa)(unsigned int x);
+    void (*dump_stacktrace)();
+    int (*vfs_open)(const char *name);
+    void (*vfs_close)(int fd);
+    int (*vfs_read)(int fd);
 };
 
 struct __handles_t *__handles;
@@ -30,8 +33,16 @@ int __return_code;
 int __aborted;
 jmp_buf __return_jump_buf;
 
+unsigned int __get_handles() {
+    return (unsigned int) __handles;
+}
+
 void __init_stdlib() {
+#ifdef __HANDLES
+  __handles = (struct __handles_t*) __HANDLES;
+#else
   __handles = &__builtin_handles;
+#endif
   __aborted = 0;
   stdout = &__stdout;
   stderr = &__stderr;
@@ -42,6 +53,15 @@ void __cleanup_stdlib() {
 }
 
 int fputs(const char *s, FILE *stream);
+
+void __dump_stacktrace() {
+    __handles->dump_stacktrace();
+}
+
+void __unimplemented() {
+    fputs("UNIMPLEMENTED CALL\n", stderr);
+    __dump_stacktrace();
+}
 
 #include "stdio.h"
 

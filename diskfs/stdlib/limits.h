@@ -12,11 +12,12 @@
 #define SHRT_MAX 32767
 #define USHRT_MAX 65535
 
-#define INT_MIN ((int)(-2147483648))
+// Use a subtraction to avoid intermediate overflows
+#define INT_MIN (-2147483647-1)
 #define INT_MAX 2147483647
 #define UINT_MAX 4294967295U
 
-#define LONG_MIN ((long)(-9223372036854775808L))
+#define LONG_MIN (-9223372036854775807L-1)
 #define LONG_MAX 9223372036854775807L
 #define ULONG_MAX 18446744073709551615UL
 

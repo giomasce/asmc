@@ -1,6 +1,8 @@
 #ifndef __TIME_H
 #define __TIME_H
 
+#include "asmc.h"
+
 typedef long time_t;
 
 struct tm {
@@ -17,11 +19,13 @@ struct tm {
 
 // STUB
 struct tm *localtime(const time_t *time) {
+    __unimplemented();
     abort();
 }
 
 // STUB
 time_t time(time_t *arg) {
+    __unimplemented();
     abort();
 }
 

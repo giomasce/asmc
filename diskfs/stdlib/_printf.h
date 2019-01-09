@@ -22,7 +22,7 @@ struct _status_t
                              /* *sscanf():  source string                    */
     size_t   width;  /* specified field width                        */
     int              prec;   /* specified field precision                    */
-    struct FILE* stream; /* *fprintf() / *fscanf() stream         */
+    FILE* stream;    /* *fprintf() / *fscanf() stream         */
     va_list  arg;    /* argument stack                               */
 };
 
@@ -623,7 +623,7 @@ int vfprintf( FILE *stream, const char * format, va_list arg )
     return status.i;
 }
 
-int fprintf( struct FILE* stream, const char * format, ... )
+int fprintf( FILE* stream, const char * format, ... )
 {
     int rc;
     va_list ap;

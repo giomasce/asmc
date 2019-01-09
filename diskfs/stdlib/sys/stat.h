@@ -1,6 +1,7 @@
 #ifndef __SYS_STAT_H
 #define __SYS_STAT_H
 
+#include "asmc.h"
 #include "errno.h"
 #include "sys/types.h"
 
@@ -22,6 +23,7 @@
 
 // STUB
 int chmod(const char *path, mode_t mode) {
+    __unimplemented();
     errno = ENOTIMPL;
     return -1;
 }

@@ -1,6 +1,9 @@
 #ifndef __FCNTL_H
 #define __FCNTL_H
 
+#include "asmc.h"
+#include "errno.h"
+#include "assert.h"
 #include "sys/stat.h"
 
 #define O_RDONLY (1 << 0)
@@ -9,9 +12,17 @@
 #define O_CREAT (1 << 2)
 #define O_TRUNC (1 << 3)
 
-// STUB
 int open(const char *path, int oflag, ...) {
-    return -1;
+    _force_assert(oflag == O_RDONLY);
+    // Technically vfs_open returns a pointer; here we assume that the
+    // pointer fits in an int and it does not have a sign
+    int ret = __handles->vfs_open(path);
+    if (ret == 0) {
+        errno = ENOENT;
+        return -1;
+    } else {
+        return ret;
+    }
 }
 
 #endif

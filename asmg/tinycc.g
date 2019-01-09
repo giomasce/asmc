@@ -30,9 +30,11 @@ fun compile_tinycc 0 {
     @tokens load_token_list_from_diskfs = ;
   } else {
     "Preprocessing tinycc...\n" 1 platform_log ;
+    ctx "__ASMC_COMP__" "1" ppctx_define ;
     ctx "double" "int" ppctx_define ;
     ctx filename ppctx_set_base_filename ;
     ctx "/disk1/tinycc/" ppctx_add_include_path ;
+    ctx "/disk1/tinycc-aux/" ppctx_add_include_path ;
     ctx "/disk1/tinycc/softfloat/" ppctx_add_include_path ;
     ctx "/disk1/tinycc/softfloat/include/" ppctx_add_include_path ;
     ctx "/disk1/tinycc/softfloat/8086/" ppctx_add_include_path ;

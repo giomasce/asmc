@@ -11,7 +11,6 @@
 
 #define MAP_FAILED NULL
 
-// STUB
 int mprotect(void *addr, size_t len, int prot) {
     if (prot == PROT_READ | PROT_WRITE | PROT_EXEC) {
         // There is no protection, so all memory is automatically rwx
@@ -24,6 +23,7 @@ int mprotect(void *addr, size_t len, int prot) {
 
 // STUB
 void *mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t off) {
+    __unimplemented();
     return MAP_FAILED;
 }
 

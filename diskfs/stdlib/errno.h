@@ -11,9 +11,10 @@ int __errno = 0;
 #define ERANGE 3
 
 // Defined by POSIX
-#define EINVAL 4
+#define EINVAL 50
+#define ENOENT 51
 
 // Defined by me
-#define ENOTIMPL 5
+#define ENOTIMPL 100
 
 #endif

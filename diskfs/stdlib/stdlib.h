@@ -36,23 +36,26 @@ void exit(int return_code) {
 void abort() {
     __return_code = -1;
     __aborted = 1;
-    __handles->dump_stacktrace();
+    __dump_stacktrace();
     longjmp(__return_jump_buf, 1);
 }
 
 // STUB
 char *getenv(const char *name) {
+    __unimplemented();
     return 0;
 }
 
 // STUB
 int setenv(const char *envname, const char *envval, int overwrite) {
+    __unimplemented();
     errno = ENOTIMPL;
     return -1;
 }
 
 // STUB
 int mkstemp(char *template) {
+    __unimplemented();
     errno = ENOTIMPL;
     return -1;
 }

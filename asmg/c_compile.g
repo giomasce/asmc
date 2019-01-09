@@ -437,6 +437,9 @@ fun cctx_setup_handles 1 {
   handles @realloc vector_push_back ;
   handles @itoa vector_push_back ;
   handles @dump_stacktrace vector_push_back ;
+  handles @vfs_open vector_push_back ;
+  handles @vfs_close vector_push_back ;
+  handles @vfs_read vector_push_back ;
 }
 
 fun cctx_setup_runtime 1 {
@@ -3574,8 +3577,8 @@ fun ast_push_value_arith32 4 {
 
   if name "^" strcmp 0 == {
     # xor eax, ecx
-    ctx 0x01 cctx_emit ;
     ctx 0x31 cctx_emit ;
+    ctx 0xc8 cctx_emit ;
     @processed 1 = ;
   }
 
