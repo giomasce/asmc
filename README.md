@@ -107,9 +107,9 @@ idea of what is happening, if you use the command above to boot
    sources are compiled, first to introduce some library code (like
    malloc/free, code for handling dynamic vectors and maps, some basic
    disk/filesystem driver and other utilities) and then to compile an
-   Assembly compiler and a C compiler. These two compilers are not
-   meant to be complete: they are just enough to build the following
-   step, which is tinycc.
+   assembler and a C compiler. These two compilers are not meant to be
+   complete: they are just enough to build the following step, which
+   is tinycc.
 
  * Then a suite of C test programs is compiled and executed. They test
    part of the C compiler and the C standard library. In line of
@@ -140,20 +140,28 @@ beginning of the `asmg/main.g` file. There you can enable:
 
  * `RUN_ASM`: it will compile an assembler (completely independent
    from `asmasm`) and then run it on the file `test/test.asm`. The
-   assembler is not complete at all, but should be more or less enough
-   to assemble a lightly patched version of FASM, which then is
-   probably able to assemble more or less anything. But I still have
-   to finish to develop this possibility.
+   assembler is not complete at all, but ideally it should be more or
+   less enough to assemble a [lightly
+   patched](https://gitlab.com/giomasce/fasm) version of
+   [FASM](https://flatassembler.net/) (see next point).
 
- * `RUN_C`: it will compile the C compiler (the same as above) and
-   then use it to compile the program in
-   `diskfs/tests/test.c`. Differently from the test suite, this will
-   dump a log of debugging info about the compiled program, including
-   a dump of the machine code itself. It is useful to debug the C
-   compiler itself. Also, feel free to edit the test program to test
-   your own C programs (but expect frequent breakages!).
+ * `RUN_FASM` (currently unmaintained): compile the assembler and then
+   use it to assemble FASM, as mentioned above. In theory it should
+   work, but in practice it does not: the assembled FASM crashes for
+   some reason I could not understand. There is definitely a bug in my
+   assembler (or at least some unmet FASM assumption), but I could not
+   find it so far. However, the bulk of the project is not here.
 
- * `RUN_MESCC`: it will compile a port of the
+ * `RUN_C`: it will compile the assembler and the C compiler and then
+   use them to compile the program in `diskfs/tests/test.c`. In the
+   source code there are flags to dump debugging information,
+   including a dump of the machine code itself. It is useful to debug
+   the C compiler itself. Also, feel free to edit the test program to
+   test your own C programs (but expect frequent breakages!).
+
+ * `RUN_MESCC` (currently unmaintained; only this port is
+   unmaintained, the original project is going on): it will compile a
+   port of the
    [mescc](https://github.com/oriansj/mescc-tools)/[M2-Planet](https://github.com/oriansj/M2-Planet)
    toolchain, which is basically an indepdendent C compiler with
    different features and bugs than mine. This port just tracks the
@@ -161,17 +169,41 @@ beginning of the `asmg/main.g` file. There you can enable:
    from more precise links. The test program in `test/test_mes.c` will
    then be compiled and executed.
 
- * `RUN_MCPP`: it will compile the C compiler (the same as above) and
-   then use it to try compiling a lightly patched version of
+ * `RUN_MCPP` (currently unmaintained): it will compile the assembler
+   and the C compiler and then use them to try compiling a [lightly
+   patched](https://gitlab.com/giomasce/mcpp) version of
    [mcpp](http://mcpp.sourceforge.net/), which is a complete C
-   preprocessor. Since the preprocessor embedded in `asmg`'s C
+   preprocessor. Since the preprocessor embedded in `asmc`'s C
    compiler is rather lacking, the idea is that mcpp could be used
    instead to compile C sources that require deep preprocessing
    capabilities. However, at this point, mcpp itself does not compile,
-   so at some point `asmc` with die with a failed assertion.
+   so at some point `asmc` with die with a failed assertion. Also, it
+   nowadays seems that `asmc` is able to preprocess tinycc by itself,
+   so there is no point anymore in going forward with this subproject.
+
+ * `RUN_TINYCC`: here is where the juice stays! This will compile the
+   assembler and the C compiler, and then compile tinycc, as mentioned
+   above. Then it will use tinycc to compile and execute a little C
+   program. In the future the bootstrapping chain will continue here.
+
+ * `TEST_MAP`: there are three implementation of an associative array
+   in `asmc`, of increasing complexity (see below). This tests the
+   implementation, and was used in the past to check new
+   implementations for correctness.
+
+ * `TEST_INT64`: implementing 64 bits integers on a 32 bits platform
+   is somewhat tricky. The G language itself only supports 32 bits
+   numbers, so some additional Assembly code was required to implement
+   64 bits operations. Also, the division code is particularly
+   tricky. However, 64 bits integers are required by tinycc, which
+   needs support for `long long` types, so they were implemented at
+   some point. This enables some tests on the resulting implemntation.
 
  * `TEST_C`: it will compile the C compiler and run the test
-   suite. This is the default behaviour.
+   suite.
+
+By default thre three `TEST_*` flags and `RUN_TINYCC` are enabled in
+`asmc`.
 
 There is also another pack of flags that control which `malloc`
 implementation `asmg` is going to use. There are four at this
@@ -202,6 +234,27 @@ release memory back).
    currently available in `asmc` (unless you want to debug memory
    allocation), so also the default one.
 
+A third pack of flags is for controlling the associative array (map)
+implementation used by `asmc`.
+
+ * `USE_SIMPLE_MAP`: the original map implementation, based on lineary
+   arrays, which require a full trasversal of the array for basically
+   every operation. Very slow.
+
+ * `USE_AVL_MAP`: a new implementation based on AVL trees. In the end
+   it was never finished (because at some point I decided to switch to
+   red-black trees), so it implements a binary search tree, but
+   without rebalancing. Not guaranteed to be balanced, but probably,
+   since most of the times data arrive in random order, it ususally
+   is. Practical performance are comparable with red-black trees.
+
+ * `USE_RB_MAP`: the final and default implementation, using properly
+   balanced red-black trees.
+
+In theory all three of them should work, with different
+performances. In practice, only the red-black tree is routinely used
+and thus tested.
+
 ## What is inside this repository
 
  * `lib` contains a very small kernel, designed to run on a i386 CPU
@@ -226,12 +279,12 @@ release memory back).
  * `empty` is just an empty test payload. It prints a message and then
    stop. Not very funny.
 
- * `asmasm` is an Assembly compiler written in Assembly, which can be
-   used as a payload for the kernel, in order to make a small
-   operating system that is just able to compile others Assembly
-   programs to expand its capabilities. Once `asmasm` is loaded, it
-   compiles the file `main.asm` and then jumps to the label `main`.
-   `asmasm` is able to compile itself.
+ * `asmasm` is an assembler written in Assembly, which can be used as
+   a payload for the kernel, in order to make a small operating system
+   that is just able to compile others Assembly programs to expand its
+   capabilities. Once `asmasm` is loaded, it compiles the file
+   `main.asm` and then jumps to the label `main`.  `asmasm` is able to
+   compile itself.
 
    `asmasm` supports only a subset of the x86 Assembly syntax and some
    NASM-styled directives. It definitely will not be able to compile
@@ -303,13 +356,60 @@ experience). During writing I established my own style, but never went
 back to fix already written code. So in theory looking at the style
 you can probably reconstruct the order in which a wrote code.
 
+## Why all of this?
+
+Well, the first and most important reason was learning. So far I
+learnt how to write a basic boot loader, a basic operating system and
+a few language compilers (for Assembly, G and C). I learnt to write
+simple Assembly and I invented a G language, that I found pretty
+satisfying for the specific domain it was written for (more on this
+below).
+
+Other than that, it bothers me that the fine art of programming is
+currently based on a misconception: that there are two worlds, the
+"source world" and the "executable world", and that given the source
+you can build the executable. This is not completely true: to pass
+from the source to the executable you need another executable (the
+compiler). And to compile the compiler, you most often need the
+compiler itself. In the current situation, if all the executable
+binary code in the world were erased by some magic power and only the
+source code remained, we would not be able to rebuild the executable
+code, because we would not have working compilers.
+
+The aim of the [Bootstrappable project](http://bootstrappable.org/) is
+to recover from this situation, i.e., produce a path to rebootstrap
+all the executable world from the source world that we already
+have. Source code is knowledge, executable code is a way to use this
+knowledge, but it is not knowledge itself. It should be derivable for
+knowledge without having to depend on anything else.
+
+See the site of the Boostrappable project for additional practical and
+phylosophical reasons. The `asmc` project is my personal contribution
+to Bootstrappable.
+
+Of course it is not possible to remove completely the dependency on
+some executable code for bootstrapping, becuase at some point you have
+to power up your CPU and you will have to feed it some executable code
+(which is called the "seed"). The target is to reduce this seed as
+much as possible, so that it can be directly inspected. Currently
+`asmc` is seeded by around 15 KiB of code (plus, unfortunately, the
+BIOS and the various microcodes and firmwares in the computer, which
+are not even open in most cases), which is pretty good. Maybe in the
+future I'll be able to shrink it even more (there is some room for
+optimization). At some point I would also like to convert it to a free
+architecture, like RISC-V, but this will require major rewriting of
+code generation for all compilers and assemblers. I am not aware of
+completely free and Linux-capable RISC-V implementations, so for the
+moment I am concentrating on Intel processors.
+
 ## The platform interface exposed by the kernel
 
 The kernel and library in the directory `lib` offer some simple API to
 later stages, which is described here. All calls follow the usual
-`cdecl` ABI (arguments pushed right to left; return value in EAX;
-stack aligned to 4; EAX, ECX and EDX are caller-saved and the other
-registers are callee-saved).
+`cdecl` ABI (arguments pushed right to left; caller cleans up; return
+value in EAX or EDX:EAX; stack aligned to 4; EAX, ECX and EDX are
+caller-saved and the other registers are callee-saved; objects are
+returned via additional first argument).
 
  * `platform_exit()` Exit successfully; it will never return.
 
@@ -629,3 +729,25 @@ This repository contains the following code ported to G:
  * `mescc_m2.g` is ported from many files in repository
    <https://github.com/oriansj/M2-Planet>. It is synchronized with
    commit `2e1148fe3e83c684769d4e73b441a64f34115b4f`.
+
+Other programs are used by mean of Git submodules (see the `contrib`
+directory), so their exact version is encoded in the Git repository
+itself and it is not repeated here.
+
+## License
+
+Most of the original code I wrote is covered by the GNU General Public
+License, version 3 or later. Code that was imported from other
+projects, with or without modifications, is covered by their own
+licenses, which are usually either the GPL again or very liberal
+licenses. Therefore, I believe that the combined project is again
+distributable under the terms of the GPL-3+ license.
+
+Individual files' headers detail the licensing conditions for that
+specific file. Having taken material from many different sources, I
+tried my best to respect all the necessary conditions. Please contact
+me if you become aware of some mistake on my side.
+
+## Author
+
+Giovanni Mascellani <gio@debian.org>
