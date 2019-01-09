@@ -402,6 +402,15 @@ code generation for all compilers and assemblers. I am not aware of
 completely free and Linux-capable RISC-V implementations, so for the
 moment I am concentrating on Intel processors.
 
+Beside the Bootstrappable projects (many are listed in the [wiki
+page](https://bootstrapping.miraheze.org/wiki/Main_Page)), one great
+inspiration for `asmc` was
+[TCCBOOT](https://bellard.org/tcc/tccboot.html), by Fabrice Bellard
+(the same original author of tinycc). TCCBOOT uses tinycc to build a
+stripped down version of the Linux kernel at boot time and then
+executes it, which is kind of what `asmc` is trying to do, expect that
+`asmc` is trying to compile the compiler as well.
+
 ## The platform interface exposed by the kernel
 
 The kernel and library in the directory `lib` offer some simple API to
