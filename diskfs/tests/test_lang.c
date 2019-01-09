@@ -59,6 +59,14 @@ int test_true(void) {
   return 1;
 }
 
+int test_octal(void) {
+    if (*"" != 0) return 0;
+    if (*"\0" != 0) return 0;
+    if (*"\177" != 127) return 0;
+    if (*"\305" != 197-256) return 0;
+    return 1;
+}
+
 int do_sum(int x, char y) {
   return x+y;
 }

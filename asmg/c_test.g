@@ -133,6 +133,7 @@ fun c_run_testcases 0 {
 
   tests "/disk1/tests/test_lang.c" "test_false" 0 "" c_run_testcase ;
   tests "/disk1/tests/test_lang.c" "test_true" 1 "" c_run_testcase ;
+  tests "/disk1/tests/test_lang.c" "test_octal" 1 "" c_run_testcase ;
   tests "/disk1/tests/test_lang.c" "test_while" 5040 "" c_run_testcase ;
   tests "/disk1/tests/test_lang.c" "test_do_while" 5040 "" c_run_testcase ;
   tests "/disk1/tests/test_lang.c" "test_for" 5040 "" c_run_testcase ;

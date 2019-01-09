@@ -45,10 +45,6 @@ fun escape_char 2 {
     c 0 != "escape_char: unexpected null" assert_msg ;
     $processed
     @processed 0 = ;
-    if c '0' == {
-      to ** 0 =c ;
-      @processed 1 = ;
-    }
     if c 'n' == {
       to ** '\n' =c ;
       @processed 1 = ;
@@ -87,6 +83,23 @@ fun escape_char 2 {
     }
     if c '\"' == {
       to ** '\"' =c ;
+      @processed 1 = ;
+    }
+    if '0' c <= c '7' <= && {
+      # An octal escape sequence
+      $value
+      @value c '0' - = ;
+      @c from ** 1 + **c = ;
+      if '0' c <= c '7' <= && {
+        from from ** 1 + = ;
+        @value value 8 * c '0' - + = ;
+        @c from ** 1 + **c = ;
+        if '0' c <= c '7' <= && {
+          from from ** 1 + = ;
+          @value value 8 * c '0' - + = ;
+        }
+      }
+      to ** value =c ;
       @processed 1 = ;
     }
     processed "escape_char: unknown escape sequence" from ** assert_msg_str ;
