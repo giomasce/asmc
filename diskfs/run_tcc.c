@@ -200,7 +200,9 @@ int main(int argc, char *argv[]) {
     return recursively_compile();
 }
 
+//#if LEVEL == 0
 #define USE_SOFTFLOAT 1
+//#endif
 #define ONE_SOURCE 1
 
 #include "libtcc.c"

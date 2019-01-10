@@ -17,4 +17,4 @@ addons:
 script:
 - mkdir build
 - make build/boot_asmg.x86
-- qemu-system-i386 -hda build/boot_asmg.x86 -serial stdio -device isa-debug-exit -display none | ./test/decode_tests.py
+- qemu-system-i386 -hda build/boot_asmg.x86 -serial stdio -device isa-debug-exit -display none -m 256M | ./test/decode_tests.py

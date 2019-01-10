@@ -32,7 +32,7 @@ You should use Linux to compile `asmc`, although some parts of it can
 also be built on macOS. If you use Debian, install the prerequisites
 with
 
-    sudo apt-get install build-essential nasm qemu-system-x86 grub-common python3 gcc-multilib
+    sudo apt-get install build-essential nasm qemu-system-x86 grub-common python3 gcc-multilib -m 256M
 
 If you cloned the GIT repository, you will probably want to checkout
 the submodules as well:
