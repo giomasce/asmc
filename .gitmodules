@@ -10,3 +10,6 @@
 [submodule "contrib/tinycc"]
 	path = contrib/tinycc
 	url = https://gitlab.com/giomasce/tinycc.git
+[submodule "contrib/ipxe"]
+	path = contrib/ipxe
+	url = https://gitlab.com/giomasce/ipxe.git
