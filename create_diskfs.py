@@ -24,8 +24,9 @@ import struct
 import shutil
 
 def main():
-    assert len(sys.argv) % 2 == 1
-    file_num = (len(sys.argv) - 1) // 2
+    args = sys.stdin.read().split(None)
+    assert len(args) % 2 == 0
+    file_num = (len(args)) // 2
     table_len = 0
     files_len = 0
     names = []
@@ -33,8 +34,8 @@ def main():
     starts = []
 
     for i in range(file_num):
-        name = sys.argv[2*i+1].encode('ascii')
-        data_filename = sys.argv[2*i+2]
+        name = args[2*i].encode('ascii')
+        data_filename = args[2*i+1]
         data_size = os.stat(data_filename).st_size
 
         names.append(name)
@@ -56,7 +57,7 @@ def main():
     sys.stdout.buffer.write(b'\0')
 
     for i in range(file_num):
-        with open(sys.argv[2*i+2], 'rb') as fin:
+        with open(args[2*i+1], 'rb') as fin:
             shutil.copyfileobj(fin, sys.stdout.buffer)
 
 if __name__ == '__main__':

@@ -63,7 +63,7 @@ build/diskfs.list: diskfs/* diskfs/mescc/x86_defs.m1 diskfs/fasm/fasm.asm
 	(cd diskfs/ ; find -L . -type f) | cut -c3- | sed -e 's|\(.*\)|\1 diskfs/\1|' > $@
 
 build/diskfs.img: build/diskfs.list
-	xargs ./create_diskfs.py < $< > $@
+	./create_diskfs.py < $< > $@
 
 # Asmasm executable
 build/asmasm_linux.asm: asmasm/asmasm_linux.asm lib/library.asm asmasm/asmasm.asm
