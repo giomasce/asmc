@@ -13,15 +13,27 @@
 #define O_TRUNC (1 << 3)
 
 int open(const char *path, int oflag, ...) {
-    _force_assert(oflag == O_RDONLY);
     // Technically vfs_open returns a pointer; here we assume that the
     // pointer fits in an int and it does not have a sign
-    int ret = __handles->vfs_open(path);
-    if (ret == 0) {
-        errno = ENOENT;
-        return -1;
+    if (oflag == O_RDONLY) {
+        int ret = __handles->vfs_open(path);
+        if (ret == 0) {
+            errno = ENOENT;
+            return -1;
+        } else {
+            return ret;
+        }
+    } else if (oflag == O_WRONLY | O_CREAT | O_TRUNC) {
+        int ret = __handles->vfs_open(path);
+        if (ret == 0) {
+            errno = ENOENT;
+            return -1;
+        } else {
+            __handles->vfs_truncate(ret);
+            return ret;
+        }
     } else {
-        return ret;
+        _force_assert(!"unknown flag combination");
     }
 }
 

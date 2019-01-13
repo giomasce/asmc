@@ -152,3 +152,27 @@ fun debugfs_finish_file 0 {
     global_debugfs debugfsinst_finish_file ;
   }
 }
+
+fun debugfs_copy_file 2 {
+  $from_filename
+  $to_filename
+  @from_filename 1 param = ;
+  @to_filename 0 param = ;
+
+  $fd
+  @fd from_filename 0 "vfs_open" platform_get_symbol \1 = ;
+  $cont
+  @cont 1 = ;
+  to_filename debugfs_begin_file ;
+  while cont {
+    $c
+    @c fd 0 "vfs_read" platform_get_symbol \1 = ;
+    if c 0xffffffff == {
+      @cont 0 = ;
+    } else {
+      c debugfs_write_char ;
+    }
+  }
+  debugfs_finish_file ;
+  fd 0 "vfs_close" platform_get_symbol \1 ;
+}

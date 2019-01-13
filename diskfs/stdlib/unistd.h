@@ -40,18 +40,14 @@ char *getcwd(char *buf, size_t size) {
     return NULL;
 }
 
-// STUB
+// Just ignore unlink
 int unlink(const char *path) {
-    __unimplemented();
-    errno = ENOTIMPL;
-    return -1;
+    return 0;
 }
 
-// STUB
 off_t lseek(int fildes, off_t offset, int whence) {
-    __unimplemented();
-    errno = ENOTIMPL;
-    return -1;
+    //printf("seeking at %d from %d\n", offset, whence);
+    return __handles->vfs_seek(whence, offset, fildes);
 }
 
 int close(int fildes) {
@@ -65,5 +61,9 @@ int ftruncate(int fildes, off_t length) {
     errno = ENOTIMPL;
     return -1;
 }
+
+#define SEEK_SET 0
+#define SEEK_CUR 1
+#define SEEK_END 2
 
 #endif

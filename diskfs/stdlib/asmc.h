@@ -16,6 +16,9 @@ struct __handles_t {
     int (*vfs_open)(const char *name);
     void (*vfs_close)(int fd);
     int (*vfs_read)(int fd);
+    void (*vfs_write)(int c, int fd);
+    void (*vfs_truncate)(int fd);
+    int (*vfs_seek)(int whence, int offset, int fd);
 };
 
 struct __handles_t *__handles;
@@ -53,15 +56,22 @@ void __cleanup_stdlib() {
 }
 
 int fputs(const char *s, FILE *stream);
+int fprintf(FILE* stream, const char * format, ...);
 
 void __dump_stacktrace() {
     __handles->dump_stacktrace();
 }
 
+#ifdef __ASMC_COMP__
 void __unimplemented() {
     fputs("UNIMPLEMENTED CALL\n", stderr);
     __dump_stacktrace();
 }
+#endif
+
+#ifdef __TINYC__
+#define __unimplemented() fprintf(stderr, "Unimplemented call %s at %s:%d\n", __func__, __FILE__, __LINE__)
+#endif
 
 #include "stdio.h"
 

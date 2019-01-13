@@ -17,7 +17,7 @@ int recursively_compile() {
     return 0;
 #endif
 
-    char *includes[7];
+    const char *includes[7];
     includes[0] = ASMC_PREFIX;
     includes[1] = ASMC_PREFIX "/stdlib";
     includes[2] = ASMC_PREFIX "/tinycc-aux";
@@ -25,7 +25,7 @@ int recursively_compile() {
     includes[4] = ASMC_PREFIX "/tinycc/softfloat";
     includes[5] = ASMC_PREFIX "/tinycc/softfloat/include";
     includes[6] = ASMC_PREFIX "/tinycc/softfloat/8086";
-    char *files[1];
+    const char *files[1];
 
 #if LEVEL == 1 && !defined(JUST_FOR_FUN)
     files[0] = ASMC_PREFIX "/run_tcc_ipxe.c";

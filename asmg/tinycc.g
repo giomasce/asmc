@@ -72,6 +72,13 @@ fun compile_tinycc 0 {
   res itoa 1 platform_log ;
   "\n" 1 platform_log ;
 
+  # Dump some test file
+  # "/ram/ipxe/main.o" "main.o" debugfs_copy_file ;
+  # "/ram/ipxe/main.o" dump_debug ;
+  # "/ram/ipxe/init.o" dump_debug ;
+  # "/ram/ipxe/vsprintf.o" dump_debug ;
+  # "/ram/ipxe/ipxe.o" dump_debug ;
+
   tokens free_vect_of_ptrs ;
   cctx cctx_destroy ;
   ctx ppctx_destroy ;

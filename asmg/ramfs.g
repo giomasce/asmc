@@ -62,6 +62,7 @@ fun ramfile_write 3 {
   @file 2 param = ;
   @pos 1 param = ;
   @c 0 param = ;
+
   $size
   $data
   @size file RAMFILE_SIZE take = ;
@@ -74,6 +75,15 @@ fun ramfile_write 3 {
       data 0 vector_push_back ;
     }
   }
+
+  # "writing " 1 platform_log ;
+  # c itoa 1 platform_log ;
+  # " pos = " 1 platform_log ;
+  # pos itoa 1 platform_log ;
+  # " size = " 1 platform_log ;
+  # size itoa 1 platform_log ;
+  # "\n" 1 platform_log ;
+
   pos file RAMFILE_SIZE take < "ramfile_write: error 1" assert_msg ;
   pos file RAMFILE_DATA take vector_size 4 * < "ramfile_write: error 2" assert_msg ;
   file RAMFILE_DATA take vector_data pos + c =c ;
@@ -104,6 +114,13 @@ fun ramfd_read 1 {
   @pos fd RAMFD_POS take = ;
   $c
   @c file pos ramfile_read = ;
+
+  # "reading " 1 platform_log ;
+  # c itoa 1 platform_log ;
+  # " at " 1 platform_log ;
+  # pos itoa 1 platform_log ;
+  # "\n" 1 platform_log ;
+
   fd RAMFD_POS take_addr pos 1 + = ;
   c ret ;
 }
@@ -150,6 +167,10 @@ fun ramfd_seek 3 {
   if off size > {
     @off size = ;
   }
+
+  # "seeking at " 1 platform_log ;
+  # off itoa 1 platform_log ;
+  # "\n" 1 platform_log ;
 
   fd RAMFD_POS take_addr off = ;
 

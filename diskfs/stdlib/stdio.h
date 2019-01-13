@@ -9,8 +9,12 @@
 #define EOF (-1)
 
 int fputc(int c, FILE *s) {
-  __handles->platform_write_char(s->fd, c);
-  return c;
+    if (s->fd == 1 || s->fd == 2) {
+        __handles->platform_write_char(s->fd, c);
+    } else {
+        __handles->vfs_write(c, s->fd);
+    }
+    return c;
 }
 
 #define putc fputc
@@ -61,12 +65,12 @@ size_t fwrite(const void *buffer, size_t size, size_t count, FILE *stream) {
 }
 
 FILE *fdopen(int fildes, const char *mode) {
-    if (*mode == 'r' && *(mode+1) == 0) {
+    if ((*mode == 'r' || *mode == 'w') && *(mode+1) == 'b' && *(mode+2) == 0) {
         FILE *ret = malloc(sizeof(FILE));
         ret->fd = fildes;
         return ret;
     } else {
-        _force_assert(!"can only open file in read mode");
+        _force_assert(!"unknown file mode");
     }
 }
 
@@ -74,16 +78,12 @@ int fclose(FILE *stream) {
     if (stream == stdout || stream == stderr) {
         // Nothing to do here...
     } else {
-        // FIXME: pass close to underlying fd
+        __handles->vfs_close(stream->fd);
         free(stream);
     }
 }
 
 #include "_printf.h"
 #include "_scanf.h"
-
-#define SEEK_CUR 0
-#define SEEK_END 1
-#define SEEK_SET 2
 
 #endif

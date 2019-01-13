@@ -31,7 +31,7 @@ int __get_handles() {
 
 #include "libtcc.h"
 
-int run_tinycc(TCCState *state, int file_num, char **files, int include_path_num, char **include_paths) {
+int run_tinycc(TCCState *state, int file_num, const char **files, int include_path_num, const char **include_paths) {
     int res;
     tcc_set_options(state, "-nostdlib -nostdinc");
     tcc_set_output_type(state, TCC_OUTPUT_MEMORY);
