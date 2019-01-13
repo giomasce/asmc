@@ -19,6 +19,16 @@ const char *sources[][2] = {
     {IPXE_PREFIX "/core/main.c", IPXE_TEMP "/main.o"},
     {IPXE_PREFIX "/core/init.c", IPXE_TEMP "/init.o"},
     {IPXE_PREFIX "/core/vsprintf.c", IPXE_TEMP "/vsprintf.o"},
+    {IPXE_PREFIX "/core/console.c", IPXE_TEMP "/console.o"},
+    {IPXE_PREFIX "/arch/x86/interface/pcbios/bios_nap.c", IPXE_TEMP "/bios_nap.o"},
+    {IPXE_PREFIX "/core/process.c", IPXE_TEMP "/process.o"},
+    {IPXE_PREFIX "/core/refcnt.c", IPXE_TEMP "/refcnt.o"},
+    {IPXE_PREFIX "/core/list.c", IPXE_TEMP "/list.o"},
+    {IPXE_PREFIX "/core/malloc.c", IPXE_TEMP "/malloc.o"},
+    {IPXE_PREFIX "/arch/x86/core/x86_string.c", IPXE_TEMP "/x86_string.o"},
+    {IPXE_PREFIX "/core/serial.c", IPXE_TEMP "/serial.o"},
+    {IPXE_PREFIX "/core/uart.c", IPXE_TEMP "/uart.o"},
+    {IPXE_PREFIX "/arch/x86/core/x86_uart.c", IPXE_TEMP "/x86_uart.o"},
 };
 
 int main(int argc, char *argv[]) {
