@@ -31,6 +31,9 @@ const char *sources[][2] = {
     {IPXE_PREFIX "/arch/x86/core/x86_uart.c", IPXE_TEMP "/x86_uart.o"},
     {IPXE_PREFIX "/core/interface.c", IPXE_TEMP "/interface.o"},
     {IPXE_PREFIX "/core/device.c", IPXE_TEMP "/device.o"},
+    {IPXE_PREFIX "/drivers/bus/pci.c", IPXE_TEMP "/pci.o"},
+    {IPXE_PREFIX "/arch/x86/core/pcidirect.c", IPXE_TEMP "/pcidirect.o"},
+    {IPXE_PREFIX "/core/debug.c", IPXE_TEMP "/debug.o"},
 };
 
 int main(int argc, char *argv[]) {
