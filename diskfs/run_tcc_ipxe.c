@@ -34,6 +34,15 @@ const char *sources[][2] = {
     {IPXE_PREFIX "/drivers/bus/pci.c", IPXE_TEMP "/pci.o"},
     {IPXE_PREFIX "/arch/x86/core/pcidirect.c", IPXE_TEMP "/pcidirect.o"},
     {IPXE_PREFIX "/core/debug.c", IPXE_TEMP "/debug.o"},
+    {IPXE_PREFIX "/core/timer.c", IPXE_TEMP "/timer.o"},
+    {IPXE_PREFIX "/arch/x86/core/rdtsc_timer.c", IPXE_TEMP "/rdtsc_timer.o"},
+    {IPXE_PREFIX "/arch/x86/core/pit8254.c", IPXE_TEMP "/pit8254.o"},
+    {IPXE_PREFIX "/arch/x86/core/cpuid.c", IPXE_TEMP "/cpuid.o"},
+    {IPXE_PREFIX "/arch/x86/interface/pcbios/acpi_timer.c", IPXE_TEMP "/acpi_timer.o"},
+    {IPXE_PREFIX "/core/acpi.c", IPXE_TEMP "/acpi.o"},
+    {IPXE_PREFIX "/arch/x86/interface/pcbios/rsdp.c", IPXE_TEMP "/rsdp.o"},
+    {IPXE_PREFIX "/core/string.c", IPXE_TEMP "/string.o"},
+    {IPXE_PREFIX "/core/ctype.c", IPXE_TEMP "/ctype.o"},
 };
 
 int main(int argc, char *argv[]) {
