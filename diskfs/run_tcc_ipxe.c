@@ -29,6 +29,8 @@ const char *sources[][2] = {
     {IPXE_PREFIX "/core/serial.c", IPXE_TEMP "/serial.o"},
     {IPXE_PREFIX "/core/uart.c", IPXE_TEMP "/uart.o"},
     {IPXE_PREFIX "/arch/x86/core/x86_uart.c", IPXE_TEMP "/x86_uart.o"},
+    {IPXE_PREFIX "/core/interface.c", IPXE_TEMP "/interface.o"},
+    {IPXE_PREFIX "/core/device.c", IPXE_TEMP "/device.o"},
 };
 
 int main(int argc, char *argv[]) {
