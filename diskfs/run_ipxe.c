@@ -32,14 +32,19 @@ static table_sect *find_section(const char *name) {
     return 0;
 }
 
+// Just a random number, but such that subtracting any reasonable
+// structure size does not wrap around (otherwise reverse for cycles
+// choke).
+#define EMPTY_LIST 0x100000
+
 void *get_table_start(const char *name) {
     table_sect *sect = find_section(name);
-    if (!sect) return 0;
+    if (!sect) return EMPTY_LIST;
     return sect->data;
 }
 
 void *get_table_end(const char *name) {
     table_sect *sect = find_section(name);
-    if (!sect) return 0;
+    if (!sect) return EMPTY_LIST;
     return sect->data + sect->len;
 }

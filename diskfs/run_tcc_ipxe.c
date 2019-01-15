@@ -48,14 +48,36 @@ const char *sources[][2] = {
     {IPXE_PREFIX "/arch/x86/core/pcidirect.c", IPXE_TEMP "/pcidirect.o"},
     {IPXE_PREFIX "/core/debug.c", IPXE_TEMP "/debug.o"},
     {IPXE_PREFIX "/core/timer.c", IPXE_TEMP "/timer.o"},
-    {IPXE_PREFIX "/arch/x86/core/rdtsc_timer.c", IPXE_TEMP "/rdtsc_timer.o"},
-    {IPXE_PREFIX "/arch/x86/core/pit8254.c", IPXE_TEMP "/pit8254.o"},
-    {IPXE_PREFIX "/arch/x86/core/cpuid.c", IPXE_TEMP "/cpuid.o"},
+    /* {IPXE_PREFIX "/arch/x86/core/rdtsc_timer.c", IPXE_TEMP "/rdtsc_timer.o"}, */
+    /* {IPXE_PREFIX "/arch/x86/core/pit8254.c", IPXE_TEMP "/pit8254.o"}, */
+    /* {IPXE_PREFIX "/arch/x86/core/cpuid.c", IPXE_TEMP "/cpuid.o"}, */
     {IPXE_PREFIX "/arch/x86/interface/pcbios/acpi_timer.c", IPXE_TEMP "/acpi_timer.o"},
     {IPXE_PREFIX "/core/acpi.c", IPXE_TEMP "/acpi.o"},
     {IPXE_PREFIX "/arch/x86/interface/pcbios/rsdp.c", IPXE_TEMP "/rsdp.o"},
     {IPXE_PREFIX "/core/string.c", IPXE_TEMP "/string.o"},
     {IPXE_PREFIX "/core/ctype.c", IPXE_TEMP "/ctype.o"},
+    {IPXE_PREFIX "/drivers/net/intel.c", IPXE_TEMP "/intel.o"},
+    {IPXE_PREFIX "/drivers/nvs/nvs.c", IPXE_TEMP "/nvs.o"},
+    {IPXE_PREFIX "/core/iobuf.c", IPXE_TEMP "/iobuf.o"},
+    {IPXE_PREFIX "/net/netdevice.c", IPXE_TEMP "/netdevice.o"},
+    {IPXE_PREFIX "/core/settings.c", IPXE_TEMP "/settings.o"},
+    {IPXE_PREFIX "/net/ethernet.c", IPXE_TEMP "/ethernet.o"},
+    {IPXE_PREFIX "/core/uri.c", IPXE_TEMP "/uri.o"},
+    {IPXE_PREFIX "/core/base16.c", IPXE_TEMP "/base16.o"},
+    {IPXE_PREFIX "/core/base64.c", IPXE_TEMP "/base64.o"},
+    {IPXE_PREFIX "/net/socket.c", IPXE_TEMP "/socket.o"},
+    {IPXE_PREFIX "/core/basename.c", IPXE_TEMP "/basename.o"},
+    {IPXE_PREFIX "/core/uuid.c", IPXE_TEMP "/uuid.o"},
+    {IPXE_PREFIX "/core/random.c", IPXE_TEMP "/random.o"},
+    {IPXE_PREFIX "/core/asprintf.c", IPXE_TEMP "/asprintf.o"},
+    {IPXE_PREFIX "/arch/x86/interface/pcbios/rtc_time.c", IPXE_TEMP "/rtc_time.o"},
+    {IPXE_PREFIX "/core/time.c", IPXE_TEMP "/time.o"},
+    {IPXE_PREFIX "/net/nullnet.c", IPXE_TEMP "/nullnet.o"},
+    {IPXE_PREFIX "/net/retry.c", IPXE_TEMP "/retry.o"},
+    {IPXE_PREFIX "/core/fault.c", IPXE_TEMP "/fault.o"},
+    {IPXE_PREFIX "/core/params.c", IPXE_TEMP "/params.o"},
+    {IPXE_PREFIX "/net/netdev_settings.c", IPXE_TEMP "/netdev_settings.o"},
+    {IPXE_PREFIX "/core/errno.c", IPXE_TEMP "/errno.o"},
 };
 
 #include "ipxe_handover.h"
@@ -133,6 +155,9 @@ void prepare_tables(TCCState *state, ipxe_handover *ih) {
         // Finally cut away the dot
         sects[i].name[strlen(sects[i].name)-1] = '\0';
         printf(" * %s (addr: %x, size: %d)\n", sects[i].name, sects[i].data, sects[i].len);
+        /* if (strcmp(sects[i].name, "timers") == 0) { */
+        /*     printf("%s\n", *(char**)sects[i].data); */
+        /* } */
     }
 
     ih->sects_num = sects_num;
