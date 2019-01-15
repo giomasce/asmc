@@ -179,4 +179,12 @@ char * strcat( char * s1, const char * s2 )
     return rc;
 }
 
+#include "stdlib.h"
+
+char *strdup(const char *s) {
+    char *r = malloc(strlen(s+1));
+    strcpy(r, s);
+    return r;
+}
+
 #endif
