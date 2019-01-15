@@ -86,3 +86,12 @@ int test_qsort() {
     if ( strcmp( s, presort ) != 0 ) return 0;
     return 1;
 }
+
+int test_strtoull_zero() {
+    char *p = "0";
+    char *q;
+    unsigned long long n = strtoull(p, &q, 0);
+    if (*q != '\0') return 0;
+    if (n != 0) return 0;
+    return 1;
+}

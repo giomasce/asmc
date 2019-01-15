@@ -189,6 +189,7 @@ fun c_run_testcases 0 {
   tests "/disk1/tests/test_stdlib.c" "test_free_null" 1 "" c_run_testcase ;
   tests "/disk1/tests/test_stdlib.c" "test_realloc_null_free" 1 "" c_run_testcase ;
   tests "/disk1/tests/test_stdlib.c" "test_qsort" 1 "" c_run_testcase ;
+  tests "/disk1/tests/test_stdlib.c" "test_strtoull_zero" 1 "" c_run_testcase ;
 
   tests "/disk1/tests/test_string.c" "test_strcmp1" 1 "" c_run_testcase ;
   tests "/disk1/tests/test_string.c" "test_strcmp2" 1 "" c_run_testcase ;

@@ -58,6 +58,10 @@ const char * _strtox_prelim( const char * p, char * sign, int * base )
         else if ( *base == 0 )
         {
             *base = 8;
+            /* Rewind one character back, so that the string composed
+               of just a zero is correctly parsed (and endptr is set
+               appropriately). */
+            --p;
         }
         else
         {
