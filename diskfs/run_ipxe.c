@@ -35,7 +35,7 @@ static table_sect *find_section(const char *name) {
 // Just a random number, but such that subtracting any reasonable
 // structure size does not wrap around (otherwise reverse for cycles
 // choke).
-#define EMPTY_LIST 0x100000
+#define EMPTY_LIST ((void*) 0x100000)
 
 void *get_table_start(const char *name) {
     table_sect *sect = find_section(name);
