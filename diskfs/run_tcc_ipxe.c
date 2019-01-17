@@ -29,6 +29,8 @@ const char *includes[] = {
 
 const char *sources[][2] = {
     {ASMC_PREFIX "/run_ipxe.c", IPXE_TEMP "/run_ipxe.o"},
+    {ASMC_PREFIX "/tinycc/lib/libtcc1.c", IPXE_TEMP "/libtcc1.o"},
+
     {IPXE_PREFIX "/core/main.c", IPXE_TEMP "/main.o"},
     {IPXE_PREFIX "/core/init.c", IPXE_TEMP "/init.o"},
     {IPXE_PREFIX "/core/vsprintf.c", IPXE_TEMP "/vsprintf.o"},
@@ -48,9 +50,9 @@ const char *sources[][2] = {
     {IPXE_PREFIX "/arch/x86/core/pcidirect.c", IPXE_TEMP "/pcidirect.o"},
     {IPXE_PREFIX "/core/debug.c", IPXE_TEMP "/debug.o"},
     {IPXE_PREFIX "/core/timer.c", IPXE_TEMP "/timer.o"},
-    /* {IPXE_PREFIX "/arch/x86/core/rdtsc_timer.c", IPXE_TEMP "/rdtsc_timer.o"}, */
-    /* {IPXE_PREFIX "/arch/x86/core/pit8254.c", IPXE_TEMP "/pit8254.o"}, */
-    /* {IPXE_PREFIX "/arch/x86/core/cpuid.c", IPXE_TEMP "/cpuid.o"}, */
+    {IPXE_PREFIX "/arch/x86/core/rdtsc_timer.c", IPXE_TEMP "/rdtsc_timer.o"},
+    {IPXE_PREFIX "/arch/x86/core/pit8254.c", IPXE_TEMP "/pit8254.o"},
+    {IPXE_PREFIX "/arch/x86/core/cpuid.c", IPXE_TEMP "/cpuid.o"},
     {IPXE_PREFIX "/arch/x86/interface/pcbios/acpi_timer.c", IPXE_TEMP "/acpi_timer.o"},
     {IPXE_PREFIX "/core/acpi.c", IPXE_TEMP "/acpi.o"},
     {IPXE_PREFIX "/arch/x86/interface/pcbios/rsdp.c", IPXE_TEMP "/rsdp.o"},
@@ -78,6 +80,58 @@ const char *sources[][2] = {
     {IPXE_PREFIX "/core/params.c", IPXE_TEMP "/params.o"},
     {IPXE_PREFIX "/net/netdev_settings.c", IPXE_TEMP "/netdev_settings.o"},
     {IPXE_PREFIX "/core/errno.c", IPXE_TEMP "/errno.o"},
+    {IPXE_PREFIX "/net/udp/dhcp.c", IPXE_TEMP "/dhcp.o"},
+    {IPXE_PREFIX "/net/dhcppkt.c", IPXE_TEMP "/dhcppkt.o"},
+    {IPXE_PREFIX "/net/dhcpopts.c", IPXE_TEMP "/dhcpopts.o"},
+    {IPXE_PREFIX "/net/udp.c", IPXE_TEMP "/udp.o"},
+    {IPXE_PREFIX "/net/tcpip.c", IPXE_TEMP "/tcpip.o"},
+    {IPXE_PREFIX "/net/ipv4.c", IPXE_TEMP "/ipv4.o"},
+    {IPXE_PREFIX "/net/icmpv4.c", IPXE_TEMP "/icmpv4.o"},
+    {IPXE_PREFIX "/net/fragment.c", IPXE_TEMP "/fragment.o"},
+    {IPXE_PREFIX "/net/neighbour.c", IPXE_TEMP "/neighbour.o"},
+    {IPXE_PREFIX "/net/arp.c", IPXE_TEMP "/arp.o"},
+    {IPXE_PREFIX "/net/icmp.c", IPXE_TEMP "/icmp.o"},
+    {IPXE_PREFIX "/crypto/crc32.c", IPXE_TEMP "/crc32.o"},
+    {IPXE_PREFIX "/core/xfer.c", IPXE_TEMP "/xfer.o"},
+    {IPXE_PREFIX "/core/open.c", IPXE_TEMP "/open.o"},
+    {IPXE_PREFIX "/core/resolv.c", IPXE_TEMP "/resolv.o"},
+    {IPXE_PREFIX "/net/ping.c", IPXE_TEMP "/ping.o"},
+    {IPXE_PREFIX "/net/tcp.c", IPXE_TEMP "/tcp.o"},
+    {IPXE_PREFIX "/core/cwuri.c", IPXE_TEMP "/cwuri.o"},
+    {IPXE_PREFIX "/core/pending.c", IPXE_TEMP "/pending.o"},
+    {IPXE_PREFIX "/interface/smbios/smbios_settings.c", IPXE_TEMP "/smbios_settings.o"},
+    {IPXE_PREFIX "/interface/smbios/smbios.c", IPXE_TEMP "/smbios.o"},
+    {IPXE_PREFIX "/arch/x86/interface/pcbios/bios_smbios.c", IPXE_TEMP "/bios_smbios.o"},
+    {IPXE_PREFIX "/usr/ifmgmt.c", IPXE_TEMP "/ifmgmt.o"},
+    {IPXE_PREFIX "/core/job.c", IPXE_TEMP "/job.o"},
+    {IPXE_PREFIX "/core/monojob.c", IPXE_TEMP "/monojob.o"},
+    {IPXE_PREFIX "/arch/x86/interface/pcbios/acpipwr.c", IPXE_TEMP "/acpipwr.o"},
+    {IPXE_PREFIX "/drivers/net/virtio-net.c", IPXE_TEMP "/virtio-net.o"},
+    {IPXE_PREFIX "/drivers/bus/virtio-pci.c", IPXE_TEMP "/virtio-pci.o"},
+    {IPXE_PREFIX "/drivers/bus/virtio-ring.c", IPXE_TEMP "/virtio-ring.o"},
+    {IPXE_PREFIX "/drivers/bus/pciextra.c", IPXE_TEMP "/pciextra.o"},
+    /* {IPXE_PREFIX "/usr/autoboot.c", IPXE_TEMP "/autoboot.o"}, */
+    /* {IPXE_PREFIX "/usr/prompt.c", IPXE_TEMP "/prompt.o"}, */
+    /* {IPXE_PREFIX "/usr/route.c", IPXE_TEMP "/route.o"}, */
+    /* {IPXE_PREFIX "/usr/route_ipv4.c", IPXE_TEMP "/route_ipv4.o"}, */
+    /* {IPXE_PREFIX "/usr/imgmgmt.c", IPXE_TEMP "/imgmgmt.o"}, */
+    /* {IPXE_PREFIX "/hci/shell.c", IPXE_TEMP "/shell.o"}, */
+    /* {IPXE_PREFIX "/hci/readline.c", IPXE_TEMP "/readline.o"}, */
+    /* {IPXE_PREFIX "/hci/editstring.c", IPXE_TEMP "/editstring.o"}, */
+    /* {IPXE_PREFIX "/core/getkey.c", IPXE_TEMP "/getkey.o"}, */
+    /* {IPXE_PREFIX "/core/exec.c", IPXE_TEMP "/exec.o"}, */
+    /* {IPXE_PREFIX "/core/parseopt.c", IPXE_TEMP "/parseopt.o"}, */
+    /* {IPXE_PREFIX "/core/getopt.c", IPXE_TEMP "/getopt.o"}, */
+    /* {IPXE_PREFIX "/core/image.c", IPXE_TEMP "/image.o"}, */
+    /* {IPXE_PREFIX "/core/downloader.c", IPXE_TEMP "/downloader.o"}, */
+    /* {IPXE_PREFIX "/core/xferbuf.c", IPXE_TEMP "/xferbuf.o"}, */
+    /* {IPXE_PREFIX "/core/menu.c", IPXE_TEMP "/menu.o"}, */
+    /* {IPXE_PREFIX "/core/null_sanboot.c", IPXE_TEMP "/null_sanboot.o"}, */
+    /* {IPXE_PREFIX "/core/sanboot.c", IPXE_TEMP "/sanboot.o"}, */
+    /* {IPXE_PREFIX "/drivers/block/ata.c", IPXE_TEMP "/ata.o"}, */
+    /* {IPXE_PREFIX "/core/blockdev.c", IPXE_TEMP "/blockdev.o"}, */
+    /* {IPXE_PREFIX "/core/edd.c", IPXE_TEMP "/edd.o"}, */
+    /* {IPXE_PREFIX "/core/quiesce.c", IPXE_TEMP "/quiesce.o"}, */
 };
 
 #include "ipxe_handover.h"
