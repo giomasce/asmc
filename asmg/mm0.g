@@ -69,3 +69,53 @@ fun mm0_tokenize 1 {
 
   tokens ret ;
 }
+
+const SIZEOF_MM0TH 0
+
+fun mm0th_init 0 {
+  $theory
+  @theory SIZEOF_MM0TH malloc = ;
+
+  theory ret ;
+}
+
+fun mm0th_destroy 1 {
+  $theory
+  @theory 0 param = ;
+
+  theory free ;
+}
+
+fun mm0_parse 1 {
+  $tokens
+  @tokens 0 param = ;
+
+  $theory
+  @theory mm0th_init = ;
+
+  # TODO: parse
+
+  theory ret ;
+}
+
+fun mm0_process 1 {
+  $filename
+  @filename 0 param = ;
+
+  $tokens
+  @tokens filename mm0_tokenize = ;
+
+  $theory
+  @theory tokens mm0_parse = ;
+
+  # TODO: verify theory
+
+  # Free resources
+  theory mm0th_destroy ;
+  $i
+  @i 0 = ;
+  while i tokens vector_size < {
+    tokens i vector_at mm0tok_destroy ;
+    @i i 1 + = ;
+  }
+}
