@@ -64,6 +64,7 @@
   OP_SHR equ 46
   OP_SAL equ 47
   OP_SAR equ 48
+  OP_CDQ equ 49
 
   section .data
 
@@ -166,6 +167,8 @@ opcode_names:
   db 0
   db 'sar'
   db 0
+  db 'cdq'
+  db 0
   db 0
 
 opcode_funcs:
@@ -218,6 +221,7 @@ opcode_funcs:
   dd process_push_like   ; OP_SHR
   dd process_push_like   ; OP_SAL
   dd process_push_like   ; OP_SAR
+  dd process_ret_like    ; OP_CDQ
 
 empty_opcode:
   dd 0xf0    ; OP_PUSH
@@ -269,6 +273,7 @@ empty_opcode:
   dd 0xf0    ; OP_SHR
   dd 0xf0    ; OP_SAL
   dd 0xf0    ; OP_SAR
+  dd 0x99    ; OP_CDQ
 
 rm32_opcode:
   dd 0x06ff  ; OP_PUSH
@@ -320,6 +325,7 @@ rm32_opcode:
   dd 0x05d3  ; OP_SHR
   dd 0x04d3  ; OP_SAL
   dd 0x07d3  ; OP_SAR
+  dd 0xf0    ; OP_CDQ
 
 imm32_opcode:
   dd 0xf0    ; OP_PUSH
@@ -371,6 +377,7 @@ imm32_opcode:
   dd 0xf0    ; OP_SHR
   dd 0xf0    ; OP_SAL
   dd 0xf0    ; OP_SAR
+  dd 0xf0    ; OP_CDQ
 
 r8rm8_opcode:
   dd 0xf0    ; OP_PUSH
@@ -422,6 +429,7 @@ r8rm8_opcode:
   dd 0xf0    ; OP_SHR
   dd 0xf0    ; OP_SAL
   dd 0xf0    ; OP_SAR
+  dd 0xf0    ; OP_CDQ
 
 r32rm32_opcode:
   dd 0xf0    ; OP_PUSH
@@ -473,6 +481,7 @@ r32rm32_opcode:
   dd 0xf0    ; OP_SHR
   dd 0xf0    ; OP_SAL
   dd 0xf0    ; OP_SAR
+  dd 0xf0    ; OP_CDQ
 
 rm8r8_opcode:
   dd 0xf0    ; OP_PUSH
@@ -524,6 +533,7 @@ rm8r8_opcode:
   dd 0xf0    ; OP_SHR
   dd 0xf0    ; OP_SAL
   dd 0xf0    ; OP_SAR
+  dd 0xf0    ; OP_CDQ
 
 rm32r32_opcode:
   dd 0xf0    ; OP_PUSH
@@ -575,6 +585,7 @@ rm32r32_opcode:
   dd 0xf0    ; OP_SHR
   dd 0xf0    ; OP_SAL
   dd 0xf0    ; OP_SAR
+  dd 0xf0    ; OP_CDQ
 
 rm8imm8_opcode:
   dd 0xf0    ; OP_PUSH
@@ -626,6 +637,7 @@ rm8imm8_opcode:
   dd 0xf0    ; OP_SHR
   dd 0xf0    ; OP_SAL
   dd 0xf0    ; OP_SAR
+  dd 0xf0    ; OP_CDQ
 
 rm32imm32_opcode:
   dd 0xf0    ; OP_PUSH
@@ -677,6 +689,7 @@ rm32imm32_opcode:
   dd 0xf0    ; OP_SHR
   dd 0xf0    ; OP_SAL
   dd 0xf0    ; OP_SAR
+  dd 0xf0    ; OP_CDQ
 
 
 reg_eax:

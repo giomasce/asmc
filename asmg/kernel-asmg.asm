@@ -302,8 +302,8 @@ str_over:
   db '/'
   db 0
 over:
-  mov edx, 0
   mov eax, [esp+8]
+  cdq
   idiv DWORD [esp+4]
   ret
 
@@ -311,8 +311,8 @@ str_mod:
   db '%'
   db 0
 mod:
-  mov edx, 0
   mov eax, [esp+8]
+  cdq
   idiv DWORD [esp+4]
   mov eax, edx
   ret
