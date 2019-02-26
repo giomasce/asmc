@@ -32,7 +32,7 @@ You should use Linux to compile `asmc`, although some parts of it can
 also be built on macOS. If you use Debian, install the prerequisites
 with
 
-    sudo apt-get install build-essential nasm qemu-system-x86 grub-common python3 gcc-multilib -m 256M
+    sudo apt-get install build-essential nasm qemu-system-x86 grub-common python3 gcc-multilib
 
 If you cloned the GIT repository, you will probably want to checkout
 the submodules as well:
@@ -45,7 +45,7 @@ subdirectory named `build` will be created, with all compilation
 artifacts inside it. In particular `build/boot_asmg.x86` is a bootable
 disk image, which you can run with QEMU:
 
-    qemu-system-i386 -hda build/boot_asmg.x86 -serial stdio -device isa-debug-exit -display none
+    qemu-system-i386 -m 256M -hda build/boot_asmg.x86 -serial stdio -device isa-debug-exit -display none
 
 (if your host system supports it, you can add `-enable-kvm -cpu host`
 to benefit of KVM acceleration; `-cpu host` is currently required
