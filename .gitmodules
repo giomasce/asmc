@@ -13,3 +13,6 @@
 [submodule "contrib/ipxe"]
 	path = contrib/ipxe
 	url = https://gitlab.com/giomasce/ipxe.git
+[submodule "contrib/mm0"]
+	path = contrib/mm0
+	url = https://github.com/digama0/mm0.git
