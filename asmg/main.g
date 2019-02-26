@@ -21,10 +21,10 @@ const RUN_FASM 0
 const RUN_C 0
 const RUN_MESCC 0
 const RUN_MCPP 0
-const RUN_TINYCC 1
-const TEST_MAP 1
-const TEST_INT64 1
-const TEST_C 1
+const RUN_TINYCC 0
+const TEST_MAP 0
+const TEST_INT64 0
+const TEST_C 0
 
 const USE_TRIVIAL_MALLOC 0
 const USE_SIMPLE_MALLOC 0
@@ -167,10 +167,6 @@ fun main 0 {
     "done!\n" 1 platform_log ;
   }
 
-  if RUN_MM0 {
-    "/diskfs/mm0/set-mm.mm0" 0 "mm0_process" platform_get_symbol \1 ;
-  }
-
   if compile_asm {
     #"Memory break before ASM assembler compilation: " 1 platform_log ;
     #0 platform_allocate itoa 1 platform_log ;
@@ -281,6 +277,11 @@ fun main 0 {
     0 "run_script" platform_get_symbol \0 ;
   } else {
     "No script, running the usual payload...\n" 1 platform_log ;
+
+    if RUN_MM0 {
+      "/disk1/mm0/set-mm.mm0" 0 "mm0_process" platform_get_symbol \1 ;
+    }
+
     if RUN_ASM {
       "/init/test.asm" 0 "parse_asm" platform_get_symbol \1 ;
     }
