@@ -118,4 +118,5 @@ fun mm0_process 1 {
     tokens i vector_at mm0tok_destroy ;
     @i i 1 + = ;
   }
+  tokens vector_destroy ;
 }

@@ -167,6 +167,10 @@ fun main 0 {
     "done!\n" 1 platform_log ;
   }
 
+  if RUN_MM0 {
+    "/diskfs/mm0/set-mm.mm0" 0 "mm0_process" platform_get_symbol \1 ;
+  }
+
   if compile_asm {
     #"Memory break before ASM assembler compilation: " 1 platform_log ;
     #0 platform_allocate itoa 1 platform_log ;
