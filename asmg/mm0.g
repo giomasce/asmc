@@ -387,6 +387,8 @@ fun mm0lexer_get_token 1 {
     value size + '\0' =c ;
     MM0TOK_TYPE_MATH value mm0tok_init ret ;
   }
+
+  0 "mm0lexer_get_token: invalid character in input file" assert_msg ;
 }
 
 const SIZEOF_MM0TH 0
@@ -435,7 +437,9 @@ fun mm0_process 1 {
   @lexer filename mm0lexer_init = ;
 
   $theory
+  "Parsing MM0 theory: " 1 platform_log ;
   @theory lexer mm0_parse = ;
+  "\n" 1 platform_log ;
 
   # TODO: verify theory
 
