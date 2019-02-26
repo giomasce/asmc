@@ -1,5 +1,5 @@
 # This file is part of asmc, a bootstrapping OS with minimal seed
-# Copyright (C) 2018 Giovanni Mascellani <gio@debian.org>
+# Copyright (C) 2018-2019 Giovanni Mascellani <gio@debian.org>
 # https://gitlab.com/giomasce/asmc
 
 # This program is free software: you can redistribute it and/or modify
@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+const RUN_MM0 1
 const RUN_ASM 0
 const RUN_FASM 0
 const RUN_C 0
@@ -41,12 +42,17 @@ fun main 0 {
   0 platform_allocate itoa 1 platform_log ;
   "\n" 1 platform_log ;
 
+  $compile_mm0
   $compile_asm
   $compile_int64
   $compile_c
+  @compile_mm0 0 = ;
   @compile_asm 0 = ;
   @compile_int64 0 = ;
   @compile_c 0 = ;
+  if RUN_MM0 {
+    @compile_mm0 1 = ;
+  }
   if RUN_ASM RUN_FASM || {
     @compile_asm 1 = ;
   }
@@ -154,6 +160,12 @@ fun main 0 {
   "Compiling vfs_utils.g... " 1 platform_log ;
   "vfs_utils.g" platform_g_compile ;
   "done!\n" 1 platform_log ;
+
+  if compile_mm0 {
+    "Compiling mm0.g... " 1 platform_log ;
+    "mm0.g" platform_g_compile ;
+    "done!\n" 1 platform_log ;
+  }
 
   if compile_asm {
     #"Memory break before ASM assembler compilation: " 1 platform_log ;
