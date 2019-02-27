@@ -21,9 +21,9 @@ and are dropped after tokenization. Comments are introduced by a `#`
 
 In a G source code, the following constructions are available.
 
- * *Constant definition*
+ * **Constant definition**
 
-       const NAME VALUE
+        const NAME VALUE
 
    declares a compile-time constant with name `NAME` and value `VALUE`
    (which can be a previously defined constant, a decimal expression
@@ -33,12 +33,12 @@ In a G source code, the following constructions are available.
 
    Examples:
 
-       const DOZEN 12
-       const BYTE_MAX 0xff
+        const DOZEN 12
+        const BYTE_MAX 0xff
 
- * *Function declaration*
+ * **Function declaration**
 
-       ifun NAME PARAM_NUM
+        ifun NAME PARAM_NUM
 
    declares a function named `NAME` with `PARAM_NUM` parameters
    without defining it. I will have to be matched by a later (or also
@@ -50,5 +50,5 @@ In a G source code, the following constructions are available.
 
    Examples:
 
-       ifun setup 0
-       ifun sum_two_numbers 2
+        ifun setup 0
+        ifun sum_two_numbers 2
