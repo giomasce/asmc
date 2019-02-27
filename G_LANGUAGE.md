@@ -159,6 +159,15 @@ function, described below.
 The following functions are always available in a G program, without
 having to be manually defined.
 
+ * `=` (2 arguments) assigns the latest pushed argument to the
+   variable at the address specified by the earliest pushed
+   argument. It is important to notice that this is not completely
+   equivalent to the C assignement operator, because G has no
+   equivalent for the C lvalue concept. Thus `a b =` is rather
+   equivalent to C's `*(int*)a = b`. If you want to assign the value
+   of `b` to `a`, then you need to write `@a b =` in G, which becomes
+   equivalent to C's `*(int*)&a = b`.
+
  * `param` (1 argument) returns the `n`-th formal parameter to the
    enclosing function, where `n` is the value passed to `param`. If
    `n` is larger or equal then the number of parameters, the behaviour
@@ -260,3 +269,21 @@ follow it so that G programs remain as readable as possible.
    that is ABI-compatible with the C declaration for `func` if the C
    compiler uses `cdecl` calling conventions, which permits easy
    interaction between C and G in later stages of `asmc`.
+
+ * How to emulate C `struct`s: TODO
+
+## Examples
+
+Let us discuss a few simple G programs and provide their C equivalents
+to better illustrate them.
+
+    fun sum_two_numbers 2 {
+      $x
+      $y
+      @x 1 param = ;
+      @y 0 param = ;
+
+      $sum
+      @sum x y + = ;
+      sum ret ;
+    }
