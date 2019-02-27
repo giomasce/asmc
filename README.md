@@ -62,9 +62,6 @@ the chain and build a Linux kernel and GNU userspace, so that you will
 actually have a complete operating system entirely compiled from
 scratches at computer boot!
 
-Together with `boot_asmg.x86`, there will be also `boot_empty.x86`,
-`boot_asmasm.x86` and `boot_asmg0.x86` (see below for what they are).
-
 WARNING! ATTENTION! Remember that you are giving full control over you
 hardware to an experimental program whose author is not an expert
 operating system programmer: it could have bugs and overwrite your
@@ -128,10 +125,9 @@ idea of what is happening, if you use the command above to boot
 `asmg`'s behaviour can be customized thanks to some flags at the
 beginning of the `asmg/main.g` file. There you can enable:
 
- * `RUN_ASM`: it will compile an assembler (completely independent
-   from `asmasm`) and then run it on the file `test/test.asm`. The
-   assembler is not complete at all, but ideally it should be more or
-   less enough to assemble a [lightly
+ * `RUN_ASM`: it will compile an assembler and then run it on the file
+   `test/test.asm`. The assembler is not complete at all, but ideally
+   it should be more or less enough to assemble a [lightly
    patched](https://gitlab.com/giomasce/fasm) version of
    [FASM](https://flatassembler.net/) (see next point).
 
@@ -266,24 +262,6 @@ and thus tested.
    environment than a virtual machine, but they are far from being
    perfect and not very useful nowadays.
 
- * `empty` is just an empty test payload. It prints a message and then
-   stop. Not very funny.
-
- * `asmasm` is an assembler written in Assembly, which can be used as
-   a payload for the kernel, in order to make a small operating system
-   that is just able to compile others Assembly programs to expand its
-   capabilities. Once `asmasm` is loaded, it compiles the file
-   `main.asm` and then jumps to the label `main`.  `asmasm` is able to
-   compile itself.
-
-   `asmasm` supports only a subset of the x86 Assembly syntax and some
-   NASM-styled directives. It definitely will not be able to compile
-   any random Assembly program, if you do not reduce the program to
-   the accepted syntax beforehand. As everything else in the binary
-   seed, it is designed to be as simple and small as possible, and to
-   contain the minimal tools required to build later stages that can
-   do more grandiose things.
-
  * `asmg` is an G compiler written in Assembly. G is a custom language
    I invented for this project, described below in more details. As
    soon as it is ready, it compiles the file `main.g` and jumps to
@@ -306,13 +284,10 @@ and thus tested.
    outlined above, this is not tested software, you should never run
    it on computer that you cannot afford to be erased.
 
- * `attic` and `cc` contains some earlier test code, that is not used
-   any more and it is also probably broken. `staging.c` and
-   `gstaging.c` are the original implementations of `asmasm` and
-   `asmg` in C, used as a basis to write the Assembly code. `cc.c` and
-   `cc2.c` are two stages of a test C compiler written in C, that was
-   aborted halfway when I begun to work on the C compiler written in
-   G.
+ * `attic` contains some earlier test code, that is not used any more
+   and it is also probably broken. They are probably not very
+   interesting to most users, and might be removed altogether at some
+   point.
 
  * `test` contains some test programs for the Assembly and C compilers
    contained in `asmg`.
@@ -462,11 +437,6 @@ returned via additional first argument).
    except EAX which is set to `status`. This is used to implement the
    `longjmp` call in the C compiler.
 
-Another routine is provided when compiling the kernel with `asmasm`:
-
- * `platform_assemble(char *filename)` Assemble the Assembly program
-   in `filename`, panicking if an error is found.
-
 Another routine is provided when compiling the kernel with `asmg`:
 
  * `platform_g_compile(char *filename)` Compile the G program in
@@ -482,15 +452,15 @@ in these debugging utilities.
 
 ## The G language
 
-My initial idea, when I wrote `asmasm`, was to embed an Assembly
-compiler in the initial seed and then use Assembly to write a C
-compiler. At some point I realized that bridging the gap between
+My initial idea, when I begun working on `asmc`, was to embed an
+Assembly compiler in the initial seed and then use Assembly to write a
+C compiler. At some point I realized that bridging the gap between
 Assembly and C with just one jump is very hard: Assembly is very low
 level, and C, when you try to write its compiler, is much higher level
 that one would expect in the beginning. At the same time, Assembly is
 harder to compile properly then I initially expected: there are quite
-some syntax variations and opcode encoding can be rather quircky. So
-it is not the ideal thing to put in the binary seed.
+some syntax variations and opcode encoding can be rather quirky. So it
+is not the ideal thing to put in the binary seed.
 
 Then I set out to invent a language which could offer a somewhat C
 like writing experience, but that was as simple as possible to parse
