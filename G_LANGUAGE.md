@@ -91,6 +91,9 @@ execution.
 
 In particular, the following stack commands are supported.
 
+ * **Push a constant value** Writing an integral value (either in
+   decimal or hexadecimal form) causes it to be pushed on the stack.
+
  * **Push variable value** Writing a variable name (either local or
    global) causes its current value to be pushed on the stack.
 
@@ -111,10 +114,86 @@ In particular, the following stack commands are supported.
    required before using non-stack commands, like execution flow
    control and variable introduction commands.
 
-   This command clearly bears a similarity with the C semicolon, which
-   is used to close statements. In G there are no statements, so there
-   is no need to close them; as a result, in general `;` commands are
-   only really required when you need to call a non-stack
+ * **Return from function** Writing a token `ret` causes the function
+   to immediately return. If the stack is not empty, its top value is
+   the function return value. If the stack is empty, the return value
+   is unspecified.
+
+The following non-stack commands are supported. When they are
+executed, the stack must be empty (and, correspondingly, they leave it
+empty).
+
+ * **Code block** At any point a scoped block can be begun with the
+   command `{` and closed with the corresponding `}`. All variables
+   definitions inside the block expire when the block is closed. The
+   stack does not need to be empty at the end of the block, but if it
+   is not, it is flushed.
+
+ * **Local variable definition** Writing `$NAME` a new variable with
+   name `NAME` is introduced. Its initial value is unspecified
+   (differently from global variables).
+
+ * **Conditional block** The `if` token introduces a conditional
+   block. It must be followed by one or more stack commands (except
+   `ret`) and then by a code block, defined as above. When the
+   conditional block is executed, first the guard stack commands are
+   evaluated and must leave exactly one value in the stack: if such
+   value is zero, control is directly trasfered to the end of the
+   block. If not, the block is executed normally. Differently from C,
+   the `if` command must guard a block; it cannot guard a single
+   expression.
+
+ * **Repeated block** Then `while` token introduces a repeated
+   block. Its syntax is identical to the conditional block, except for
+   the usage of `while` instead of `if`. Its semantic is also
+   identical, except that at the end of the block execution the guard
+   expression is evaluated again, and if it still non-zero, the block
+   is executed again.
+
+The function's formal parameters are not directly available as named
+variables. However, they can be retrieved with the `param` predefined
+function, described below.
+
+## Predefined functions
+
+The following functions are always available in a G program, without
+having to be manually defined.
+
+ * `param` (1 argument) returns the `n`-th formal parameter to the
+   enclosing function, where `n` is the value passed to `param`. If
+   `n` is larger or equal then the number of parameters, the behaviour
+   is unspecified. The zeroth parameter is the one that was pushed
+   *last* on the stack before calling the enclosing
+   function. Therefore in the following snippet:
+
+        fun test 2 {
+          $a $b
+          @a 0 param = ;
+          @b 1 param = ;
+        }
+        
+        fun test2 0 {
+          0 1 test ;
+        }
+
+   `a` will have value `1` and `b` will have value `0` inside `test`.
+
+ * `+` (2 arguments) returns the sum of its two arguments.
+
+ * `-` (2 arguments) returns the difference of its two arguments (the
+   earliest pushed minus the latest pushed).
+
+ * TODO
+
+## Common coding suggestions
+
+This section is not normative, but G programmers are encouraged to
+follow it so that G programs remain as readable as possible.
+
+ * The `;` command clearly bears a similarity with the C semicolon,
+   which is used to close statements. In G there are no statements, so
+   there is no need to close them; as a result, in general `;`
+   commands are only really required when you need to call a non-stack
    command. However, it is suggested to still use them in the C way,
    to improve readability and to drop the stack as soon as it is not
    needed anymore (this also prevents leftover stack elements to be
@@ -144,14 +223,40 @@ In particular, the following stack commands are supported.
 
    And, of course, this is even less encouraged.
 
-The following non-stack commands are supported. When they are
-executed, the stack must be empty (and, correspondingly, they leave it
-empty).
+ * The usage of the `param` function might be a bit non-obvious,
+   because it causes parameters to materialize inside the function in
+   a way that might appears to be the "opposite" of what might seem
+   sensible. The suggested idiomatic way to use `param` in thus the
+   following: suppose that you want to define a function analogous to
+   the C declaration
 
- * **Code block**
- 
- * **Local variable definition**
+        int func(int a, int b, int c);
 
- * **Conditional block**
+   Then it is suggested to define it in G in this way:
 
- * **Repeated block**
+        fun func 3 {
+          $a
+          $b
+          $c
+          @a param 2 = ;  # Notice param arguments are in
+          @b param 1 = ;  # decreasing order
+          @c param 0 = ;
+
+          # Do not use param anymore in function body; just use a, b
+          # and c
+        }
+
+   and call it by pushing arguments on the stack in the same order
+   they appear in the C declaration:
+
+        fun func2 0 {
+          0 1 2 func ;
+        }
+
+   `a` will take value `0`, `b` will take value `1` and `c` will take
+   value `2` inside `func`.
+
+   Also, the reference G compiler will produce for `func` machine code
+   that is ABI-compatible with the C declaration for `func` if the C
+   compiler uses `cdecl` calling conventions, which permits easy
+   interaction between C and G in later stages of `asmc`.
