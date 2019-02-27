@@ -5,13 +5,13 @@ UNAME := $(shell uname -s)
 ifeq ($(UNAME),Linux)
 FOUND := 1
 AR=ar
-all: build build/boot_asmasm.x86 build/boot_empty.x86 build/boot_asmg.x86 build/boot_asmg0.x86
+all: build build/boot_asmg.x86 build/boot_asmg0.x86
 endif
 
 ifeq ($(UNAME),Darwin)
 FOUND := 1
 AR=gar
-all: build build/boot_asmasm.x86 build/boot_empty.x86 build/boot_asmg.x86 build/boot_asmg0.x86
+all: build build/boot_asmg.x86 build/boot_asmg0.x86
 endif
 
 ifeq ($(FOUND),0)
@@ -62,41 +62,6 @@ build/diskfs.list: diskfs/* diskfs/mescc/x86_defs.m1 diskfs/fasm/fasm.asm
 
 build/diskfs.img: build/diskfs.list
 	./create_diskfs.py < $< > $@
-
-# Asmasm kernel
-build/full-asmasm.asm: lib/multiboot.asm lib/kernel.asm lib/shutdown.asm lib/ar.asm lib/library.asm asmasm/asmasm.asm asmasm/kernel-asmasm.asm lib/top.asm
-	cat $^ | grep -v "^ *section " > $@
-
-build/initrd-asmasm.ar: asmasm/main.asm lib/atapio.asm asmasm/atapio_test.asm build/END
-	-rm $@
-	$(AR) rcs $@ $^
-
-build/asmasm.x86.exe: build/full-asmasm.asm
-	nasm -f bin -o $@ $<
-
-build/asmasm.x86: build/asmasm.x86.exe build/initrd-asmasm.ar
-	cat $^ > $@
-
-build/boot_asmasm.x86: build/bootloader.x86.mbr build/bootloader.x86.stage2 build/asmasm.x86
-	./create_partition.py $^ > $@
-
-
-# Empty kernel
-build/full-empty.asm: lib/multiboot.asm lib/kernel.asm lib/shutdown.asm lib/ar.asm lib/library.asm empty/kernel-empty.asm lib/top.asm
-	cat $^ | grep -v "^ *section " > $@
-
-build/initrd-empty.ar: build/END
-	-rm $@
-	$(AR) rcs $@ $^
-
-build/empty.x86.exe: build/full-empty.asm
-	nasm -f bin -o $@ $<
-
-build/empty.x86: build/empty.x86.exe build/initrd-empty.ar
-	cat $^ > $@
-
-build/boot_empty.x86: build/bootloader.x86.mbr build/bootloader.x86.stage2 build/empty.x86
-	./create_partition.py $^ > $@
 
 # Asmg kernel
 build/script.g:
