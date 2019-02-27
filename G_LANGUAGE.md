@@ -276,44 +276,114 @@ follow it so that G programs remain as readable as possible.
    compiler uses `cdecl` calling conventions, which permits easy
    interaction between C and G in later stages of `asmc`.
 
- * How to emulate C `struct`s: TODO
+ * G's very simple type system, while allowing a very simple syntax
+   and compiler, completely leaves the burden of organizing structured
+   data types on the programmer. Fortunately the task is not that
+   difficult with a little bit of code organization (which is, in the
+   end, not very different from what happens in a C program, except
+   that you do not have the syntactic sugar coating). Suppose that you
+   need a structure like this one in C:
+
+        typedef struct {
+          int first;
+          int second;
+          int third;
+        } MyStruct;
+
+   You can use the following code in G:
+
+        const MYSTRUCT_FIRST 0
+        const MYSTRUCT_SECOND 4
+        const MYSTRUCT_THIRD 8
+        const SIZEOF_MYSTRUCT 12
+
+   Then, using `ptr` to denote a pointer to this structure, the
+   following C code:
+
+        MyStruct *ptr;
+        ptr = malloc(sizeof(MyStruct));
+        ptr->first = 0;
+        ptr->second = ptr->third;
+        free(ptr);
+
+   is roughly equivalent to this G code:
+
+        $ptr
+        @ptr SIZEOF_MYSTRUCT malloc = ;
+        ptr MYSTRUCT_FIRST take_addr 0 = ;
+        ptr MYSTRUCT_SECOND take_addr ptr MYSTRUCT_THIRD take = ;
+        ptr free ;
+
+   The library routines `take` and `take_addr` are defined in
+   `utils.g` and do the right thing here (`take_addr` is actually
+   completely equivalent to `+` and `take` is just `+` followed by
+   dereferencing; it is useful to give them different names to remark
+   their meaning).
+
+   The G syntax is a bit more verbose and requires some care in
+   maintaining the offset tables for all structures (be careful not to
+   get confused between multiples of 4 and feel free to use
+   hexadecimal if it makes things easier for you), but all in all if
+   you know how to do things in C, converting to G is rather
+   straightforward.
 
 ## Examples
 
 Let us discuss a few simple G programs and provide their C equivalents
 to better illustrate them.
 
-    fun sum_two_numbers 2 {        int sum_two_numbers(int p1, int p0) {
-      $x                             int x;
-      $y                             int y;
-      @x 1 param = ;                 x = p1;
-      @y 0 param = ;                 y = p2;
+    fun sum_two_numbers 2 {            int sum_two_numbers(int p1, int p0) {
+      $x                                 int x;
+      $y                                 int y;
+      @x 1 param = ;                     x = p1;
+      @y 0 param = ;                     y = p2;
 
-      $sum                           int sum;
-      @sum x y + = ;                 sum = x+y;
-      sum ret ;                      return sum;
-    }                              }
+      $sum                               int sum;
+      @sum x y + = ;                     sum = x+y;
+      sum ret ;                          return sum;
+    }                                  }
 
 Incidentally, `sum_two_numbers` does exactly the same thing as the
 built-in function `+`, but it was an easy starting example.
 
-    fun sum_numbers 2 {            int sum_numbers(int p1, int p0) {
-      $from                          int from;
-      $to                            int to;
-      @from 1 param = ;              from = p1;
-      @to 0 param = ;                to = p0;
+    const FROM 20                      #define FROM 20
+    const TO 0x64                      #define TO 0x64
 
-      $i                             int i;
-      $sum                           int sum;
-      @i from = ;                    i = from;
-      @sum 0 = ;                     sum = 0;
-      while i to <= {                while i <= to {
-        @sum sum i + = ;               sum = sum + i;
-        @i i 1 + = ;                   i = i + 1;
-      }                              }
+    ifun sum_number 2                  int sum_numbers(int, int);
 
-      sum ret ;                      return sum;
-    }                              }
+    fun main 0 {                       int main(void) {
+      "The sum of numbers from "         platform_log("The sum of numbers from ", 1);
+        1 platform_log ;
+      FROM itoa 1 platform_log ;         platform_log(itoa(FROM), 1);
+      " to " 1 platform_log ;            platform_log(" to ", 1);
+      TO itoa 1 platform_log ;           platform_log(itoa(TO), 1);
+      " is " 1 platform_log ;            platform_log(" is ", 1);
+      FROM TO sum_numbers itoa           platform_log(itoa(sum_numbers(FROM, TO)), 1);
+        1 platform_log ;
+      "\n" 1 platform_log ;              platform_log("\n", 1);
+    }                                  }
+
+    # Return the sum of numbers        // Return the sum of numbers
+    # in an interval                   // in an interval
+    fun sum_numbers 2 {                int sum_numbers(int p1, int p0) {
+      $from                              int from;
+      $to                                int to;
+      @from 1 param = ;                  from = p1;
+      @to 0 param = ;                    to = p0;
+
+      $i                                 int i;
+      $sum                               int sum;
+      @i from = ;                        i = from;
+      @sum 0 = ;                         sum = 0;
+      while i to <= {                    while i <= to {
+        @sum sum i + = ;                   sum = sum + i;
+        @i i 1 + = ;                       i = i + 1;
+      }                                  }
+
+      sum ret ;                          return sum;
+    }                                  }
 
 Of course C has quicker expressions like `+=` and `++`, but I did not
-use them in this example to better explain the analogy with G.
+use them in this example to better explain the analogy with G. The
+function `itoa` returns a number formatted as a decimal string, while
+the function `platform_log` dump a string to the console.
