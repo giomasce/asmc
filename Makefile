@@ -5,14 +5,12 @@ UNAME := $(shell uname -s)
 ifeq ($(UNAME),Linux)
 FOUND := 1
 AR=ar
-USE_NASM=0
-all: build build/asmasm_linux build/boot_asmasm.x86 build/boot_empty.x86 build/boot_asmg.x86 build/boot_asmg0.x86
+all: build build/boot_asmasm.x86 build/boot_empty.x86 build/boot_asmg.x86 build/boot_asmg0.x86
 endif
 
 ifeq ($(UNAME),Darwin)
 FOUND := 1
 AR=gar
-USE_NASM=1
 all: build build/boot_asmasm.x86 build/boot_empty.x86 build/boot_asmg.x86 build/boot_asmg0.x86
 endif
 
@@ -65,19 +63,6 @@ build/diskfs.list: diskfs/* diskfs/mescc/x86_defs.m1 diskfs/fasm/fasm.asm
 build/diskfs.img: build/diskfs.list
 	./create_diskfs.py < $< > $@
 
-# Asmasm executable
-build/asmasm_linux.asm: asmasm/asmasm_linux.asm lib/library.asm asmasm/asmasm.asm
-	cat $^ > $@
-
-build/asmasm_linux.o: build/asmasm_linux.asm
-	nasm -f elf -F dwarf -g -w-number-overflow -o $@ $<
-
-build/platform_linux.o: lib/platform_linux.c lib/platform.h
-	gcc -m32 -c -Og -g -Ilib -o $@ $<
-
-build/asmasm_linux: build/asmasm_linux.o build/platform_linux.o
-	gcc -m32 -Og -g -o $@ $^
-
 # Asmasm kernel
 build/full-asmasm.asm: lib/multiboot.asm lib/kernel.asm lib/shutdown.asm lib/ar.asm lib/library.asm asmasm/asmasm.asm asmasm/kernel-asmasm.asm lib/top.asm
 	cat $^ | grep -v "^ *section " > $@
@@ -86,13 +71,8 @@ build/initrd-asmasm.ar: asmasm/main.asm lib/atapio.asm asmasm/atapio_test.asm bu
 	-rm $@
 	$(AR) rcs $@ $^
 
-ifeq ($(USE_NASM),1)
 build/asmasm.x86.exe: build/full-asmasm.asm
 	nasm -f bin -o $@ $<
-else
-build/asmasm.x86.exe: build/full-asmasm.asm build/asmasm_linux
-	./build/asmasm_linux $< > $@
-endif
 
 build/asmasm.x86: build/asmasm.x86.exe build/initrd-asmasm.ar
 	cat $^ > $@
@@ -109,13 +89,8 @@ build/initrd-empty.ar: build/END
 	-rm $@
 	$(AR) rcs $@ $^
 
-ifeq ($(USE_NASM),1)
 build/empty.x86.exe: build/full-empty.asm
 	nasm -f bin -o $@ $<
-else
-build/empty.x86.exe: build/full-empty.asm build/asmasm_linux
-	./build/asmasm_linux $< > $@
-endif
 
 build/empty.x86: build/empty.x86.exe build/initrd-empty.ar
 	cat $^ > $@
@@ -134,13 +109,8 @@ build/initrd-asmg.ar: asmg/*.g build/script.g test/test.hex2 test/test.m1 test/t
 	-rm $@
 	$(AR) rcs $@ $^
 
-ifeq ($(USE_NASM),1)
 build/asmg.x86.exe: build/full-asmg.asm
 	nasm -f bin -o $@ $<
-else
-build/asmg.x86.exe: build/full-asmg.asm build/asmasm_linux
-	./build/asmasm_linux $< > $@
-endif
 
 build/asmg.x86: build/asmg.x86.exe build/initrd-asmg.ar
 	cat $^ > $@
@@ -156,13 +126,8 @@ build/boot_asmg.x86: build/bootloader.x86.mbr build/bootloader.x86.stage2 build/
 build/full-asmg0.asm: lib/multiboot.asm asmg0/asmg0.asm lib/shutdown.asm asmg0/debug.asm lib/top.asm
 	cat $^ | grep -v "^ *section " > $@
 
-ifeq ($(USE_NASM),1)
 build/asmg0.x86.exe: build/full-asmg0.asm
 	nasm -f bin -o $@ $<
-else
-build/asmg0.x86.exe: build/full-asmg0.asm build/asmasm_linux
-	./build/asmasm_linux $< > $@
-endif
 
 build/asmg0.x86: build/asmg0.x86.exe asmg0/main.g0
 	cat $^ > $@
