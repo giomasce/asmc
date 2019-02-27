@@ -15,6 +15,27 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+fun mm0_is_digit 1 {
+  $c
+  @c 0 param = ;
+
+  '0' c <= c '9' <= && ret ;
+}
+
+fun mm0_is_alpha 1 {
+  $c
+  @c 0 param = ;
+
+  'a' c <= c 'z' <= && 'A' c <= c 'Z' <= && || ret ;
+}
+
+fun mm0_is_white 1 {
+  $c
+  @c 0 param = ;
+
+  c ' ' == c '\n' == || c '\r' == || c '\t' == || ret ;
+}
+
 const MM0TOK_TYPE 0
 const MM0TOK_VALUE 4
 const SIZEOF_MM0TOK 8
@@ -25,14 +46,15 @@ const MM0TOK_TYPE_NUMBER 3
 const MM0TOK_TYPE_MATH 4
 
 const MM0TOK_SYMB_STAR 1
-const MM0TOK_SYMB_COLON 2
-const MM0TOK_SYMB_SEMICOLON 3
-const MM0TOK_SYMB_OPEN 4
-const MM0TOK_SYMB_CLOSED 5
-const MM0TOK_SYMB_ARROW 6
-const MM0TOK_SYMB_OPENBR 7
-const MM0TOK_SYMB_CLOSEDBR 8
-const MM0TOK_SYMB_ASSIGN 9
+const MM0TOK_SYMB_DOT 2
+const MM0TOK_SYMB_COLON 3
+const MM0TOK_SYMB_SEMICOLON 4
+const MM0TOK_SYMB_OPEN 5
+const MM0TOK_SYMB_CLOSED 6
+const MM0TOK_SYMB_ARROW 7
+const MM0TOK_SYMB_OPENBR 8
+const MM0TOK_SYMB_CLOSEDBR 9
+const MM0TOK_SYMB_ASSIGN 10
 
 fun mm0tok_init 2 {
   $type
@@ -71,6 +93,7 @@ fun mm0tok_dump 1 {
 
   if type MM0TOK_TYPE_SYMBOL == {
     if value MM0TOK_SYMB_STAR == { "STAR" 1 platform_log ; ret ; }
+    if value MM0TOK_SYMB_DOT == { "DOT" 1 platform_log ; ret ; }
     if value MM0TOK_SYMB_COLON == { "COLON" 1 platform_log ; ret ; }
     if value MM0TOK_SYMB_SEMICOLON == { "SEMICOLON" 1 platform_log ; ret ; }
     if value MM0TOK_SYMB_OPEN == { "OPEN" 1 platform_log ; ret ; }
@@ -92,8 +115,6 @@ fun mm0tok_dump 1 {
   }
 
   if type MM0TOK_TYPE_MATH == {
-    # FIXME: add escape here, although this is just for debugging, so
-    # who cares
     "$" 1 platform_log ;
     value 1 platform_log ;
     "$" 1 platform_log ;
@@ -164,70 +185,19 @@ fun mm0lexer_read_skip 1 {
   while 1 {
     $c
     @c lexer mm0lexer_read = ;
-    # Check multiline comment
-    if c '/' == {
+    # Check comment
+    if c '-' == {
       @c lexer mm0lexer_read = ;
-      if c '-' == {
-        $slash
-        $dash
-        @slash 0 = ;
-        @dash 0 = ;
-        $cont
-        @cont 1 = ;
-        while cont {
-          @c lexer mm0lexer_read = ;
-          if slash c '-' == && {
-            0 "mm0lexer_read_skip: invalid nested comment" assert_msg ;
-          }
-          if dash c '/' == && {
-            @cont 0 = ;
-          }
-          @slash 0 = ;
-          @dash 0 = ;
-          if c '/' == {
-            @slash 1 = ;
-          }
-          if c '-' == {
-            @dash 1 = ;
-          }
-        }
-      } else {
-        lexer c mm0lexer_unread ;
-        '/' ret ;
+      c '-' == "mm0lexer_read_skip: invalid single dash" assert_msg ;
+      while c '\n' != {
+        @c lexer mm0lexer_read = ;
       }
     } else {
-      # Check single line comment
-      if c '-' == {
-        @c lexer mm0lexer_read = ;
-        if c '-' == {
-          while c '\n' != {
-            @c lexer mm0lexer_read = ;
-          }
-        } else {
-          lexer c mm0lexer_unread ;
-          '-' ret ;
-        }
-      } else {
-        if c ' ' == c '\n' == || c '\r' == || c '\t' == || ! {
-          c ret ;
-        }
+     if c mm0_is_white ! {
+        c ret ;
       }
     }
   }
-}
-
-fun mm0_is_digit 1 {
-  $c
-  @c 0 param = ;
-
-  '0' c <= c '9' <= && ret ;
-}
-
-fun mm0_is_alpha 1 {
-  $c
-  @c 0 param = ;
-
-  'a' c <= c 'z' <= && 'A' c <= c 'Z' <= && || c '_' == || c '.' == || c '-' == || ret ;
 }
 
 fun mm0lexer_get_token 1 {
@@ -246,6 +216,12 @@ fun mm0lexer_get_token 1 {
   if c '*' == {
     MM0TOK_TYPE_SYMBOL MM0TOK_SYMB_STAR mm0tok_init ret ;
   }
+  if c '.' == {
+    MM0TOK_TYPE_SYMBOL MM0TOK_SYMB_DOT mm0tok_init ret ;
+  }
+  if c ':' == {
+    MM0TOK_TYPE_SYMBOL MM0TOK_SYMB_COLON mm0tok_init ret ;
+  }
   if c ';' == {
     MM0TOK_TYPE_SYMBOL MM0TOK_SYMB_SEMICOLON mm0tok_init ret ;
   }
@@ -255,31 +231,17 @@ fun mm0lexer_get_token 1 {
   if c ')' == {
     MM0TOK_TYPE_SYMBOL MM0TOK_SYMB_CLOSED mm0tok_init ret ;
   }
+  if c '>' == {
+    MM0TOK_TYPE_SYMBOL MM0TOK_SYMB_ARROW mm0tok_init ret ;
+  }
   if c '{' == {
     MM0TOK_TYPE_SYMBOL MM0TOK_SYMB_OPENBR mm0tok_init ret ;
   }
   if c '}' == {
     MM0TOK_TYPE_SYMBOL MM0TOK_SYMB_CLOSEDBR mm0tok_init ret ;
   }
-  if c ':' == {
-    @c lexer mm0lexer_read = ;
-    if c '=' == {
-      MM0TOK_TYPE_SYMBOL MM0TOK_SYMB_ASSIGN mm0tok_init ret ;
-    } else {
-      lexer c mm0lexer_unread ;
-      @c ':' = ;
-      MM0TOK_TYPE_SYMBOL MM0TOK_SYMB_COLON mm0tok_init ret ;
-    }
-  }
-  if c '-' == {
-    @c lexer mm0lexer_read = ;
-    if c '>' == {
-      MM0TOK_TYPE_SYMBOL MM0TOK_SYMB_ARROW mm0tok_init ret ;
-    } else {
-      # Pass it through, so it is picked up by mm0_is_alpha
-      lexer c mm0lexer_unread ;
-      @c '-' = ;
-    }
+  if c '=' == {
+    MM0TOK_TYPE_SYMBOL MM0TOK_SYMB_ASSIGN mm0tok_init ret ;
   }
 
   # Number token
@@ -300,14 +262,14 @@ fun mm0lexer_get_token 1 {
   }
 
   # Identifier token
-  if c mm0_is_alpha {
+  if c mm0_is_alpha c '_' == || {
     $size
     $cap
     $value
     @size 0 = ;
     @cap 4 = ;
     @value cap malloc = ;
-    while c mm0_is_digit c mm0_is_alpha || {
+    while c mm0_is_digit c mm0_is_alpha || c '_' == || c '-' == || {
       # +1 to be sure there is space for the terminator
       if size 1 + cap >= {
         @cap cap 2 * = ;
@@ -333,56 +295,18 @@ fun mm0lexer_get_token 1 {
     @c lexer mm0lexer_read = ;
     $cont
     @cont 1 = ;
-    while cont {
-      $ignore
-      @ignore 0 = ;
+    while c '$' != {
       # +1 to be sure there is space for the terminator
       if size 1 + cap >= {
         @cap cap 2 * = ;
         @value cap value realloc = ;
       }
-      if c '$' == {
-        @c lexer mm0lexer_read = ;
-        # If second dollar: no problem, just ignore the first one
-        if c '$' != {
-         if c '-' == {
-           # Math comment: just consume it like a multiline comment
-           $dollar
-           $dash
-           @dollar 0 = ;
-           @dash 0 = ;
-           $cont2
-           @cont2 1 = ;
-           while cont2 {
-             @c lexer mm0lexer_read = ;
-             if dollar c '-' == && {
-               0 "mm0lexer_get_token: invalid nested math comment" assert_msg ;
-             }
-             if dash c '$' == && {
-               @cont2 0 = ;
-             }
-             @dollar 0 = ;
-             @dash 0 = ;
-             if c '$' == {
-               @dollar 1 = ;
-             }
-             if c '-' == {
-               @dash 1 = ;
-             }
-           }
-           @ignore 1 = ;
-         } else {
-           # End of math
-           @cont 0 = ;
-         }
-        }
+      if c mm0_is_white {
+        @c ' ' = ;
       }
-      # Only store character if we have not found the end or a comment
-      if cont ignore ! && {
-        value size + c =c ;
-        @size size 1 + = ;
-        @c lexer mm0lexer_read = ;
-      }
+      value size + c =c ;
+      @size size 1 + = ;
+      @c lexer mm0lexer_read = ;
     }
     value size + '\0' =c ;
     MM0TOK_TYPE_MATH value mm0tok_init ret ;

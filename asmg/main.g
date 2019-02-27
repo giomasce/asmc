@@ -279,7 +279,7 @@ fun main 0 {
     "No script, running the usual payload...\n" 1 platform_log ;
 
     if RUN_MM0 {
-      "/disk1/mm0/set-mm.mm0" 0 "mm0_process" platform_get_symbol \1 ;
+      "/disk1/mm0/set.mm0" 0 "mm0_process" platform_get_symbol \1 ;
     }
 
     if RUN_ASM {
