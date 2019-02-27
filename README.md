@@ -32,7 +32,7 @@ You should use Linux to compile `asmc`, although some parts of it can
 also be built on macOS. If you use Debian, install the prerequisites
 with
 
-    sudo apt-get install build-essential nasm qemu-system-x86 grub-common python3 gcc-multilib
+    sudo apt-get install build-essential nasm qemu-system-x86 python3 gcc-multilib
 
 If you cloned the GIT repository, you will probably want to checkout
 the submodules as well:
@@ -63,12 +63,7 @@ actually have a complete operating system entirely compiled from
 scratches at computer boot!
 
 Together with `boot_asmg.x86`, there will be also `boot_empty.x86`,
-`boot_asmasm.x86` and `boot_asmg0.x86` (see below for what they are)
-and `boot.iso`, which is a bootable ISO image with a GRUB menu where
-you can decide which of the four to run. Such ISO was useful to boot
-`asmc` back in the days when my custom bootloader was not powerful
-enough, but nowadays `asmg` requires some features that GRUB does not
-expose, so it is useless.
+`boot_asmasm.x86` and `boot_asmg0.x86` (see below for what they are).
 
 WARNING! ATTENTION! Remember that you are giving full control over you
 hardware to an experimental program whose author is not an expert
@@ -76,11 +71,6 @@ operating system programmer: it could have bugs and overwrite your
 disk, damage the hardware and whatever. I only run it on an old
 otherwise unused laptop that once belonged to my grandmother. No
 problem has ever become apparent, but care is never too much!
-
-If you use macOS you can build the `boot_*.x86` files, but not
-`boot.iso`, because I did not find a reasonable way to install
-`grub-mkimage` on macOS. If you use Windows or any other operating
-system, nothing will work.
 
 ### How to interpret all the writings
 

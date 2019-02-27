@@ -6,7 +6,7 @@ ifeq ($(UNAME),Linux)
 FOUND := 1
 AR=ar
 USE_NASM=0
-all: build build/asmasm_linux build/boot_asmasm.x86 build/boot_empty.x86 build/boot_asmg.x86 build/boot_asmg0.x86 build/boot.iso
+all: build build/asmasm_linux build/boot_asmasm.x86 build/boot_empty.x86 build/boot_asmg.x86 build/boot_asmg0.x86
 endif
 
 ifeq ($(UNAME),Darwin)
@@ -169,27 +169,3 @@ build/asmg0.x86: build/asmg0.x86.exe asmg0/main.g0
 
 build/boot_asmg0.x86: build/bootloader.x86.mbr build/bootloader.x86.stage2 build/asmg0.x86
 	./create_partition.py $^ > $@
-
-# GRUB ISO image
-build/boot/boot/grub/grub.cfg: boot/grub.cfg
-	mkdir -p build/boot/boot/grub
-	cp $^ $@
-
-build/boot/boot/asmasm.x86: build/asmasm.x86
-	mkdir -p build/boot/boot
-	cp $^ $@
-
-build/boot/boot/empty.x86: build/empty.x86
-	mkdir -p build/boot/boot
-	cp $^ $@
-
-build/boot/boot/asmg.x86: build/asmg.x86
-	mkdir -p build/boot/boot
-	cp $^ $@
-
-build/boot/boot/asmg0.x86: build/asmg0.x86
-	mkdir -p build/boot/boot
-	cp $^ $@
-
-build/boot.iso: build/boot/boot/grub/grub.cfg build/boot/boot/asmasm.x86 build/boot/boot/empty.x86 build/boot/boot/asmg.x86 build/boot/boot/asmg0.x86
-	cd build && grub-mkrescue -o boot.iso boot
