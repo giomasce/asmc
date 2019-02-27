@@ -109,6 +109,14 @@ In particular, the following stack commands are supported.
    prepended by a `@` sign (without spaces: they have to be in the
    same token) causes its address to be pushed on the stack.
 
+ * **Call a function by address** Writing a backslash `\` followed
+   (without spaces) by a number (or a compile-time constant) causes a
+   value to be popped from the stack and interpreted as the address of
+   a function taking the number of parameters specified after the
+   backslash. The function call procedure is then followed as above
+   (the appropriate number of arguments is popped from the stack, the
+   function is called and its return value is pushed).
+
  * **Flush the stack** Writing a single `;` character causes the stack
    to be flushed (i.e., all values are popped and discarded). This is
    required before using non-stack commands, like execution flow
@@ -387,3 +395,39 @@ Of course C has quicker expressions like `+=` and `++`, but I did not
 use them in this example to better explain the analogy with G. The
 function `itoa` returns a number formatted as a decimal string, while
 the function `platform_log` dump a string to the console.
+
+    # Function is supposed to be       // Function is supposed to be
+    # defined elsewhere                // defined elsewhere
+    ifun process 1                     int process(int);
+
+    fun long_operation 2 {             int long_operation(int p1, int p0) {
+      $input                             int input;
+      $callback                          int callback;
+      @input 1 param = ;                 input = p1;
+      @callback 0 param = ;              callback = p0;
+
+      # Do a very long operation         // Do a very long operation
+      $result                            int result;
+      @result input process = ;          result = process(input);
+
+      # Call back at the end             // Call back at the end
+      result callback \1 ;               (((*)(int))callback)(result);
+    }                                  }
+
+    fun end_callback 1 {               int end_callback(int p0) {
+      $result                            int result;
+      @result 0 param = ;                result = p0;
+
+      "Result is " 1 platform_log ;      platform_log("Result is ", 1);
+      result itoa 1 platform_log ;       platform_log(itoa(result), 1);
+    }                                  }
+
+    fun start_operation 0 {            int start_operation(void) {
+      $input                             int input;
+
+      input @end_callback                long_operation(input, (int)&end_callback);
+        long_operation;
+    }                                  }
+
+The snippet above shows the use of the backslash operator to do
+indirect function call.
