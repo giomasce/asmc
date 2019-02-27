@@ -141,14 +141,20 @@ empty).
    value is zero, control is directly trasfered to the end of the
    block. If not, the block is executed normally. Differently from C,
    the `if` command must guard a block; it cannot guard a single
-   expression.
+   expression. Optionally, the token `else` followed by another block
+   can appear. That block is executed if the initial guard evaluates
+   to zero and skipped if it does not.
 
  * **Repeated block** Then `while` token introduces a repeated
    block. Its syntax is identical to the conditional block, except for
    the usage of `while` instead of `if`. Its semantic is also
    identical, except that at the end of the block execution the guard
    expression is evaluated again, and if it still non-zero, the block
-   is executed again.
+   is executed again. The `else` block cannot appear in this case.
+
+   G does not directly support `for` blocks and `continue`, `break`
+   and `goto` statements. If needed, they have to be emulated with
+   appropriate flags.
 
 The function's formal parameters are not directly available as named
 variables. However, they can be retrieved with the `param` predefined
@@ -180,7 +186,7 @@ having to be manually defined.
           @a 0 param = ;
           @b 1 param = ;
         }
-        
+
         fun test2 0 {
           0 1 test ;
         }
@@ -277,13 +283,37 @@ follow it so that G programs remain as readable as possible.
 Let us discuss a few simple G programs and provide their C equivalents
 to better illustrate them.
 
-    fun sum_two_numbers 2 {
-      $x
-      $y
-      @x 1 param = ;
-      @y 0 param = ;
+    fun sum_two_numbers 2 {        int sum_two_numbers(int p1, int p0) {
+      $x                             int x;
+      $y                             int y;
+      @x 1 param = ;                 x = p1;
+      @y 0 param = ;                 y = p2;
 
-      $sum
-      @sum x y + = ;
-      sum ret ;
-    }
+      $sum                           int sum;
+      @sum x y + = ;                 sum = x+y;
+      sum ret ;                      return sum;
+    }                              }
+
+Incidentally, `sum_two_numbers` does exactly the same thing as the
+built-in function `+`, but it was an easy starting example.
+
+    fun sum_numbers 2 {            int sum_numbers(int p1, int p0) {
+      $from                          int from;
+      $to                            int to;
+      @from 1 param = ;              from = p1;
+      @to 0 param = ;                to = p0;
+
+      $i                             int i;
+      $sum                           int sum;
+      @i from = ;                    i = from;
+      @sum 0 = ;                     sum = 0;
+      while i to <= {                while i <= to {
+        @sum sum i + = ;               sum = sum + i;
+        @i i 1 + = ;                   i = i + 1;
+      }                              }
+
+      sum ret ;                      return sum;
+    }                              }
+
+Of course C has quicker expressions like `+=` and `++`, but I did not
+use them in this example to better explain the analogy with G.
