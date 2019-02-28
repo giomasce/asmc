@@ -441,7 +441,7 @@ fun cctx_setup_handles 1 {
   $handles
   @handles ctx CCTX_HANDLES take = ;
 
-  handles @platform_write_char vector_push_back ;
+  handles @write vector_push_back ;
   handles @platform_setjmp vector_push_back ;
   handles @platform_longjmp vector_push_back ;
   handles @malloc vector_push_back ;

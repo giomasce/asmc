@@ -1073,7 +1073,7 @@ fun preproc_process_include 4 {
   found "preproc_process_include: cannot find file" filename assert_msg_str ;
 
   if ctx PPCTX_VERBOSE take 1 == {
-    '[' 1 platform_write_char ;
+    '[' write ;
   }
   if ctx PPCTX_VERBOSE take 2 == {
     "Including file " log ;
@@ -1082,7 +1082,7 @@ fun preproc_process_include 4 {
   }
   tokens ctx filename _preproc_file ;
   if ctx PPCTX_VERBOSE take 1 == {
-    ']' 1 platform_write_char ;
+    ']' write ;
   }
   if ctx PPCTX_VERBOSE take 2 == {
     "Finished including file " log ;
@@ -1536,7 +1536,7 @@ fun preproc_file 3 {
 
   tokens ctx filename _preproc_file ;
   if ctx PPCTX_VERBOSE take 1 == {
-    '\n' 1 platform_write_char ;
+    '\n' write ;
   }
 }
 

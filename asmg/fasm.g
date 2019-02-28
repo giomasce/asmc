@@ -61,7 +61,7 @@ fun fasm_read 3 {
   while i count < {
     $tmp
     @tmp fd vfs_read = ;
-    #tmp 1 platform_write_char ;
+    #tmp write ;
     if tmp 0xffffffff == {
       0 ret ;
     }
@@ -146,7 +146,7 @@ fun fasm_display_block 2 {
   @i 0 = ;
   "FASM DISPLAY BLOCK: " log ;
   while i len < {
-    msg i + **c 1 platform_write_char ;
+    msg i + **c write ;
     @i i 1 + = ;
   }
   "\n" log ;

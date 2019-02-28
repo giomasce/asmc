@@ -10,7 +10,7 @@
 
 int fputc(int c, FILE *s) {
     if (s->fd == 1 || s->fd == 2) {
-        __handles->platform_write_char(s->fd, c);
+        __handles->write(c);
     } else {
         __handles->vfs_write(c, s->fd);
     }

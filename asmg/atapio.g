@@ -308,8 +308,8 @@ fun atapio_print_identify 1 {
   $i
   @i 27 = ;
   while i 47 < {
-    data 2 i * + 1 + **c 1 platform_write_char ;
-    data 2 i * + **c 1 platform_write_char ;
+    data 2 i * + 1 + **c write ;
+    data 2 i * + **c write ;
     @i i 1 + = ;
   }
   "\n" log ;
@@ -318,8 +318,8 @@ fun atapio_print_identify 1 {
   $i
   @i 10 = ;
   while i 20 < {
-    data 2 i * + 1 + **c 1 platform_write_char ;
-    data 2 i * + **c 1 platform_write_char ;
+    data 2 i * + 1 + **c write ;
+    data 2 i * + **c write ;
     @i i 1 + = ;
   }
   "\n" log ;
@@ -328,8 +328,8 @@ fun atapio_print_identify 1 {
   $i
   @i 23 = ;
   while i 27 < {
-    data 2 i * + 1 + **c 1 platform_write_char ;
-    data 2 i * + **c 1 platform_write_char ;
+    data 2 i * + 1 + **c write ;
+    data 2 i * + **c write ;
     @i i 1 + = ;
   }
   "\n" log ;

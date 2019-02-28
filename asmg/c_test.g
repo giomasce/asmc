@@ -22,20 +22,14 @@ const SIZEOF_TESTS 8
 $test_expected_stdout
 $test_stdout_ok
 
-fun test_platform_write_char 2 {
+fun test_write 1 {
   $c
-  $fd
-  @c 1 param = ;
-  @fd 0 param = ;
+  @c 0 param = ;
 
-  if fd 1 == {
-    if test_expected_stdout **c c == {
-      @test_expected_stdout test_expected_stdout 1 + = ;
-    } else {
-      @test_stdout_ok 0 = ;
-    }
+  if test_expected_stdout **c c == {
+    @test_expected_stdout test_expected_stdout 1 + = ;
   } else {
-    c fd platform_write_char ;
+    @test_stdout_ok 0 = ;
   }
 }
 
@@ -77,8 +71,8 @@ fun c_run_testcase 3 {
   cctx CCTX_DEBUG take_addr 0 = ;
   cctx cctx_compile ;
 
-  # Hack the handles in order to intercept calls to platform_write_char
-  cctx CCTX_HANDLES take 0 vector_at_addr @test_platform_write_char = ;
+  # Hack the handles in order to intercept calls to write
+  cctx CCTX_HANDLES take 0 vector_at_addr @test_write = ;
   @test_expected_stdout out = ;
   @test_stdout_ok 1 = ;
 

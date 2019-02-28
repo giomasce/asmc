@@ -4,7 +4,7 @@
 #include "asmc_types.h"
 
 struct __handles_t {
-    void (*platform_write_char)(int fd, char c);
+    void (*write)(char c);
     int (*platform_setjmp)(void *env);
     void (*platform_longjmp)(void *env, int status);
     void *(*malloc)(size_t size);

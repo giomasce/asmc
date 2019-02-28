@@ -28,7 +28,7 @@ fun dump_file 1 {
       fd vfs_close ;
       ret ;
     }
-    c 1 platform_write_char ;
+    c write ;
   }
 }
 

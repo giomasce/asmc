@@ -81,6 +81,10 @@ fun log 1 {
   0 param 1 platform_log ;
 }
 
+fun write 1 {
+  0 param 1 platform_write_char ;
+}
+
 fun entry 0 {
   "Hello, G!\n" 1 log ;
 
