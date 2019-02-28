@@ -16,3 +16,6 @@
 [submodule "contrib/mm0"]
 	path = contrib/mm0
 	url = https://github.com/digama0/mm0.git
+[submodule "contrib/single_cream"]
+	path = contrib/single_cream
+	url = https://github.com/rain-1/single_cream.git
