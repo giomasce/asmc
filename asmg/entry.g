@@ -22,10 +22,10 @@ const TERM_BASE_ADDR 0xb8000
 $term_row
 $term_col
 
-fun term_clear 0 {
+fun term_setup 0 {
   $i
   @i 0 = ;
-  while i term_row term_col * < {
+  while i TERM_ROW_NUM TERM_COL_NUM * < {
     TERM_BASE_ADDR 2 i * + ' ' =c ;
     TERM_BASE_ADDR 2 i * + 1 + 0x07 =c ;
     @i i 1 + = ;
@@ -38,13 +38,13 @@ fun term_shift 0 {
   $i
   @i 0 = ;
   # Copy data one row up
-  while i term_row 1 - term_col * < {
+  while i TERM_ROW_NUM 1 - TERM_COL_NUM * < {
     TERM_BASE_ADDR 2 i * + TERM_BASE_ADDR 2 i * + 2 TERM_COL_NUM * + **c =c ;
     TERM_BASE_ADDR 2 i * + 1 + TERM_BASE_ADDR 2 i * + 2 TERM_COL_NUM * + 1 + **c =c ;
     @i i 1 + = ;
   }
   # Clear last row
-  while i term_row term_col * < {
+  while i TERM_ROW_NUM TERM_COL_NUM * < {
     TERM_BASE_ADDR 2 i * + ' ' =c ;
     TERM_BASE_ADDR 2 i * + 1 + 0x07 =c ;
     @i i 1 + = ;
@@ -77,15 +77,49 @@ fun term_write 1 {
   }
 }
 
-fun log 1 {
-  0 param 1 platform_log ;
+const SERIAL_PORT 0x3f8
+
+# Send command as indicated in https://wiki.osdev.org/Serial_Port
+fun serial_setup 0 {
+  SERIAL_PORT 1 + 0x00 outb ;
+  SERIAL_PORT 3 + 0x80 outb ;
+  SERIAL_PORT 0 + 0x03 outb ;
+  SERIAL_PORT 1 + 0x00 outb ;
+  SERIAL_PORT 3 + 0x03 outb ;
+  SERIAL_PORT 2 + 0xc7 outb ;
+  SERIAL_PORT 4 + 0x0b outb ;
+}
+
+fun serial_write 1 {
+  $c
+  @c 0 param = ;
+
+  while SERIAL_PORT 5 + inb 0x20 & ! { }
+  SERIAL_PORT c outb ;
 }
 
 fun write 1 {
-  0 param 1 platform_write_char ;
+  $c
+  @c 0 param = ;
+
+  c term_write ;
+  c serial_write ;
+}
+
+fun log 1 {
+  $s
+  @s 0 param = ;
+
+  while s **c '\0' != {
+    s **c write ;
+    @s s 1 + = ;
+  }
 }
 
 fun entry 0 {
+  serial_setup ;
+  term_setup ;
+
   "Hello, G!\n" 1 log ;
 
   "Compiling main.g... " 1 log ;
