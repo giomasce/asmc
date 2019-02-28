@@ -200,7 +200,7 @@ fun mm0lexer_read_skip 1 {
   }
 }
 
-fun mm0lexer_get_token 1 {
+fun mm0lexer_get_token_or_eof_ 1 {
   $lexer
   @lexer 0 param = ;
 
@@ -252,11 +252,11 @@ fun mm0lexer_get_token 1 {
     @value c '0' - = ;
     @c lexer mm0lexer_read = ;
     while c mm0_is_digit {
-      zero ! "mm0lexer_get_token: invalid 0 prefix in number token" assert_msg ;
+      zero ! "mm0lexer_get_token_or_eof_: invalid 0 prefix in number token" assert_msg ;
       @value value 10 * c '0' - + = ;
       @c lexer mm0lexer_read = ;
     }
-    c mm0_is_alpha ! "mm0lexer_get_token: unexpected alphabetic character in number token" assert_msg ;
+    c mm0_is_alpha ! "mm0lexer_get_token_or_eof_: unexpected alphabetic character in number token" assert_msg ;
     lexer c mm0lexer_unread ;
     MM0TOK_TYPE_NUMBER value mm0tok_init ret ;
   }
@@ -312,14 +312,46 @@ fun mm0lexer_get_token 1 {
     MM0TOK_TYPE_MATH value mm0tok_init ret ;
   }
 
-  0 "mm0lexer_get_token: invalid character in input file" assert_msg ;
+  0 "mm0lexer_get_token_or_eof_: invalid character in input file" assert_msg ;
 }
 
-const SIZEOF_MM0TH 0
+fun mm0lexer_get_token_or_eof 1 {
+  $lexer
+  @lexer 0 param = ;
+
+  $token
+  @token lexer mm0lexer_get_token_or_eof_ = ;
+
+  if token {
+    token mm0tok_dump ;
+    " " 1 platform_log ;
+  } else {
+    "EOF" 1 platform_log ;
+  }
+
+  token ret ;
+}
+
+fun mm0lexer_get_token 1 {
+  $lexer
+  @lexer 0 param = ;
+
+  $token
+  @token lexer mm0lexer_get_token_or_eof = ;
+  token "mm0lexer_get_token: unexpected end of file" assert_msg ;
+
+  token ret ;
+}
+
+const MM0TH_LEXER 0
+const MM0TH_LEVEL 4
+const SIZEOF_MM0TH 8
 
 fun mm0th_init 0 {
   $theory
   @theory SIZEOF_MM0TH malloc = ;
+
+  theory MM0TH_LEVEL take_addr 0 = ;
 
   theory ret ;
 }
@@ -331,6 +363,175 @@ fun mm0th_destroy 1 {
   theory free ;
 }
 
+fun mm0_parse_sort 2 {
+  $theory
+  $tok
+  @theory 1 param = ;
+  @tok 0 param = ;
+
+  $lexer
+  @lexer theory MM0TH_LEXER take = ;
+
+  "(sort-stmt) " 1 platform_log ;
+
+  # Discard tokens up to the semicolon
+  $cont
+  @cont 1 = ;
+  while cont {
+    @tok lexer mm0lexer_get_token = ;
+    if tok MM0TOK_TYPE take MM0TOK_TYPE_SYMBOL ==
+       tok MM0TOK_VALUE take MM0TOK_SYMB_SEMICOLON == && {
+      @cont 0 = ;
+    }
+    tok mm0tok_destroy ;
+  }
+}
+
+fun mm0_parse_var 2 {
+  $theory
+  $tok
+  @theory 1 param = ;
+  @tok 0 param = ;
+
+  $lexer
+  @lexer theory MM0TH_LEXER take = ;
+
+  "(var-stmt) " 1 platform_log ;
+
+  # Discard tokens up to the semicolon
+  $cont
+  @cont 1 = ;
+  while cont {
+    @tok lexer mm0lexer_get_token = ;
+    if tok MM0TOK_TYPE take MM0TOK_TYPE_SYMBOL ==
+       tok MM0TOK_VALUE take MM0TOK_SYMB_SEMICOLON == && {
+      @cont 0 = ;
+    }
+    tok mm0tok_destroy ;
+  }
+}
+
+fun mm0_parse_term 2 {
+  $theory
+  $tok
+  @theory 1 param = ;
+  @tok 0 param = ;
+
+  $lexer
+  @lexer theory MM0TH_LEXER take = ;
+
+  "(term-stmt) " 1 platform_log ;
+
+  # Discard tokens up to the semicolon
+  $cont
+  @cont 1 = ;
+  while cont {
+    @tok lexer mm0lexer_get_token = ;
+    if tok MM0TOK_TYPE take MM0TOK_TYPE_SYMBOL ==
+       tok MM0TOK_VALUE take MM0TOK_SYMB_SEMICOLON == && {
+      @cont 0 = ;
+    }
+    tok mm0tok_destroy ;
+  }
+}
+
+fun mm0_parse_assert 2 {
+  $theory
+  $tok
+  @theory 1 param = ;
+  @tok 0 param = ;
+
+  $lexer
+  @lexer theory MM0TH_LEXER take = ;
+
+  "(assert-stmt) " 1 platform_log ;
+
+  # Discard tokens up to the semicolon
+  $cont
+  @cont 1 = ;
+  while cont {
+    @tok lexer mm0lexer_get_token = ;
+    if tok MM0TOK_TYPE take MM0TOK_TYPE_SYMBOL ==
+       tok MM0TOK_VALUE take MM0TOK_SYMB_SEMICOLON == && {
+      @cont 0 = ;
+    }
+    tok mm0tok_destroy ;
+  }
+}
+
+fun mm0_parse_def 2 {
+  $theory
+  $tok
+  @theory 1 param = ;
+  @tok 0 param = ;
+
+  $lexer
+  @lexer theory MM0TH_LEXER take = ;
+
+  "(def-stmt) " 1 platform_log ;
+
+  # Discard tokens up to the open brace
+  $cont
+  @cont 1 = ;
+  while cont {
+    @tok lexer mm0lexer_get_token = ;
+    if tok MM0TOK_TYPE take MM0TOK_TYPE_SYMBOL ==
+       tok MM0TOK_VALUE take MM0TOK_SYMB_OPENBR == && {
+      theory MM0TH_LEVEL take_addr theory MM0TH_LEVEL take 1 + = ;
+      @cont 0 = ;
+    }
+    tok mm0tok_destroy ;
+  }
+}
+
+fun mm0_parse_notation 2 {
+  $theory
+  $tok
+  @theory 1 param = ;
+  @tok 0 param = ;
+
+  $lexer
+  @lexer theory MM0TH_LEXER take = ;
+
+  "(notation-stmt) " 1 platform_log ;
+
+  # Discard tokens up to the semicolon
+  $cont
+  @cont 1 = ;
+  while cont {
+    @tok lexer mm0lexer_get_token = ;
+    if tok MM0TOK_TYPE take MM0TOK_TYPE_SYMBOL ==
+       tok MM0TOK_VALUE take MM0TOK_SYMB_SEMICOLON == && {
+      @cont 0 = ;
+    }
+    tok mm0tok_destroy ;
+  }
+}
+
+fun mm0_parse_output 2 {
+  $theory
+  $tok
+  @theory 1 param = ;
+  @tok 0 param = ;
+
+  $lexer
+  @lexer theory MM0TH_LEXER take = ;
+
+  "(output-stmt) " 1 platform_log ;
+
+  # Discard tokens up to the semicolon
+  $cont
+  @cont 1 = ;
+  while cont {
+    @tok lexer mm0lexer_get_token = ;
+    if tok MM0TOK_TYPE take MM0TOK_TYPE_SYMBOL ==
+       tok MM0TOK_VALUE take MM0TOK_SYMB_SEMICOLON == && {
+      @cont 0 = ;
+    }
+    tok mm0tok_destroy ;
+  }
+}
+
 fun mm0_parse 1 {
   $lexer
   @lexer 0 param = ;
@@ -338,18 +539,63 @@ fun mm0_parse 1 {
   $theory
   @theory mm0th_init = ;
 
+  theory MM0TH_LEXER take_addr lexer = ;
+
   while 1 {
-    $token
-    @token lexer mm0lexer_get_token = ;
-    if token ! {
+    $tok
+    @tok lexer mm0lexer_get_token_or_eof = ;
+    if tok ! {
+      theory MM0TH_LEVEL take 0 == "mm0_parse: unmatched braces" assert_msg ;
       theory ret ;
     }
 
-    # TODO: do stuff
-    token mm0tok_dump ;
-    " " 1 platform_log ;
+    $type
+    $value
+    @type tok MM0TOK_TYPE take = ;
+    @value tok MM0TOK_VALUE take = ;
+    if type MM0TOK_TYPE_SYMBOL == {
+      if value MM0TOK_SYMB_OPENBR == {
+        theory MM0TH_LEVEL take_addr theory MM0TH_LEVEL take 1 + = ;
+      } else {
+        value MM0TOK_SYMB_CLOSEDBR == "mm0_parse: invalid symbol" assert_msg ;
+        theory MM0TH_LEVEL take 0 > "mm0_parse: invalid block closing" assert_msg ;
+        theory MM0TH_LEVEL take_addr theory MM0TH_LEVEL take 1 - = ;
+      }
+    } else {
+      type MM0TOK_TYPE_IDENT == "mm0_parse: invalid token type" assert_msg ;
+      if value "pure" strcmp 0 ==
+         value "strict" strcmp 0 == ||
+         value "provable" strcmp 0 == ||
+         value "nonempty" strcmp 0 == ||
+         value "sort" strcmp 0 == || {
+        theory tok mm0_parse_sort ;
+      }
+      if value "var" strcmp 0 == {
+        theory tok mm0_parse_var ;
+      }
+      if value "term" strcmp 0 == {
+        theory tok mm0_parse_term ;
+      }
+      if value "axiom" strcmp 0 ==
+         value "theorem" strcmp 0 == || {
+        theory tok mm0_parse_assert ;
+      }
+      if value "def" strcmp 0 == {
+        theory tok mm0_parse_def ;
+      }
+      if value "infixl" strcmp 0 ==
+         value "infixr" strcmp 0 == ||
+         value "prefix" strcmp 0 == ||
+         value "coercion" strcmp 0 == ||
+         value "notation" strcmp 0 == || {
+        theory tok mm0_parse_notation ;
+      }
+      if value "output" strcmp 0 == {
+        theory tok mm0_parse_output ;
+      }
+    }
 
-    token mm0tok_destroy ;
+    tok mm0tok_destroy ;
   }
 }
 
