@@ -63,42 +63,25 @@ str_done:
 str_empty:
   db 0
 
-temp_stack:
-  resb 128
-temp_stack_top:
-
 entry:
   ;; Make it double sure that we do not have interrupts around
   cli
 
-  ;; Setup a temporary stack
+  ;; Use the multiboot header as temporary stack
   mov esp, temp_stack_top
   and esp, 0xfffffff0
 
   ;; Find the end of the ar initrd
-  push 0
-  mov edx, esp
-  push 0
-  mov ecx, esp
-  push edx
-  push ecx
-  push str_empty
-  call walk_initrd
-  add esp, 12
-  add esp, 4
-  pop ecx
+  call find_initrd_end
 
-  ;; Initialize the heap
-  mov eax, heap_ptr
-  sub ecx, 1
-  or ecx, 0xf
-  add ecx, 1
-  mov [eax], ecx
-
-  ;; Allocate the stack on the heap
-  add ecx, STACK_SIZE
-  mov [eax], ecx
-  mov esp, ecx
+  ;; Initialize the stack and the heap, aligning to 16 bytes
+  sub eax, 1
+  or eax, 0xf
+  add eax, 1
+  add eax, STACK_SIZE
+  mov esp, eax
+  mov ecx, heap_ptr
+  mov [ecx], eax
 
   ;; Initialize stdout
   call stdout_setup

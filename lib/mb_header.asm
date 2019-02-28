@@ -39,3 +39,5 @@
   dd 0x0
   dd 0x0
   dd 0x100000
+
+temp_stack_top:
