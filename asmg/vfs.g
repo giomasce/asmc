@@ -155,9 +155,9 @@ fun vfsinst_mount 3 {
   @point 1 param = ;
   @mount 0 param = ;
 
-  "Mounting file system /" 1 platform_log ;
-  point 1 platform_log ;
-  "\n" 1 platform_log ;
+  "Mounting file system /" log ;
+  point log ;
+  "\n" log ;
 
   $mounts
   @mounts vfsinst VFSINST_MOUNTS take = ;

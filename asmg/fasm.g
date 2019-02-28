@@ -19,9 +19,9 @@ fun fasm_open 1 {
   $filename
   @filename 0 param = ;
 
-  "FASM: opening file " 1 platform_log ;
-  filename 1 platform_log ;
-  "\n" 1 platform_log ;
+  "FASM: opening file " log ;
+  filename log ;
+  "\n" log ;
 
   $fd
   @fd filename vfs_open = ;
@@ -32,9 +32,9 @@ fun fasm_create 1 {
   $filename
   @filename 0 param = ;
 
-  "FASM: creating file " 1 platform_log ;
-  filename 1 platform_log ;
-  "\n" 1 platform_log ;
+  "FASM: creating file " log ;
+  filename log ;
+  "\n" log ;
 
   $fd
   @fd filename vfs_open = ;
@@ -55,9 +55,9 @@ fun fasm_read 3 {
 
   $i
   @i 0 = ;
-  "FASM: reading " 1 platform_log ;
-  count itoa 1 platform_log ;
-  " bytes\n" 1 platform_log ;
+  "FASM: reading " log ;
+  count itoa log ;
+  " bytes\n" log ;
   while i count < {
     $tmp
     @tmp fd vfs_read = ;
@@ -68,7 +68,7 @@ fun fasm_read 3 {
     buf i + tmp =c ;
     @i i 1 + = ;
   }
-  #" done!\n" 1 platform_log ;
+  #" done!\n" log ;
   1 ret ;
 }
 
@@ -82,9 +82,9 @@ fun fasm_write 3 {
 
   $i
   @i 0 = ;
-  "FASM: writing " 1 platform_log ;
-  count itoa 1 platform_log ;
-  " bytes\n" 1 platform_log ;
+  "FASM: writing " log ;
+  count itoa log ;
+  " bytes\n" log ;
   while i count < {
     $tmp
     @tmp buf i + **c =c ;
@@ -104,9 +104,9 @@ fun fasm_lseek 3 {
 
   $res
   @res fd off whence vfs_seek = ;
-  "FASM: seeking to " 1 platform_log ;
-  res itoa 1 platform_log ;
-  "\n" 1 platform_log ;
+  "FASM: seeking to " log ;
+  res itoa log ;
+  "\n" log ;
   res ret ;
 }
 
@@ -114,7 +114,7 @@ fun fasm_close 1 {
   $fd
   @fd 0 param = ;
 
-  "FASM: closing file\n" 1 platform_log ;
+  "FASM: closing file\n" log ;
   fd vfs_close ;
 }
 
@@ -122,18 +122,18 @@ fun fasm_fatal_error 1 {
   $msg
   @msg 0 param = ;
 
-  "FASM FATAL ERROR: " 1 platform_log ;
-  msg 1 platform_log ;
-  "\n" 1 platform_log ;
+  "FASM FATAL ERROR: " log ;
+  msg log ;
+  "\n" log ;
 }
 
 fun fasm_assembler_error 1 {
   $msg
   @msg 0 param = ;
 
-  "FASM ASSEMBLER ERROR: " 1 platform_log ;
-  msg 1 platform_log ;
-  "\n" 1 platform_log ;
+  "FASM ASSEMBLER ERROR: " log ;
+  msg log ;
+  "\n" log ;
 }
 
 fun fasm_display_block 2 {
@@ -144,25 +144,25 @@ fun fasm_display_block 2 {
 
   $i
   @i 0 = ;
-  "FASM DISPLAY BLOCK: " 1 platform_log ;
+  "FASM DISPLAY BLOCK: " log ;
   while i len < {
     msg i + **c 1 platform_write_char ;
     @i i 1 + = ;
   }
-  "\n" 1 platform_log ;
+  "\n" log ;
 }
 
 fun fasm_get_environment_variable 1 {
   $var
   @var 0 param = ;
 
-  "FASM: requesting envvar " 1 platform_log ;
-  var 1 platform_log ;
-  "\n" 1 platform_log ;
+  "FASM: requesting envvar " log ;
+  var log ;
+  "\n" log ;
 }
 
 fun fasm_make_timestamp 0 {
-  "FASM: requesting timestamp\n" 1 platform_log ;
+  "FASM: requesting timestamp\n" log ;
 
   0 ret ;
 }
@@ -171,12 +171,12 @@ $instr_num
 $ret_instr_enter
 
 fun error_additional_handler 0 {
-  "Fault happened after retiring " 1 platform_log ;
-  read_ret_instr ret_instr_enter - itoa 1 platform_log ;
-  " instructions (according to PMC).\n" 1 platform_log ;
-  "Fault happened after executing " 1 platform_log ;
-  instr_num itoa 1 platform_log ;
-  " instructions (according to single step counter).\n" 1 platform_log ;
+  "Fault happened after retiring " log ;
+  read_ret_instr ret_instr_enter - itoa log ;
+  " instructions (according to PMC).\n" log ;
+  "Fault happened after executing " log ;
+  instr_num itoa log ;
+  " instructions (according to single step counter).\n" log ;
 }
 
 $dumping
@@ -190,9 +190,9 @@ fun single_step_handler 1 {
   $ip
   @ip regs 0x20 + ** = ;
 
-  # "Instruction number " 1 platform_log ;
-  # instr_num itoa 1 platform_log ;
-  # "\n" 1 platform_log ;
+  # "Instruction number " log ;
+  # instr_num itoa log ;
+  # "\n" log ;
 
   @instr_num instr_num 1 + = ;
 
@@ -205,31 +205,31 @@ fun single_step_handler 1 {
   }
 
   if dumping {
-    "EAX=" 1 platform_log ;
-    regs 0x1c + ** itoa 1 platform_log ;
-    ", EBX=" 1 platform_log ;
-    regs 0x10 + ** itoa 1 platform_log ;
-    ", ECX=" 1 platform_log ;
-    regs 0x18 + ** itoa 1 platform_log ;
-    ", EDX=" 1 platform_log ;
-    regs 0x14 + ** itoa 1 platform_log ;
-    ", ESI=" 1 platform_log ;
-    regs 0x4 + ** itoa 1 platform_log ;
-    ", EDI=" 1 platform_log ;
-    regs 0x0 + ** itoa 1 platform_log ;
-    ", ESP=" 1 platform_log ;
-    regs 0xc + ** itoa 1 platform_log ;
-    ", EBP=" 1 platform_log ;
-    regs 0x8 + ** itoa 1 platform_log ;
-    "\n" 1 platform_log ;
+    "EAX=" log ;
+    regs 0x1c + ** itoa log ;
+    ", EBX=" log ;
+    regs 0x10 + ** itoa log ;
+    ", ECX=" log ;
+    regs 0x18 + ** itoa log ;
+    ", EDX=" log ;
+    regs 0x14 + ** itoa log ;
+    ", ESI=" log ;
+    regs 0x4 + ** itoa log ;
+    ", EDI=" log ;
+    regs 0x0 + ** itoa log ;
+    ", ESP=" log ;
+    regs 0xc + ** itoa log ;
+    ", EBP=" log ;
+    regs 0x8 + ** itoa log ;
+    "\n" log ;
 
-    "Instruction number " 1 platform_log ;
-    instr_num itoa 1 platform_log ;
-    ": EIP=" 1 platform_log ;
-    ip itoa 1 platform_log ;
-    ", code: " 1 platform_log ;
+    "Instruction number " log ;
+    instr_num itoa log ;
+    ": EIP=" log ;
+    ip itoa log ;
+    ", code: " log ;
     ip 32 dump_mem ;
-    "\n\n" 1 platform_log ;
+    "\n\n" log ;
   }
 }
 
@@ -240,9 +240,9 @@ fun compile_fasm 0 {
   0x10000 @error_additional_handler = ;
 
   @ret_instr_enter read_ret_instr = ;
-  "Retired instruction counter before compiling fasm: " 1 platform_log ;
-  read_ret_instr itoa 1 platform_log ;
-  "\n" 1 platform_log ;
+  "Retired instruction counter before compiling fasm: " log ;
+  read_ret_instr itoa log ;
+  "\n" log ;
 
   # Compile fasm
   $ctx
@@ -270,7 +270,7 @@ fun compile_fasm 0 {
   handles @free vector_push_back ;
   handles @platform_setjmp vector_push_back ;
   handles @platform_longjmp vector_push_back ;
-  handles @platform_log vector_push_back ;
+  handles @log vector_push_back ;
   handles @fasm_open vector_push_back ;
   handles @fasm_create vector_push_back ;
   handles @fasm_read vector_push_back ;
@@ -284,9 +284,9 @@ fun compile_fasm 0 {
   handles @fasm_make_timestamp vector_push_back ;
 
   @ret_instr_enter read_ret_instr = ;
-  "Retired instruction counter before entering fasm: " 1 platform_log ;
-  read_ret_instr itoa 1 platform_log ;
-  "\n" 1 platform_log ;
+  "Retired instruction counter before entering fasm: " log ;
+  read_ret_instr itoa log ;
+  "\n" log ;
 
   # Enable single stepping
   @instr_num 0 = ;
@@ -303,17 +303,17 @@ fun compile_fasm 0 {
   # Disable single stepping
   0x10014 0 = ;
 
-  "Retired instruction counter after exiting fasm: " 1 platform_log ;
-  read_ret_instr itoa 1 platform_log ;
-  "\n" 1 platform_log ;
+  "Retired instruction counter after exiting fasm: " log ;
+  read_ret_instr itoa log ;
+  "\n" log ;
 
-  "Executed instruction number after exiting fasm: " 1 platform_log ;
-  instr_num itoa 1 platform_log ;
-  "\n" 1 platform_log ;
+  "Executed instruction number after exiting fasm: " log ;
+  instr_num itoa log ;
+  "\n" log ;
 
-  "fasm returned " 1 platform_log ;
-  res itoa 1 platform_log ;
-  "\n" 1 platform_log ;
+  "fasm returned " log ;
+  res itoa log ;
+  "\n" log ;
 
   handles vector_destroy ;
   ctx asmctx_destroy ;

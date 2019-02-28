@@ -140,14 +140,14 @@ fun _malloc_get_size 1 {
 }
 
 fun malloc_stats 0 {
-  kmalloc_num_tot itoa 1 platform_log ;
-  " regions were malloc-ed\n" 1 platform_log ;
-  kmalloc_size_tot itoa 1 platform_log ;
-  " bytes were malloc-ed\n" 1 platform_log ;
-  kmalloc_num itoa 1 platform_log ;
-  " malloc-ed regions were never free-d\n" 1 platform_log ;
-  kmalloc_req_num itoa 1 platform_log ;
-  " regions were requested from platform\n" 1 platform_log ;
-  kmalloc_req_size itoa 1 platform_log ;
-  " bytes were requested from platform\n" 1 platform_log ;
+  kmalloc_num_tot itoa log ;
+  " regions were malloc-ed\n" log ;
+  kmalloc_size_tot itoa log ;
+  " bytes were malloc-ed\n" log ;
+  kmalloc_num itoa log ;
+  " malloc-ed regions were never free-d\n" log ;
+  kmalloc_req_num itoa log ;
+  " regions were requested from platform\n" log ;
+  kmalloc_req_size itoa log ;
+  " bytes were requested from platform\n" log ;
 }

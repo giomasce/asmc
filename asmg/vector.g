@@ -159,8 +159,8 @@ fun vector_test 0 {
   while i v vector_size < {
     $elem
     @elem v i vector_at = ;
-    elem itoa 1 platform_log ;
-    "\n" 1 platform_log ;
+    elem itoa log ;
+    "\n" log ;
     @i i 1 + = ;
   }
 }

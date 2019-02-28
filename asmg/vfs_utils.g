@@ -53,11 +53,11 @@ fun dump_debug 1 {
   $name
   @name 0 param = ;
 
-  "--DUMP-- " 1 platform_log ;
-  name 1 platform_log ;
-  "\n" 1 platform_log ;
+  "--DUMP-- " log ;
+  name log ;
+  "\n" log ;
   name dump_hex_file ;
-  "\n--END_DUMP--\n" 1 platform_log ;
+  "\n--END_DUMP--\n" log ;
 }
 
 fun vfs_write_string 2 {

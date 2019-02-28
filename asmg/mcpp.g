@@ -30,7 +30,7 @@ fun compile_mcpp 0 {
   @tokens tokens remove_whites = ;
   @tokens tokens collapse_strings = ;
   #@tokens filename tokenize_file = ;
-  "Finished preprocessing\n" 1 platform_log ;
+  "Finished preprocessing\n" log ;
   #tokens print_token_list ;
 
   # Compilation
@@ -39,11 +39,11 @@ fun compile_mcpp 0 {
   cctx cctx_compile ;
 
   # Debug output
-  "TYPES TABLE\n" 1 platform_log ;
+  "TYPES TABLE\n" log ;
   cctx cctx_dump_types ;
-  "TYPE NAMES TABLE\n" 1 platform_log ;
+  "TYPE NAMES TABLE\n" log ;
   cctx cctx_dump_typenames ;
-  "GLOBALS TABLE\n" 1 platform_log ;
+  "GLOBALS TABLE\n" log ;
   cctx cctx_dump_globals ;
 
   tokens free_vect_of_ptrs ;

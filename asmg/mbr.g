@@ -68,21 +68,21 @@ fun mbr_vfs_scan_drive 3 {
     $parts
     @parts a read_mbr = ;
     if parts 0 != {
-      "Found MBR!\n" 1 platform_log ;
+      "Found MBR!\n" log ;
       $i
       @i 0 = ;
       while i parts vector_size < {
-        "  Partition starting at LBA " 1 platform_log ;
-        parts i vector_at itoa 1 platform_log ;
-        " of size " 1 platform_log ;
-        parts i vector_at_addr 4 + ** itoa 1 platform_log ;
-        "\n" 1 platform_log ;
+        "  Partition starting at LBA " log ;
+        parts i vector_at itoa log ;
+        " of size " log ;
+        parts i vector_at_addr 4 + ** itoa log ;
+        "\n" log ;
 
         # Read the first sector to see if there is a known file system
         $sect
         @sect a parts i vector_at atapio_read_sect = ;
         if sect ** "DISK" ** == sect 4 + ** "FS  " ** == && {
-          "    Found a diskfs file system!\n" 1 platform_log ;
+          "    Found a diskfs file system!\n" log ;
           $mount
           @mount a atapio_duplicate 512 parts i vector_at * diskmount_init = ;
           $point
@@ -92,7 +92,7 @@ fun mbr_vfs_scan_drive 3 {
           @count count 1 + = ;
         } else {
           if sect ** "DEBU" ** == sect 4 + ** "GFS " ** == && {
-            "    Found a debugfs file system!\n" 1 platform_log ;
+            "    Found a debugfs file system!\n" log ;
             $debugfs
             @debugfs a atapio_duplicate parts i vector_at parts i vector_at_addr 4 + ** debugfsinst_init = ;
             debugfs debugfs_set ;
@@ -104,7 +104,7 @@ fun mbr_vfs_scan_drive 3 {
       }
       parts vector_destroy ;
     } else {
-      "No MBR found...\n" 1 platform_log ;
+      "No MBR found...\n" log ;
     }
   }
 
@@ -135,11 +135,11 @@ fun mbr_read_test_drive 2 {
     $i
     @i 0 = ;
     while i parts vector_size < {
-      "Partition starting at LBA " 1 platform_log ;
-      parts i vector_at itoa 1 platform_log ;
-      " of size " 1 platform_log ;
-      parts i vector_at_addr 4 + ** itoa 1 platform_log ;
-      "\n" 1 platform_log ;
+      "Partition starting at LBA " log ;
+      parts i vector_at itoa log ;
+      " of size " log ;
+      parts i vector_at_addr 4 + ** itoa log ;
+      "\n" log ;
       @i i 1 + = ;
     }
     parts vector_destroy ;

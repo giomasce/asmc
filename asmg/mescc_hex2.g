@@ -225,9 +225,9 @@ fun hex2_link 1 {
   $labels
   @labels map_init = ;
   while stage 3 < {
-    "Linking stage " 1 platform_log ;
-    stage 1 + itoa 1 platform_log ;
-    "\n" 1 platform_log ;
+    "Linking stage " log ;
+    stage 1 + itoa log ;
+    "\n" log ;
     $count
     @count 0 = ;
     $name_idx
@@ -235,9 +235,9 @@ fun hex2_link 1 {
     while name_idx names vector_size < {
       $name
       @name names name_idx vector_at = ;
-      "Processing file " 1 platform_log ;
-      name 1 platform_log ;
-      "\n" 1 platform_log ;
+      "Processing file " log ;
+      name log ;
+      "\n" log ;
       $fd
       @fd name vfs_open = ;
       $cont
@@ -312,14 +312,14 @@ fun hex2_link 1 {
     @stage stage 1 + = ;
   }
   labels map_destroy ;
-  "Linked program of size " 1 platform_log ;
-  size itoa 1 platform_log ;
-  " at address " 1 platform_log ;
-  orig_ptr itoa 1 platform_log ;
-  "\n" 1 platform_log ;
-  #"Compiled dump:\n" 1 platform_log ;
+  "Linked program of size " log ;
+  size itoa log ;
+  " at address " log ;
+  orig_ptr itoa log ;
+  "\n" log ;
+  #"Compiled dump:\n" log ;
   #orig_ptr size dump_mem ;
-  #"\n" 1 platform_log ;
+  #"\n" log ;
   orig_ptr ret ;
 }
 

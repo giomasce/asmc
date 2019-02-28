@@ -29,7 +29,7 @@ fun compile_tinycc 0 {
   if TINYCC_LOAD_TOKENS {
     @tokens load_token_list_from_diskfs = ;
   } else {
-    "Preprocessing tinycc...\n" 1 platform_log ;
+    "Preprocessing tinycc...\n" log ;
     ctx "__ASMC_COMP__" "1" ppctx_define ;
     ctx filename ppctx_set_base_filename ;
     ctx "/disk1/tinycc/" ppctx_add_include_path ;
@@ -42,7 +42,7 @@ fun compile_tinycc 0 {
     tokens ctx filename preproc_file ;
     @tokens tokens remove_whites = ;
     @tokens tokens collapse_strings = ;
-    "Finished preprocessing tinycc!\n" 1 platform_log ;
+    "Finished preprocessing tinycc!\n" log ;
     #tokens dump_token_list_to_debugfs ;
   }
 
@@ -52,14 +52,14 @@ fun compile_tinycc 0 {
   cctx CCTX_VERBOSE take_addr 1 = ;
   cctx CCTX_DEBUG take_addr 0 = ;
   #cctx CCTX_DEBUG_AFTER take_addr 1000 "..................................................................................................................................................................................." strlen 1 - * = ;
-  "Compiling tinycc...\n" 1 platform_log ;
+  "Compiling tinycc...\n" log ;
   cctx cctx_compile ;
-  "Finished compiling tinycc!\n" 1 platform_log ;
+  "Finished compiling tinycc!\n" log ;
 
   cctx cctx_print_stats ;
 
   # Try to execute the code
-  "Executing compiled tinycc...\n" 1 platform_log ;
+  "Executing compiled tinycc...\n" log ;
   $main_global
   @main_global cctx "_start" cctx_get_global = ;
   $main_addr
@@ -68,9 +68,9 @@ fun compile_tinycc 0 {
   @arg "_main" = ;
   $res
   @res @arg 1 main_addr \2 = ;
-  "tinycc returned " 1 platform_log ;
-  res itoa 1 platform_log ;
-  "\n" 1 platform_log ;
+  "tinycc returned " log ;
+  res itoa log ;
+  "\n" log ;
 
   # Dump some test file
   # "/ram/ipxe/main.o" "main.o" debugfs_copy_file ;

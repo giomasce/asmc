@@ -132,7 +132,7 @@ fun _atapio_out_sector 2 {
   # understand why. The read part, instead, seems to always work
   # fine. I have no idea of what is happening, but since the write
   # part is just for debugging, I ignore this for the moment.
-  ".\n" 1 platform_log ;
+  ".\n" log ;
 }
 
 fun atapio_identify 1 {
@@ -295,16 +295,16 @@ fun atapio_print_identify 1 {
   $data
   @data a atapio_identify = ;
   if data 0 == {
-    "Drive does not exist (or it is not ATA)\n" 1 platform_log ;
+    "Drive does not exist (or it is not ATA)\n" log ;
     0 ret ;
   }
 
-  # "ATA IDENTIFY result:\n" 1 platform_log ;
+  # "ATA IDENTIFY result:\n" log ;
   # data 512 dump_mem ;
-  # "\n" 1 platform_log ;
+  # "\n" log ;
 
-  "Found disk!\n" 1 platform_log ;
-  "  Model number: " 1 platform_log ;
+  "Found disk!\n" log ;
+  "  Model number: " log ;
   $i
   @i 27 = ;
   while i 47 < {
@@ -312,9 +312,9 @@ fun atapio_print_identify 1 {
     data 2 i * + **c 1 platform_write_char ;
     @i i 1 + = ;
   }
-  "\n" 1 platform_log ;
+  "\n" log ;
 
-  "  Serial number: " 1 platform_log ;
+  "  Serial number: " log ;
   $i
   @i 10 = ;
   while i 20 < {
@@ -322,9 +322,9 @@ fun atapio_print_identify 1 {
     data 2 i * + **c 1 platform_write_char ;
     @i i 1 + = ;
   }
-  "\n" 1 platform_log ;
+  "\n" log ;
 
-  "  Firmware revision: " 1 platform_log ;
+  "  Firmware revision: " log ;
   $i
   @i 23 = ;
   while i 27 < {
@@ -332,13 +332,13 @@ fun atapio_print_identify 1 {
     data 2 i * + **c 1 platform_write_char ;
     @i i 1 + = ;
   }
-  "\n" 1 platform_log ;
+  "\n" log ;
 
   $size
   @size data 2 60 * + ** = ;
-  "  Size: " 1 platform_log ;
-  size itoa 1 platform_log ;
-  " sectors\n" 1 platform_log ;
+  "  Size: " log ;
+  size itoa log ;
+  " sectors\n" log ;
 
   data free ;
 
@@ -354,12 +354,12 @@ fun atapio_test_drive 2 {
   $a
   @a base master atapio_init = ;
   if a atapio_print_identify {
-    "First 16 bytes: " 1 platform_log ;
+    "First 16 bytes: " log ;
     $data
     @data a 0 atapio_read_sect = ;
     data 16 dump_mem ;
     data free ;
-    "\n" 1 platform_log ;
+    "\n" log ;
   }
 
   a atapio_destroy ;

@@ -64,9 +64,9 @@ fun diskfd_read 1 {
     fd DISKFD_CACHE take_addr 0 = ;
   }
   fd DISKFD_POS take_addr fd DISKFD_POS take 1 + = ;
-  # "Read char " 1 platform_log ;
-  # c itoa 1 platform_log ;
-  # "\n" 1 platform_log ;
+  # "Read char " log ;
+  # c itoa log ;
+  # "\n" log ;
   c ret ;
 }
 
@@ -249,13 +249,13 @@ fun diskmount_init 2 {
       disk DISKMOUNT_SIZES take filename map_has "diskmount_init: error 4" assert_msg ;
 
       # Debug log
-      # "File " 1 platform_log ;
-      # filename 1 platform_log ;
-      # " at position " 1 platform_log ;
-      # pos itoa 1 platform_log ;
-      # " of size " 1 platform_log ;
-      # size itoa 1 platform_log ;
-      # "\n" 1 platform_log ;
+      # "File " log ;
+      # filename log ;
+      # " at position " log ;
+      # pos itoa log ;
+      # " of size " log ;
+      # size itoa log ;
+      # "\n" log ;
 
       filename free ;
     }

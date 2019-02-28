@@ -68,17 +68,17 @@ fun dump_frame 1 {
   $off
   ret_addr @name @off resolve_symbol ;
 
-  "Frame pointer: " 1 platform_log ;
-  frame_ptr itoa 1 platform_log ;
-  "; previous frame pointer: " 1 platform_log ;
-  prev_frame_ptr itoa 1 platform_log ;
-  "; return address: " 1 platform_log ;
-  ret_addr itoa 1 platform_log ;
-  " (" 1 platform_log ;
-  name 1 platform_log ;
-  "+" 1 platform_log ;
-  off itoa 1 platform_log ;
-  ")\n" 1 platform_log ;
+  "Frame pointer: " log ;
+  frame_ptr itoa log ;
+  "; previous frame pointer: " log ;
+  prev_frame_ptr itoa log ;
+  "; return address: " log ;
+  ret_addr itoa log ;
+  " (" log ;
+  name log ;
+  "+" log ;
+  off itoa log ;
+  ")\n" log ;
 
   prev_frame_ptr dump_frame ;
 }
@@ -95,7 +95,7 @@ fun read_ret_instr 0 {
 
 fun assert 1 {
   if 0 param ! {
-    "\nASSERTION FAILED\n" 1 platform_log ;
+    "\nASSERTION FAILED\n" log ;
     dump_stacktrace ;
     platform_panic ;
   }
@@ -103,9 +103,9 @@ fun assert 1 {
 
 fun assert_msg 2 {
   if 1 param ! {
-    "\nASSERTION FAILED\n" 1 platform_log ;
-    0 param 1 platform_log ;
-    "\n" 1 platform_log ;
+    "\nASSERTION FAILED\n" log ;
+    0 param log ;
+    "\n" log ;
     dump_stacktrace ;
     platform_panic ;
   }
@@ -113,11 +113,11 @@ fun assert_msg 2 {
 
 fun assert_msg_str 3 {
   if 2 param ! {
-    "\nASSERTION FAILED\n" 1 platform_log ;
-    1 param 1 platform_log ;
-    "\n" 1 platform_log ;
-    0 param 1 platform_log ;
-    "\n" 1 platform_log ;
+    "\nASSERTION FAILED\n" log ;
+    1 param log ;
+    "\n" log ;
+    0 param log ;
+    "\n" log ;
     dump_stacktrace ;
     platform_panic ;
   }
@@ -125,13 +125,13 @@ fun assert_msg_str 3 {
 
 fun assert_msg_int_int 4 {
   if 3 param ! {
-    "\nASSERTION FAILED\n" 1 platform_log ;
-    2 param 1 platform_log ;
-    "\n" 1 platform_log ;
-    1 param itoa 1 platform_log ;
-    " " 1 platform_log ;
-    0 param itoa 1 platform_log ;
-    "\n" 1 platform_log ;
+    "\nASSERTION FAILED\n" log ;
+    2 param log ;
+    "\n" log ;
+    1 param itoa log ;
+    " " log ;
+    0 param itoa log ;
+    "\n" log ;
     dump_stacktrace ;
     platform_panic ;
   }
@@ -388,9 +388,9 @@ fun atoi 1 {
   $res
   @res ptr @end 0 strtol = ;
 
-  # "atoi with input " 1 platform_log ;
-  # ptr 1 platform_log ;
-  # "\n" 1 platform_log ;
+  # "atoi with input " log ;
+  # ptr log ;
+  # "\n" log ;
   end **c 0 == "atoi: invalid number" assert_msg ;
 
   res ret ;
@@ -407,9 +407,9 @@ fun atoi_c 1 {
   $res
   @res ptr @end 0 strtol = ;
 
-  # "atoi with input " 1 platform_log ;
-  # ptr 1 platform_log ;
-  # "\n" 1 platform_log ;
+  # "atoi with input " log ;
+  # ptr log ;
+  # "\n" log ;
 
   # Ignore L or LL suffixes
   if end **c 'L' == {

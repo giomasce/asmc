@@ -213,18 +213,18 @@ fun int64_test_one_div 2 {
   @n 1 param = ;
   @d 0 param = ;
 
-  # "n_up: " 1 platform_log ;
-  # n 4 + ** itoa 1 platform_log ;
-  # "\n" 1 platform_log ;
-  # "n: " 1 platform_log ;
-  # n ** itoa 1 platform_log ;
-  # "\n" 1 platform_log ;
-  # "d_up: " 1 platform_log ;
-  # d 4 + ** itoa 1 platform_log ;
-  # "\n" 1 platform_log ;
-  # "d: " 1 platform_log ;
-  # d ** itoa 1 platform_log ;
-  # "\n" 1 platform_log ;
+  # "n_up: " log ;
+  # n 4 + ** itoa log ;
+  # "\n" log ;
+  # "n: " log ;
+  # n ** itoa log ;
+  # "\n" log ;
+  # "d_up: " log ;
+  # d 4 + ** itoa log ;
+  # "\n" log ;
+  # "d: " log ;
+  # d ** itoa log ;
+  # "\n" log ;
 
   # Do unsigned division and mod
   $tmp1_
@@ -236,18 +236,18 @@ fun int64_test_one_div 2 {
   @tmp1 d i64_udiv ;
   @tmp2 d i64_umod ;
 
-  # "div_up: " 1 platform_log ;
-  # tmp1_ itoa 1 platform_log ;
-  # "\n" 1 platform_log ;
-  # "div: " 1 platform_log ;
-  # tmp1 itoa 1 platform_log ;
-  # "\n" 1 platform_log ;
-  # "mod_up: " 1 platform_log ;
-  # tmp2_ itoa 1 platform_log ;
-  # "\n" 1 platform_log ;
-  # "mod: " 1 platform_log ;
-  # tmp2 itoa 1 platform_log ;
-  # "\n" 1 platform_log ;
+  # "div_up: " log ;
+  # tmp1_ itoa log ;
+  # "\n" log ;
+  # "div: " log ;
+  # tmp1 itoa log ;
+  # "\n" log ;
+  # "mod_up: " log ;
+  # tmp2_ itoa log ;
+  # "\n" log ;
+  # "mod: " log ;
+  # tmp2 itoa log ;
+  # "\n" log ;
 
   # Check that mod is smaller then denominator
   $tmp3_
@@ -403,5 +403,5 @@ fun int64_test_div 0 {
   @y 0x1 = ;
   @x @y int64_test_one_div ;
 
-  "Tests for int64 division successfully passed!\n" 1 platform_log ;
+  "Tests for int64 division successfully passed!\n" log ;
 }

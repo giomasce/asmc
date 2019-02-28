@@ -51,11 +51,11 @@ fun c_run_testcase 3 {
   @result 1 param = ;
   @out 0 param = ;
 
-  "Testing " 1 platform_log ;
-  function 1 platform_log ;
-  " in file " 1 platform_log ;
-  filename 1 platform_log ;
-  "..." 1 platform_log ;
+  "Testing " log ;
+  function log ;
+  " in file " log ;
+  filename log ;
+  "..." log ;
 
   # Preprocessing
   $ctx
@@ -67,7 +67,7 @@ fun c_run_testcase 3 {
   tokens ctx filename preproc_file ;
   @tokens tokens remove_whites = ;
   @tokens tokens collapse_strings = ;
-  #"Finished preprocessing\n" 1 platform_log ;
+  #"Finished preprocessing\n" log ;
   #tokens print_token_list ;
 
   # Compilation
@@ -83,15 +83,15 @@ fun c_run_testcase 3 {
   @test_stdout_ok 1 = ;
 
   # Debug output
-  #"TYPES TABLE\n" 1 platform_log ;
+  #"TYPES TABLE\n" log ;
   #cctx cctx_dump_types ;
-  #"TYPE NAMES TABLE\n" 1 platform_log ;
+  #"TYPE NAMES TABLE\n" log ;
   #cctx cctx_dump_typenames ;
-  #"GLOBALS TABLE\n" 1 platform_log ;
+  #"GLOBALS TABLE\n" log ;
   #cctx cctx_dump_globals ;
 
   # Try to execute the code
-  #"Executing compiled code...\n" 1 platform_log ;
+  #"Executing compiled code...\n" log ;
   if cctx "__init_stdlib" cctx_has_global {
     $init_global
     @init_global cctx "__init_stdlib" cctx_get_global = ;
@@ -113,15 +113,15 @@ fun c_run_testcase 3 {
 
   tests TESTS_RAN take_addr tests TESTS_RAN take 1 + = ;
   if res result == test_expected_stdout **c 0 == && test_stdout_ok && {
-    " passed!\n" 1 platform_log ;
+    " passed!\n" log ;
     tests TESTS_SUCCESSFUL take_addr tests TESTS_SUCCESSFUL take 1 + = ;
   } else {
-    " FAILED!\n" 1 platform_log ;
-    " -> Returned " 1 platform_log ;
-    res itoa 1 platform_log ;
-    " instead of " 1 platform_log ;
-    result itoa 1 platform_log ;
-    "\n" 1 platform_log ;
+    " FAILED!\n" log ;
+    " -> Returned " log ;
+    res itoa log ;
+    " instead of " log ;
+    result itoa log ;
+    "\n" log ;
   }
 }
 
@@ -202,10 +202,10 @@ fun c_run_testcases 0 {
   tests "/disk1/tests/test_setjmp.c" "test_setjmp" 0 "" c_run_testcase ;
   tests "/disk1/tests/test_setjmp.c" "test_setjmp2" 0 "called\ncalled\ncalled\n" c_run_testcase ;
 
-  tests TESTS_SUCCESSFUL take itoa 1 platform_log ;
-  " / " 1 platform_log ;
-  tests TESTS_RAN take itoa 1 platform_log ;
-  " tests succesfully passed\n" 1 platform_log ;
+  tests TESTS_SUCCESSFUL take itoa log ;
+  " / " log ;
+  tests TESTS_RAN take itoa log ;
+  " tests succesfully passed\n" log ;
 
   tests free ;
 }

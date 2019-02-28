@@ -300,7 +300,7 @@ fun ast_parsev 2 {
   @operand_stack 4 vector_init = ;
   $center_stack
   @center_stack 4 vector_init = ;
-  # "Beginning parse\n" 1 platform_log ;
+  # "Beginning parse\n" log ;
   while cont {
     $tok
     $stop
@@ -324,14 +324,14 @@ fun ast_parsev 2 {
       if " " tok strcmp 0 != {
         $is_operator
         @is_operator tok ast_is_operator = ;
-        # "Found: " 1 platform_log ;
-        # tok 1 platform_log ;
+        # "Found: " log ;
+        # tok log ;
         # if is_operator {
-        #   " (operator)" 1 platform_log ;
+        #   " (operator)" log ;
         # } else {
-        #   " (operand)" 1 platform_log ;
+        #   " (operand)" log ;
         # }
-        # "\n" 1 platform_log ;
+        # "\n" log ;
         if expect_operator {
           if is_operator {
             $center_ast
@@ -535,7 +535,7 @@ fun ast_parsev 2 {
   operator_stack vector_destroy ;
   center_stack vector_destroy ;
 
-  # "Ending parse\n" 1 platform_log ;
+  # "Ending parse\n" log ;
 
   res ret ;
 }
@@ -603,46 +603,46 @@ fun ast_dump_int 2 {
   $i
   @i 0 = ;
   while i depth < {
-    "  " 1 platform_log ;
+    "  " log ;
     @i i 1 + = ;
   }
   if ast AST_TYPE take 0 == {
     if ast AST_NAME take 0 == {
-      "Placeholder operand" 1 platform_log ;
+      "Placeholder operand" log ;
     } else {
-      "Operand of type #" 1 platform_log ;
-      ast AST_TYPE_IDX take itoa 1 platform_log ;
+      "Operand of type #" log ;
+      ast AST_TYPE_IDX take itoa log ;
       if ast AST_ORIG_TYPE_IDX take 0xffffffff != {
-        " (orig: #" 1 platform_log ;
-        ast AST_ORIG_TYPE_IDX take itoa 1 platform_log ;
-        ")" 1 platform_log ;
+        " (orig: #" log ;
+        ast AST_ORIG_TYPE_IDX take itoa log ;
+        ")" log ;
       }
       if ast AST_COMMON_TYPE_IDX take 0xffffffff != {
-        " (common: #" 1 platform_log ;
-        ast AST_COMMON_TYPE_IDX take itoa 1 platform_log ;
-        ")" 1 platform_log ;
+        " (common: #" log ;
+        ast AST_COMMON_TYPE_IDX take itoa log ;
+        ")" log ;
       }
-      ": " 1 platform_log ;
-      ast AST_NAME take 1 platform_log ;
+      ": " log ;
+      ast AST_NAME take log ;
     }
-    "\n" 1 platform_log ;
+    "\n" log ;
   } else {
     ast AST_TYPE take 1 == "ast_dump_int: error 1" assert_msg ;
-    "Operator of type #" 1 platform_log ;
-    ast AST_TYPE_IDX take itoa 1 platform_log ;
+    "Operator of type #" log ;
+    ast AST_TYPE_IDX take itoa log ;
     if ast AST_ORIG_TYPE_IDX take 0xffffffff != {
-      " (orig: #" 1 platform_log ;
-      ast AST_ORIG_TYPE_IDX take itoa 1 platform_log ;
-      ")" 1 platform_log ;
+      " (orig: #" log ;
+      ast AST_ORIG_TYPE_IDX take itoa log ;
+      ")" log ;
     }
     if ast AST_COMMON_TYPE_IDX take 0xffffffff != {
-      " (common: #" 1 platform_log ;
-      ast AST_COMMON_TYPE_IDX take itoa 1 platform_log ;
-      ")" 1 platform_log ;
+      " (common: #" log ;
+      ast AST_COMMON_TYPE_IDX take itoa log ;
+      ")" log ;
     }
-    ": " 1 platform_log ;
-    ast AST_NAME take 1 platform_log ;
-    "\n" 1 platform_log ;
+    ": " log ;
+    ast AST_NAME take log ;
+    "\n" log ;
     ast AST_LEFT take depth 1 + ast_dump_int ;
     ast AST_RIGHT take depth 1 + ast_dump_int ;
   }
@@ -677,9 +677,9 @@ fun ast_eval 3 {
   $name
   @name ast AST_NAME take = ;
 
-  # "ast_eval: " 1 platform_log ;
-  # name 1 platform_log ;
-  # "\n" 1 platform_log ;
+  # "ast_eval: " log ;
+  # name log ;
+  # "\n" log ;
 
   if ast AST_TYPE take 0 == {
     # We have no idea of how to treat an operand in general...

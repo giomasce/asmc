@@ -26,6 +26,6 @@ fun entry 0 {
   "main.g" platform_g_compile ;
   "done!\n" 1 log ;
 
-  "Entering main program!\n" 1 platform_log ;
+  "Entering main program!\n" log ;
   0 "main" platform_get_symbol \0 ;
 }

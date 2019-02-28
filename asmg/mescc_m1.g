@@ -615,9 +615,9 @@ fun m1_assemble 2 {
   ctx M1CTX_DEST_FD take vfs_close ;
   head m1_dealloc_list ;
   ctx free ;
-  #"Assembled dump:\n" 1 platform_log ;
+  #"Assembled dump:\n" log ;
   #outfile dump_file ;
-  #"\n" 1 platform_log ;
+  #"\n" log ;
 }
 
 fun m1_test 0 {

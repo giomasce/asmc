@@ -94,5 +94,5 @@ fun map_test 0 {
   check_map map_destroy ;
   map map_destroy ;
 
-  "Map tests successfully passed!\n" 1 platform_log ;
+  "Map tests successfully passed!\n" log ;
 }

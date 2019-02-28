@@ -173,9 +173,9 @@ fun asmctx_get_symbol 2 {
     if syms name map_has {
       syms name map_at ret ;
     } else {
-      "Undefined symbol: " 1 platform_log ;
-      name 1 platform_log ;
-      "\n" 1 platform_log ;
+      "Undefined symbol: " log ;
+      name log ;
+      "\n" log ;
       0 "asmctx_get_symbol: symbol undefined" assert_msg ;
     }
   } else {

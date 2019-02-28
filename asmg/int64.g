@@ -660,5 +660,5 @@ fun int64_test 0 {
 
   int64_test_comparison ;
 
-  "Tests for int64 successfully passed!\n" 1 platform_log ;
+  "Tests for int64 successfully passed!\n" log ;
 }

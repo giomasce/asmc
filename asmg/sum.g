@@ -21,13 +21,13 @@ const TO 0x64
 ifun do_sum 2
 
 fun main 0 {
-  "The sum of numbers from " 1 platform_log ;
-  FROM itoa 1 platform_log ;
-  " to " 1 platform_log ;
-  TO itoa 1 platform_log ;
-  " is " 1 platform_log ;
-  FROM TO do_sum itoa 1 platform_log ;
-  "\n" 1 platform_log ;
+  "The sum of numbers from " log ;
+  FROM itoa log ;
+  " to " log ;
+  TO itoa log ;
+  " is " log ;
+  FROM TO do_sum itoa log ;
+  "\n" log ;
 }
 
 fun do_sum 2 {

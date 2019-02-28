@@ -36,9 +36,9 @@ const USE_AVL_MAP 0
 const USE_RB_MAP 1
 
 fun main 0 {
-  "Memory break after entering main: " 1 platform_log ;
-  0 platform_allocate itoa 1 platform_log ;
-  "\n" 1 platform_log ;
+  "Memory break after entering main: " log ;
+  0 platform_allocate itoa log ;
+  "\n" log ;
 
   $compile_mm0
   $compile_asm
@@ -67,197 +67,197 @@ fun main 0 {
     @compile_asm 1 = ;
   }
 
-  "Compiling utils.g... " 1 platform_log ;
+  "Compiling utils.g... " log ;
   "utils.g" platform_g_compile ;
-  "done!\n" 1 platform_log ;
+  "done!\n" log ;
 
   if USE_TRIVIAL_MALLOC {
-    "Compiling triv_malloc.g... " 1 platform_log ;
+    "Compiling triv_malloc.g... " log ;
     "triv_malloc.g" platform_g_compile ;
-    "done!\n" 1 platform_log ;
+    "done!\n" log ;
   }
 
   if USE_SIMPLE_MALLOC {
-    "Compiling simple_malloc.g... " 1 platform_log ;
+    "Compiling simple_malloc.g... " log ;
     "simple_malloc.g" platform_g_compile ;
-    "done!\n" 1 platform_log ;
+    "done!\n" log ;
   }
 
   if USE_CHECKED_MALLOC {
-    "Compiling check_malloc.g... " 1 platform_log ;
+    "Compiling check_malloc.g... " log ;
     "check_malloc.g" platform_g_compile ;
-    "done!\n" 1 platform_log ;
+    "done!\n" log ;
   }
 
   if USE_KMALLOC {
-    "Compiling kmalloc.g... " 1 platform_log ;
+    "Compiling kmalloc.g... " log ;
     "kmalloc.g" platform_g_compile ;
-    "done!\n" 1 platform_log ;
+    "done!\n" log ;
   }
 
-  "Compiling malloc_utils.g... " 1 platform_log ;
+  "Compiling malloc_utils.g... " log ;
   "malloc_utils.g" platform_g_compile ;
-  "done!\n" 1 platform_log ;
+  "done!\n" log ;
 
-  "Compiling vector.g... " 1 platform_log ;
+  "Compiling vector.g... " log ;
   "vector.g" platform_g_compile ;
-  "done!\n" 1 platform_log ;
+  "done!\n" log ;
 
   if USE_SIMPLE_MAP {
-    "Compiling map.g... " 1 platform_log ;
+    "Compiling map.g... " log ;
     "map.g" platform_g_compile ;
-    "done!\n" 1 platform_log ;
+    "done!\n" log ;
   }
 
   if USE_AVL_MAP {
-    "Compiling avl_map.g... " 1 platform_log ;
+    "Compiling avl_map.g... " log ;
     "avl_map.g" platform_g_compile ;
-    "done!\n" 1 platform_log ;
+    "done!\n" log ;
   }
 
   if USE_RB_MAP {
-    "Compiling rb_map.g... " 1 platform_log ;
+    "Compiling rb_map.g... " log ;
     "rb_map.g" platform_g_compile ;
-    "done!\n" 1 platform_log ;
+    "done!\n" log ;
   }
 
   if TEST_MAP {
-    "Compiling map_test.g... " 1 platform_log ;
+    "Compiling map_test.g... " log ;
     "map_test.g" platform_g_compile ;
-    "done!\n" 1 platform_log ;
+    "done!\n" log ;
   }
 
-  "Compiling utils2.g... " 1 platform_log ;
+  "Compiling utils2.g... " log ;
   "utils2.g" platform_g_compile ;
-  "done!\n" 1 platform_log ;
+  "done!\n" log ;
 
-  "Compiling atapio.g... " 1 platform_log ;
+  "Compiling atapio.g... " log ;
   "atapio.g" platform_g_compile ;
-  "done!\n" 1 platform_log ;
+  "done!\n" log ;
 
-  "Compiling diskfs.g... " 1 platform_log ;
+  "Compiling diskfs.g... " log ;
   "diskfs.g" platform_g_compile ;
-  "done!\n" 1 platform_log ;
+  "done!\n" log ;
 
-  "Compiling debugfs.g... " 1 platform_log ;
+  "Compiling debugfs.g... " log ;
   "debugfs.g" platform_g_compile ;
-  "done!\n" 1 platform_log ;
+  "done!\n" log ;
 
-  "Compiling ramfs.g... " 1 platform_log ;
+  "Compiling ramfs.g... " log ;
   "ramfs.g" platform_g_compile ;
-  "done!\n" 1 platform_log ;
+  "done!\n" log ;
 
-  "Compiling mbr.g... " 1 platform_log ;
+  "Compiling mbr.g... " log ;
   "mbr.g" platform_g_compile ;
-  "done!\n" 1 platform_log ;
+  "done!\n" log ;
 
-  "Compiling vfs.g... " 1 platform_log ;
+  "Compiling vfs.g... " log ;
   "vfs.g" platform_g_compile ;
-  "done!\n" 1 platform_log ;
+  "done!\n" log ;
 
-  "Compiling vfs_utils.g... " 1 platform_log ;
+  "Compiling vfs_utils.g... " log ;
   "vfs_utils.g" platform_g_compile ;
-  "done!\n" 1 platform_log ;
+  "done!\n" log ;
 
   if compile_mm0 {
-    "Compiling mm0.g... " 1 platform_log ;
+    "Compiling mm0.g... " log ;
     "mm0.g" platform_g_compile ;
-    "done!\n" 1 platform_log ;
+    "done!\n" log ;
   }
 
   if compile_asm {
-    #"Memory break before ASM assembler compilation: " 1 platform_log ;
-    #0 platform_allocate itoa 1 platform_log ;
-    #"\n" 1 platform_log ;
+    #"Memory break before ASM assembler compilation: " log ;
+    #0 platform_allocate itoa log ;
+    #"\n" log ;
 
-    "Compiling asm_regs.g... " 1 platform_log ;
+    "Compiling asm_regs.g... " log ;
     "asm_regs.g" platform_g_compile ;
-    "done!\n" 1 platform_log ;
+    "done!\n" log ;
 
-    "Compiling asm_preproc.g... " 1 platform_log ;
+    "Compiling asm_preproc.g... " log ;
     "asm_preproc.g" platform_g_compile ;
-    "done!\n" 1 platform_log ;
+    "done!\n" log ;
 
-    "Compiling asm_opcodes.g... " 1 platform_log ;
+    "Compiling asm_opcodes.g... " log ;
     "asm_opcodes.g" platform_g_compile ;
-    "done!\n" 1 platform_log ;
+    "done!\n" log ;
 
-    "Compiling asm_compile.g... " 1 platform_log ;
+    "Compiling asm_compile.g... " log ;
     "asm_compile.g" platform_g_compile ;
-    "done!\n" 1 platform_log ;
+    "done!\n" log ;
 
-    #"Memory break after ASM assembler compilation: " 1 platform_log ;
-    #0 platform_allocate itoa 1 platform_log ;
-    #"\n" 1 platform_log ;
+    #"Memory break after ASM assembler compilation: " log ;
+    #0 platform_allocate itoa log ;
+    #"\n" log ;
   }
 
   if compile_int64 {
-    "Compiling int64.g... " 1 platform_log ;
+    "Compiling int64.g... " log ;
     "int64.g" platform_g_compile ;
-    "done!\n" 1 platform_log ;
+    "done!\n" log ;
 
-    "Compiling int64_div.g... " 1 platform_log ;
+    "Compiling int64_div.g... " log ;
     "int64_div.g" platform_g_compile ;
-    "done!\n" 1 platform_log ;
+    "done!\n" log ;
   }
 
   if compile_c {
-    "Compiling c_utils.g... " 1 platform_log ;
+    "Compiling c_utils.g... " log ;
     "c_utils.g" platform_g_compile ;
-    "done!\n" 1 platform_log ;
+    "done!\n" log ;
 
-    "Compiling c_ast.g... " 1 platform_log ;
+    "Compiling c_ast.g... " log ;
     "c_ast.g" platform_g_compile ;
-    "done!\n" 1 platform_log ;
+    "done!\n" log ;
 
-    "Compiling c_preproc.g... " 1 platform_log ;
+    "Compiling c_preproc.g... " log ;
     "c_preproc.g" platform_g_compile ;
-    "done!\n" 1 platform_log ;
+    "done!\n" log ;
 
-    "Compiling c_compile.g... " 1 platform_log ;
+    "Compiling c_compile.g... " log ;
     "c_compile.g" platform_g_compile ;
-    "done!\n" 1 platform_log ;
+    "done!\n" log ;
 
-    "Compiling c_test.g... " 1 platform_log ;
+    "Compiling c_test.g... " log ;
     "c_test.g" platform_g_compile ;
-    "done!\n" 1 platform_log ;
+    "done!\n" log ;
   }
 
   if RUN_MESCC {
-    "Compiling mescc_hex2.g... " 1 platform_log ;
+    "Compiling mescc_hex2.g... " log ;
     "mescc_hex2.g" platform_g_compile ;
-    "done!\n" 1 platform_log ;
+    "done!\n" log ;
 
-    "Compiling mescc_m1.g... " 1 platform_log ;
+    "Compiling mescc_m1.g... " log ;
     "mescc_m1.g" platform_g_compile ;
-    "done!\n" 1 platform_log ;
+    "done!\n" log ;
 
-    "Compiling mescc_m2.g... " 1 platform_log ;
+    "Compiling mescc_m2.g... " log ;
     "mescc_m2.g" platform_g_compile ;
-    "done!\n" 1 platform_log ;
+    "done!\n" log ;
   }
 
-  "Memory break after compilers compilation: " 1 platform_log ;
-  0 platform_allocate itoa 1 platform_log ;
-  "\n" 1 platform_log ;
+  "Memory break after compilers compilation: " log ;
+  0 platform_allocate itoa log ;
+  "\n" log ;
 
   if TEST_MAP {
     0 "map_test" platform_get_symbol \0 ;
   }
 
-  "Initializing Virtual File System...\n" 1 platform_log ;
+  "Initializing Virtual File System...\n" log ;
   0 "vfs_init" platform_get_symbol \0 ;
-  "Virtual File System initialized!\n" 1 platform_log ;
+  "Virtual File System initialized!\n" log ;
 
   if compile_int64 {
-    "Initializing support for int64...\n" 1 platform_log ;
+    "Initializing support for int64...\n" log ;
     0 "int64_init" platform_get_symbol \0 ;
-    "Support for int64 initialized!\n" 1 platform_log ;
+    "Support for int64 initialized!\n" log ;
   }
 
-  "Initializing resolve_symbol_ext...\n" 1 platform_log ;
+  "Initializing resolve_symbol_ext...\n" log ;
   0 "init_resolve_symbol_ext" platform_get_symbol \0 ;
-  "done!\n" 1 platform_log ;
+  "done!\n" log ;
 
   # Determine if there is an actual script
   $script_file
@@ -267,14 +267,14 @@ fun main 0 {
   script_file 0 "vfs_close" platform_get_symbol \1 ;
 
   if have_script {
-    "Compiling script.g... " 1 platform_log ;
+    "Compiling script.g... " log ;
     "script.g" platform_g_compile ;
-    "done!\n" 1 platform_log ;
+    "done!\n" log ;
 
-    "Running the script...\n" 1 platform_log ;
+    "Running the script...\n" log ;
     0 "run_script" platform_get_symbol \0 ;
   } else {
-    "No script, running the usual payload...\n" 1 platform_log ;
+    "No script, running the usual payload...\n" log ;
 
     if RUN_MM0 {
       "/disk1/mm0/set.mm0" 0 "mm0_process" platform_get_symbol \1 ;
@@ -285,9 +285,9 @@ fun main 0 {
     }
 
     if RUN_FASM {
-      "Compiling fasm.g... " 1 platform_log ;
+      "Compiling fasm.g... " log ;
       "fasm.g" platform_g_compile ;
-      "done!\n" 1 platform_log ;
+      "done!\n" log ;
 
       0 "compile_fasm" platform_get_symbol \0 ;
     }
@@ -313,43 +313,43 @@ fun main 0 {
     }
 
     if RUN_MCPP {
-      "Compiling mcpp.g... " 1 platform_log ;
+      "Compiling mcpp.g... " log ;
       "mcpp.g" platform_g_compile ;
-      "done!\n" 1 platform_log ;
+      "done!\n" log ;
 
       0 "compile_mcpp" platform_get_symbol \0 ;
     }
 
     if RUN_TINYCC {
-      "Compiling tinycc.g... " 1 platform_log ;
+      "Compiling tinycc.g... " log ;
       "tinycc.g" platform_g_compile ;
-      "done!\n" 1 platform_log ;
+      "done!\n" log ;
 
       0 "compile_tinycc" platform_get_symbol \0 ;
     }
   }
 
   if compile_int64 {
-    "Destroying support for int64... " 1 platform_log ;
+    "Destroying support for int64... " log ;
     0 "int64_destroy" platform_get_symbol \0 ;
-    "done!\n" 1 platform_log ;
+    "done!\n" log ;
   }
 
-  "Destroying resolve_symbol_ext... " 1 platform_log ;
+  "Destroying resolve_symbol_ext... " log ;
   0 "destroy_resolve_symbol_ext" platform_get_symbol \0 ;
-  "done!\n" 1 platform_log ;
+  "done!\n" log ;
 
-  "Destroying Virtual File System... " 1 platform_log ;
+  "Destroying Virtual File System... " log ;
   0 "vfs_destroy" platform_get_symbol \0 ;
-  "done!\n" 1 platform_log ;
+  "done!\n" log ;
 
-  "Destroying debugfs... " 1 platform_log ;
+  "Destroying debugfs... " log ;
   0 "debugfs_deinit" platform_get_symbol \0 ;
-  "done!\n" 1 platform_log ;
+  "done!\n" log ;
 
-  "Memory break before exiting main: " 1 platform_log ;
-  0 platform_allocate itoa 1 platform_log ;
-  "\n" 1 platform_log ;
+  "Memory break before exiting main: " log ;
+  0 platform_allocate itoa log ;
+  "\n" log ;
 
   0 "malloc_stats" platform_get_symbol \0 ;
 }

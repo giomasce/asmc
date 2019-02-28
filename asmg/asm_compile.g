@@ -560,8 +560,8 @@ fun asmctx_compile 1 {
   @opcode_map build_opcode_map = ;
   while ctx ASMCTX_STAGE take 3 < {
     if ctx ASMCTX_VERBOSE take {
-      "Compilation stage " 1 platform_log ;
-      ctx ASMCTX_STAGE take 1 + itoa 1 platform_log ;
+      "Compilation stage " log ;
+      ctx ASMCTX_STAGE take 1 + itoa log ;
     }
     $line_num
     @line_num 1 = ;
@@ -573,13 +573,13 @@ fun asmctx_compile 1 {
     @cont 1 = ;
     while cont {
       if line_num 1000 % 0 == ctx ASMCTX_VERBOSE take && {
-        "." 1 platform_log ;
+        "." log ;
       }
       @cont ctx opcode_map asmctx_parse_line = ;
       @line_num line_num 1 + = ;
     }
     if ctx ASMCTX_VERBOSE take {
-      "\n" 1 platform_log ;
+      "\n" log ;
     }
     if ctx ASMCTX_STAGE take 0 == {
       @size ctx ASMCTX_CURRENT_LOC take start_loc - = ;
@@ -590,16 +590,16 @@ fun asmctx_compile 1 {
     ctx ASMCTX_STAGE take_addr ctx ASMCTX_STAGE take 1 + = ;
   }
   if ctx ASMCTX_VERBOSE take {
-    "Assembled program has size " 1 platform_log ;
-    size itoa 1 platform_log ;
-    " and starts at " 1 platform_log ;
-    start_loc itoa 1 platform_log ;
-    "\n" 1 platform_log ;
+    "Assembled program has size " log ;
+    size itoa log ;
+    " and starts at " log ;
+    start_loc itoa log ;
+    "\n" log ;
   }
   if ctx ASMCTX_DEBUG take {
-    "Compiled dump:\n" 1 platform_log ;
+    "Compiled dump:\n" log ;
     start_loc size dump_mem ;
-    "\n" 1 platform_log ;
+    "\n" log ;
   }
   opcode_map destroy_opcode_map ;
 }
@@ -619,14 +619,14 @@ fun parse_asm 1 {
   #   @tok ctx asmctx_get_token = ;
   #   @cont tok **c 0 != = ;
   #   if tok **c '\n' == {
-  #     "NL" 1 platform_log ;
+  #     "NL" log ;
   #   } else {
-  #     tok 1 platform_log ;
+  #     tok log ;
   #   }
-  #   "#" 1 platform_log ;
+  #   "#" log ;
   #   tok free ;
   # }
-  # "\n" 1 platform_log ;
+  # "\n" log ;
   ctx asmctx_compile ;
   fd vfs_close ;
   ctx asmctx_destroy ;

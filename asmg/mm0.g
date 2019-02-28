@@ -92,32 +92,32 @@ fun mm0tok_dump 1 {
   @value tok MM0TOK_VALUE take = ;
 
   if type MM0TOK_TYPE_SYMBOL == {
-    if value MM0TOK_SYMB_STAR == { "STAR" 1 platform_log ; ret ; }
-    if value MM0TOK_SYMB_DOT == { "DOT" 1 platform_log ; ret ; }
-    if value MM0TOK_SYMB_COLON == { "COLON" 1 platform_log ; ret ; }
-    if value MM0TOK_SYMB_SEMICOLON == { "SEMICOLON" 1 platform_log ; ret ; }
-    if value MM0TOK_SYMB_OPEN == { "OPEN" 1 platform_log ; ret ; }
-    if value MM0TOK_SYMB_CLOSED == { "CLOSED" 1 platform_log ; ret ; }
-    if value MM0TOK_SYMB_ARROW == { "ARROW" 1 platform_log ; ret ; }
-    if value MM0TOK_SYMB_OPENBR == { "OPENBR" 1 platform_log ; ret ; }
-    if value MM0TOK_SYMB_CLOSEDBR == { "CLOSEDBR" 1 platform_log ; ret ; }
-    if value MM0TOK_SYMB_ASSIGN == { "ASSIGN" 1 platform_log ; ret ; }
+    if value MM0TOK_SYMB_STAR == { "STAR" log ; ret ; }
+    if value MM0TOK_SYMB_DOT == { "DOT" log ; ret ; }
+    if value MM0TOK_SYMB_COLON == { "COLON" log ; ret ; }
+    if value MM0TOK_SYMB_SEMICOLON == { "SEMICOLON" log ; ret ; }
+    if value MM0TOK_SYMB_OPEN == { "OPEN" log ; ret ; }
+    if value MM0TOK_SYMB_CLOSED == { "CLOSED" log ; ret ; }
+    if value MM0TOK_SYMB_ARROW == { "ARROW" log ; ret ; }
+    if value MM0TOK_SYMB_OPENBR == { "OPENBR" log ; ret ; }
+    if value MM0TOK_SYMB_CLOSEDBR == { "CLOSEDBR" log ; ret ; }
+    if value MM0TOK_SYMB_ASSIGN == { "ASSIGN" log ; ret ; }
   }
 
   if type MM0TOK_TYPE_IDENT == {
-    value 1 platform_log ;
+    value log ;
     ret ;
   }
 
   if type MM0TOK_TYPE_NUMBER == {
-    value itoa 1 platform_log ;
+    value itoa log ;
     ret ;
   }
 
   if type MM0TOK_TYPE_MATH == {
-    "$" 1 platform_log ;
-    value 1 platform_log ;
-    "$" 1 platform_log ;
+    "$" log ;
+    value log ;
+    "$" log ;
     ret ;
   }
 }
@@ -324,9 +324,9 @@ fun mm0lexer_get_token_or_eof 1 {
 
   if token {
     token mm0tok_dump ;
-    " " 1 platform_log ;
+    " " log ;
   } else {
-    "EOF" 1 platform_log ;
+    "EOF" log ;
   }
 
   token ret ;
@@ -372,7 +372,7 @@ fun mm0_parse_sort 2 {
   $lexer
   @lexer theory MM0TH_LEXER take = ;
 
-  "(sort-stmt) " 1 platform_log ;
+  "(sort-stmt) " log ;
 
   # Discard tokens up to the semicolon
   $cont
@@ -396,7 +396,7 @@ fun mm0_parse_var 2 {
   $lexer
   @lexer theory MM0TH_LEXER take = ;
 
-  "(var-stmt) " 1 platform_log ;
+  "(var-stmt) " log ;
 
   # Discard tokens up to the semicolon
   $cont
@@ -420,7 +420,7 @@ fun mm0_parse_term 2 {
   $lexer
   @lexer theory MM0TH_LEXER take = ;
 
-  "(term-stmt) " 1 platform_log ;
+  "(term-stmt) " log ;
 
   # Discard tokens up to the semicolon
   $cont
@@ -444,7 +444,7 @@ fun mm0_parse_assert 2 {
   $lexer
   @lexer theory MM0TH_LEXER take = ;
 
-  "(assert-stmt) " 1 platform_log ;
+  "(assert-stmt) " log ;
 
   # Discard tokens up to the semicolon
   $cont
@@ -468,7 +468,7 @@ fun mm0_parse_def 2 {
   $lexer
   @lexer theory MM0TH_LEXER take = ;
 
-  "(def-stmt) " 1 platform_log ;
+  "(def-stmt) " log ;
 
   # Discard tokens up to the open brace
   $cont
@@ -493,7 +493,7 @@ fun mm0_parse_notation 2 {
   $lexer
   @lexer theory MM0TH_LEXER take = ;
 
-  "(notation-stmt) " 1 platform_log ;
+  "(notation-stmt) " log ;
 
   # Discard tokens up to the semicolon
   $cont
@@ -517,7 +517,7 @@ fun mm0_parse_output 2 {
   $lexer
   @lexer theory MM0TH_LEXER take = ;
 
-  "(output-stmt) " 1 platform_log ;
+  "(output-stmt) " log ;
 
   # Discard tokens up to the semicolon
   $cont
@@ -607,9 +607,9 @@ fun mm0_process 1 {
   @lexer filename mm0lexer_init = ;
 
   $theory
-  "Parsing MM0 theory: " 1 platform_log ;
+  "Parsing MM0 theory: " log ;
   @theory lexer mm0_parse = ;
-  "\n" 1 platform_log ;
+  "\n" log ;
 
   # TODO: verify theory
 

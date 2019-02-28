@@ -23,9 +23,9 @@ fun is_valid_identifier 1 {
   $ident
   @ident 0 param = ;
 
-  #"is_valid_identifier for " 1 platform_log ;
-  #ident 1 platform_log ;
-  #"\n" 1 platform_log ;
+  #"is_valid_identifier for " log ;
+  #ident log ;
+  #"\n" log ;
 
   $len
   @len ident strlen = ;
@@ -39,7 +39,7 @@ fun is_valid_identifier 1 {
   $first
   @first ident **c = ;
   if first '0' >= first '9' <= && { 0 ret ; }
-  #"is_valid_identifier: return true\n" 1 platform_log ;
+  #"is_valid_identifier: return true\n" log ;
   1 ret ;
 }
 
@@ -726,9 +726,9 @@ fun process_token 4 {
   $changed
   @changed 0 = ;
   if ctx PPCTX_DEFINES take tok map_has {
-    # "Expanding: " 1 platform_log ;
-    # tok 1 platform_log ;
-    # "\n" 1 platform_log ;
+    # "Expanding: " log ;
+    # tok log ;
+    # "\n" log ;
     $subst
     @subst ctx PPCTX_DEFINES take tok map_at = ;
     $repl
@@ -847,14 +847,14 @@ fun print_token_list 1 {
     $tok
     @tok tokens i vector_at = ;
     if tok **c '\n' == {
-      "NL" 1 platform_log ;
+      "NL" log ;
     } else {
-      tok 1 platform_log ;
+      tok log ;
     }
-    "#" 1 platform_log ;
+    "#" log ;
     @i i 1 + = ;
   }
-  "\n" 1 platform_log ;
+  "\n" log ;
 }
 
 fun preproc_replace_int 3 {
@@ -889,7 +889,7 @@ fun preproc_replace 2 {
   while changed {
     $outtoks
     @outtoks 4 vector_init = ;
-    # "---\n" 1 platform_log ;
+    # "---\n" log ;
     # intoks print_token_list ;
     @changed ctx intoks outtoks preproc_replace_int = ;
     intoks free_vect_of_ptrs ;
@@ -1076,18 +1076,18 @@ fun preproc_process_include 4 {
     '[' 1 platform_write_char ;
   }
   if ctx PPCTX_VERBOSE take 2 == {
-    "Including file " 1 platform_log ;
-    filename 1 platform_log ;
-    "\n" 1 platform_log ;
+    "Including file " log ;
+    filename log ;
+    "\n" log ;
   }
   tokens ctx filename _preproc_file ;
   if ctx PPCTX_VERBOSE take 1 == {
     ']' 1 platform_write_char ;
   }
   if ctx PPCTX_VERBOSE take 2 == {
-    "Finished including file " 1 platform_log ;
-    filename 1 platform_log ;
-    "\n" 1 platform_log ;
+    "Finished including file " log ;
+    filename log ;
+    "\n" log ;
   }
   filename free ;
 
@@ -1342,9 +1342,9 @@ fun preproc_process_error 4 {
   @msg intoks iptr ** vector_at = ;
   msg "\n" strcmp 0 != "preproc_process_error: newline found" assert_msg ;
 
-  "#error with " 1 platform_log ;
-  msg 1 platform_log ;
-  "\n" 1 platform_log ;
+  "#error with " log ;
+  msg log ;
+  "\n" log ;
 
   intoks iptr discard_white_tokens ;
 
@@ -1367,9 +1367,9 @@ fun preproc_process_warning 4 {
   @msg intoks iptr ** vector_at = ;
   msg "\n" strcmp 0 != "preproc_process_warning: newline found" assert_msg ;
 
-  "#warning with " 1 platform_log ;
-  msg 1 platform_log ;
-  "\n" 1 platform_log ;
+  "#warning with " log ;
+  msg log ;
+  "\n" log ;
 
   intoks iptr discard_white_tokens ;
 }
@@ -1424,9 +1424,9 @@ fun _preproc_file 3 {
       ready_toks vector_clear ;
       intoks @i discard_white_tokens ;
       @tok intoks i vector_at = ;
-      # "Processing " 1 platform_log ;
-      # tok 1 platform_log ;
-      # "\n" 1 platform_log ;
+      # "Processing " log ;
+      # tok log ;
+      # "\n" log ;
       $processed
       @processed 0 = ;
       if tok "include" strcmp 0 == processed ! && {

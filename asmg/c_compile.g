@@ -166,54 +166,54 @@ fun type_dump 1 {
   @base type TYPE_BASE take = ;
 
   if kind TYPE_KIND_BASE == {
-    "Base type #" 1 platform_log ;
-    base itoa 1 platform_log ;
+    "Base type #" log ;
+    base itoa log ;
   }
 
   if kind TYPE_KIND_POINTER == {
-    "Pointer type to #" 1 platform_log ;
-    base itoa 1 platform_log ;
+    "Pointer type to #" log ;
+    base itoa log ;
   }
 
   if kind TYPE_KIND_FUNCTION == {
-    "Function type returning #" 1 platform_log ;
-    base itoa 1 platform_log ;
+    "Function type returning #" log ;
+    base itoa log ;
     $args
     @args type TYPE_ARGS take = ;
     $ellipsis
     @ellipsis type TYPE_ELLIPSIS take = ;
     if args vector_size 0 == ellipsis ! && {
-      " taking no argument" 1 platform_log ;
+      " taking no argument" log ;
     } else {
-      " taking arguments" 1 platform_log ;
+      " taking arguments" log ;
       $i
       @i 0 = ;
       while i args vector_size < {
-        " #" 1 platform_log ;
-        args i vector_at itoa 1 platform_log ;
+        " #" log ;
+        args i vector_at itoa log ;
         @i i 1 + = ;
       }
       if ellipsis {
-        " ..." 1 platform_log ;
+        " ..." log ;
       }
     }
   }
 
   if kind TYPE_KIND_ARRAY == {
-    "Array type of #" 1 platform_log ;
-    base itoa 1 platform_log ;
+    "Array type of #" log ;
+    base itoa log ;
     $length
     @length type TYPE_LENGTH take = ;
     if length 0xffffffff == {
-      " of unspecified length" 1 platform_log ;
+      " of unspecified length" log ;
     } else {
-      " of length " 1 platform_log ;
-      length itoa 1 platform_log ;
+      " of length " log ;
+      length itoa log ;
     }
   }
 
   if kind TYPE_KIND_STRUCT == {
-    "Struct type with fields" 1 platform_log ;
+    "Struct type with fields" log ;
     $i
     @i 0 = ;
     $names
@@ -223,24 +223,24 @@ fun type_dump 1 {
     @type_idxs type TYPE_FIELDS_TYPE_IDXS take = ;
     @offs type TYPE_FIELDS_OFFS take = ;
     while i names vector_size < {
-      " " 1 platform_log ;
+      " " log ;
       $name
       @name names i vector_at = ;
       if name **c '\0' == {
         @name "<anonymous>" = ;
       }
-      name 1 platform_log ;
-      " (@" 1 platform_log ;
-      offs i vector_at itoa 1 platform_log ;
-      " #" 1 platform_log ;
-      type_idxs i vector_at itoa 1 platform_log ;
-      ")" 1 platform_log ;
+      name log ;
+      " (@" log ;
+      offs i vector_at itoa log ;
+      " #" log ;
+      type_idxs i vector_at itoa log ;
+      ")" log ;
       @i i 1 + = ;
     }
   }
 
   if kind TYPE_KIND_UNION == {
-    "Union type with fields" 1 platform_log ;
+    "Union type with fields" log ;
     $i
     @i 0 = ;
     $names
@@ -250,18 +250,18 @@ fun type_dump 1 {
     @type_idxs type TYPE_FIELDS_TYPE_IDXS take = ;
     @offs type TYPE_FIELDS_OFFS take = ;
     while i names vector_size < {
-      " " 1 platform_log ;
+      " " log ;
       $name
       @name names i vector_at = ;
       if name **c '\0' == {
         @name "<anonymous>" = ;
       }
-      name 1 platform_log ;
-      " (@" 1 platform_log ;
-      offs i vector_at itoa 1 platform_log ;
-      " #" 1 platform_log ;
-      type_idxs i vector_at itoa 1 platform_log ;
-      ")" 1 platform_log ;
+      name log ;
+      " (@" log ;
+      offs i vector_at itoa log ;
+      " #" log ;
+      type_idxs i vector_at itoa log ;
+      ")" log ;
       @i i 1 + = ;
     }
   }
@@ -269,10 +269,10 @@ fun type_dump 1 {
   $size
   @size type TYPE_SIZE take = ;
   if size 0xffffffff == {
-    ", of undertermined size" 1 platform_log ;
+    ", of undertermined size" log ;
   } else {
-    ", of size " 1 platform_log ;
-    size itoa 1 platform_log ;
+    ", of size " log ;
+    size itoa log ;
   }
 }
 
@@ -318,10 +318,10 @@ fun global_destroy 1 {
 fun global_dump 1 {
   $global
   @global 0 param = ;
-  "has type #" 1 platform_log ;
-  global GLOBAL_TYPE_IDX take itoa 1 platform_log ;
-  " and is stored at " 1 platform_log ;
-  global GLOBAL_LOC take itoa 1 platform_log ;
+  "has type #" log ;
+  global GLOBAL_TYPE_IDX take itoa log ;
+  " and is stored at " log ;
+  global GLOBAL_LOC take itoa log ;
 }
 
 const CCTX_ASTINT_GET_TOKEN 0
@@ -606,11 +606,11 @@ fun cctx_dump_types 1 {
   $types
   @types ctx CCTX_TYPES take = ;
   while i types vector_size < {
-    "#" 1 platform_log ;
-    i itoa 1 platform_log ;
-    ": " 1 platform_log ;
+    "#" log ;
+    i itoa log ;
+    ": " log ;
     types i vector_at type_dump ;
-    "\n" 1 platform_log ;
+    "\n" log ;
     @i i 1 + = ;
   }
 }
@@ -623,11 +623,11 @@ fun dump_typename_closure 3 {
   @key 1 param = ;
   @value 0 param = ;
 
-  "Typename " 1 platform_log ;
-  key 1 platform_log ;
-  ": #" 1 platform_log ;
-  value itoa 1 platform_log ;
-  "\n" 1 platform_log ;
+  "Typename " log ;
+  key log ;
+  ": #" log ;
+  value itoa log ;
+  "\n" log ;
 }
 
 fun cctx_dump_typenames 1 {
@@ -653,11 +653,11 @@ fun dump_global_closure 3 {
     ret ;
   }
 
-  "Global " 1 platform_log ;
-  key 1 platform_log ;
-  ": " 1 platform_log ;
+  "Global " log ;
+  key log ;
+  ": " log ;
   value global_dump ;
-  "\n" 1 platform_log ;
+  "\n" log ;
 }
 
 fun cctx_dump_globals 1 {
@@ -673,12 +673,12 @@ fun cctx_print_stats 1 {
   $ctx
   @ctx 0 param = ;
 
-  ctx CCTX_GLOBALS take map_size itoa 1 platform_log ;
-  " globals were generated (including internal labels)\n" 1 platform_log ;
-  ctx CCTX_TYPENAMES take map_size itoa 1 platform_log ;
-  " type names were generated\n" 1 platform_log ;
-  ctx CCTX_TYPES take vector_size itoa 1 platform_log ;
-  " types were generated\n" 1 platform_log ;
+  ctx CCTX_GLOBALS take map_size itoa log ;
+  " globals were generated (including internal labels)\n" log ;
+  ctx CCTX_TYPENAMES take map_size itoa log ;
+  " type names were generated\n" log ;
+  ctx CCTX_TYPES take vector_size itoa log ;
+  " types were generated\n" log ;
 }
 
 ifun cctx_type_compare 3
@@ -1249,15 +1249,15 @@ fun cctx_get_token 1 {
     $tok
     @tok ctx CCTX_TOKENS take ctx CCTX_TOKENS_POS take vector_at = ;
     if ctx CCTX_DEBUG take {
-      " " 1 platform_log ;
-      tok 1 platform_log ;
+      " " log ;
+      tok log ;
     } else {
       if ctx CCTX_VERBOSE take {
         if ctx CCTX_TOKENS_POS take ctx CCTX_DEBUG_AFTER take == {
           ctx CCTX_DEBUG take_addr 1 = ;
         }
         if ctx CCTX_TOKENS_POS take ctx CCTX_DOT_POS take == {
-          "." 1 platform_log ;
+          "." log ;
           ctx CCTX_DOT_POS take_addr ctx CCTX_DOT_POS take 1000 + = ;
         }
       }
@@ -1272,7 +1272,7 @@ fun cctx_give_back_token 1 {
   @ctx 0 param = ;
 
   if ctx CCTX_DEBUG take {
-    " <gb>" 1 platform_log ;
+    " <gb>" log ;
   }
   ctx CCTX_TOKENS_POS take 0 > "cctx_give_back_token: error 1" assert_msg ;
   ctx CCTX_TOKENS_POS take_addr ctx CCTX_TOKENS_POS take 1 - = ;
@@ -1330,9 +1330,9 @@ fun cctx_print_token_pos 1 {
   $ctx
   @ctx 0 param = ;
 
-  "Token pos: " 1 platform_log ;
-  ctx CCTX_TOKENS_POS take itoa 1 platform_log ;
-  "\n" 1 platform_log ;
+  "Token pos: " log ;
+  ctx CCTX_TOKENS_POS take itoa log ;
+  "\n" log ;
 }
 
 ifun cctx_parse_type 1
@@ -1404,14 +1404,14 @@ fun cctx_parse_ast1 2 {
   @term 0 param = ;
 
   if ctx CCTX_DEBUG take {
-    " <pa1>" 1 platform_log ;
+    " <pa1>" log ;
   }
 
   $res
   @res ctx CCTX_ASTINT take term ast_parse1 = ;
 
   if ctx CCTX_DEBUG take {
-    " </pa1>" 1 platform_log ;
+    " </pa1>" log ;
   }
 
   res ret ;
@@ -1426,14 +1426,14 @@ fun cctx_parse_ast2 3 {
   @term2 0 param = ;
 
   if ctx CCTX_DEBUG take {
-    " <pa2>" 1 platform_log ;
+    " <pa2>" log ;
   }
 
   $res
   @res ctx CCTX_ASTINT take term1 term2 ast_parse2 = ;
 
   if ctx CCTX_DEBUG take {
-    " </pa2>" 1 platform_log ;
+    " </pa2>" log ;
   }
 
   res ret ;
@@ -1450,14 +1450,14 @@ fun cctx_parse_ast3 4 {
   @term3 0 param = ;
 
   if ctx CCTX_DEBUG take {
-    " <pa3>" 1 platform_log ;
+    " <pa3>" log ;
   }
 
   $res
   @res ctx CCTX_ASTINT take term1 term2 term3 ast_parse3 = ;
 
   if ctx CCTX_DEBUG take {
-    " </pa3>" 1 platform_log ;
+    " </pa3>" log ;
   }
 
   res ret ;
@@ -1755,7 +1755,7 @@ fun _cctx_parse_declarator 6 {
   @ret_name 1 param = ;
   @ret_arg_names 0 param = ;
 
-  #"_cctx_parse_declarator: entering\n" 1 platform_log ;
+  #"_cctx_parse_declarator: entering\n" log ;
   #ctx cctx_print_token_pos ;
 
   $tok
@@ -1763,9 +1763,9 @@ fun _cctx_parse_declarator 6 {
   $processed
   @processed 0 = ;
 
-  #"_cctx_parse_declarator: token is " 1 platform_log ;
-  #tok 1 platform_log ;
-  #"\n" 1 platform_log ;
+  #"_cctx_parse_declarator: token is " log ;
+  #tok log ;
+  #"\n" log ;
 
   # Parse pointer declaration
   if tok "*" strcmp 0 == {
@@ -1867,11 +1867,11 @@ fun _cctx_parse_declarator 6 {
 
   if processed ! {
     ctx cctx_give_back_token ;
-    #"_cctx_parse_declarator: failed\n" 1 platform_log ;
+    #"_cctx_parse_declarator: failed\n" log ;
     0 ret ;
   }
 
-  #"_cctx_parse_declarator: success\n" 1 platform_log ;
+  #"_cctx_parse_declarator: success\n" log ;
   1 ret ;
 }
 
@@ -2484,9 +2484,9 @@ fun ast_eval_compile_ext 2 {
   $name
   @name ast AST_NAME take = ;
 
-  # "ast_eval_compile_ext: " 1 platform_log ;
-  # name 1 platform_log ;
-  # "\n" 1 platform_log ;
+  # "ast_eval_compile_ext: " log ;
+  # name log ;
+  # "\n" log ;
 
   if ast AST_TYPE take 0 == {
     $value
@@ -6022,8 +6022,8 @@ fun cctx_compile 1 {
   $size
   while ctx CCTX_STAGE take 3 < {
     if ctx CCTX_VERBOSE take {
-      "Compilation stage " 1 platform_log ;
-      ctx CCTX_STAGE take 1 + itoa 1 platform_log ;
+      "Compilation stage " log ;
+      ctx CCTX_STAGE take 1 + itoa log ;
     }
     ctx CCTX_CURRENT_LOC take_addr start_loc = ;
     ctx CCTX_TOKENS_POS take_addr 0 = ;
@@ -6037,7 +6037,7 @@ fun cctx_compile 1 {
       ctx cctx_compile_line ;
     }
     if ctx CCTX_VERBOSE take {
-      "\n" 1 platform_log ;
+      "\n" log ;
     }
     if ctx CCTX_STAGE take 0 == {
       @size ctx CCTX_CURRENT_LOC take start_loc - = ;
@@ -6048,16 +6048,16 @@ fun cctx_compile 1 {
     ctx CCTX_STAGE take_addr ctx CCTX_STAGE take 1 + = ;
   }
   if ctx CCTX_VERBOSE take {
-    "Compiled program has size " 1 platform_log ;
-    size itoa 1 platform_log ;
-    " and starts at " 1 platform_log ;
-    start_loc itoa 1 platform_log ;
-    "\n" 1 platform_log ;
+    "Compiled program has size " log ;
+    size itoa log ;
+    " and starts at " log ;
+    start_loc itoa log ;
+    "\n" log ;
   }
   if ctx CCTX_DEBUG take {
-    "Compiled dump:\n" 1 platform_log ;
+    "Compiled dump:\n" log ;
     start_loc size dump_mem ;
-    "\n" 1 platform_log ;
+    "\n" log ;
   }
 }
 
@@ -6074,7 +6074,7 @@ fun parse_c 1 {
   tokens ctx filename preproc_file ;
   @tokens tokens remove_whites = ;
   @tokens tokens collapse_strings = ;
-  "Finished preprocessing\n" 1 platform_log ;
+  "Finished preprocessing\n" log ;
   #tokens print_token_list ;
 
   # Compilation
@@ -6084,16 +6084,16 @@ fun parse_c 1 {
   cctx cctx_compile ;
 
   # Debug output
-  # "TYPES TABLE\n" 1 platform_log ;
+  # "TYPES TABLE\n" log ;
   # cctx cctx_dump_types ;
-  # "TYPE NAMES TABLE\n" 1 platform_log ;
+  # "TYPE NAMES TABLE\n" log ;
   # cctx cctx_dump_typenames ;
-  # "GLOBALS TABLE\n" 1 platform_log ;
+  # "GLOBALS TABLE\n" log ;
   # cctx cctx_dump_globals ;
   cctx cctx_print_stats ;
 
   # Try to execute the code
-  "Executing compiled code...\n" 1 platform_log ;
+  "Executing compiled code...\n" log ;
   $main_global
   @main_global cctx "_start" cctx_get_global = ;
   $main_addr
@@ -6102,9 +6102,9 @@ fun parse_c 1 {
   @arg "_main" = ;
   $res
   @res @arg 1 main_addr \2 = ;
-  "It returned " 1 platform_log ;
-  res itoa 1 platform_log ;
-  "\n" 1 platform_log ;
+  "It returned " log ;
+  res itoa log ;
+  "\n" log ;
 
   # Cleanup
   tokens free_vect_of_ptrs ;

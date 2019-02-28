@@ -2143,7 +2143,7 @@ fun m2_compile 2 {
   ctx M2CTX_STRINGS_LIST take destination_file m2_recursive_output ;
   destination_file "\n:ELF_end\n" vfs_write_string ;
   destination_file vfs_close ;
-  #"Compiled program:\n" 1 platform_log ;
+  #"Compiled program:\n" log ;
   #outfile dump_file ;
   ctx free ;
 }
@@ -2177,14 +2177,14 @@ fun m2_test_full_compilation 0 {
   $data
   @data files hex2_link = ;
 
-  "Executing code compiled with M2-Planet...\n" 1 platform_log ;
+  "Executing code compiled with M2-Planet...\n" log ;
   $arg
   @arg "_main" = ;
   $res
   @res @arg 1 data \2 = ;
-  "It returned " 1 platform_log ;
-  res itoa 1 platform_log ;
-  "\n" 1 platform_log ;
+  "It returned " log ;
+  res itoa log ;
+  "\n" log ;
 
   data free ;
   files free_vect_of_ptrs ;

@@ -61,15 +61,15 @@ fun malloc 1 {
   @malloc_num malloc_num 1 + = ;
 
   # Debug
-  # "malloc: " 1 platform_log ;
-  # ptr itoa 1 platform_log ;
-  # " / " 1 platform_log ;
-  # buf_begin itoa 1 platform_log ;
-  # " / " 1 platform_log ;
-  # buf_end itoa 1 platform_log ;
-  # " / " 1 platform_log ;
-  # ptr_end itoa 1 platform_log ;
-  # "\n" 1 platform_log ;
+  # "malloc: " log ;
+  # ptr itoa log ;
+  # " / " log ;
+  # buf_begin itoa log ;
+  # " / " log ;
+  # buf_end itoa log ;
+  # " / " log ;
+  # ptr_end itoa log ;
+  # "\n" log ;
 
   # Fill the guards with the guard byte
   ptr MALLOC_GUARD_BYTE MALLOC_GUARD_SIZE memset ;
@@ -94,9 +94,9 @@ fun _malloc_find_index 1 {
     @i i 1 + = ;
   }
 
-  "Unallocated address: " 1 platform_log ;
-  ptr itoa 1 platform_log ;
-  "\n" 1 platform_log ;
+  "Unallocated address: " log ;
+  ptr itoa log ;
+  "\n" log ;
   0 "_malloc_find_index: requested memory region was not allocated" assert_msg ;
 }
 
@@ -127,15 +127,15 @@ fun free 1 {
   @ptr_end buf_end MALLOC_GUARD_SIZE + = ;
 
   # Debug
-  # "free: " 1 platform_log ;
-  # ptr itoa 1 platform_log ;
-  # " / " 1 platform_log ;
-  # buf_begin itoa 1 platform_log ;
-  # " / " 1 platform_log ;
-  # buf_end itoa 1 platform_log ;
-  # " / " 1 platform_log ;
-  # ptr_end itoa 1 platform_log ;
-  # "\n" 1 platform_log ;
+  # "free: " log ;
+  # ptr itoa log ;
+  # " / " log ;
+  # buf_begin itoa log ;
+  # " / " log ;
+  # buf_end itoa log ;
+  # " / " log ;
+  # ptr_end itoa log ;
+  # "\n" log ;
 
   # Check the guard zones have not been touched
   ptr MALLOC_GUARD_BYTE MALLOC_GUARD_SIZE memcheck "free: leading guard zone has been touched" assert_msg ;
@@ -198,13 +198,13 @@ fun malloc_stats 0 {
     @i i 1 + = ;
   }
 
-  "The program did " 1 platform_log ;
-  malloc_num itoa 1 platform_log ;
-  " allocations (totalling " 1 platform_log ;
-  total_size itoa 1 platform_log ;
-  " bytes); " 1 platform_log ;
-  non_freed itoa 1 platform_log ;
-  " of them were never free-ed (totalling " 1 platform_log ;
-  non_freed_size itoa 1 platform_log ;
-  " bytes).\n" 1 platform_log ;
+  "The program did " log ;
+  malloc_num itoa log ;
+  " allocations (totalling " log ;
+  total_size itoa log ;
+  " bytes); " log ;
+  non_freed itoa log ;
+  " of them were never free-ed (totalling " log ;
+  non_freed_size itoa log ;
+  " bytes).\n" log ;
 }
