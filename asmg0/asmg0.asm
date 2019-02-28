@@ -18,9 +18,7 @@
 	PROGRAM_SIZE equ 0x100000
 	SKIP_SIZE equ 0x1000000
 
-start_from_raw:
-start_from_multiboot:
-
+entry:
 	;; Store the address of the script in ESI
 	mov esi, initrd
 

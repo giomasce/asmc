@@ -67,7 +67,7 @@ build/diskfs.img: build/diskfs.list
 build/script.g:
 	bash -c "echo -n" > $@
 
-build/full-asmg.asm: lib/multiboot.asm lib/kernel.asm lib/shutdown.asm lib/ar.asm lib/library.asm lib/setjmp.asm lib/pmc.asm asmg/asmg.asm asmg/kernel-asmg.asm lib/top.asm
+build/full-asmg.asm: lib/mb_header.asm lib/kernel.asm lib/shutdown.asm lib/ar.asm lib/library.asm lib/setjmp.asm lib/pmc.asm asmg/asmg.asm asmg/kernel-asmg.asm lib/top.asm
 	cat $^ | grep -v "^ *section " > $@
 
 build/initrd-asmg.ar: asmg/*.g build/script.g test/test.hex2 test/test.m1 test/test_mes.c test/test.asm build/END
@@ -88,7 +88,7 @@ build/boot_asmg.x86: build/bootloader.x86.mbr build/bootloader.x86.stage2 build/
 	./create_partition.py $^ > $@
 
 # Asmg0 kernel
-build/full-asmg0.asm: lib/multiboot.asm asmg0/asmg0.asm lib/shutdown.asm asmg0/debug.asm lib/top.asm
+build/full-asmg0.asm: lib/mb_header.asm asmg0/asmg0.asm lib/shutdown.asm asmg0/debug.asm lib/top.asm
 	cat $^ | grep -v "^ *section " > $@
 
 build/asmg0.x86.exe: build/full-asmg0.asm

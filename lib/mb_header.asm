@@ -21,26 +21,21 @@
   MBMAGIC equ 0x1badb002
   ;; Set flags for alignment, memory map and load adds
   MBFLAGS equ 0x10003
-  ;; 0x100000000 - MBMAGIC - MBFLAGS
-  MBCHECKSUM equ 0xe4514ffb
+  MBCHECKSUM equ 0x100000000 - MBMAGIC - MBFLAGS
 
-  ;; MB_ENTRY_ADDR equ _start
-
-  jmp start_from_raw
+  jmp entry
 
   align 4
 
-  jmp start_from_multiboot
-
-  align 4
+  MBBEGIN equ $
 
   ;; Multiboot header
   dd MBMAGIC
   dd MBFLAGS
   dd MBCHECKSUM
 
-  dd 0x100010
+  dd MBBEGIN
   dd 0x100000
   dd 0x0
   dd 0x0
-  dd 0x100008
+  dd 0x100000
