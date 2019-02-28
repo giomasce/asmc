@@ -36,8 +36,6 @@ const USE_AVL_MAP 0
 const USE_RB_MAP 1
 
 fun main 0 {
-  "Hello, G!\n" 1 platform_log ;
-
   "Memory break after entering main: " 1 platform_log ;
   0 platform_allocate itoa 1 platform_log ;
   "\n" 1 platform_log ;

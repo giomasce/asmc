@@ -26,20 +26,20 @@ str_platform_longjmp:
   db 'platform_longjmp'
   db 0
 
-str_init_compile_main:
-  db 'Will now compile main.g...'
+str_init_compile_entry:
+  db 'Will now compile entry.g...'
   db NEWLINE
   db 0
-str_init_launch_main:
-  db 'Will now call main!'
+str_init_launch_entry:
+  db 'Will now call entry!'
   db NEWLINE
   db 0
 
-str_main_g:
-  db 'main.g'
+str_entry_g:
+  db 'entry.g'
   db 0
-str_main:
-  db 'main'
+str_entry:
+  db 'entry'
   db 0
 
 
@@ -197,18 +197,18 @@ start:
   add esp, 12
 
   ;; Log
-  push str_init_compile_main
+  push str_init_compile_entry
   push 1
   call platform_log
   add esp, 8
 
-  ;; Assemble main.asm
-  push str_main_g
+  ;; Compile entry.g
+  push str_entry_g
   call platform_g_compile
   add esp, 4
 
   ;; Log
-  push str_init_launch_main
+  push str_init_launch_entry
   push 1
   call platform_log
   add esp, 8
@@ -221,9 +221,9 @@ start:
   ;; Enable PMC
   call enable_pmc
 
-  ;; Call main
+  ;; Call entry
   push 0
-  push str_main
+  push str_entry
   call platform_get_symbol
   add esp, 8
   call eax
