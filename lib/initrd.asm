@@ -15,99 +15,75 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-  SLASH equ 0x2f
-
-  AR_BUF_SIZE equ 32
-
-ar_buf:
-  resb AR_BUF_SIZE
-
-
   ;; void walk_initrd(char *filename, void **begin, void **end)
-  ;; Search the initrd for a file and return the file beginning and
-  ;; end in RAM (undefined behaviour if the file does not exist)
 walk_initrd:
   push ebp
   mov ebp, esp
   push esi
   push edi
 
-  ;; Skip the header !<arch>\n (use esi for the current reading
+  ;; Skip the header 'DISKFS  ' (use esi for the current reading
   ;; position)
   mov esi, initrd
   add esi, 8
 
 walk_initrd_loop:
-  ;; Copy file name to buffer
-  push 16
-  push esi
-  push ar_buf
-  call memcpy
-  add esp, 12
-
-  ;; Substitute the first slash with a terminator
-  push SLASH
-  push ar_buf
-  call find_char
-  add esp, 8
-  cmp eax, 0xffffffff
-  je platform_panic
-  add eax, ar_buf
-  mov BYTE [eax], 0
+  ;; Fail if at the end
+  cmp BYTE [esi], 0
+  je walk_initrd_fail
 
   ;; Compare the name with the target name (store in edi)
-  push ar_buf
+  push esi
   push DWORD [ebp+8]
   call strcmp
   add esp, 8
   mov edi, eax
 
-  ;; Copy file size to the buffer
-  add esi, 48
-  push 10
+  ;; Advance by string length plus one
   push esi
-  push ar_buf
-  call memcpy
-  add esp, 12
-
-  ;; Substitute the first space with a terminator
-  push SPACE
-  push ar_buf
-  call find_char
-  add esp, 8
-  cmp eax, 0xffffffff
-  je platform_panic
-  add eax, ar_buf
-  mov BYTE [eax], 0
-
-  ;; Call atoi
-  push ar_buf
-  call atoi
+  call strlen
   add esp, 4
-
-  ;; Skip file header
-  add esi, 12
-
-  ;; If this is the file we want, return things
-  cmp edi, 0
-  je walk_initrd_ret_file
-
-  ;; Skip file content
   add esi, eax
-
-  ;; Realign to 2 bytes
-  sub esi, 1
-  or esi, 1
   add esi, 1
 
+  ;; If the name is correct, return
+  test edi, edi
+  jz walk_initrd_success
+
+  ;; If not skip the two numbers and restart
+  add esi, 8
   jmp walk_initrd_loop
 
-walk_initrd_ret_file:
+walk_initrd_success:
+  ;; Compute begin and end
   mov edx, [ebp+12]
-  mov [edx], esi
+  mov ecx, [esi]
+  bswap ecx
+  add ecx, initrd
+  mov [edx], ecx
   mov edx, [ebp+16]
-  add esi, eax
-  mov [edx], esi
+  mov eax, [esi+4]
+  bswap eax
+  add ecx, eax
+  mov [edx], ecx
+
+  pop edi
+  pop esi
+  pop ebp
+  ret
+
+walk_initrd_fail:
+  ;; Set begin to zero and end to the end of initrd
+  mov edx, [ebp+12]
+  mov DWORD [edx], 0
+  mov edx, [ebp+16]
+  mov ecx, [esi-8]
+  bswap ecx
+  add ecx, initrd
+  mov eax, [esi-4]
+  bswap eax
+  add ecx, eax
+  mov [edx], ecx
 
   pop edi
   pop esi

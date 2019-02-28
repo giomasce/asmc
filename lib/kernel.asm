@@ -60,8 +60,7 @@ str_done:
   db NEWLINE
   db 0
 
-str_END:
-  db 'END'
+str_empty:
   db 0
 
 temp_stack:
@@ -76,21 +75,6 @@ entry:
   mov esp, temp_stack_top
   and esp, 0xfffffff0
 
-  ;; Initialize stdout
-  call stdout_setup
-
-  ;; Log
-  push str_hello_asmc
-  push 1
-  call platform_log
-  add esp, 8
-
-  ;; Log
-  push str_init_heap_stack
-  push 1
-  call platform_log
-  add esp, 8
-
   ;; Find the end of the ar initrd
   push 0
   mov edx, esp
@@ -98,7 +82,7 @@ entry:
   mov ecx, esp
   push edx
   push ecx
-  push str_END
+  push str_empty
   call walk_initrd
   add esp, 12
   add esp, 4
@@ -115,6 +99,21 @@ entry:
   add ecx, STACK_SIZE
   mov [eax], ecx
   mov esp, ecx
+
+  ;; Initialize stdout
+  call stdout_setup
+
+  ;; Log
+  push str_hello_asmc
+  push 1
+  call platform_log
+  add esp, 8
+
+  ;; Log
+  push str_init_heap_stack
+  push 1
+  call platform_log
+  add esp, 8
 
   ;; Log
   push str_done
