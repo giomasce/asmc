@@ -79,6 +79,9 @@ temp_stack:
 temp_stack_top:
 
 entry:
+  ;; Make it double sure that we do not have interrupts around
+  cli
+
   ;; Setup a temporary stack
   mov esp, temp_stack_top
   and esp, 0xfffffff0
