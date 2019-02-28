@@ -83,76 +83,11 @@ emit_fd:
 str_symbol_already_defined:
   db 'Symbol already defined: '
   db 0
-str_check:
-  db 'CHECK'
-  db 0
 str_newline:
   db NEWLINE
   db 0
 
   section .text
-debug_check:
-  push eax
-  push ecx
-  push edx
-
-  ;; Log
-  push str_check
-  push 1
-  call platform_log
-  add esp, 8
-
-  pop edx
-  pop ecx
-  pop eax
-  ret
-
-
-debug_log:
-  push ebp
-  mov ebp, esp
-  push eax
-  push ecx
-  push edx
-
-  ;; Log
-  push DWORD [ebp+8]
-  push 1
-  call platform_log
-  add esp, 8
-
-  pop edx
-  pop ecx
-  pop eax
-  pop ebp
-  ret
-
-
-debug_log_itoa:
-  push ebp
-  mov ebp, esp
-  push eax
-  push ecx
-  push edx
-
-  ;; Itoa
-  push DWORD [ebp+8]
-  call itoa
-  add esp, 4
-
-  ;; Log
-  push eax
-  push 1
-  call platform_log
-  add esp, 8
-
-  pop edx
-  pop ecx
-  pop eax
-  pop ebp
-  ret
-
-
   ;; char *itoa(int x)
   global itoa
 itoa:

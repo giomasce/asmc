@@ -1,5 +1,5 @@
 ;; This file is part of asmc, a bootstrapping OS with minimal seed
-;; Copyright (C) 2018 Giovanni Mascellani <gio@debian.org>
+;; Copyright (C) 2018-2019 Giovanni Mascellani <gio@debian.org>
 ;; https://gitlab.com/giomasce/asmc
 
 ;; This program is free software: you can redistribute it and/or modify
