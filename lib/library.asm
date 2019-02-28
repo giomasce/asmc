@@ -91,46 +91,6 @@ str_newline:
   db 0
 
   section .text
-
-  global get_symbol_names
-get_symbol_names:
-  mov eax, symbol_names_ptr
-  mov eax, [eax]
-  ret
-
-  global get_symbol_locs
-get_symbol_locs:
-  mov eax, symbol_locs_ptr
-  mov eax, [eax]
-  ret
-
-  global get_symbol_arities
-get_symbol_arities:
-  mov eax, symbol_arities_ptr
-  mov eax, [eax]
-  ret
-
-  global get_symbol_num
-get_symbol_num:
-  mov eax, symbol_num
-  ret
-
-  global get_current_loc
-get_current_loc:
-  mov eax, current_loc
-  ret
-
-  global get_stage
-get_stage:
-  mov eax, stage
-  ret
-
-  global get_emit_fd
-get_emit_fd:
-  mov eax, emit_fd
-  ret
-
-
 debug_check:
   push eax
   push ecx
