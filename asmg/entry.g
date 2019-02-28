@@ -120,11 +120,11 @@ fun entry 0 {
   serial_setup ;
   term_setup ;
 
-  "Hello, G!\n" 1 log ;
+  "Hello, G!\n" log ;
 
-  "Compiling main.g... " 1 log ;
+  "Compiling main.g... " log ;
   "main.g" platform_g_compile ;
-  "done!\n" 1 log ;
+  "done!\n" log ;
 
   "Entering main program!\n" log ;
   0 "main" platform_get_symbol \0 ;
