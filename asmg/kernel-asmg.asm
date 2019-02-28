@@ -402,6 +402,50 @@ ge:
   mov eax, 0
   ret
 
+str_lu:
+  db '<u'
+  db 0
+lu:
+  mov eax, 1
+  mov ecx, [esp+8]
+  cmp ecx, [esp+4]
+  jb ret
+  mov eax, 0
+  ret
+
+str_leu:
+  db '<=u'
+  db 0
+leu:
+  mov eax, 1
+  mov ecx, [esp+8]
+  cmp ecx, [esp+4]
+  jbe ret
+  mov eax, 0
+  ret
+
+str_gu:
+  db '>u'
+  db 0
+gu:
+  mov eax, 1
+  mov ecx, [esp+8]
+  cmp ecx, [esp+4]
+  ja ret
+  mov eax, 0
+  ret
+
+str_geu:
+  db '>=u'
+  db 0
+geu:
+  mov eax, 1
+  mov ecx, [esp+8]
+  cmp ecx, [esp+4]
+  jae ret
+  mov eax, 0
+  ret
+
 str_shl:
   db '<<'
   db 0
@@ -418,6 +462,24 @@ shr:
   mov ecx, [esp+4]
   mov eax, [esp+8]
   shr eax, cl
+  ret
+
+str_shlu:
+  db '<<u'
+  db 0
+shlu:
+  mov ecx, [esp+4]
+  mov eax, [esp+8]
+  sal eax, cl
+  ret
+
+str_shru:
+  db '>>u'
+  db 0
+shru:
+  mov ecx, [esp+4]
+  mov eax, [esp+8]
+  sar eax, cl
   ret
 
 str_and:
@@ -726,6 +788,30 @@ init_g_operations:
   add esp, 12
 
   push 2
+  push lu
+  push str_lu
+  call add_symbol
+  add esp, 12
+
+  push 2
+  push leu
+  push str_leu
+  call add_symbol
+  add esp, 12
+
+  push 2
+  push gu
+  push str_gu
+  call add_symbol
+  add esp, 12
+
+  push 2
+  push geu
+  push str_geu
+  call add_symbol
+  add esp, 12
+
+  push 2
   push shl
   push str_shl
   call add_symbol
@@ -734,6 +820,18 @@ init_g_operations:
   push 2
   push shr
   push str_shr
+  call add_symbol
+  add esp, 12
+
+  push 2
+  push shlu
+  push str_shlu
+  call add_symbol
+  add esp, 12
+
+  push 2
+  push shru
+  push str_shru
   call add_symbol
   add esp, 12
 
