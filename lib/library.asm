@@ -781,17 +781,6 @@ strcmp2:
   jmp ret_one
 
 
-ret_zero:
-  xor eax, eax
-ret_eax:
-  ret
-
-ret_one:
-  xor eax, eax
-  inc eax
-  ret
-
-
   ;; String pointer in ESI
   ;; Destroys: ESI
   ;; Returns: EAX
@@ -807,43 +796,24 @@ strlen2_inside:
   ret
 
 
-  global strcmp
+  ;; Wrapper over strcmp2
 strcmp:
-  push ebx
+  push esi
+  push edi
+  mov esi, [esp+12]
+  mov edi, [esp+16]
+  call strcmp2
+  pop edi
+  pop esi
+  ret
 
-  ;; Load registers
-  mov eax, [esp+8]
-  mov ecx, [esp+12]
 
-strcmp_begin_loop:
-  ;; Compare a byte
-  mov bl, [eax]
-  mov dl, [ecx]
-  cmp bl, dl
-  je strcmp_after_cmp1
-
-  ;; Return 1 if they differ
-  ;; TODO Differentiate the less than and greater than cases
-  mov eax, 1
-  jmp strcmp_end
-
-strcmp_after_cmp1:
-  ;; Check for string termination
-  cmp bl, 0
-  jne strcmp_after_cmp2
-
-  ;; Return 0 if we arrived at the end without finding differences
-  mov eax, 0
-  jmp strcmp_end
-
-strcmp_after_cmp2:
-  ;; Increment both pointers and restart
-  add eax, 1
-  add ecx, 1
-  jmp strcmp_begin_loop
-
-strcmp_end:
-  pop ebx
+  ;; Wrapper over strlen2
+strlen:
+  push esi
+  mov esi, [esp+8]
+  call strlen2
+  pop esi
   ret
 
 
@@ -871,27 +841,6 @@ strcpy_end:
   ret
 
 
-  global strlen
-strlen:
-  ;; Load register
-  mov eax, [esp+4]
-
-strlen_begin_loop:
-  ;; Check for termination
-  mov cl, [eax]
-  cmp cl, 0
-  je strlen_end
-
-  ;; Increment pointer
-  add eax, 1
-  jmp strlen_begin_loop
-
-strlen_end:
-  ;; Return the difference between the current and initial address
-  sub eax, [esp+4]
-  ret
-
-
   global find_char
 find_char:
   ;; Load registers
@@ -916,4 +865,16 @@ find_char_ret:
   ;; If we found a terminator, return -1
 find_char_ret_error:
   mov eax, 0xffffffff
+  ret
+
+
+  ;; Common return cases
+ret_zero:
+  xor eax, eax
+ret_eax:
+  ret
+
+ret_one:
+  xor eax, eax
+  inc eax
   ret
