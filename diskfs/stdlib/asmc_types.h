@@ -30,7 +30,9 @@ typedef unsigned int size_t;
 void * memmove( void * s1, const void * s2, size_t n );
 
 typedef struct {
-  int fd;
+    int fd;
+    int ungetbuf;
+    int ungetted;
 } FILE;
 
 #endif

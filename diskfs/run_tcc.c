@@ -8,8 +8,8 @@
 #define LEVEL 0
 #endif
 
-// Uncomment this to have fun with compilation recursion!
-//#define JUST_FOR_FUN
+#define RUN_IPXE
+//#define RUN_SINGLE_CREAM
 
 int recursively_compile() {
 #if LEVEL == 10
@@ -27,9 +27,12 @@ int recursively_compile() {
     includes[6] = ASMC_PREFIX "/tinycc/softfloat/8086";
     const char *files[1];
 
-#if LEVEL == 1 && !defined(JUST_FOR_FUN)
+#if LEVEL == 1 && defined(RUN_IPXE)
     files[0] = ASMC_PREFIX "/run_tcc_ipxe.c";
     printf("I will now try to compile and execute tinycc, diverting to iPXE! (level %d)\n", LEVEL);
+#elif LEVEL == 1 && defined(RUN_SINGLE_CREAM)
+    files[0] = ASMC_PREFIX "/run_tcc_sc.c";
+    printf("I will now try to compile and execute tinycc, diverting to single_cream! (level %d)\n", LEVEL);
 #else
     files[0] = ASMC_PREFIX "/run_tcc.c";
     printf("I will now try to compile and execute tinycc recursively! (level %d)\n", LEVEL);

@@ -5,6 +5,8 @@
 #include "stdlib.h"
 #include "stdarg.h"
 #include "assert.h"
+#include "fcntl.h"
+#include "unistd.h"
 
 #define EOF (-1)
 
@@ -38,13 +40,30 @@ int puts(const char *s) {
 }
 
 int getc(FILE *stream) {
-    // File reading has not been implemented so far
-    return EOF;
+    if (stream->ungetted) {
+        stream->ungetted = 0;
+        return stream->ungetbuf;
+    }
+    char buf;
+    ssize_t res = read(stream->fd, &buf, 1);
+    if (res) {
+        return buf;
+    } else {
+        return EOF;
+    }
+}
+
+int fgetc(FILE *stream) {
+    return getc(stream);
 }
 
 int ungetc(int c, FILE *stream) {
-    // File reading has not been implemented so far
-    return EOF;
+    if (stream->ungetted) {
+        return EOF;
+    }
+    stream->ungetted = 1;
+    stream->ungetbuf = c;
+    return c;
 }
 
 char *itoa(unsigned int x) {
@@ -64,10 +83,36 @@ size_t fwrite(const void *buffer, size_t size, size_t count, FILE *stream) {
     }
 }
 
+int _open_mode(const char *mode) {
+    int oflag = 0;
+    if (*mode == 'r') oflag = O_RDONLY;
+    if (*mode == 'w') oflag = O_WRONLY | O_CREAT | O_TRUNC;
+    if (!oflag) return 0;
+    mode++;
+    if (*mode == '\0') return oflag;
+    if (*mode != 'b') return 0;
+    mode++;
+    if (*mode == '\0') return oflag;
+    return 0;
+}
+
 FILE *fdopen(int fildes, const char *mode) {
-    if ((*mode == 'r' || *mode == 'w') && *(mode+1) == 'b' && *(mode+2) == 0) {
+    if (_open_mode(mode)) {
         FILE *ret = malloc(sizeof(FILE));
         ret->fd = fildes;
+        ret->ungetbuf = 0;
+        ret->ungetted = 0;
+        return ret;
+    } else {
+        _force_assert(!"unknown file mode");
+    }
+}
+
+FILE *fopen(const char *filename, const char *mode) {
+    int oflag = _open_mode(mode);
+    if (oflag) {
+        int fildes = open(filename, oflag);
+        FILE *ret = fdopen(fildes, mode);
         return ret;
     } else {
         _force_assert(!"unknown file mode");

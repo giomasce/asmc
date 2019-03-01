@@ -23,9 +23,9 @@ struct __handles_t {
 
 struct __handles_t *__handles;
 
-FILE __stdout = {1};
+FILE __stdout = {1, 0, 0};
 FILE *stdout;
-FILE __stderr = {2};
+FILE __stderr = {2, 0, 0};
 FILE *stderr;
 
 int main(int, char *[]);

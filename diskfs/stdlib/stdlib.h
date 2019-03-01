@@ -66,6 +66,29 @@ int abs( int j )
     return ( j >= 0 ) ? j : -j;
 }
 
+#define RAND_MAX (1U << 31)
+
+unsigned _seed;
+
+// Very bad generator, but who cares
+int rand() {
+    _seed = (1103515245 * _seed + 12345) % RAND_MAX;
+    return _seed;
+}
+
+void srand(unsigned seed) {
+    _seed = seed;
+}
+
+// In line of principle a better RNG is mandated, but again who cares
+long int random() {
+    return rand();
+}
+
+void srandom(unsigned seed) {
+    srand(seed);
+}
+
 #include "_qsort.h"
 #include "_strtox.h"
 
