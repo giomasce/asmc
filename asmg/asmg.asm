@@ -582,7 +582,7 @@ emit_escaped_string_emit:
   ;; Call emit
   push eax
   mov ecx, edx
-  call emit2
+  call emit
 
   ;; Increment the pointer
   pop eax
@@ -693,9 +693,9 @@ push_expr:
   call push_var
   add esp, 8
   mov cl, 0x68                  ; push ??
-  call emit2
+  call emit
   mov ecx, ebx
-  call emit322
+  call emit32
 
   jmp push_expr_ret
 
@@ -723,7 +723,7 @@ push_expr_stack:
   mov ecx, 0x24b4ff             ; push [esp+??]
   call emit24
   mov ecx, ebx
-  call emit322
+  call emit32
 
   jmp push_expr_ret
 
@@ -736,9 +736,9 @@ push_expr_stack_addr:
   mov ecx, 0x24848d             ; lea eax, [esp+??]
   call emit24
   mov ecx, ebx
-  call emit322
+  call emit32
   mov cl, 0x50                  ; push eax
-  call emit2
+  call emit
 
   jmp push_expr_ret
 
@@ -773,21 +773,21 @@ push_expr_after_assert:
 
   ;; This is a real function call, emit the code (part 1)
   mov cl, 0xe8                  ; call ??
-  call emit2
+  call emit
   push ebx
   call compute_rel
   add esp, 4
   mov ecx, eax
-  call emit322
+  call emit32
   mov ecx, 0xc481               ; add esp, ??
   call emit16
 
   ;; Multiply the arity by 4 and continue emitting code
   mov ecx, esi
   shl ecx, 2
-  call emit322
+  call emit32
   mov cl, 0x50                  ; push eax
-  call emit2
+  call emit
 
   ;; Update stack variables
 push_expr_symbol_loop:
@@ -819,9 +819,9 @@ push_expr_addr:
   call push_var
   add esp, 8
   mov cl, 0x68                  ; push ??
-  call emit2
+  call emit
   mov ecx, ebx
-  call emit322
+  call emit32
 
   jmp push_expr_ret
 
@@ -832,9 +832,9 @@ push_expr_val:
   call push_var
   add esp, 8
   mov cl, 0xb8                  ; mov eax, ??
-  call emit2
+  call emit
   mov ecx, ebx
-  call emit322
+  call emit32
   mov ecx, 0x30ff               ; push [eax]
   call emit16
 
@@ -880,7 +880,7 @@ push_expr_until_brace_string:
 
   ;; Emit code to jump to the jump label
   mov cl, 0xe9                  ; jmp ??
-  call emit2
+  call emit
   push 0
   push esi
   call write_label
@@ -892,7 +892,7 @@ push_expr_until_brace_string:
   call compute_rel
   add esp, 4
   mov ecx, eax
-  call emit322
+  call emit32
 
   ;; Add a symbol for the string label
   push 0xffffffff
@@ -910,7 +910,7 @@ push_expr_until_brace_string:
   call emit_escaped_string
   add esp, 4
   mov cl, 0
-  call emit2
+  call emit
 
   ;; Add a symbol for the jump label
   push 0xffffffff
@@ -929,7 +929,7 @@ push_expr_until_brace_string:
   call push_var
   add esp, 8
   mov cl, 0x68                  ; push ??
-  call emit2
+  call emit
   push 0
   push edi
   call write_label
@@ -938,7 +938,7 @@ push_expr_until_brace_string:
   call get_symbol
   add esp, 8
   mov ecx, eax
-  call emit322
+  call emit32
 
   jmp push_expr_until_brace_loop
 
@@ -1065,7 +1065,7 @@ parse_block_semicolon:
   call emit16
   mov ecx, [temp_depth]
   shl ecx, 2
-  call emit322
+  call emit32
   call pop_temps
 
   jmp parse_block_loop
@@ -1076,7 +1076,7 @@ parse_block_ret:
   cmp DWORD [eax], 0
   jna parse_block_ret_emit
   mov cl, 0x58                  ; pop eax
-  call emit2
+  call emit
   push 1
   call pop_var
   add esp, 4
@@ -1087,7 +1087,7 @@ parse_block_ret_emit:
   call emit16
   mov ecx, [stack_depth]
   shl ecx, 2
-  call emit322
+  call emit32
   mov ecx, 0xc35d               ; pop ebp; ret
   call emit16
 
@@ -1106,7 +1106,7 @@ parse_block_if:
   call pop_var
   add esp, 4
   mov ecx, 0x00f88358           ; pop eax; cmp eax, 0
-  call emit322
+  call emit32
   mov ecx, 0x840f               ; je ??
   call emit16
   push 0
@@ -1120,7 +1120,7 @@ parse_block_if:
   call compute_rel
   add esp, 4
   mov ecx, eax
-  call emit322
+  call emit32
 
   ;; Recursively parse the inner block
   call parse_block
@@ -1157,7 +1157,7 @@ parse_block_else:
 
   ;; Emit code to jump to fi
   mov cl, 0xe9                  ; jmp ??
-  call emit2
+  call emit
   push 0
   push edi
   call write_label
@@ -1169,7 +1169,7 @@ parse_block_else:
   call compute_rel
   add esp, 4
   mov ecx, eax
-  call emit322
+  call emit32
 
   ;; Add the symbol for the else label
   push 0xffffffff
@@ -1224,7 +1224,7 @@ parse_block_while:
   call pop_var
   add esp, 4
   mov ecx, 0x00f88358           ; pop eax; cmp eax, 0
-  call emit322
+  call emit32
   mov ecx, 0x840f               ; je ??
   call emit16
   push 0
@@ -1238,14 +1238,14 @@ parse_block_while:
   call compute_rel
   add esp, 4
   mov ecx, eax
-  call emit322
+  call emit32
 
   ;; Recursively parse the inner block
   call parse_block
 
   ;; Emit code to restart the loop
   mov cl, 0xe9                  ; jmp ??
-  call emit2
+  call emit
   push 0
   push esi
   call write_label
@@ -1257,7 +1257,7 @@ parse_block_while:
   call compute_rel
   add esp, 4
   mov ecx, eax
-  call emit322
+  call emit32
 
   ;; Add a symbol for the end label
   push 0xffffffff
@@ -1316,7 +1316,7 @@ parse_block_call:
   call emit16
   mov ecx, ebx
   shl ecx, 2
-  call emit322
+  call emit32
 
   ;; Pop an appropriate number of temp vars
 parse_block_call_loop:
@@ -1340,7 +1340,7 @@ parse_block_call_end:
   call push_var
   add esp, 8
   mov cl, 0x50                  ; push eax
-  call emit2
+  call emit
 
   jmp parse_block_loop
 
@@ -1353,7 +1353,7 @@ parse_block_string:
 
   ;; Emit code to jump to the jump label
   mov cl, 0xe9                  ; jmp ??
-  call emit2
+  call emit
   push 0
   push esi
   call write_label
@@ -1365,7 +1365,7 @@ parse_block_string:
   call compute_rel
   add esp, 4
   mov ecx, eax
-  call emit322
+  call emit32
 
   ;; Add a symbol for the string label
   push 0xffffffff
@@ -1383,7 +1383,7 @@ parse_block_string:
   call emit_escaped_string
   add esp, 4
   mov cl, 0
-  call emit2
+  call emit
 
   ;; Add a symbol for the jump label
   push 0xffffffff
@@ -1402,7 +1402,7 @@ parse_block_string:
   call push_var
   add esp, 8
   mov cl, 0x68                  ; push ??
-  call emit2
+  call emit
   push 0
   push edi
   call write_label
@@ -1411,7 +1411,7 @@ parse_block_string:
   call get_symbol
   add esp, 8
   mov ecx, eax
-  call emit322
+  call emit32
 
   jmp parse_block_loop
 
@@ -1448,7 +1448,7 @@ parse_block_break:
   sub eax, esi
   mov ecx, eax
   shl ecx, 2
-  call emit322
+  call emit32
 
   ;; Reset stack depth to saved value and decrease block depth
   mov eax, stack_depth
@@ -1638,7 +1638,7 @@ parse_var:
 
   ;; Emit a zero to allocate space for the variable
   xor ecx, ecx
-  call emit322
+  call emit32
 
   jmp parse_loop
 

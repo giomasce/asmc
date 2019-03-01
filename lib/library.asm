@@ -140,7 +140,7 @@ itoa_end:
 
   ;; Emit character in CL
   ;; Destroys: EDX
-emit2:
+emit:
   ;; If we are in stage 1, write the character
   cmp DWORD [stage], 1
   jne emit_end
@@ -157,16 +157,16 @@ emit_end:
 
   ;; Emit dword in ECX
   ;; Destroys: ECX, EDX
-emit322:
-  call emit2
+emit32:
+  call emit
   shr ecx, 8
 emit24:
-  call emit2
+  call emit
   shr ecx, 8
 emit16:
-  call emit2
+  call emit
   shr ecx, 8
-  call emit2
+  call emit
   ret
 
 
