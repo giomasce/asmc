@@ -50,72 +50,49 @@ find_initrd_end_ret:
   ret
 
 
-  ;; void walk_initrd(char *filename, void **begin, void **end)
+  ;; filename in ECX
+  ;; Destroys: ESI, EDI
+  ;; Returns: EAX (begin), EDX (end)
 walk_initrd:
-  push ebp
-  mov ebp, esp
-  push esi
-  push edi
-
-  ;; Skip the header 'DISKFS  ' (use esi for the current reading
-  ;; position)
-  mov esi, initrd
-  add esi, 8
+  ;; Skip the header 'DISKFS  '
+  mov edx, initrd+8
 
 walk_initrd_loop:
   ;; Fail if at the end
-  cmp BYTE [esi], 0
+  cmp BYTE [edx], 0
   je walk_initrd_fail
 
   ;; Compare the name with the target name (store in edi)
-  push esi
-  push DWORD [ebp+8]
-  call strcmp
-  add esp, 8
+  mov esi, edx
+  mov edi, ecx
+  call strcmp2
   mov edi, eax
 
-  ;; Advance by string length plus one
-  push esi
-  call strlen
-  add esp, 4
-  add esi, eax
-  add esi, 1
+  ;; Advance by string length plus nine (jump over the terminator and the two pointers)
+  mov esi, edx
+  call strlen2
+  lea edx, [edx+eax+9]
 
-  ;; If the name is correct, return
+  ;; If the name is wrong, restart the cycle
   test edi, edi
-  jz walk_initrd_success
+  jnz walk_initrd_loop
 
-  ;; If not skip the two numbers and restart
-  add esi, 8
-  jmp walk_initrd_loop
-
-walk_initrd_success:
-  ;; Compute begin and end
-  mov edx, [ebp+12]
-  mov ecx, [esi]
-  bswap ecx
-  add ecx, initrd
-  mov [edx], ecx
-  mov edx, [ebp+16]
-  mov eax, [esi+4]
+  ;; Pointers are in network order, so we have to swap them
+  mov eax, [edx-8]
   bswap eax
-  add ecx, eax
-  mov [edx], ecx
-
-  pop edi
-  pop esi
-  pop ebp
+  add eax, initrd
+  mov edx, [edx-4]
+  bswap edx
+  add edx, eax
   ret
 
 walk_initrd_fail:
-  ;; Set begin and end to zero
+  ;; Set begin to zero and end to the actual end of initrd
+  mov eax, [edx-8]
+  bswap eax
+  add eax, initrd
+  mov edx, [edx-4]
+  bswap edx
+  add edx, eax
   xor eax, eax
-  mov edx, [ebp+12]
-  mov [edx], eax
-  mov edx, [ebp+16]
-  mov [edx], eax
-
-  pop edi
-  pop esi
-  pop ebp
   ret

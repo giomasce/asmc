@@ -250,34 +250,33 @@ platform_allocate:
 
 
 platform_open_file:
-  ;; Find the new file record
-  mov eax, open_file_num
-  mov eax, [eax]
-  mov edx, 12
-  mul edx
-  mov ecx, open_files
-  add eax, [ecx]
+  push ebp
+  mov ebp, esp
+  push esi
+  push edi
 
-  ;; ;; Call walk_initrd
-  mov edx, [esp+4]
-  mov ecx, eax
-  add ecx, 8
-  push eax
-  push ecx
-  push eax
-  push edx
+  ;; Find the file pointers
+  mov ecx, [ebp+8]
   call walk_initrd
-  add esp, 12
 
-  ;; Reset it to the beginning
-  pop eax
-  mov ecx, [eax]
-  mov [eax+4], ecx
+  ;; Find the new file record (stored in eax)
+  mov ecx, [open_file_num]
+  shl ecx, 2
+  lea ecx, [ecx+2*ecx]
+  add ecx, [open_files]
+
+  ;; Set file pointers in the file record
+  mov [ecx], eax
+  mov [ecx+4], eax
+  mov [ecx+8], edx
 
   ;; Return and increment the open file number
-  mov ecx, open_file_num
-  mov eax, [ecx]
-  add DWORD [ecx], 1
+  mov eax, [open_file_num]
+  add DWORD [open_file_num], 1
+
+  pop edi
+  pop esi
+  pop ebp
 
   ret
 

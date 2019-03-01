@@ -766,6 +766,47 @@ fix_symbol_placeholder_end:
   ret
 
 
+  ;; String pointers are in ESI and EDI
+  ;; Destroys: ESI, EDI
+  ;; Returns: EAX
+strcmp2_loop:
+  cmp al, 0
+  je ret_zero
+  inc esi
+  inc edi
+strcmp2:
+  mov al, [esi]
+  cmp al, [edi]
+  je strcmp2_loop
+  jmp ret_one
+
+
+ret_zero:
+  xor eax, eax
+ret_eax:
+  ret
+
+ret_one:
+  xor eax, eax
+  inc eax
+  ret
+
+
+  ;; String pointer in ESI
+  ;; Destroys: ESI
+  ;; Returns: EAX
+strlen2:
+  mov eax, 0
+  jmp strlen2_inside
+strlen2_loop:
+  inc esi
+  inc eax
+strlen2_inside:
+  cmp BYTE [esi], 0
+  jne strlen2_loop
+  ret
+
+
   global strcmp
 strcmp:
   push ebx
