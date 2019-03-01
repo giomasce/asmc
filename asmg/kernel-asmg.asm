@@ -57,9 +57,11 @@ g_compile:
   push edx
 
   ;; Open the file
-  push eax
-  call platform_open_file
-  add esp, 4
+  mov ecx, eax
+  call walk_initrd
+  mov [read_ptr_begin], eax
+  mov [read_ptr_end], edx
+
   pop edx
 
   ;; Assemble the file

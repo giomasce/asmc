@@ -80,10 +80,16 @@ token_buf_ptr:
 buf2_ptr:
   resd 1
 
-read_fd:
+write_label_buf_ptr:
   resd 1
 
-write_label_buf_ptr:
+read_ptr:
+  resd 1
+
+read_ptr_begin:
+  resd 1
+
+read_ptr_end:
   resd 1
 
 
@@ -328,20 +334,15 @@ get_token_read:
   mov ecx, 0
 
 get_token_loop:
-  ;; Call platform_read_char
-  push ecx
-  mov ecx, read_fd
-  push DWORD [ecx]
-  call platform_read_char
-  add esp, 4
-
-  ;; Break if -1 was returned
-  pop ecx
-  cmp eax, 0xffffffff
+  ;; Read a character
+  mov eax, [read_ptr]
+  cmp eax, [read_ptr_end]
   je get_token_end
-  push ecx
+  mov al, [eax]
+  inc DWORD [read_ptr]
 
   ;; Call is_whitespace
+  push ecx
   push eax
   push eax
   call is_whitespace
@@ -1677,10 +1678,6 @@ init_g_compiler:
 
   global compile
 compile:
-  ;; Set read_fd
-  mov ecx, [esp+4]
-  mov [read_fd], ecx
-
   ;; Reset depths and stage
   mov DWORD [block_depth], 0
   mov DWORD [stack_depth], 0
@@ -1692,11 +1689,9 @@ compile_stage_loop:
   cmp DWORD [stage], 2
   je ret_simple
 
-  ;; Call platform_reset_file
-  mov eax, [esp+4]
-  push eax
-  call platform_reset_file
-  add esp, 4
+  ;; Reset file to the beginning
+  mov eax, [read_ptr_begin]
+  mov [read_ptr], eax
 
   ;; Reset label_num and current_loc
   mov DWORD [label_num], 0
