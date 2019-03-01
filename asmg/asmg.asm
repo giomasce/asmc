@@ -581,9 +581,8 @@ emit_escaped_string_loop:
 emit_escaped_string_emit:
   ;; Call emit
   push eax
-  push edx
-  call emit
-  add esp, 4
+  mov ecx, edx
+  call emit2
 
   ;; Increment the pointer
   pop eax

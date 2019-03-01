@@ -138,9 +138,6 @@ itoa_end:
   ret
 
 
-emit:
-  mov cl, [esp+4]
-
   ;; Emit character in CL
   ;; Destroys: EDX
 emit2:
@@ -158,9 +155,6 @@ emit_end:
   ret
 
 
-emit32:
-  mov ecx, [esp+4]
-
   ;; Emit dword in ECX
   ;; Destroys: ECX, EDX
 emit322:
@@ -173,29 +167,6 @@ emit16:
   call emit2
   shr ecx, 8
   call emit2
-  ret
-
-
-  global emit_str
-emit_str:
-  ;; Check for termination
-  cmp DWORD [esp+8], 0
-  je emit_str_ret
-
-  ;; Call emit
-  mov eax, [esp+4]
-  mov edx, 0
-  mov dl, [eax]
-  push edx
-  call emit
-  add esp, 4
-
-  ;; Increment/decrement and repeat
-  add DWORD [esp+4], 1
-  sub DWORD [esp+8], 1
-  jmp emit_str
-
-emit_str_ret:
   ret
 
 
