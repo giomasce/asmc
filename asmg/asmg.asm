@@ -24,43 +24,6 @@ TEMP_VAR:
   db '__temp'
   db 0
 
-push_esp_pos:
-  db 0xff
-  db 0xb4
-  db 0x24
-lea_eax_esp_pos:
-  db 0x8d
-  db 0x84
-  db 0x24
-push_peax:
-  db 0xff
-  db 0x30
-add_esp:
-  db 0x81
-  db 0xc4
-pop_ebp_ret:
-  db 0x5d
-  db 0xc3
-pop_eax_cmp_eax_0_je_rel:
-  db 0x58
-  db 0x83
-  db 0xf8
-  db 0x00
-  db 0x0f
-  db 0x84
-sub_esp_4:
-  db 0x83
-  db 0xec
-  db 0x04
-push_ebp_mov_ebp_esp:
-  db 0x55
-  db 0x89
-  db 0xe5
-pop_eax_call_eax:
-  db 0x58
-  db 0xff
-  db 0xd0
-
 str_cu_open:
   db '{'
   db 0
@@ -765,13 +728,10 @@ push_expr_stack:
   push TEMP_VAR
   call push_var
   add esp, 8
-  push 3
-  push push_esp_pos
-  call emit_str
-  add esp, 8
-  push ebx
-  call emit32
-  add esp, 4
+  mov ecx, 0x24b4ff             ; push [esp+??]
+  call emit24
+  mov ecx, ebx
+  call emit322
 
   jmp push_expr_ret
 
@@ -781,10 +741,8 @@ push_expr_stack_addr:
   push TEMP_VAR
   call push_var
   add esp, 8
-  push 3
-  push lea_eax_esp_pos
-  call emit_str
-  add esp, 8
+  mov ecx, 0x24848d             ; lea eax, [esp+??]
+  call emit24
   push ebx
   call emit32
   add esp, 4
@@ -833,10 +791,8 @@ push_expr_after_assert:
   push eax
   call emit32
   add esp, 4
-  push 2
-  push add_esp
-  call emit_str
-  add esp, 8
+  mov ecx, 0xc481               ; add esp, ??
+  call emit16
 
   ;; Multiply the arity by 4 and continue emitting code
   mov eax, esi
@@ -899,10 +855,8 @@ push_expr_val:
   push ebx
   call emit32
   add esp, 4
-  push 2
-  push push_peax
-  call emit_str
-  add esp, 8
+  mov ecx, 0x30ff               ; push [eax]
+  call emit16
 
   jmp push_expr_ret
 
@@ -1132,10 +1086,8 @@ parse_block_loop:
 
 parse_block_semicolon:
   ;; Emit code to rewind temp stack
-  push 2
-  push add_esp
-  call emit_str
-  add esp, 8
+  mov ecx, 0xc481               ; add esp, ??
+  call emit16
   mov eax, temp_depth
   mov eax, [eax]
   mov edx, 4
@@ -1161,10 +1113,8 @@ parse_block_ret:
 
 parse_block_ret_emit:
   ;; Emit code to unwind stack end return
-  push 2
-  push add_esp
-  call emit_str
-  add esp, 8
+  mov ecx, 0xc481               ; add esp, ??
+  call emit16
   mov eax, stack_depth
   mov eax, [eax]
   mov edx, 4
@@ -1172,10 +1122,8 @@ parse_block_ret_emit:
   push eax
   call emit32
   add esp, 4
-  push 2
-  push pop_ebp_ret
-  call emit_str
-  add esp, 8
+  mov ecx, 0xc35d               ; pop ebp; ret
+  call emit16
 
   jmp parse_block_loop
 
@@ -1191,10 +1139,10 @@ parse_block_if:
   push 1
   call pop_var
   add esp, 4
-  push 6
-  push pop_eax_cmp_eax_0_je_rel
-  call emit_str
-  add esp, 8
+  mov ecx, 0x00f88358           ; pop eax; cmp eax, 0
+  call emit322
+  mov ecx, 0x840f               ; je ??
+  call emit16
   push 0
   push ebx
   call write_label
@@ -1312,10 +1260,10 @@ parse_block_while:
   push 1
   call pop_var
   add esp, 4
-  push 6
-  push pop_eax_cmp_eax_0_je_rel
-  call emit_str
-  add esp, 8
+  mov ecx, 0x00f88358           ; pop eax; cmp eax, 0
+  call emit322
+  mov ecx, 0x840f               ; je ??
+  call emit16
   push 0
   push edi
   call write_label
@@ -1377,10 +1325,8 @@ parse_block_alloc:
   add esp, 8
 
   ;; Emit code
-  push 3
-  push sub_esp_4
-  call emit_str
-  add esp, 8
+  mov ecx, 0x04ec83             ; sub esp, 4
+  call emit24
 
   jmp parse_block_loop
 
@@ -1402,16 +1348,12 @@ parse_block_call:
   add esp, 4
 
   ;; Emit code to do the indirect call
-  push 3
-  push pop_eax_call_eax
-  call emit_str
-  add esp, 8
+  mov ecx, 0xd0ff58             ; pop eax; call eax
+  call emit24
 
   ;; Emit code for stack cleanup
-  push 2
-  push add_esp
-  call emit_str
-  add esp, 8
+  mov ecx, 0xc481               ; add esp, ??
+  call emit16
   mov eax, 4
   mul ebx
   push eax
@@ -1540,10 +1482,8 @@ parse_block_push_after_if:
 
 parse_block_break:
   ;; Emit stack unwinding code
-  push 2
-  push add_esp
-  call emit_str
-  add esp, 8
+  mov ecx, 0xc481               ; add esp, ??
+  call emit16
 
   ;; Sanity check: stack depth must not have increased
   mov eax, stack_depth
@@ -1671,19 +1611,15 @@ parse_fun:
   add esp, 12
 
   ;; Emit the prologue
-  push 3
-  push push_ebp_mov_ebp_esp
-  call emit_str
-  add esp, 8
+  mov ecx, 0xe58955             ; push ebp; mov ebp, esp
+  call emit24
 
   ;; Parse the block
   call parse_block
 
   ;; Emit the epilogue
-  push 2
-  push pop_ebp_ret
-  call emit_str
-  add esp, 8
+  mov ecx, 0xc35d               ; pop ebp; ret
+  call emit16
 
   jmp parse_loop
 
