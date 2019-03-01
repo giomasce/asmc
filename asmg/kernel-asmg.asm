@@ -100,13 +100,11 @@ discard_temp_labels:
 
 discard_temp_labels_loop:
   ;; Check for termination
-  mov eax, symbol_num
-  cmp [eax], esi
+  cmp [symbol_num], esi
   je discard_temp_labels_end
 
   ;; Check if the symbol is a temp label
-  mov ecx, symbol_names_ptr
-  mov ecx, [ecx]
+  mov ecx, [symbol_names_ptr]
   mov eax, MAX_SYMBOL_NAME_LEN
   mul esi
   add eax, ecx
@@ -128,30 +126,14 @@ discard_temp_labels_loop:
   add esp, 8
 
   ;; Copy location
-  mov ecx, symbol_locs_ptr
-  mov ecx, [ecx]
-  mov eax, 4
-  mul esi
-  add eax, ecx
-  mov ebx, eax
-  mov eax, 4
-  mul edi
-  add eax, ecx
-  mov edx, [ebx]
-  mov [eax], edx
+  mov ecx, [symbol_locs_ptr]
+  mov edx, [ecx+4*esi]
+  mov [ecx+4*edi], edx
 
   ;; Copy arity
-  mov ecx, symbol_arities_ptr
-  mov ecx, [ecx]
-  mov eax, 4
-  mul esi
-  add eax, ecx
-  mov ebx, eax
-  mov eax, 4
-  mul edi
-  add eax, ecx
-  mov edx, [ebx]
-  mov [eax], edx
+  mov ecx, [symbol_arities_ptr]
+  mov edx, [ecx+4*esi]
+  mov [ecx+4*edi], edx
 
 discard_temp_label_update_dest:
   add edi, 1
