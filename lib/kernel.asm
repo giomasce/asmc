@@ -72,16 +72,16 @@ entry:
   and esp, 0xfffffff0
 
   ;; Find the end of the ar initrd
-  call find_initrd_end
+  mov ecx, str_empty
+  call walk_initrd
 
   ;; Initialize the stack and the heap, aligning to 16 bytes
-  sub eax, 1
-  or eax, 0xf
-  add eax, 1
-  add eax, STACK_SIZE
-  mov esp, eax
-  mov ecx, heap_ptr
-  mov [ecx], eax
+  sub edx, 1
+  or edx, 0xf
+  add edx, 1
+  add edx, STACK_SIZE
+  mov esp, edx
+  mov [heap_ptr], edx
 
   ;; Initialize stdout
   call stdout_setup
