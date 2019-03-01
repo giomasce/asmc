@@ -50,6 +50,7 @@
 
   INPUT_BUF_LEN equ 1024
   MAX_SYMBOL_NAME_LEN equ 64
+  MAX_SYMBOL_NAME_LEN_LOG equ 6
   SYMBOL_TABLE_LEN equ 4096
 
   section .bss
@@ -240,8 +241,7 @@ decode_number_loop:
   mul edx
   jmp decode_number_after_mult
 decode_number_mult16:
-  mov edx, 16
-  mul edx
+  shl eax, 4
 
 decode_number_after_mult:
   ;; If we have a decimal digit, add it to the number
@@ -340,38 +340,28 @@ memcpy_end:
   global init_symbols
 init_symbols:
   ;; Allocate symbol names table
-  mov eax, SYMBOL_TABLE_LEN
-  mov edx, MAX_SYMBOL_NAME_LEN
-  mul edx
+  mov eax, SYMBOL_TABLE_LEN * MAX_SYMBOL_NAME_LEN
   push eax
   call platform_allocate
   add esp, 4
-  mov ecx, symbol_names_ptr
-  mov [ecx], eax
+  mov [symbol_names_ptr], eax
 
   ;; Allocate symbol locations table
-  mov eax, SYMBOL_TABLE_LEN
-  mov edx, 4
-  mul edx
+  mov eax, 4 * SYMBOL_TABLE_LEN
   push eax
   call platform_allocate
   add esp, 4
-  mov ecx, symbol_locs_ptr
-  mov [ecx], eax
+  mov [symbol_locs_ptr], eax
 
   ;; Allocate symbol arities table
-  mov eax, SYMBOL_TABLE_LEN
-  mov edx, 4
-  mul edx
+  mov eax, 4 * SYMBOL_TABLE_LEN
   push eax
   call platform_allocate
   add esp, 4
-  mov ecx, symbol_arities_ptr
-  mov [ecx], eax
+  mov [symbol_arities_ptr], eax
 
   ;; Reset symbol_num
-  mov eax, symbol_num
-  mov DWORD [eax], 0
+  mov DWORD [symbol_num], 0
 
   ret
 
@@ -393,11 +383,9 @@ get_symbol_idx_loop:
   push ecx
 
   ;; Compute and push the second argument to strcmp
-  mov edx, MAX_SYMBOL_NAME_LEN
   mov eax, ecx
-  mul edx
-  mov ecx, symbol_names_ptr
-  add eax, [ecx]
+  shl eax, MAX_SYMBOL_NAME_LEN_LOG
+  add eax, [symbol_names_ptr]
   push eax
 
   ;; Push the first argument
@@ -442,8 +430,8 @@ find_symbol:
   mov edx, [ebp+12]
   cmp edx, 0
   je find_symbol_arity
-  mov eax, 4
-  mul ecx
+  mov eax, ecx
+  shl eax, 2
   mov edx, symbol_locs_ptr
   add eax, [edx]
   mov eax, [eax]
@@ -455,8 +443,8 @@ find_symbol_arity:
   mov edx, [ebp+16]
   cmp edx, 0
   je find_symbol_ret_found
-  mov eax, 4
-  mul ecx
+  mov eax, ecx
+  shl eax, 2
   mov edx, symbol_arities_ptr
   add eax, [edx]
   mov eax, [eax]
@@ -512,8 +500,7 @@ add_symbol:
 
   ;; Save the location for the new symbol
   mov eax, ebx
-  mov ecx, 4
-  mul ecx
+  shl eax, 2
   mov ecx, symbol_locs_ptr
   add eax, [ecx]
   mov ecx, [ebp+12]
@@ -521,8 +508,7 @@ add_symbol:
 
   ;; Save the arity for the new symbol
   mov eax, ebx
-  mov ecx, 4
-  mul ecx
+  shl eax, 2
   mov ecx, symbol_arities_ptr
   add eax, [ecx]
   mov ecx, [ebp+16]
@@ -532,8 +518,7 @@ add_symbol:
   mov eax, [ebp+8]
   push eax
   mov eax, ebx
-  mov ecx, MAX_SYMBOL_NAME_LEN
-  mul ecx
+  shl eax, MAX_SYMBOL_NAME_LEN_LOG
   mov ecx, symbol_names_ptr
   add eax, [ecx]
   push eax
@@ -736,8 +721,7 @@ fix_symbol_placeholder_after_second_assert:
   je platform_panic
 
   ;; Fix the location value
-  mov edx, 4
-  mul edx
+  shl eax, 2
   mov ecx, symbol_locs_ptr
   add eax, [ecx]
   mov edx, [ebp+12]

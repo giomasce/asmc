@@ -193,8 +193,7 @@ push_var:
   jnb platform_panic
 
   ;; Copy the variable name in the stack
-  mov edx, MAX_SYMBOL_NAME_LEN
-  mul edx
+  shl eax, MAX_SYMBOL_NAME_LEN_LOG
   mov ecx, stack_vars_ptr
   add eax, [ecx]
   mov edx, eax
@@ -281,8 +280,7 @@ find_in_stack_loop:
   mov eax, [edx]
   sub eax, 1
   sub eax, ebx
-  mov edx, MAX_SYMBOL_NAME_LEN
-  mul edx
+  shl eax, MAX_SYMBOL_NAME_LEN_LOG
   mov ecx, stack_vars_ptr
   add eax, [ecx]
 
@@ -713,9 +711,8 @@ push_expr_stack:
   je push_expr_symbol
 
   ;; Multiply the position by 4
-  mov edx, 4
-  mul edx
   mov ebx, eax
+  shl ebx, 2
 
   ;; It is on the stack: check if we want the address or not
   cmp DWORD [ebp+12], 0
@@ -789,10 +786,8 @@ push_expr_after_assert:
   call emit16
 
   ;; Multiply the arity by 4 and continue emitting code
-  mov eax, esi
-  mov edx, 4
-  mul edx
-  mov ecx, eax
+  mov ecx, esi
+  shl ecx, 2
   call emit322
   mov cl, 0x50                  ; push eax
   call emit2
@@ -1071,11 +1066,8 @@ parse_block_semicolon:
   ;; Emit code to rewind temp stack
   mov ecx, 0xc481               ; add esp, ??
   call emit16
-  mov eax, temp_depth
-  mov eax, [eax]
-  mov edx, 4
-  mul edx
-  mov ecx, eax
+  mov ecx, [temp_depth]
+  shl ecx, 2
   call emit322
   call pop_temps
 
@@ -1096,11 +1088,8 @@ parse_block_ret_emit:
   ;; Emit code to unwind stack end return
   mov ecx, 0xc481               ; add esp, ??
   call emit16
-  mov eax, stack_depth
-  mov eax, [eax]
-  mov edx, 4
-  mul edx
-  mov ecx, eax
+  mov ecx, [stack_depth]
+  shl ecx, 2
   call emit322
   mov ecx, 0xc35d               ; pop ebp; ret
   call emit16
@@ -1328,9 +1317,8 @@ parse_block_call:
   ;; Emit code for stack cleanup
   mov ecx, 0xc481               ; add esp, ??
   call emit16
-  mov eax, 4
-  mul ebx
-  mov ecx, eax
+  mov ecx, ebx
+  shl ecx, 2
   call emit322
 
   ;; Pop an appropriate number of temp vars
@@ -1461,9 +1449,8 @@ parse_block_break:
 
   ;; Emit stack depth different, multiplied by 4
   sub eax, esi
-  mov edx, 4
-  mul edx
   mov ecx, eax
+  shl ecx, 2
   call emit322
 
   ;; Reset stack depth to saved value and decrease block depth
@@ -1670,26 +1657,22 @@ init_g_compiler:
   push STACK_VARS_SIZE
   call platform_allocate
   add esp, 4
-  mov ecx, stack_vars_ptr
-  mov [ecx], eax
+  mov [stack_vars_ptr], eax
 
   ;; Allocate the token buffer
   push MAX_SYMBOL_NAME_LEN
   call platform_allocate
   add esp, 4
-  mov ecx, token_buf_ptr
-  mov [ecx], eax
+  mov [token_buf_ptr], eax
 
   ;; Allocate buf2
   push MAX_SYMBOL_NAME_LEN
   call platform_allocate
   add esp, 4
-  mov ecx, buf2_ptr
-  mov [ecx], eax
+  mov [buf2_ptr], eax
 
   ;; Set token_given_back to false
-  mov eax, token_given_back
-  mov DWORD [eax], 0
+  mov DWORD [token_given_back], 0
 
   ret
 
