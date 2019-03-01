@@ -148,10 +148,6 @@ platform_panic:
   jmp loop_forever
 
 
-platform_write_char:
-  ;; Switch depending on the requested file descriptor
-  mov cl, [esp+8]
-
   ;; Input character in CL
   ;; Destroys: EAX, EDX
 write:
@@ -194,91 +190,11 @@ allocate:
   ret
 
 
-platform_open_file:
-  push ebp
-  mov ebp, esp
-  push esi
-  push edi
-
-  ;; Find the file pointers
-  mov ecx, [ebp+8]
-  call walk_initrd
-
-  ;; Find the new file record (stored in eax)
-  mov ecx, [open_file_num]
-  shl ecx, FILE_RECORD_SIZE_LOG
-  add ecx, [open_files]
-
-  ;; Set file pointers in the file record
-  mov [ecx], eax
-  mov [ecx+4], eax
-  mov [ecx+8], edx
-
-  ;; Return and increment the open file number
-  mov eax, [open_file_num]
-  add DWORD [open_file_num], 1
-
-  pop edi
-  pop esi
-  pop ebp
-
-  ret
-
-
-platform_reset_file:
-  ;; Find the file record
-  mov eax, [esp+4]
-  shl eax, FILE_RECORD_SIZE_LOG
-  add eax, [open_files]
-
-  ;; Reset it to the beginning
-  mov ecx, [eax]
-  mov [eax+4], ecx
-
-  ret
-
-
-platform_read_char:
-  ;; Find the file record
-  mov eax, [esp+4]
-  shl eax, FILE_RECORD_SIZE_LOG
-  add eax, [open_files]
-
-  ;; Check if we are at the end
-  mov ecx, [eax+4]
-  cmp ecx, [eax+8]
-  je platform_read_char_eof
-
-  ;; Return a character and increment pointer
-  mov edx, 0
-  mov dl, [ecx]
-  add DWORD [eax+4], 1
-  mov eax, edx
-  ret
-
-platform_read_char_eof:
-  ;; Return -1
-  mov eax, 0xffffffff
-  ret
-
-
 str_platform_panic:
   db 'platform_panic'
   db 0
 str_platform_exit:
   db 'platform_exit'
-  db 0
-str_platform_open_file:
-  db 'platform_open_file'
-  db 0
-str_platform_read_char:
-  db 'platform_read_char'
-  db 0
-str_platform_write_char:
-  db 'platform_write_char'
-  db 0
-str_platform_reset_file:
-  db 'platform_reset_file'
   db 0
 str_platform_log:
   db 'platform_log'
@@ -301,30 +217,6 @@ init_kernel_api:
   push 0
   push platform_exit
   push str_platform_exit
-  call add_symbol
-  add esp, 12
-
-  push 1
-  push platform_open_file
-  push str_platform_open_file
-  call add_symbol
-  add esp, 12
-
-  push 1
-  push platform_read_char
-  push str_platform_read_char
-  call add_symbol
-  add esp, 12
-
-  push 2
-  push platform_write_char
-  push str_platform_write_char
-  call add_symbol
-  add esp, 12
-
-  push 1
-  push platform_reset_file
-  push str_platform_reset_file
   call add_symbol
   add esp, 12
 
