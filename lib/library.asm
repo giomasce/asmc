@@ -70,6 +70,9 @@ symbol_arities_ptr:
 symbol_num:
   resd 1
 
+initial_loc:
+  resd 1
+
 current_loc:
   resd 1
 
@@ -144,8 +147,7 @@ emit:
   ;; If we are in stage 1, write the character
   cmp DWORD [stage], 1
   jne emit_end
-  mov edx, [write_mem_ptr]
-  inc DWORD [write_mem_ptr]
+  mov edx, [current_loc]
   mov [edx], cl
 
 emit_end:

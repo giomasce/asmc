@@ -31,9 +31,6 @@ open_files:
 open_file_num:
   resd 1
 
-write_mem_ptr:
-  resd 1
-
 str_exit:
   db 'The execution has finished, bye bye...'
   db NEWLINE

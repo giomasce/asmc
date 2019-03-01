@@ -50,7 +50,7 @@ platform_g_compile:
 g_compile:
   ;; Prepare to write in memory
   mov edx, [heap_ptr]
-  mov [write_mem_ptr], edx
+  mov [initial_loc], edx
 
   ;; Save initial address for future use
   push edx
@@ -72,7 +72,7 @@ g_compile:
 
   ;; Actually allocate used heap memory, so that new allocations will
   ;; not overwrite it
-  mov eax, [write_mem_ptr]
+  mov eax, [current_loc]
   sub eax, [heap_ptr]
   call allocate
 

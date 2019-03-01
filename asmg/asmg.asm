@@ -659,8 +659,7 @@ decode_number_or_char_backslash:
 compute_rel:
   ;; Subtract current_loc and than 4
   mov eax, [esp+4]
-  mov ecx, current_loc
-  sub eax, [ecx]
+  sub eax, [current_loc]
   sub eax, 4
   ret
 
@@ -1674,27 +1673,19 @@ init_g_compiler:
   global compile
 compile:
   ;; Set read_fd
-  mov eax, read_fd
   mov ecx, [esp+4]
-  mov [eax], ecx
+  mov [read_fd], ecx
 
-  ;; Reset depths
-  mov eax, block_depth
-  mov DWORD [eax], 0
-  mov eax, stack_depth
-  mov DWORD [eax], 0
-  mov eax, temp_depth
-  mov DWORD [eax], 0
-
-  ;; Reset stage
-  mov eax, stage
-  mov DWORD [eax], 0
+  ;; Reset depths and stage
+  mov DWORD [block_depth], 0
+  mov DWORD [stack_depth], 0
+  mov DWORD [temp_depth], 0
+  mov DWORD [stage], 0
 
 compile_stage_loop:
   ;; Check for termination
-  mov eax, stage
-  cmp DWORD [eax], 2
-  je compile_end
+  cmp DWORD [stage], 2
+  je ret_simple
 
   ;; Call platform_reset_file
   mov eax, [esp+4]
@@ -1703,36 +1694,22 @@ compile_stage_loop:
   add esp, 4
 
   ;; Reset label_num and current_loc
-  mov eax, label_num
-  mov DWORD [eax], 0
-  mov eax, current_loc
-  mov ecx, [esp+12]
-  mov [eax], ecx
+  mov DWORD [label_num], 0
+  mov ecx, [initial_loc]
+  mov [current_loc], ecx
 
-  ;; If the preable was requested, emit it
-  cmp DWORD [esp+16], 0
-  je compile_parse
-
-compile_parse:
   ;; Call parse
   call parse
 
   ;; Check that depths were reset to zero
-  mov eax, block_depth
-  cmp DWORD [eax], 0
+  cmp DWORD [block_depth], 0
   jne platform_panic
-  mov eax, stack_depth
-  cmp DWORD [eax], 0
+  cmp DWORD [stack_depth], 0
   jne platform_panic
-  mov eax, temp_depth
-  cmp DWORD [eax], 0
+  cmp DWORD [temp_depth], 0
   jne platform_panic
 
   ;; Increment stage
-  mov eax, stage
-  add DWORD [eax], 1
+  add DWORD [stage], 1
 
   jmp compile_stage_loop
-
-compile_end:
-  ret
