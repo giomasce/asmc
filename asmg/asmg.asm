@@ -83,8 +83,8 @@ buf2_ptr:
 read_fd:
   resd 1
 
-write_label_buf:
-  resb WRITE_LABEL_BUF_LEN
+write_label_buf_ptr:
+  resd 1
 
 
   global gen_label
@@ -108,7 +108,7 @@ write_label:
   mov edx, eax
 
   ;; Print the initial dot
-  mov eax, write_label_buf
+  mov eax, [write_label_buf_ptr]
   mov BYTE [eax], DOT
 
   ;; Copy from itoa to our buffer
@@ -118,7 +118,7 @@ write_label:
   call strcpy
   add esp, 8
 
-  mov eax, write_label_buf
+  mov eax, [write_label_buf_ptr]
   ret
 
 
@@ -1663,6 +1663,11 @@ init_g_compiler:
   mov eax, MAX_SYMBOL_NAME_LEN
   call allocate
   mov [buf2_ptr], eax
+
+  ;; Allocate write_label_buf
+  mov eax, WRITE_LABEL_BUF_LEN
+  call allocate
+  mov [write_label_buf_ptr], eax
 
   ;; Set token_given_back to false
   mov DWORD [token_given_back], 0
