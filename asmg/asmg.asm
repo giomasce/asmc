@@ -17,8 +17,6 @@
 
   WRITE_LABEL_BUF_LEN equ 128
   STACK_VARS_LEN equ 1024
-  ;; STACK_VARS_SIZE = STACK_VARS_LEN * MAX_SYMBOL_NAME_LEN
-  STACK_VARS_SIZE equ 131072
 
 TEMP_VAR:
   db '__temp'
@@ -1654,7 +1652,7 @@ parse_ret:
   global init_g_compiler
 init_g_compiler:
   ;; Allocate stack variables list
-  mov eax, STACK_VARS_SIZE
+  mov eax, STACK_VARS_LEN * MAX_SYMBOL_NAME_LEN
   call allocate
   mov [stack_vars_ptr], eax
 
