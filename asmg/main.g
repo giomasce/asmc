@@ -259,74 +259,56 @@ fun main 0 {
   0 "init_resolve_symbol_ext" platform_get_symbol \0 ;
   "done!\n" log ;
 
-  # Determine if there is an actual script
-  $script_file
-  @script_file "/init/script.g" 0 "vfs_open" platform_get_symbol \1 = ;
-  $have_script
-  @have_script script_file 0 "vfs_read" platform_get_symbol \1 0xffffffff != = ;
-  script_file 0 "vfs_close" platform_get_symbol \1 ;
+  if RUN_MM0 {
+    "/disk1/mm0/set.mm0" 0 "mm0_process" platform_get_symbol \1 ;
+  }
 
-  if have_script {
-    "Compiling script.g... " log ;
-    "script.g" platform_g_compile ;
+  if RUN_ASM {
+    "/init/test.asm" 0 "parse_asm" platform_get_symbol \1 ;
+  }
+
+  if RUN_FASM {
+    "Compiling fasm.g... " log ;
+    "fasm.g" platform_g_compile ;
     "done!\n" log ;
 
-    "Running the script...\n" log ;
-    0 "run_script" platform_get_symbol \0 ;
-  } else {
-    "No script, running the usual payload...\n" log ;
+    0 "compile_fasm" platform_get_symbol \0 ;
+  }
 
-    if RUN_MM0 {
-      "/disk1/mm0/set.mm0" 0 "mm0_process" platform_get_symbol \1 ;
-    }
+  if RUN_C {
+    "/disk1/tests/test.c" 0 "parse_c" platform_get_symbol \1 ;
+  }
 
-    if RUN_ASM {
-      "/init/test.asm" 0 "parse_asm" platform_get_symbol \1 ;
-    }
+  if TEST_INT64 {
+    0 "int64_test" platform_get_symbol \0 ;
+    0 "int64_test_div" platform_get_symbol \0 ;
+  }
 
-    if RUN_FASM {
-      "Compiling fasm.g... " log ;
-      "fasm.g" platform_g_compile ;
-      "done!\n" log ;
+  if TEST_C {
+    0 "c_run_testcases" platform_get_symbol \0 ;
+  }
 
-      0 "compile_fasm" platform_get_symbol \0 ;
-    }
+  if RUN_MESCC {
+    0 "hex2_test" platform_get_symbol \0 ;
+    0 "m1_test" platform_get_symbol \0 ;
+    0 "m2_test" platform_get_symbol \0 ;
+    0 "m2_test_full_compilation" platform_get_symbol \0 ;
+  }
 
-    if RUN_C {
-      "/disk1/tests/test.c" 0 "parse_c" platform_get_symbol \1 ;
-    }
+  if RUN_MCPP {
+    "Compiling mcpp.g... " log ;
+    "mcpp.g" platform_g_compile ;
+    "done!\n" log ;
 
-    if TEST_INT64 {
-      0 "int64_test" platform_get_symbol \0 ;
-      0 "int64_test_div" platform_get_symbol \0 ;
-    }
+    0 "compile_mcpp" platform_get_symbol \0 ;
+  }
 
-    if TEST_C {
-      0 "c_run_testcases" platform_get_symbol \0 ;
-    }
+  if RUN_TINYCC {
+   "Compiling tinycc.g... " log ;
+    "tinycc.g" platform_g_compile ;
+    "done!\n" log ;
 
-    if RUN_MESCC {
-      0 "hex2_test" platform_get_symbol \0 ;
-      0 "m1_test" platform_get_symbol \0 ;
-      0 "m2_test" platform_get_symbol \0 ;
-      0 "m2_test_full_compilation" platform_get_symbol \0 ;
-    }
-
-    if RUN_MCPP {
-      "Compiling mcpp.g... " log ;
-      "mcpp.g" platform_g_compile ;
-      "done!\n" log ;
-
-      0 "compile_mcpp" platform_get_symbol \0 ;
-    }
-
-    if RUN_TINYCC {
-      "Compiling tinycc.g... " log ;
-      "tinycc.g" platform_g_compile ;
-      "done!\n" log ;
-
-      0 "compile_tinycc" platform_get_symbol \0 ;
-    }
+    0 "compile_tinycc" platform_get_symbol \0 ;
   }
 
   if compile_int64 {
