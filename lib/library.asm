@@ -796,6 +796,19 @@ strlen2_inside:
   ret
 
 
+  ;; Source in ESI, destination in EDI
+  ;; Destroys: ESI, EDI, EAX
+strcpy2_loop:
+  inc esi
+  inc edi
+strcpy2:
+  mov al, [esi]
+  mov [edi], al
+  cmp al, 0
+  jne strcpy2_loop
+  ret
+
+
   ;; Wrapper over strcmp2
 strcmp:
   push esi
@@ -817,27 +830,15 @@ strlen:
   ret
 
 
-  global strcpy
+  ;; Wrapper over strcpy2
 strcpy:
-  ;; Load registers
-  mov eax, [esp+4]
-  mov ecx, [esp+8]
-
-strcpy_begin_loop:
-  ;; Copy a byte
-  mov dl, [ecx]
-  mov [eax], dl
-
-  ;; Return if it was the terminator
-  cmp dl, 0
-  je strcpy_end
-
-  ;; Increment both pointers and restart
-  add eax, 1
-  add ecx, 1
-  jmp strcpy_begin_loop
-
-strcpy_end:
+  push esi
+  push edi
+  mov esi, [esp+16]
+  mov edi, [esp+12]
+  call strcpy2
+  pop edi
+  pop esi
   ret
 
 
