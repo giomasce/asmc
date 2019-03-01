@@ -45,12 +45,14 @@ str_entry:
 
   ;; void platform_g_compile(char *filename)
 platform_g_compile:
+  mov eax, [esp+4]
+
+g_compile:
   ;; Prepare to write in memory
   mov edx, [heap_ptr]
   mov [write_mem_ptr], edx
 
-  ;; Load the parameter and save some registers
-  mov eax, [esp+4]
+  ;; Save initial address for future use
   push edx
   push edx
 
@@ -195,9 +197,8 @@ start:
   call log
 
   ;; Compile entry.g
-  push str_entry_g
-  call platform_g_compile
-  add esp, 4
+  mov eax, str_entry_g
+  call g_compile
 
   ;; Log
   mov esi, str_init_launch_entry

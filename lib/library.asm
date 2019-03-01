@@ -755,33 +755,6 @@ strcpy:
   ret
 
 
-  global find_char
-find_char:
-  ;; Load registers
-  mov eax, [esp+4]
-  mov dl, [esp+8]
-
-  ;; Main loop
-find_char_loop:
-  cmp [eax], dl
-  je find_char_ret
-  cmp BYTE [eax], 0
-  je find_char_ret_error
-  add eax, 1
-  jmp find_char_loop
-
-  ;; If we found the target character, return the difference between
-  ;; the current and initial address
-find_char_ret:
-  sub eax, [esp+4]
-  ret
-
-  ;; If we found a terminator, return -1
-find_char_ret_error:
-  mov eax, 0xffffffff
-  ret
-
-
   ;; Common return cases
 ret_zero:
   xor eax, eax
