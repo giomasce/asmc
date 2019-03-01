@@ -375,8 +375,7 @@ get_symbol_idx:
 
 get_symbol_idx_loop:
   ;; Check for termination
-  mov eax, symbol_num
-  cmp ecx, [eax]
+  cmp ecx, [symbol_num]
   je get_symbol_idx_end
 
   ;; Save ecx
@@ -422,19 +421,15 @@ find_symbol:
   call get_symbol_idx
   add esp, 4
   mov ecx, eax
-  mov eax, symbol_num
-  cmp ecx, [eax]
+  cmp ecx, [symbol_num]
   je find_symbol_not_found
 
   ;; If the second argument is not null, fill it with the location
   mov edx, [ebp+12]
   cmp edx, 0
   je find_symbol_arity
-  mov eax, ecx
-  shl eax, 2
-  mov edx, symbol_locs_ptr
-  add eax, [edx]
-  mov eax, [eax]
+  mov eax, [symbol_locs_ptr]
+  mov eax, [eax+4*ecx]
   mov edx, [ebp+12]
   mov [edx], eax
 
@@ -443,11 +438,8 @@ find_symbol_arity:
   mov edx, [ebp+16]
   cmp edx, 0
   je find_symbol_ret_found
-  mov eax, ecx
-  shl eax, 2
-  mov edx, symbol_arities_ptr
-  add eax, [edx]
-  mov eax, [eax]
+  mov eax, [symbol_arities_ptr]
+  mov eax, [eax+4*ecx]
   mov edx, [ebp+16]
   mov [edx], eax
 
@@ -493,24 +485,21 @@ add_symbol:
 
   ;; Put the current symbol number in ebx and check it is not
   ;; overflowing
-  mov eax, symbol_num
-  mov ebx, [eax]
+  mov ebx, [symbol_num]
   cmp ebx, SYMBOL_TABLE_LEN
   jnb platform_panic
 
   ;; Save the location for the new symbol
   mov eax, ebx
   shl eax, 2
-  mov ecx, symbol_locs_ptr
-  add eax, [ecx]
+  add eax, [symbol_locs_ptr]
   mov ecx, [ebp+12]
   mov [eax], ecx
 
   ;; Save the arity for the new symbol
   mov eax, ebx
   shl eax, 2
-  mov ecx, symbol_arities_ptr
-  add eax, [ecx]
+  add eax, [symbol_arities_ptr]
   mov ecx, [ebp+16]
   mov [eax], ecx
 
@@ -519,16 +508,14 @@ add_symbol:
   push eax
   mov eax, ebx
   shl eax, MAX_SYMBOL_NAME_LEN_LOG
-  mov ecx, symbol_names_ptr
-  add eax, [ecx]
+  add eax, [symbol_names_ptr]
   push eax
   call strcpy
   add esp, 8
 
   ;; Increment and store the new symbol number
   add ebx, 1
-  mov eax, symbol_num
-  mov [eax], ebx
+  mov [symbol_num], ebx
 
   pop ebx
   pop ebp
