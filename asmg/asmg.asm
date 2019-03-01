@@ -125,59 +125,6 @@ read_fd:
 write_label_buf:
   resb WRITE_LABEL_BUF_LEN
 
-  global get_label_num
-get_label_num:
-  mov eax, label_num
-  ret
-
-  global get_stack_vars
-get_stack_vars:
-  mov eax, stack_vars_ptr
-  mov eax, [eax]
-  ret
-
-  global get_block_depth
-get_block_depth:
-  mov eax, block_depth
-  ret
-
-  global get_stack_depth
-get_stack_depth:
-  mov eax, stack_depth
-  ret
-
-  global get_temp_depth
-get_temp_depth:
-  mov eax, temp_depth
-  ret
-
-  global get_token_given_back
-get_token_given_back:
-  mov eax, token_given_back
-  ret
-
-  global get_token_len
-get_token_len:
-  mov eax, token_len
-  ret
-
-  global get_token_buf
-get_token_buf:
-  mov eax, token_buf_ptr
-  mov eax, [eax]
-  ret
-
-  global get_buf2
-get_buf2:
-  mov eax, buf2_ptr
-  mov eax, [eax]
-  ret
-
-  global get_read_fd
-get_read_fd:
-  mov eax, read_fd
-  ret
-
 
   global gen_label
 gen_label:
@@ -1696,8 +1643,6 @@ parse_loop:
 
   cmp BYTE [ebx], DOLLAR
   je parse_var
-  cmp BYTE [ebx], PERCENT
-  je parse_array
 
   call platform_panic
 
@@ -1811,43 +1756,6 @@ parse_var:
   add esp, 4
 
   jmp parse_loop
-
-parse_array:
-  ;; Increment the pointer and check the string continues
-  add ebx, 1
-  cmp BYTE [ebx], 0
-  je platform_panic
-
-  ;; Add a symbol
-  push 0xfffffffe
-  mov eax, current_loc
-  push DWORD [eax]
-  push ebx
-  call add_symbol_wrapper
-  add esp, 12
-
-  ;; Get another token and interpret it as a number or symbol
-  call get_token
-  push eax
-  call decode_number_or_symbol
-  add esp, 4
-  mov ebx, eax
-
-  ;; Emit that number of zero bytes to allocate the array
-parse_array_loop:
-  ;; Check for termination
-  cmp ebx, 0
-  je parse_loop
-
-  ;; Decrement counter
-  sub ebx, 1
-
-  ;; Emit a zero byte
-  push 0
-  call emit
-  add esp, 4
-
-  jmp parse_array_loop
 
 parse_ret:
   pop ebx
