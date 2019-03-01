@@ -19,6 +19,8 @@
   ;; STACK_SIZE equ 8388608
 
   MAX_OPEN_FILE_NUM equ 1024
+  FILE_RECORD_SIZE equ 16
+  FILE_RECORD_SIZE_LOG equ 4
 
 heap_ptr:
   resd 1
@@ -111,16 +113,10 @@ entry:
   add esp, 8
 
   ;; Initialize file table
-  mov eax, open_file_num
-  mov DWORD [eax], 0
-  mov eax, MAX_OPEN_FILE_NUM
-  mov edx, 12
-  mul edx
-  push eax
-  call platform_allocate
-  add esp, 4
-  mov edx, open_files
-  mov [edx], eax
+  mov DWORD [open_file_num], 0
+  mov eax, FILE_RECORD_SIZE * MAX_OPEN_FILE_NUM
+  call allocate
+  mov [open_files], eax
 
   ;; Log
   push str_done
@@ -232,20 +228,20 @@ platform_log_loop_ret:
   ret
 
 
-  ;; void *platform_allocate(int size)
 platform_allocate:
-  ;; Prepare to return the current heap_ptr
-  mov ecx, heap_ptr
-  mov eax, [ecx]
+  mov eax, [esp+4]
 
-  ;; Add the new size to the heap_ptr and realign
-  mov edx, [esp+4]
-  add edx, eax
-  sub edx, 1
-  or edx, 0x3
-  add edx, 1
-  mov [ecx], edx
-
+  ;; Size in EAX
+  ;; Destroys: ECX
+  ;; Returns: EAX
+allocate:
+  dec eax
+  or eax, 0x3
+  inc eax
+  mov ecx, eax
+  mov eax, [heap_ptr]
+  add ecx, eax
+  mov [heap_ptr], ecx
   ret
 
 
@@ -261,8 +257,7 @@ platform_open_file:
 
   ;; Find the new file record (stored in eax)
   mov ecx, [open_file_num]
-  shl ecx, 2
-  lea ecx, [ecx+2*ecx]
+  shl ecx, FILE_RECORD_SIZE_LOG
   add ecx, [open_files]
 
   ;; Set file pointers in the file record
@@ -284,10 +279,8 @@ platform_open_file:
 platform_reset_file:
   ;; Find the file record
   mov eax, [esp+4]
-  mov edx, 12
-  mul edx
-  mov ecx, open_files
-  add eax, [ecx]
+  shl eax, FILE_RECORD_SIZE_LOG
+  add eax, [open_files]
 
   ;; Reset it to the beginning
   mov ecx, [eax]
@@ -299,10 +292,8 @@ platform_reset_file:
 platform_read_char:
   ;; Find the file record
   mov eax, [esp+4]
-  mov edx, 12
-  mul edx
-  mov ecx, open_files
-  add eax, [ecx]
+  shl eax, FILE_RECORD_SIZE_LOG
+  add eax, [open_files]
 
   ;; Check if we are at the end
   mov ecx, [eax+4]
