@@ -89,28 +89,20 @@ entry:
   call stdout_setup
 
   ;; Log
-  push str_hello_asmc
-  push 1
-  call platform_log
-  add esp, 8
+  mov esi, str_hello_asmc
+  call log
 
   ;; Log
-  push str_init_heap_stack
-  push 1
-  call platform_log
-  add esp, 8
+  mov esi, str_init_heap_stack
+  call log
 
   ;; Log
-  push str_done
-  push 1
-  call platform_log
-  add esp, 8
+  mov esi, str_done
+  call log
 
   ;; Log
-  push str_init_files
-  push 1
-  call platform_log
-  add esp, 8
+  mov esi, str_init_files
+  call log
 
   ;; Initialize file table
   mov DWORD [open_file_num], 0
@@ -119,16 +111,12 @@ entry:
   mov [open_files], eax
 
   ;; Log
-  push str_done
-  push 1
-  call platform_log
-  add esp, 8
+  mov esi, str_done
+  call log
 
   ;; Log
-  push str_init_asm_symbols_table
-  push 1
-  call platform_log
-  add esp, 8
+  mov esi, str_init_asm_symbols_table
+  call log
 
   ;; Init symbol table
   call init_symbols
@@ -137,10 +125,8 @@ entry:
   call init_kernel_api
 
   ;; Log
-  push str_done
-  push 1
-  call platform_log
-  add esp, 8
+  mov esi, str_done
+  call log
 
   ;; Call start
   call start
@@ -149,10 +135,8 @@ entry:
 
 platform_exit:
   ;; Write an exit string
-  push str_exit
-  push 1
-  call platform_log
-  add esp, 8
+  mov esi, str_exit
+  call log
 
   mov eax, 0
   jmp loop_forever
@@ -160,10 +144,8 @@ platform_exit:
 
 platform_panic:
   ;; Write an exit string
-  push str_panic
-  push 1
-  call platform_log
-  add esp, 8
+  mov esi, str_panic
+  call log
 
   mov eax, 1
   jmp loop_forever
@@ -171,39 +153,30 @@ platform_panic:
 
 platform_write_char:
   ;; Switch depending on the requested file descriptor
-  mov eax, [esp+4]
-  cmp eax, 1
-  je platform_write_char_stdout
-  cmp eax, 2
-  je platform_write_char_stdout
-  ret
+  mov cl, [esp+8]
+
+  ;; Input character in CL
+  ;; Destroys: EAX, EDX
+write:
+  jmp write_console
+
+
+  ;; Input string in ESI
+  ;; Destroys: EAX, ECX, EDX, ESI
+log:
+  mov cl, [esi]
+  test cl, cl
+  jz ret_simple
+  call write
+  inc esi
+  jmp log
 
 
 platform_log:
-  ;; Use ebx for the fd and esi for the string
-  mov eax, [esp+4]
-  mov edx, [esp+8]
-  push ebx
   push esi
-  mov ebx, eax
-  mov esi, edx
-
-  ;; Loop over the string and call platform_write_char
-platform_log_loop:
-  mov ecx, 0
-  mov cl, [esi]
-  cmp cl, 0
-  je platform_log_loop_ret
-  push ecx
-  push ebx
-  call platform_write_char
-  add esp, 8
-  add esi, 1
-  jmp platform_log_loop
-
-platform_log_loop_ret:
+  mov esi, [esp+12]
+  call log
   pop esi
-  pop ebx
   ret
 
 

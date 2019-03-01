@@ -25,31 +25,22 @@ term_row:
 term_col:
   resd 1
 
-  ;; void term_setup()
-term_setup:
-  ;; Compute the size of the VGA framebuffer
-  mov eax, TERM_ROW_NUM
-  mov edx, TERM_COL_NUM
-  mul edx
-
   ;; Fill the VGA framebuffer with spaces char, with color light grey
   ;; 	on black
-  mov ecx, TERM_BASE_ADDR
-term_setup_loop:
-  cmp eax, 0
-  je term_setup_after_loop
-  mov BYTE [ecx], SPACE
-  mov BYTE [ecx+1], 0x07
-  add ecx, 2
-  sub eax, 1
-  jmp term_setup_loop
+  ;; Destroys: EAX
+term_setup:
+  xor eax, eax
 
-term_setup_after_loop:
+term_setup_loop:
+  mov BYTE [2*eax+TERM_BASE_ADDR], ' '
+  mov BYTE [2*eax+TERM_BASE_ADDR+1], 0x07
+  inc eax
+  cmp eax, TERM_ROW_NUM * TERM_COL_NUM
+  jne term_setup_loop
+
   ;; Set the cursor position
-  mov eax, term_row
-  mov DWORD [eax], 0
-  mov eax, term_col
-  mov DWORD [eax], 0
+  mov DWORD [term_row], 0
+  mov DWORD [term_col], 0
 
   ret
 
@@ -73,98 +64,60 @@ term_set_char:
 
 
   ;; void term_shift()
+  ;; Destroys: EAX, EDX
 term_shift:
-  push ebx
+  xor eax, eax
 
-  ;; Compute the size of an entire row (stored in ecx)
-  mov eax, TERM_COL_NUM
-  mov edx, 2
-  mul edx
-  mov ecx, eax
-
-  ;; Compute the size of all rows (stored in eax)
-  mov edx, TERM_ROW_NUM
-  mul edx
-
-  ;; Store begin (ecx) and end (eax) of the buffer to copy, and the
-  ;; pointer to which to copy (edx)
-  add ecx, TERM_BASE_ADDR
-  add eax, TERM_BASE_ADDR
-  mov edx, TERM_BASE_ADDR
-
-  ;; Copy loop
 term_shift_loop:
-  cmp ecx, eax
-  je term_shift_after_loop
-  mov bl, [ecx]
-  mov [edx], bl
-  add ecx, 1
-  add edx, 1
-  jmp term_shift_loop
-
-term_shift_after_loop:
-  mov ecx, edx
-  mov eax, TERM_COL_NUM
+  mov dl, [2*eax+TERM_BASE_ADDR+2*TERM_COL_NUM]
+  mov [2*eax+TERM_BASE_ADDR], dl
+  mov dl, [2*eax+TERM_BASE_ADDR+2*TERM_COL_NUM+1]
+  mov [2*eax+TERM_BASE_ADDR+1], dl
+  inc eax
+  cmp eax, (TERM_ROW_NUM-1) * TERM_COL_NUM
+  jne term_shift_loop
 
   ;; Clear last line
 term_shift_loop2:
-  cmp eax, 0
-  je term_shift_ret
-  mov BYTE [ecx], SPACE
-  mov BYTE [ecx+1], 0x07
-  sub eax, 1
-  add ecx, 2
-  jmp term_shift_loop2
+  mov BYTE [2*eax+TERM_BASE_ADDR], ' '
+  mov BYTE [2*eax+TERM_BASE_ADDR+1], 0x07
+  inc eax
+  cmp eax, TERM_ROW_NUM * TERM_COL_NUM
+  jne term_shift_loop2
 
 term_shift_ret:
-  pop ebx
   ret
 
 
   ;; void term_put_char(int char)
+  ;; Input char in CL
+  ;; Destroys: EAX, EDX
 term_put_char:
   ;; If the character is a newline, jump to the newline code
-  mov ecx, [esp+4]
   cmp cl, NEWLINE
   je term_put_char_newline
 
-  ;; Call term_set_char with the current position
-  push ecx
-  mov edx, term_col
-  mov eax, [edx]
-  push eax
-  mov edx, term_row
-  mov eax, [edx]
-  push eax
-  call term_set_char
-  add esp, 12
+  ;; Set character
+  mov eax, [term_row]
+  mov edx, TERM_COL_NUM
+  mul edx
+  add eax, [term_col]
+  mov [2*eax+TERM_BASE_ADDR], cl
 
-  ;; Advance of one character
-  mov edx, term_col
-  mov eax, [edx]
-  add eax, 1
-  mov [edx], eax
-
-  ;; Check for column overflow
-  cmp eax, TERM_COL_NUM
+  ;; Advance of one character and check for column overflow
+  inc DWORD [term_col]
+  cmp DWORD [term_col], TERM_COL_NUM
   jne term_put_char_finish
 
-  ;; Move to the beginning of next row
+  ;; Move to the beginning of next row and check for row overflow
 term_put_char_newline:
-  mov edx, term_col
-  mov DWORD [edx], 0
-  mov edx, term_row
-  mov eax, [edx]
-  add eax, 1
-  mov [edx], eax
-
-  ;; Check for row overflow
-  cmp eax, TERM_ROW_NUM
+  mov DWORD [term_col], 0
+  inc DWORD [term_row]
+  cmp DWORD [term_row], TERM_ROW_NUM
   jne term_put_char_finish
 
   ;; Reset the row position and shift all lines
-  sub eax, 1
-  mov [edx], eax
+  dec DWORD [term_row]
   call term_shift
 
 term_put_char_finish:
@@ -214,33 +167,27 @@ serial_setup:
 	ret
 
 
-	;; void serial_write_char(char c)
+  ;; void serial_write_char(char c)
+  ;; Input char in CL
+  ;; Destroys: EAX, EDX
 serial_write_char:
-	;; Test until the serial is available for transmit
-	mov edx, SERIAL_PORT
-	add edx, 5
-	in al, dx
-        and eax, 0x20
-	cmp eax, 0
-	je serial_write_char
+  ;; Test until the serial is available for transmit
+  in al, SERIAL_PORT + 5
+  and eax, 0x20
+  je serial_write_char
 
-	;; Actually write the char
-	mov edx, SERIAL_PORT
-        mov eax, [esp+4]
-	out dx, al
+  ;; Actually write the char
+  mov al, cl
+  mov edx, SERIAL_PORT
+  out dx, al
+  ret
 
-	ret
-
-platform_write_char_stdout:
+  ;; Input char in CL
+  ;; Destroys: EAX, EDX
+write_console:
   ;; Send stdout to terminal
-  mov eax, [esp+8]
-  push eax
   call term_put_char
-  add esp, 4
-  mov eax, [esp+8]
-  push eax
   call serial_write_char
-  add esp, 4
   ret
 
 stdout_setup:

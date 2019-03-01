@@ -1654,21 +1654,18 @@ parse_ret:
   global init_g_compiler
 init_g_compiler:
   ;; Allocate stack variables list
-  push STACK_VARS_SIZE
-  call platform_allocate
-  add esp, 4
+  mov eax, STACK_VARS_SIZE
+  call allocate
   mov [stack_vars_ptr], eax
 
   ;; Allocate the token buffer
-  push MAX_SYMBOL_NAME_LEN
-  call platform_allocate
-  add esp, 4
+  mov eax, MAX_SYMBOL_NAME_LEN
+  call allocate
   mov [token_buf_ptr], eax
 
   ;; Allocate buf2
-  push MAX_SYMBOL_NAME_LEN
-  call platform_allocate
-  add esp, 4
+  mov eax, MAX_SYMBOL_NAME_LEN
+  call allocate
   mov [buf2_ptr], eax
 
   ;; Set token_given_back to false

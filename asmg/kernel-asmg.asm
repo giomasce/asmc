@@ -46,10 +46,8 @@ str_entry:
   ;; void platform_g_compile(char *filename)
 platform_g_compile:
   ;; Prepare to write in memory
-  mov eax, write_mem_ptr
-  mov ecx, heap_ptr
-  mov edx, [ecx]
-  mov [eax], edx
+  mov edx, [heap_ptr]
+  mov [write_mem_ptr], edx
 
   ;; Load the parameter and save some registers
   mov eax, [esp+4]
@@ -72,13 +70,9 @@ platform_g_compile:
 
   ;; Actually allocate used heap memory, so that new allocations will
   ;; not overwrite it
-  mov eax, write_mem_ptr
-  mov ecx, heap_ptr
-  mov edx, [eax]
-  sub edx, [ecx]
-  push edx
-  call platform_allocate
-  add esp, 4
+  mov eax, [write_mem_ptr]
+  sub eax, [heap_ptr]
+  call allocate
 
   ;; Assert that the allocation gave us what we expected
   pop edx
@@ -197,10 +191,8 @@ start:
   add esp, 12
 
   ;; Log
-  push str_init_compile_entry
-  push 1
-  call platform_log
-  add esp, 8
+  mov esi, str_init_compile_entry
+  call log
 
   ;; Compile entry.g
   push str_entry_g
@@ -208,10 +200,8 @@ start:
   add esp, 4
 
   ;; Log
-  push str_init_launch_entry
-  push 1
-  call platform_log
-  add esp, 8
+  mov esi, str_init_launch_entry
+  call log
 
   ;; Set EBP to zero, so that stack traces originating from the G code
   ;; are cut

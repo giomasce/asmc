@@ -102,6 +102,7 @@ fun write 1 {
   $c
   @c 0 param = ;
 
+  #c 1 platform_write_char ;
   c term_write ;
   c serial_write ;
 }
@@ -110,9 +111,10 @@ fun log 1 {
   $s
   @s 0 param = ;
 
+  #s 1 platform_log ;
   while s **c '\0' != {
-    s **c write ;
-    @s s 1 + = ;
+   s **c write ;
+   @s s 1 + = ;
   }
 }
 

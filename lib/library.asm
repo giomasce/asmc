@@ -341,23 +341,17 @@ memcpy_end:
 init_symbols:
   ;; Allocate symbol names table
   mov eax, SYMBOL_TABLE_LEN * MAX_SYMBOL_NAME_LEN
-  push eax
-  call platform_allocate
-  add esp, 4
+  call allocate
   mov [symbol_names_ptr], eax
 
   ;; Allocate symbol locations table
   mov eax, 4 * SYMBOL_TABLE_LEN
-  push eax
-  call platform_allocate
-  add esp, 4
+  call allocate
   mov [symbol_locs_ptr], eax
 
   ;; Allocate symbol arities table
   mov eax, 4 * SYMBOL_TABLE_LEN
-  push eax
-  call platform_allocate
-  add esp, 4
+  call allocate
   mov [symbol_arities_ptr], eax
 
   ;; Reset symbol_num
@@ -523,18 +517,12 @@ add_symbol:
 
 add_symbol_already_defined:
   ;; Log
-  push str_symbol_already_defined
-  push 1
-  call platform_log
-  add esp, 8
-  push DWORD [ebp+8]
-  push 1
-  call platform_log
-  add esp, 8
-  push str_newline
-  push 1
-  call platform_log
-  add esp, 8
+  mov esi, str_symbol_already_defined
+  call log
+  mov esi, [ebp+8]
+  call log
+  mov esi, str_newline
+  call log
 
   ;; Then panic
   call platform_panic
