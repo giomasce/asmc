@@ -172,31 +172,10 @@ platform_panic:
 platform_write_char:
   ;; Switch depending on the requested file descriptor
   mov eax, [esp+4]
-  cmp eax, 0
-  je platform_write_char_mem
   cmp eax, 1
   je platform_write_char_stdout
   cmp eax, 2
   je platform_write_char_stdout
-  ret
-
-platform_write_char_mem:
-  ;; Write to memory and update pointer
-  mov eax, [esp+8]
-  mov ecx, write_mem_ptr
-  mov edx, [ecx]
-  mov [edx], al
-  add edx, 1
-  mov [ecx], edx
-
-  ;; Log (for debug)
-  ;; push edx
-  ;; call debug_log_itoa
-  ;; add esp, 4
-  ;; push str_newline
-  ;; call debug_log
-  ;; add esp, 4
-
   ret
 
 

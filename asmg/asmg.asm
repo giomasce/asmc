@@ -1795,10 +1795,7 @@ init_g_compiler:
 
   global compile
 compile:
-  ;; Set emit_fd and read_fd
-  mov eax, emit_fd
-  mov ecx, [esp+8]
-  mov [eax], ecx
+  ;; Set read_fd
   mov eax, read_fd
   mov ecx, [esp+4]
   mov [eax], ecx

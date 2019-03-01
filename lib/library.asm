@@ -75,9 +75,6 @@ current_loc:
 stage:
   resd 1
 
-emit_fd:
-  resd 1
-
   section .data
 
 str_symbol_already_defined:
@@ -140,55 +137,41 @@ itoa_end:
   ret
 
 
-  global emit
 emit:
-  ;; Add 1 to the current location
-  mov edx, current_loc
-  add DWORD [edx], 1
-
-  ;; If we are in stage 1, write the character
-  mov edx, stage
-  cmp DWORD [edx], 1
-  jne emit_ret
-  mov ecx, 0
   mov cl, [esp+4]
-  mov edx, emit_fd
-  push ecx
-  push DWORD [edx]
-  call platform_write_char
-  add esp, 8
 
-emit_ret:
+  ;; Emit character in CL
+  ;; Destroys: EDX
+emit2:
+  ;; If we are in stage 1, write the character
+  cmp DWORD [stage], 1
+  jne emit_end
+  mov edx, [write_mem_ptr]
+  inc DWORD [write_mem_ptr]
+  mov [edx], cl
+
+emit_end:
+  ;; Increment current location
+  inc DWORD [current_loc]
+
   ret
 
 
-  global emit32
 emit32:
-  ;; Emit each byte in order
-  mov eax, 0
-  mov al, [esp+4]
-  push eax
-  call emit
-  add esp, 4
+  mov ecx, [esp+4]
 
-  mov eax, 0
-  mov al, [esp+5]
-  push eax
-  call emit
-  add esp, 4
-
-  mov eax, 0
-  mov al, [esp+6]
-  push eax
-  call emit
-  add esp, 4
-
-  mov eax, 0
-  mov al, [esp+7]
-  push eax
-  call emit
-  add esp, 4
-
+  ;; Emit dword in ECX
+  ;; Destroys: ECX, EDX
+emit322:
+  call emit2
+  shr ecx, 8
+emit24:
+  call emit2
+  shr ecx, 8
+emit16:
+  call emit2
+  shr ecx, 8
+  call emit2
   ret
 
 
@@ -872,7 +855,7 @@ find_char_ret_error:
   ;; Common return cases
 ret_zero:
   xor eax, eax
-ret_eax:
+ret_simple:
   ret
 
 ret_one:
