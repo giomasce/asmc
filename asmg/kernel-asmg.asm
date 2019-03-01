@@ -52,36 +52,20 @@ g_compile:
   mov edx, [heap_ptr]
   mov [initial_loc], edx
 
-  ;; Save initial address for future use
-  push edx
-  push edx
-
   ;; Open the file
   mov ecx, eax
   call walk_initrd
   mov [read_ptr_begin], eax
   mov [read_ptr_end], edx
 
-  pop edx
-
   ;; Assemble the file
-  push 0
-  push edx
-  push 0
-  push eax
   call compile
-  add esp, 16
 
   ;; Actually allocate used heap memory, so that new allocations will
   ;; not overwrite it
   mov eax, [current_loc]
   sub eax, [heap_ptr]
   call allocate
-
-  ;; Assert that the allocation gave us what we expected
-  pop edx
-  cmp edx, eax
-  jne platform_panic
 
   ;; Discard temporary labels
   call discard_temp_labels
