@@ -623,7 +623,7 @@ fun m1_assemble 2 {
 fun m1_test 0 {
   $files
   @files 4 vector_init = ;
-  files "/init/test.m1" strdup vector_push_back ;
+  files "/disk1/test/test.m1" strdup vector_push_back ;
   files "/ram/assembled" m1_assemble ;
   files free_vect_of_ptrs ;
 }

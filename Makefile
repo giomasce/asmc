@@ -46,7 +46,7 @@ build/diskfs.img: build/diskfs.list
 build/full-asmg.asm: lib/mb_header.asm lib/kernel.asm lib/no_io.asm lib/shutdown.asm lib/initrd.asm lib/library.asm lib/setjmp.asm lib/pmc.asm asmg/asmg.asm asmg/kernel-asmg.asm lib/top.asm
 	cat $^ | grep -v "^ *section " > $@
 
-build/initrd-asmg.list: asmg/*.g test/test.hex2 test/test.m1 test/test_mes.c test/test.asm
+build/initrd-asmg.list: asmg/*.g
 	ls $^ | sed -e 's|\(.*\)/\([^/]*\)|\2 \1/\2|g' > $@
 
 build/initrd-asmg.diskfs: build/initrd-asmg.list

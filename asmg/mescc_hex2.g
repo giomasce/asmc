@@ -326,7 +326,7 @@ fun hex2_link 1 {
 fun hex2_test 0 {
   $files
   @files 4 vector_init = ;
-  files "/init/test.hex2" strdup vector_push_back ;
+  files "/disk1/test/test.hex2" strdup vector_push_back ;
   files hex2_link free ;
   files free_vect_of_ptrs ;
 }

@@ -264,7 +264,7 @@ fun main 0 {
   }
 
   if RUN_ASM {
-    "/init/test.asm" 0 "parse_asm" platform_get_symbol \1 ;
+    "/disk1/test/test.asm" 0 "parse_asm" platform_get_symbol \1 ;
   }
 
   if RUN_FASM {
