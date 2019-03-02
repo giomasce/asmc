@@ -127,7 +127,7 @@ emit16:
   ;; Input in EAX
   ;; Destroys: ECX
   ;; Return: EAX (valid), EDX (number value)
-decode_number2:
+decode_number:
   ;; Empty string: return false
   cmp BYTE [eax], 0
   je ret_zero
@@ -137,7 +137,7 @@ decode_number2:
 
   ;; Check hex string
   cmp WORD [eax], '0x'
-  jne decode_number2_dec
+  jne decode_number_dec
 
   ;; Check bad hex string
   add eax, 2
@@ -145,7 +145,7 @@ decode_number2:
   test cl, cl
   jz ret_zero
 
-decode_number2_hex:
+decode_number_hex:
   ;; Check for terminator
   xor ecx, ecx
   mov cl, [eax]
@@ -155,20 +155,20 @@ decode_number2_hex:
   ;; Check digit is valid
   sub cl, ZERO
   cmp cl, 10
-  jb decode_number2_hex_valid
+  jb decode_number_hex_valid
   sub cl, LITTLEA - ZERO
   cmp cl, 6
   jae ret_zero
   add cl, 10
 
-decode_number2_hex_valid:
+decode_number_hex_valid:
   ;; Update result and pointer
   shl edx, 4
   add edx, ecx
   inc eax
-  jmp decode_number2_hex
+  jmp decode_number_hex
 
-decode_number2_dec:
+decode_number_dec:
   ;; Check for terminator
   xor ecx, ecx
   mov cl, [eax]
@@ -185,15 +185,7 @@ decode_number2_dec:
   lea edx, [edx+4*edx]
   add edx, ecx
   inc eax
-  jmp decode_number2_dec
-
-
-decode_number:
-  mov eax, [esp+4]
-  call decode_number2
-  mov ecx, [esp+8]
-  mov [ecx], edx
-  ret
+  jmp decode_number_dec
 
 
   ;; int atoi(char*)
@@ -201,7 +193,7 @@ decode_number:
 atoi:
   ;; Call decode_number, adapting the parameters
   mov eax, [esp+4]
-  call decode_number2
+  call decode_number
   test eax, eax
   jz platform_panic
   mov eax, edx

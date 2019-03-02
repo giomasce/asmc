@@ -602,11 +602,9 @@ decode_number_or_char:
   mov eax, [esp+4]
   cmp BYTE [eax], APEX
   je decode_number_or_char_char
-  mov ecx, [esp+8]
-  push ecx
-  push eax
   call decode_number
-  add esp, 8
+  mov ecx, [esp+8]
+  mov [ecx], edx
   ret
 
 decode_number_or_char_char:
