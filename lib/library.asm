@@ -124,94 +124,75 @@ emit16:
   ret
 
 
-  global decode_number
+  ;; Input in EAX
+  ;; Destroys: ECX
+  ;; Return: EAX (valid), EDX (number value)
+decode_number2:
+  ;; Empty string: return false
+  cmp BYTE [eax], 0
+  je ret_zero
+
+  ;; Setup result
+  xor edx, edx
+
+  ;; Check hex string
+  cmp WORD [eax], '0x'
+  jne decode_number2_dec
+
+  ;; Check bad hex string
+  add eax, 2
+  mov cl, [eax]
+  test cl, cl
+  jz ret_zero
+
+decode_number2_hex:
+  ;; Check for terminator
+  xor ecx, ecx
+  mov cl, [eax]
+  test cl, cl
+  jz ret_one
+
+  ;; Check digit is valid
+  sub cl, ZERO
+  cmp cl, 10
+  jb decode_number2_hex_valid
+  sub cl, LITTLEA - ZERO
+  cmp cl, 6
+  jae ret_zero
+  add cl, 10
+
+decode_number2_hex_valid:
+  ;; Update result and pointer
+  shl edx, 4
+  add edx, ecx
+  inc eax
+  jmp decode_number2_hex
+
+decode_number2_dec:
+  ;; Check for terminator
+  xor ecx, ecx
+  mov cl, [eax]
+  test cl, cl
+  jz ret_one
+
+  ;; Check digit is valid
+  sub cl, ZERO
+  cmp cl, 10
+  jae ret_zero
+
+  ;; Update result and pointer
+  shl edx, 1
+  lea edx, [edx+4*edx]
+  add edx, ecx
+  inc eax
+  jmp decode_number2_dec
+
+
 decode_number:
-  push ebp
-  mov ebp, esp
-  push ebx
-  push edi
-  push esi
-
-  ;; Use eax for storing the result
-  mov eax, 0
-
-  ;; Use ebx for storing the input string
-  mov ebx, [ebp+8]
-
-  ;; Use esi to remember if we have seen at least one digit
-  mov esi, 0
-
-  ;; Determine whether we work in base 10 (edi==1) or 16 (edi==0)
-  mov edi, 1
-  cmp BYTE [ebx], ZERO
-  jne decode_number_loop
-  cmp BYTE [ebx+1], LITTLEX
-  jne decode_number_loop
-  mov edi, 0
-  add ebx, 2
-
-decode_number_loop:
-  ;; Check if we have found the terminator
-  mov cl, [ebx]
-  cmp cl, 0
-  je decode_number_ret
-
-  ;; If not, then we have seen at least one digit
-  mov esi, 1
-
-  ;; Multiply the current result by 10 or 16 depending on edi
-  cmp edi, 1
-  jne decode_number_mult16
-  mov edx, 10
-  mul edx
-  jmp decode_number_after_mult
-decode_number_mult16:
-  shl eax, 4
-
-decode_number_after_mult:
-  ;; If we have a decimal digit, add it to the number
-  cmp cl, ZERO
-  jnae decode_number_after_decimal_digit
-  cmp cl, NINE
-  jnbe decode_number_after_decimal_digit
-  mov edx, 0
-  mov dl, cl
-  add eax, edx
-  sub eax, ZERO
-  jmp decode_number_finish_loop
-
-decode_number_after_decimal_digit:
-  ;; If we have an hexadecimal digit and we are in hexadecimal mode,
-  ;; add it to the number
-  cmp edi, 0
-  jne decode_number_after_hex_digit
-  cmp cl, LITTLEA
-  jnae decode_number_after_hex_digit
-  cmp cl, LITTLEF
-  jnbe decode_number_after_hex_digit
-  mov edx, 0
-  mov dl, cl
-  add eax, edx
-  add eax, 10
-  sub eax, LITTLEA
-  jmp decode_number_finish_loop
-
-decode_number_after_hex_digit:
-  mov esi, 0
-  jmp decode_number_ret
-
-decode_number_finish_loop:
-  add ebx, 1
-  jmp decode_number_loop
-
-decode_number_ret:
-  mov edx, [ebp+12]
-  mov [edx], eax
-  mov eax, esi
-  pop esi
-  pop edi
-  pop ebx
-  pop ebp
+  mov eax, [esp+4]
+  call decode_number2
+  mov ecx, [esp+8]
+  mov [ecx], edx
   ret
 
 
@@ -219,16 +200,11 @@ decode_number_ret:
   global atoi
 atoi:
   ;; Call decode_number, adapting the parameters
-  mov ecx, [esp+4]
-  push 0
-  mov edx, esp
-  push edx
-  push ecx
-  call decode_number
-  add esp, 8
-  cmp eax, 0
-  pop eax
-  je platform_panic
+  mov eax, [esp+4]
+  call decode_number2
+  test eax, eax
+  jz platform_panic
+  mov eax, edx
   ret
 
 
