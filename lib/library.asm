@@ -188,11 +188,10 @@ decode_number_dec:
   jmp decode_number_dec
 
 
-  ;; int atoi(char*)
-  global atoi
+  ;; Input in EAX
+  ;; Destroys: ECX, EDX
+  ;; Returns: EAX
 atoi:
-  ;; Call decode_number, adapting the parameters
-  mov eax, [esp+4]
   call decode_number
   test eax, eax
   jz platform_panic

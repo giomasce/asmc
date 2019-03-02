@@ -1542,9 +1542,7 @@ parse_fun:
 
   ;; Get another token and convert it to an integer
   call get_token
-  push eax
   call atoi
-  add esp, 4
 
   ;; Add a symbol for the function
   push eax
@@ -1579,9 +1577,7 @@ parse_ifun:
 
   ;; Get another token and convert it to an integer
   call get_token
-  push eax
   call atoi
-  add esp, 4
 
   ;; Add a symbol placeholder for the function
   push eax
