@@ -28,6 +28,11 @@ const char *sources[][2] = {
     {SC_PREFIX "/sch3.c", SC_TEMP "/sch3.o"},
 };
 
+char *sch3_argv[] = {
+    "sch3",
+    "/disk1/sch3.scm",
+};
+
 int main(int argc, char *argv[]) {
     printf("Here is where we compile single_cream!\n");
 
@@ -78,14 +83,14 @@ int main(int argc, char *argv[]) {
         printf("tcc_relocate() failed...\n");
         return 1;
     }
-    int (*start)() = tcc_get_symbol(state, "_start");
+    int (*start)(int, char *[]) = tcc_get_symbol(state, "_start");
     if (!start) {
         printf("tcc_get_symbol() failed...\n");
         return 1;
     }
 
     printf("Jumping into single_cream!\n");
-    res = start();
+    res = start(sizeof(sch3_argv)/sizeof(sch3_argv[0]), sch3_argv);
     printf("single_cream returned %d!\n", res);
     tcc_delete(state);
 

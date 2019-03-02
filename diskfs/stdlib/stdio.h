@@ -11,7 +11,9 @@
 #define EOF (-1)
 
 int fputc(int c, FILE *s) {
-    if (s->fd == 1 || s->fd == 2) {
+    if (s->fd == 0) {
+        return EOF;
+    } else if (s->fd == 1 || s->fd == 2) {
         __handles->write(c);
     } else {
         __handles->vfs_write(c, s->fd);

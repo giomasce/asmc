@@ -23,6 +23,8 @@ struct __handles_t {
 
 struct __handles_t *__handles;
 
+FILE __stdin = {0, 0, 0};
+FILE *stdin;
 FILE __stdout = {1, 0, 0};
 FILE *stdout;
 FILE __stderr = {2, 0, 0};
@@ -47,6 +49,7 @@ void __init_stdlib() {
   __handles = &__builtin_handles;
 #endif
   __aborted = 0;
+  stdin = &__stdin;
   stdout = &__stdout;
   stderr = &__stderr;
 }

@@ -20,6 +20,9 @@ int isatty(int fildes) {
 }
 
 ssize_t read(int fildes, void *buf, size_t nbyte) {
+    if (fildes == 0 || fildes == 1 || fildes == 2) {
+        return 0;
+    }
     if (nbyte == 0) {
         return 0;
     }

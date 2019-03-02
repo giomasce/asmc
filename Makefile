@@ -36,7 +36,10 @@ diskfs/fasm/fasm.asm: contrib/fasm/source/version.inc contrib/fasm/source/errors
 	mkdir -p diskfs/fasm
 	cat $^ > $@
 
-build/diskfs.list: diskfs/* diskfs/mescc/x86_defs.m1 diskfs/fasm/fasm.asm
+diskfs/sch3.scm: diskfs/sc/src/init.scm diskfs/sc/src/preprocessor.scm diskfs/sc/src/std.scm diskfs/sc/t/scheme-tests/minikanren.scm
+	cat $^ > $@
+
+build/diskfs.list: diskfs/* diskfs/mescc/x86_defs.m1 diskfs/fasm/fasm.asm diskfs/sch3.scm
 	(cd diskfs/ ; find -L . -type f) | cut -c3- | sed -e 's|\(.*\)|\1 diskfs/\1|' > $@
 
 build/diskfs.img: build/diskfs.list
