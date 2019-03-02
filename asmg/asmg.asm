@@ -155,23 +155,6 @@ get_symbol_find:
   ret
 
 
-is_whitespace:
-  ;; Return true only if the argument is a tab, a space or a newline
-  mov ecx, [esp+4]
-  cmp cl, SPACE
-  je is_whitespace_ret_true
-  cmp cl, TAB
-  je is_whitespace_ret_true
-  cmp cl, NEWLINE
-  je is_whitespace_ret_true
-  mov eax, 0
-  ret
-
-is_whitespace_ret_true:
-  mov eax, 1
-  ret
-
-
 push_var:
   ;; Check the var name length
   mov eax, [esp+4]
@@ -304,196 +287,141 @@ find_in_stack_end:
   ret
 
 
-get_token:
-  ;; If last token was given back, just return it
-  mov eax, token_given_back
-  cmp DWORD [eax], 0
-  je get_token_read
-  mov DWORD [eax], 0
-  mov eax, token_buf_ptr
-  mov eax, [eax]
-  ret
-
-get_token_read:
-  push ebx
-
-  ;; Reset length and state
-  mov eax, token_len
-  mov DWORD [eax], 0
-  mov ecx, 0
-
-get_token_loop:
-  ;; Read a character
+  ;; Returns: EAX (either char in AL or -1 in EAX)
+get_char:
   mov eax, [read_ptr]
   cmp eax, [read_ptr_end]
-  je get_token_end
+  je get_char_end
   mov al, [eax]
+
+  ;; pusha
+  ;; mov cl, al
+  ;; call write
+  ;; popa
+
   inc DWORD [read_ptr]
-
-  ;; Call is_whitespace
-  push ecx
-  push eax
-  push eax
-  call is_whitespace
-  add esp, 4
-
-  ;; Store is_whitespace in eax, save_char in dh, read char in dl and
-  ;; state in ecx
-  pop edx
-  mov dh, 0
-  pop ecx
-
-  ;; Branch depending on the state
-  cmp ecx, 0
-  je get_token_state0
-  cmp ecx, 1
-  je get_token_state1
-  cmp ecx, 2
-  je get_token_state2
-  cmp ecx, 3
-  je get_token_state3
-  cmp ecx, 4
-  je get_token_state4
-  cmp ecx, 5
-  je get_token_state5
-  call platform_panic
-
-  ;; Normal program code
-get_token_state0:
-  cmp eax, 0
-  jne get_token_state0_whitespace
-  cmp dl, POUND
-  je get_token_state0_pound
-  mov dh, 1
-  cmp dl, QUOTE
-  je get_token_state0_quote
-  cmp dl, APEX
-  je get_token_state0_apex
-  jmp get_token_loop_end
-
-get_token_state0_whitespace:
-  mov eax, token_len
-  cmp DWORD [eax], 0
-  ja get_token_end
-  jmp get_token_loop_end
-
-get_token_state0_pound:
-  mov ecx, 1
-  jmp get_token_loop_end
-
-get_token_state0_quote:
-  mov ecx, 2
-  jmp get_token_loop_end
-
-get_token_state0_apex:
-  mov ecx, 4
-  jmp get_token_loop_end
-
-  ;; Comments
-get_token_state1:
-  cmp dl, NEWLINE
-  jne get_token_loop_end
-  mov ecx, 0
-  mov eax, token_len
-  cmp DWORD [eax], 0
-  ja get_token_end
-  jmp get_token_loop_end
-
-  ;; String
-get_token_state2:
-  mov dh, 1
-  cmp dl, QUOTE
-  je get_token_state2_quote
-  cmp dl, BACKSLASH
-  je get_token_state2_backslash
-  jmp get_token_loop_end
-
-get_token_state2_quote:
-  mov ecx, 0
-  jmp get_token_loop_end
-
-get_token_state2_backslash:
-  mov ecx, 3
-  jmp get_token_loop_end
-
-  ;; Escape character in a string
-get_token_state3:
-  mov ecx, 2
-  mov dh, 1
-  jmp get_token_loop_end
-
-  ;; Character
-get_token_state4:
-  mov dh, 1
-  cmp dl, APEX
-  je get_token_state4_quote
-  cmp dl, BACKSLASH
-  je get_token_state4_backslash
-  jmp get_token_loop_end
-
-get_token_state4_quote:
-  mov ecx, 0
-  jmp get_token_loop_end
-
-get_token_state4_backslash:
-  mov ecx, 5
-  jmp get_token_loop_end
-
-  ;; Escape character in a character
-get_token_state5:
-  mov ecx, 4
-  mov dh, 1
-  jmp get_token_loop_end
-
-get_token_loop_end:
-  ;; If save_char is true, save the char and increment length
-  cmp dh, 0
-  je get_token_loop
-  mov ebx, token_len
-  mov ebx, [ebx]
-  mov eax, token_buf_ptr
-  mov eax, [eax]
-  add eax, ebx
-  mov [eax], dl
-  add ebx, 1
-  mov eax, token_len
-  mov [eax], ebx
-
-  jmp get_token_loop
-
-get_token_end:
-  ;; Write the terminator and return
-  mov eax, token_buf_ptr
-  mov eax, [eax]
-  mov ecx, token_len
-  mov ecx, [ecx]
-  add ecx, eax
-  mov BYTE [ecx], 0
-
-  ;; ;; Log token
-  ;; push eax
-  ;; push eax
-  ;; push 1
-  ;; call platform_log
-  ;; add esp, 8
-  ;; push 32
-  ;; push 1
-  ;; call platform_write_char
-  ;; add esp, 8
-  ;; pop eax
-
-  pop ebx
   ret
 
+get_char_end:
+  mov eax, 0xffffffff
+  ret
+
+
+  ;; Input in AL
+  ;; Returns: DL
+is_whitespace:
+  mov dl, 1
+  cmp al, SPACE
+  je ret_simple
+  cmp al, TAB
+  je ret_simple
+  cmp al, NEWLINE
+  je ret_simple
+  mov dl, 0
+  ret
+
+
+  ;; Destroys: ECX, EDX
+  ;; Returns: EAX (token, which is empty at EOF)
+get_token:
+  ;; If the token was given back, just return it
+  cmp DWORD [token_given_back], 0
+  je get_token_not_gb
+  mov DWORD [token_given_back], 0
+  jmp get_token_ret
+
+get_token_not_gb:
+  ;; Use ECX for the buffer pointer
+  mov ecx, [token_buf_ptr]
+
+get_token_skip:
+  ;; Get a char and check EOF
+  call get_char
+  cmp eax, 0xffffffff
+  je get_token_ret
+
+  ;; Skip whitespace
+  call is_whitespace
+  cmp dl, 0
+  jne get_token_skip
+
+  ;; Skip comments
+  cmp al, POUND
+  jne get_token_skipped
+get_token_skip_comment:
+  call get_char
+  cmp eax, 0xffffffff
+  je get_token_ret
+  cmp al, NEWLINE
+  je get_token_skip
+  jmp get_token_skip_comment
+
+get_token_skipped:
+  ;; Now we have a real token; let us see what is the type
+  mov dl, 0
+  cmp al, QUOTE
+  je get_token_string
+  cmp al, APEX
+  je get_token_string
+
+  ;; Plain token, just put in chars until whitespace
+get_token_plain:
+  mov [ecx], al
+  inc ecx
+  call get_char
+  cmp eax, 0xffffffff
+  je get_token_ret
+  call is_whitespace
+  cmp dl, 0
+  je get_token_plain
+  jmp get_token_ret
+
+  ;; String token (DL stores whether current char is escaped)
+get_token_string:
+  mov [ecx], al
+  inc ecx
+  call get_char
+  cmp eax, 0xffffffff
+  je platform_panic
+
+  ;; If escaped, restart loop immediately
+  cmp dl, 0
+  mov dl, 0
+  jne get_token_string
+
+  ;; Last char was not a backslash and we have quote or apex: finish
+  cmp al, QUOTE
+  je get_token_string_end
+  cmp al, APEX
+  je get_token_string_end
+  cmp al, BACKSLASH
+  jne get_token_string
+  mov dl, 1
+  jmp get_token_string
+
+get_token_string_end:
+  ;; Put the closing apex or quote and return
+  mov [ecx], al
+  inc ecx
+  jmp get_token_ret
+
+get_token_ret:
+  ;; Put the terminator and return the buffer's address
+  mov BYTE [ecx], 0
+  mov eax, [token_buf_ptr]
+  ret
+
+str_token:
+  db 'token: '
+  db 0
 
 give_back_token:
   ;; Check another token was not already given back
-  mov eax, token_given_back
-  cmp DWORD [eax], 0
+  cmp DWORD [token_given_back], 0
   jne platform_panic
 
   ;; Mark the current one as given back
-  mov DWORD [eax], 1
+  mov DWORD [token_given_back], 1
   ret
 
 

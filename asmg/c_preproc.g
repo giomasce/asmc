@@ -331,7 +331,7 @@ fun get_token 0 {
         if c '\\' == {
           @state 5 = ;
         }
-        if c '"' == {
+        if c '\"' == {
           @state 0 = ;
           @cont 0 = ;
         }
@@ -362,7 +362,7 @@ fun get_token 0 {
         if token_len 0 == {
           @token_len 1 = ;
           @token_type type = ;
-          if c '"' == {
+          if c '\"' == {
             @state 4 = ;
             @token_type 0 = ;
           }
@@ -1044,7 +1044,7 @@ fun preproc_process_include 4 {
       @tok intoks iptr ** vector_at = ;
     }
   } else {
-    tok **c '"' == "preproc_process_include: syntax error in inclusion directive" assert_msg ;
+    tok **c '\"' == "preproc_process_include: syntax error in inclusion directive" assert_msg ;
     filename free ;
     @filename tok 1 + strdup = ;
     filename filename strlen 1 - + '\0' =c ;
