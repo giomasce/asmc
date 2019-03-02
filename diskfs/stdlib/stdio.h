@@ -38,7 +38,12 @@ int fputs(const char *s, FILE *stream) {
 }
 
 int puts(const char *s) {
-  return fputs(s, stdout);
+    if (fputs(s, stdout) != EOF) {
+        if (fputc('\n', stdout) != EOF) {
+            return 0;
+        }
+    }
+    return EOF;
 }
 
 int getc(FILE *stream) {
