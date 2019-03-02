@@ -97,7 +97,7 @@ compile_char:
 	;; Invalid code, failing...
 failure:
 	mov eax, 0xffffffff
-	jmp loop_forever
+	jmp shutdown
 
 compile_loop:
 	add esi, 1
@@ -146,7 +146,7 @@ code_s:
 	;; Call the compiled code
 	call ecx
 	;; call dump_code_and_die
-	jmp loop_forever
+	jmp shutdown
 
 	;; Emit push
 code_P:

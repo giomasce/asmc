@@ -66,7 +66,7 @@ dump_code_and_die_end:
 	call serial_write_char
 	add esp, 4
 	mov eax, 0
-	jmp loop_forever
+	jmp shutdown
 
 
   SERIAL_PORT equ 0x3f8

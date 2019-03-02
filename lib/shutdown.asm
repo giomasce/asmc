@@ -22,7 +22,7 @@ qemu_shutdown:
   out dx, al
   ret
 
-loop_forever:
+shutdown:
   call qemu_shutdown
   hlt
-  jmp loop_forever
+  jmp shutdown

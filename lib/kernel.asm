@@ -128,15 +128,11 @@ entry:
   ;; Call start
   call start
 
-  call platform_exit
-
-platform_exit:
-  ;; Write an exit string
   mov esi, str_exit
   call log
 
   mov eax, 0
-  jmp loop_forever
+  jmp shutdown
 
 
 platform_panic:
@@ -145,7 +141,7 @@ platform_panic:
   call log
 
   mov eax, 1
-  jmp loop_forever
+  jmp shutdown
 
 
   ;; Input character in CL
@@ -193,9 +189,6 @@ allocate:
 str_platform_panic:
   db 'platform_panic'
   db 0
-str_platform_exit:
-  db 'platform_exit'
-  db 0
 str_platform_log:
   db 'platform_log'
   db 0
@@ -211,12 +204,6 @@ init_kernel_api:
   push 0
   push platform_panic
   push str_platform_panic
-  call add_symbol
-  add esp, 12
-
-  push 0
-  push platform_exit
-  push str_platform_exit
   call add_symbol
   add esp, 12
 
