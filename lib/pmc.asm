@@ -29,10 +29,8 @@ query_pmc:
   mov DWORD [edx], 1
 
   ;; Log
-  push str_pmc_avail
-  push 1
-  call platform_log
-  add esp, 8
+  mov esi, str_pmc_avail
+  call log
 
   ret
 
@@ -40,10 +38,8 @@ query_pmc_ret_false:
   mov DWORD [edx], 0
 
   ;; Log
-  push str_pmc_unavail
-  push 1
-  call platform_log
-  add esp, 8
+  mov esi, str_pmc_unavail
+  call log
 
   ret
 
@@ -72,7 +68,7 @@ read_ret_instr:
   cmp DWORD [edx], 0
   je read_ret_instr_ret0
 
-  ;; Read retiret instruction counter
+  ;; Read retired instruction counter
   mov ecx, 0x40000000
   rdpmc
   ret

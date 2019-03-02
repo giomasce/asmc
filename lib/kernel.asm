@@ -136,6 +136,7 @@ entry:
 
 
 platform_panic:
+panic:
   ;; Write an exit string
   mov esi, str_panic
   call log
@@ -161,14 +162,6 @@ log:
   jmp log
 
 
-platform_log:
-  push esi
-  mov esi, [esp+12]
-  call log
-  pop esi
-  ret
-
-
 platform_allocate:
   mov eax, [esp+4]
 
@@ -189,9 +182,6 @@ allocate:
 str_platform_panic:
   db 'platform_panic'
   db 0
-str_platform_log:
-  db 'platform_log'
-  db 0
 str_platform_allocate:
   db 'platform_allocate'
   db 0
@@ -204,12 +194,6 @@ init_kernel_api:
   push 0
   push platform_panic
   push str_platform_panic
-  call add_symbol
-  add esp, 12
-
-  push 2
-  push platform_log
-  push str_platform_log
   call add_symbol
   add esp, 12
 
