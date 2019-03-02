@@ -411,10 +411,6 @@ get_token_ret:
   mov eax, [token_buf_ptr]
   ret
 
-str_token:
-  db 'token: '
-  db 0
-
 give_back_token:
   ;; Check another token was not already given back
   cmp DWORD [token_given_back], 0
