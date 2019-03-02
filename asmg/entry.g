@@ -22,6 +22,16 @@ const TERM_BASE_ADDR 0xb8000
 $term_row
 $term_col
 
+# See https://wiki.osdev.org/Text_Mode_Cursor
+fun term_set_cursor 0 {
+  $pos
+  @pos term_col term_row TERM_COL_NUM * + = ;
+  0x3d4 0x0f outb ;
+  0x3d5 pos 0xff & outb ;
+  0x3d4 0x0e outb ;
+  0x3d5 pos 8 >> 0xff & outb ;
+}
+
 fun term_setup 0 {
   $i
   @i 0 = ;
@@ -32,6 +42,7 @@ fun term_setup 0 {
   }
   @term_row 0 = ;
   @term_col 0 = ;
+  term_set_cursor ;
 }
 
 fun term_shift 0 {
@@ -75,6 +86,8 @@ fun term_write 1 {
       term_shift ;
     }
   }
+
+  term_set_cursor ;
 }
 
 const SERIAL_PORT 0x3f8
