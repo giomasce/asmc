@@ -578,10 +578,6 @@ outd:
   out dx, eax
   ret
 
-str_itoa:
-  db 'itoa'
-  db 0
-
 str_frame_ptr:
   db '__frame_ptr'
   db 0
@@ -881,12 +877,6 @@ init_g_operations:
   push 1
   push derefc
   push str_derefc
-  call add_symbol
-  add esp, 12
-
-  push 1
-  push itoa
-  push str_itoa
   call add_symbol
   add esp, 12
 

@@ -46,17 +46,12 @@
   PERCENT equ 0x25
   AT_SIGN equ 0x40
 
-  ITOA_BUF_LEN equ 32
-
   INPUT_BUF_LEN equ 1024
   MAX_SYMBOL_NAME_LEN equ 64
   MAX_SYMBOL_NAME_LEN_LOG equ 6
   SYMBOL_TABLE_LEN equ 4096
 
   section .bss
-
-itoa_buf:
-  resb ITOA_BUF_LEN
 
 symbol_names_ptr:
   resd 1
@@ -89,55 +84,12 @@ str_newline:
   db 0
 
   section .text
-  ;; char *itoa(int x)
-  global itoa
-itoa:
-  ;; Clear the buffer
-  mov ecx, ITOA_BUF_LEN
-  mov eax, itoa_buf
 
-itoa_clear_loop:
-  cmp ecx, 0
-  je itoa_cleared
-  mov BYTE [eax], SPACE
-  add eax, 1
-  sub ecx, 1
-  jmp itoa_clear_loop
-
-itoa_cleared:
-  ;; Prepare registers
-  mov eax, [esp+4]
-  push esi
-  mov esi, 10
-  mov ecx, itoa_buf
-  add ecx, ITOA_BUF_LEN
-  sub ecx, 1
-
-  ;; Store a terminator at the end
-  mov BYTE [ecx], 0
-  sub ecx, 1
-
-itoa_loop:
-  ;; Divide by the base
-  mov edx, 0
-  div esi
-
-  ;; Output the remainder
-  add edx, ZERO
-  mov [ecx], dl
-
-  ;; Check for termination
-  cmp eax, 0
-  je itoa_end
-
-  ;; Move the pointer backwards
-  sub ecx, 1
-
-  jmp itoa_loop
-
-itoa_end:
-  mov eax, ecx
-  pop esi
+  ;; Input number in AL
+  ;; Returns: AL (hex digit corresponding to input)
+num2alphahex:
+  and al, 0xf
+  add al, LITTLEA
   ret
 
 

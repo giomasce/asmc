@@ -93,37 +93,33 @@ read_ptr_end:
   resd 1
 
 
-  global gen_label
 gen_label:
   ;; Increment by 1 gen_label and return its original value
-  mov ecx, label_num
-  mov eax, [ecx]
-  mov edx, eax
-  add edx, 1
-  mov [ecx], edx
+  mov eax, [label_num]
+  inc DWORD [label_num]
   ret
 
 
-  global write_label
 write_label:
-  ;; Call itoa
-  mov eax, [esp+4]
-  push eax
-  call itoa
-  add esp, 4
-  mov edx, eax
+  ;; Write the initial dot
+  mov edx, [esp+4]
+  mov ecx, [write_label_buf_ptr]
+  mov BYTE [ecx], DOT
 
-  ;; Print the initial dot
-  mov eax, [write_label_buf_ptr]
-  mov BYTE [eax], DOT
+  ;; Move to the end of the string
+  add ecx, 8
 
-  ;; Copy from itoa to our buffer
-  add eax, 1
-  push edx
-  push eax
-  call strcpy
-  add esp, 8
+  ;; Loop over the hexadecimal digits and write them in the buffer
+write_label_loop:
+  mov al, dl
+  call num2alphahex
+  mov [ecx], al
+  shr edx, 4
+  dec ecx
+  cmp ecx, [write_label_buf_ptr]
+  jne write_label_loop
 
+  ;; Return the buffer's address
   mov eax, [write_label_buf_ptr]
   ret
 
@@ -1713,3 +1709,4 @@ compile_stage_loop:
   add DWORD [stage], 1
 
   jmp compile_stage_loop
+

@@ -116,9 +116,44 @@ fun log 1 {
   }
 }
 
+const ITOA_BUF_LEN 32
+
+$_itoa_buf_ptr
+
+fun itoa_setup 0 {
+  @_itoa_buf_ptr ITOA_BUF_LEN platform_allocate = ;
+}
+
+fun itoa 1 {
+  $n
+  @n 0 param = ;
+
+  # Setup position pointer and write a terminator at the end
+  $pos
+  @pos _itoa_buf_ptr ITOA_BUF_LEN + 1 - = ;
+  pos '\0' =c ;
+  @pos pos 1 - = ;
+
+  # Handle the zero case
+  if n 0 == {
+    pos '0' =c ;
+    pos ret ;
+  }
+
+  # Recursively compute quotient and remainder to write down the digits
+  while n 0 != {
+    pos n 10 % '0' + =c ;
+    @pos pos 1 - = ;
+    @n n 10 / = ;
+  }
+
+  pos 1 + ret ;
+}
+
 fun entry 0 {
   serial_setup ;
   term_setup ;
+  itoa_setup ;
 
   "Hello, G!\n" log ;
 
