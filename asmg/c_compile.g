@@ -456,6 +456,7 @@ fun cctx_setup_handles 1 {
   handles @vfs_write vector_push_back ;
   handles @vfs_truncate vector_push_back ;
   handles @vfs_seek vector_push_back ;
+  handles @kbd_getc vector_push_back ;
 }
 
 fun cctx_setup_runtime 1 {

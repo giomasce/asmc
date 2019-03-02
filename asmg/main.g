@@ -71,6 +71,10 @@ fun main 0 {
   "utils.g" platform_g_compile ;
   "done!\n" log ;
 
+  "Compiling keyboard.g... " log ;
+  "keyboard.g" platform_g_compile ;
+  "done!\n" log ;
+
   if USE_TRIVIAL_MALLOC {
     "Compiling triv_malloc.g... " log ;
     "triv_malloc.g" platform_g_compile ;

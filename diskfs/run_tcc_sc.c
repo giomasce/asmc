@@ -28,12 +28,17 @@ const char *sources[][2] = {
     {SC_PREFIX "/sch3.c", SC_TEMP "/sch3.o"},
 };
 
+#define RUN_SCRIPT
+
 char *sch3_argv[] = {
     "sch3",
+#ifdef RUN_SCRIPT
     "/disk1/sch3.scm",
+#endif
 };
 
 int main(int argc, char *argv[]) {
+ restart:
     printf("Here is where we compile single_cream!\n");
 
     int res;
@@ -93,6 +98,10 @@ int main(int argc, char *argv[]) {
     res = start(sizeof(sch3_argv)/sizeof(sch3_argv[0]), sch3_argv);
     printf("single_cream returned %d!\n", res);
     tcc_delete(state);
+
+#ifndef RUN_SCRIPT
+    goto restart;
+#endif
 
     return res;
 }

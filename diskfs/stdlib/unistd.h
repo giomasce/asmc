@@ -20,13 +20,20 @@ int isatty(int fildes) {
 }
 
 ssize_t read(int fildes, void *buf, size_t nbyte) {
-    if (fildes == 0 || fildes == 1 || fildes == 2) {
+    if (fildes == 1 || fildes == 2) {
         return 0;
     }
     if (nbyte == 0) {
         return 0;
     }
-    int c = __handles->vfs_read(fildes);
+    int c;
+    if (fildes == 0) {
+        c = __handles->kbd_getc();
+        // Loop back character to console
+        __handles->write(c);
+    } else {
+        c = __handles->vfs_read(fildes);
+    }
     if (c < 0) {
         return 0;
     } else {
