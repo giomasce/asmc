@@ -124,7 +124,6 @@ write_label_loop:
   ret
 
 
-  global get_symbol
 get_symbol:
   ;; If stage is not 1 and no arity is requested, just return 0
   mov eax, stage
@@ -156,7 +155,6 @@ get_symbol_find:
   ret
 
 
-  global is_whitespace
 is_whitespace:
   ;; Return true only if the argument is a tab, a space or a newline
   mov ecx, [esp+4]
@@ -174,7 +172,6 @@ is_whitespace_ret_true:
   ret
 
 
-  global push_var
 push_var:
   ;; Check the var name length
   mov eax, [esp+4]
@@ -222,7 +219,6 @@ push_var_non_temp:
   ret
 
 
-  global pop_var
 pop_var:
   ;; Check stack depth is positive and decrement it
   mov eax, stack_depth
@@ -244,7 +240,6 @@ pop_var_temp:
   ret
 
 
-  global pop_temps
 pop_temps:
   ;; Check for termination
   mov eax, temp_depth
@@ -262,7 +257,6 @@ pop_temps_ret:
   ret
 
 
-  global find_in_stack
 find_in_stack:
   push ebp
   mov ebp, esp
@@ -310,7 +304,6 @@ find_in_stack_end:
   ret
 
 
-  global get_token
 get_token:
   ;; If last token was given back, just return it
   mov eax, token_given_back
@@ -493,7 +486,6 @@ get_token_end:
   ret
 
 
-  global give_back_token
 give_back_token:
   ;; Check another token was not already given back
   mov eax, token_given_back
@@ -505,7 +497,6 @@ give_back_token:
   ret
 
 
-  global escaped
 escaped:
   mov edx, [esp+4]
   mov eax, 0
@@ -543,7 +534,6 @@ escaped_ret:
   ret
 
 
-  global emit_escaped_string
 emit_escaped_string:
   ;; Check the string beings with a quote
   mov eax, [esp+4]
@@ -595,7 +585,6 @@ emit_escaped_string_end:
   ret
 
 
-  global decode_number_or_char
 decode_number_or_char:
   ;; The first argument does not begin with an apex, call
   ;; decode_number
@@ -650,7 +639,6 @@ decode_number_or_char_backslash:
   ret
 
 
-  global compute_rel
 compute_rel:
   ;; Subtract current_loc and than 4
   mov eax, [esp+4]
@@ -659,7 +647,6 @@ compute_rel:
   ret
 
 
-  global push_expr
 push_expr:
   push ebp
   mov ebp, esp
@@ -841,7 +828,6 @@ push_expr_ret:
   ret
 
 
-  global push_expr_until_brace
 push_expr_until_brace:
   push ebx
   push esi
@@ -968,7 +954,6 @@ push_expr_until_brace_end:
   ret
 
 
-  global parse_block
 parse_block:
   push ebp
   mov ebp, esp
@@ -1458,7 +1443,6 @@ parse_block_break:
   ret
 
 
-  global decode_number_or_symbol
 decode_number_or_symbol:
   ;; Call decode_number_or_char
   mov eax, [esp+4]
@@ -1489,7 +1473,6 @@ decode_number_or_symbol_symbol:
   ret
 
 
-  global parse
 parse:
   push ebp
   mov ebp, esp
@@ -1638,7 +1621,6 @@ parse_ret:
   ret
 
 
-  global init_g_compiler
 init_g_compiler:
   ;; Allocate stack variables list
   mov eax, STACK_VARS_LEN * MAX_SYMBOL_NAME_LEN
@@ -1666,7 +1648,6 @@ init_g_compiler:
   ret
 
 
-  global compile
 compile:
   ;; Reset depths and stage
   mov DWORD [block_depth], 0

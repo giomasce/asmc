@@ -200,7 +200,6 @@ atoi:
 
 
   ;; void *memcpy(void *dest, const void *src, int n)
-  global memcpy
 memcpy:
   ;; Load registers
   mov eax, [esp+4]
@@ -229,7 +228,6 @@ memcpy_end:
   ret
 
 
-  global init_symbols
 init_symbols:
   ;; Allocate symbol names table
   mov eax, SYMBOL_TABLE_LEN * MAX_SYMBOL_NAME_LEN
@@ -252,7 +250,6 @@ init_symbols:
   ret
 
 
-  global get_symbol_idx
 get_symbol_idx:
   ;; Set up registers and stack
   push ebp
@@ -296,7 +293,6 @@ get_symbol_idx_end:
   ret
 
 
-  global find_symbol
 find_symbol:
   ;; Set up registers and stack
   push ebp
@@ -342,7 +338,6 @@ find_symbol_ret:
   ret
 
 
-  global add_symbol
 add_symbol:
   push ebp
   mov ebp, esp
@@ -420,7 +415,6 @@ add_symbol_already_defined:
   call platform_panic
 
 
-  global add_symbol_wrapper
 add_symbol_wrapper:
   push ebp
   mov ebp, esp
@@ -477,7 +471,6 @@ add_symbol_wrapper_ret:
   ret
 
 
-  global add_symbol_placeholder
 add_symbol_placeholder:
   push ebp
   mov ebp, esp
@@ -522,7 +515,6 @@ add_symbol_placeholder_end:
   ret
 
 
-  global fix_symbol_placeholder
 fix_symbol_placeholder:
   push ebp
   mov ebp, esp
