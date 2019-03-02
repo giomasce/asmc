@@ -497,9 +497,10 @@ give_back_token:
   ret
 
 
+  ;; Input in DL
+  ;; Returns: AL
 escaped:
-  mov edx, [esp+4]
-  mov eax, 0
+  xor eax, eax
   mov al, NEWLINE
   cmp dl, LITTLEN
   je escaped_ret
@@ -528,82 +529,74 @@ escaped:
   cmp dl, QUOTE
   je escaped_ret
 
-  mov eax, 0
+  jmp platform_panic
 
 escaped_ret:
   ret
 
 
+  ;; Input in ECX
 emit_escaped_string:
   ;; Check the string beings with a quote
-  mov eax, [esp+4]
-  cmp BYTE [eax], QUOTE
+  cmp BYTE [ecx], QUOTE
   jne platform_panic
-  add eax, 1
+  inc ecx
 
 emit_escaped_string_loop:
   ;; Check we did not find the terminator (without a closing quote)
-  cmp BYTE [eax], 0
+  mov dl, [ecx]
+  cmp dl, 0
   je platform_panic
 
   ;; If we found a quote, jump to end
-  cmp BYTE [eax], QUOTE
+  cmp dl, QUOTE
   je emit_escaped_string_end
 
   ;; If we found a backslash, jump to the following character and
   ;; escape it
-  mov edx, 0
-  mov dl, [eax]
   cmp dl, BACKSLASH
   jne emit_escaped_string_emit
-  add eax, 1
-  mov dl, [eax]
-  push eax
-  push edx
+  inc ecx
+  mov dl, [ecx]
   call escaped
-  add esp, 4
-  mov edx, eax
-  pop eax
+  mov dl, al
 
 emit_escaped_string_emit:
-  ;; Call emit
-  push eax
+  ;; Call emit and increment pointer
+  push ecx
   mov ecx, edx
   call emit
-
-  ;; Increment the pointer
-  pop eax
-  add eax, 1
+  pop ecx
+  inc ecx
 
   jmp emit_escaped_string_loop
 
 emit_escaped_string_end:
   ;; Check a terminator follows and then return
-  cmp BYTE [eax+1], 0
+  cmp BYTE [ecx+1], 0
   jne platform_panic
 
   ret
 
 
+  ;; Input in EAX
+  ;; Returns: EAX (valid), EDX (number value)
 decode_number_or_char:
   ;; The first argument does not begin with an apex, call
   ;; decode_number
-  mov eax, [esp+4]
   cmp BYTE [eax], APEX
   je decode_number_or_char_char
   call decode_number
-  mov ecx, [esp+8]
-  mov [ecx], edx
   ret
 
 decode_number_or_char_char:
+  ;; Clean higher bits in EDX
+  xor edx, edx
+
   ;; If second char is not a backslash, just return it
   cmp BYTE [eax+1], BACKSLASH
   je decode_number_or_char_backslash
-  mov ecx, [esp+8]
-  mov edx, 0
   mov dl, [eax+1]
-  mov [ecx], edx
 
   ;; Check that the input string finishes here
   cmp BYTE [eax+2], APEX
@@ -615,33 +608,25 @@ decode_number_or_char_char:
   ret
 
 decode_number_or_char_backslash:
-  ;; Call escaped
-  push eax
-  mov edx, 0
-  mov dl, BYTE [eax+2]
-  push edx
-  call escaped
-  add esp, 4
-
-  ;; Return what escaped returned
-  mov edx, eax
-  pop eax
-  mov ecx, [esp+8]
-  mov [ecx], edx
-
   ;; Check that the input string finishes here
   cmp BYTE [eax+3], APEX
   jne platform_panic
   cmp BYTE [eax+4], 0
   jne platform_panic
 
+  ;; Call escaped and return the result
+  mov dl, [eax+2]
+  call escaped
+  mov dl, al
+
   mov eax, 1
   ret
 
 
+  ;; Input in EAX
+  ;; Returns: EAX
 compute_rel:
   ;; Subtract current_loc and than 4
-  mov eax, [esp+4]
   sub eax, [current_loc]
   sub eax, 4
   ret
@@ -654,13 +639,9 @@ push_expr:
   push esi
 
   ;; Try to interpret argument as number
-  push 0
-  mov edx, esp
-  push edx
-  push DWORD [ebp+8]
+  mov eax, [ebp+8]
   call decode_number_or_char
-  add esp, 8
-  pop ebx
+  mov ebx, edx
   cmp eax, 0
   je push_expr_stack
 
@@ -755,9 +736,8 @@ push_expr_after_assert:
   ;; This is a real function call, emit the code (part 1)
   mov cl, 0xe8                  ; call ??
   call emit
-  push ebx
+  mov eax, ebx
   call compute_rel
-  add esp, 4
   mov ecx, eax
   call emit32
   mov ecx, 0xc481               ; add esp, ??
@@ -868,9 +848,7 @@ push_expr_until_brace_string:
   push eax
   call get_symbol
   add esp, 8
-  push eax
   call compute_rel
-  add esp, 4
   mov ecx, eax
   call emit32
 
@@ -886,9 +864,8 @@ push_expr_until_brace_string:
   add esp, 12
 
   ;; Emit escaped string and a terminator
-  push ebx
+  mov ecx, ebx
   call emit_escaped_string
-  add esp, 4
   mov cl, 0
   call emit
 
@@ -1095,9 +1072,7 @@ parse_block_if:
   push eax
   call get_symbol
   add esp, 8
-  push eax
   call compute_rel
-  add esp, 4
   mov ecx, eax
   call emit32
 
@@ -1144,9 +1119,7 @@ parse_block_else:
   push eax
   call get_symbol
   add esp, 8
-  push eax
   call compute_rel
-  add esp, 4
   mov ecx, eax
   call emit32
 
@@ -1213,9 +1186,7 @@ parse_block_while:
   push eax
   call get_symbol
   add esp, 8
-  push eax
   call compute_rel
-  add esp, 4
   mov ecx, eax
   call emit32
 
@@ -1232,9 +1203,7 @@ parse_block_while:
   push eax
   call get_symbol
   add esp, 8
-  push eax
   call compute_rel
-  add esp, 4
   mov ecx, eax
   call emit32
 
@@ -1340,9 +1309,7 @@ parse_block_string:
   push eax
   call get_symbol
   add esp, 8
-  push eax
   call compute_rel
-  add esp, 4
   mov ecx, eax
   call emit32
 
@@ -1358,9 +1325,8 @@ parse_block_string:
   add esp, 12
 
   ;; Emit escaped string and a terminator
-  push ebx
+  mov ecx, ebx
   call emit_escaped_string
-  add esp, 4
   mov cl, 0
   call emit
 
@@ -1446,13 +1412,7 @@ parse_block_break:
 decode_number_or_symbol:
   ;; Call decode_number_or_char
   mov eax, [esp+4]
-  push 0
-  mov edx, esp
-  push edx
-  push eax
   call decode_number_or_char
-  add esp, 8
-  pop edx
 
   ;; If it returned true, return
   cmp eax, 0
