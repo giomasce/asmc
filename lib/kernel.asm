@@ -217,21 +217,14 @@ init_kernel_api:
   ;; the location and put the arity in *arity if arity is not null
 platform_get_symbol:
   ;; Call find_symbol
-  mov eax, [esp+4]
-  mov ecx, [esp+8]
-  push 0
-  mov edx, esp
-  push ecx
-  push edx
-  push eax
+  mov edx, [esp+4]
   call find_symbol
-  add esp, 12
 
   ;; Panic if it does not exist
   cmp eax, 0
   je platform_panic
 
   ;; Return the symbol location
-  pop eax
+  mov eax, ecx
 
   ret

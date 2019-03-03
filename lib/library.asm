@@ -250,91 +250,65 @@ init_symbols:
   ret
 
 
+  ;; Input in EDX
+  ;; Destroys: EAX
+  ;; Returns: ECX
 get_symbol_idx:
+  push esi
+  push edi
+
   ;; Set up registers and stack
-  push ebp
-  mov ebp, esp
-  mov ecx, 0
+  xor ecx, ecx
 
 get_symbol_idx_loop:
   ;; Check for termination
   cmp ecx, [symbol_num]
   je get_symbol_idx_end
 
-  ;; Save ecx
-  push ecx
+  ;; Compute pointer to current symbol name
+  mov esi, ecx
+  shl esi, MAX_SYMBOL_NAME_LEN_LOG
+  add esi, [symbol_names_ptr]
 
-  ;; Compute and push the second argument to strcmp
-  mov eax, ecx
-  shl eax, MAX_SYMBOL_NAME_LEN_LOG
-  add eax, [symbol_names_ptr]
-  push eax
-
-  ;; Push the first argument
-  mov eax, [ebp+8]
-  push eax
-
-  ;; Call strcmp, clean the stack and restore ecx
-  call strcmp
-  add esp, 8
-  pop ecx
+  ;; Compare with argument
+  mov edi, edx
+  call strcmp2
 
   ;; If strcmp returned 0, then we return
   cmp eax, 0
   je get_symbol_idx_end
 
-  ;; Increment ecx and check for termination
-  add ecx, 1
+  ;; Increment ecx and restart loop
+  inc ecx
   jmp get_symbol_idx_loop
 
 get_symbol_idx_end:
-  mov eax, ecx
-  pop ebp
+  pop edi
+  pop esi
   ret
 
 
+  ;; Input in EDX
+  ;; Returns: EAX (found), ECX (loc), EDX (arity)
 find_symbol:
-  ;; Set up registers and stack
-  push ebp
-  mov ebp, esp
-
-  ;; Call get_symbol_idx
-  push DWORD [ebp+8]
+  ;; Call get_symbol_idx and set return code
   call get_symbol_idx
-  add esp, 4
-  mov ecx, eax
+  xor eax, eax
   cmp ecx, [symbol_num]
-  je find_symbol_not_found
+  je find_symbol_ret
 
-  ;; If the second argument is not null, fill it with the location
-  mov edx, [ebp+12]
-  cmp edx, 0
-  je find_symbol_arity
-  mov eax, [symbol_locs_ptr]
-  mov eax, [eax+4*ecx]
-  mov edx, [ebp+12]
-  mov [edx], eax
-
-find_symbol_arity:
-  ;; If the third argument is not null, fill it with the arity
-  mov edx, [ebp+16]
-  cmp edx, 0
-  je find_symbol_ret_found
+  ;; Copy arity to EDX
   mov eax, [symbol_arities_ptr]
-  mov eax, [eax+4*ecx]
-  mov edx, [ebp+16]
-  mov [edx], eax
+  mov edx, [eax+4*ecx]
 
-find_symbol_ret_found:
+  ;; Copy loc to ECX
+  mov eax, [symbol_locs_ptr]
+  mov ecx, [eax+4*ecx]
+
+  ;; Return true
   mov eax, 1
-  jmp find_symbol_ret
-
-find_symbol_not_found:
-  mov eax, 0
-  jmp find_symbol_ret
 
 find_symbol_ret:
-  pop ebp
   ret
 
 
@@ -356,11 +330,8 @@ add_symbol:
   jnb platform_panic
 
   ;; Call find_symbol and check the symbol does not exist yet
-  push 0
-  push 0
-  push DWORD [ebp+8]
+  mov edx, [ebp+8]
   call find_symbol
-  add esp, 12
   cmp eax, 0
   jne add_symbol_already_defined
 
@@ -440,28 +411,19 @@ add_symbol_wrapper_stage0:
 
 add_symbol_wrapper_stage1:
   ;; Call find_symbol
-  push 0
-  mov edx, esp
-  push 0
-  mov ecx, esp
-  push edx
-  push ecx
-  push DWORD [ebp+8]
+  mov edx, [ebp+8]
   call find_symbol
-  add esp, 12
-  pop edx
-  pop ecx
 
   ;; Check the symbol was found
   cmp eax, 0
   je platform_panic
 
   ;; Check the location matches
-  cmp edx, [ebp+12]
+  cmp ecx, [ebp+12]
   jne platform_panic
 
   ;; Check the arity matches
-  cmp ecx, [ebp+16]
+  cmp edx, [ebp+16]
   jne platform_panic
 
   jmp add_symbol_wrapper_ret
@@ -476,18 +438,11 @@ add_symbol_placeholder:
   mov ebp, esp
 
   ;; Call find_symbol
-  push 0
-  mov edx, esp
-  push edx
-  push 0
-  push DWORD [ebp+8]
+  mov edx, [ebp+8]
   call find_symbol
-  add esp, 12
-  pop edx
 
   ;; Check that the symbol exists if we are not in stage 0
-  mov ecx, stage
-  cmp DWORD [ecx], 0
+  cmp DWORD [stage], 0
   je add_symbol_placeholder_after_assert
   cmp eax, 0
   je platform_panic
@@ -521,17 +476,9 @@ fix_symbol_placeholder:
   push ebx
 
   ;; Call find_symbol
-  push 0
-  mov edx, esp
-  push 0
-  mov ecx, esp
-  push edx
-  push ecx
-  push DWORD [ebp+8]
+  mov edx, [ebp+8]
   call find_symbol
-  add esp, 12
-  pop ebx
-  pop edx
+  mov ebx, ecx
 
   ;; Check that the symbol exists if we are not in stage 0
   mov ecx, stage
@@ -564,27 +511,23 @@ fix_symbol_placeholder_found:
   je fix_symbol_placeholder_after_second_assert
   cmp ebx, 0xffffffff
   jne platform_panic
-  mov ecx, stage
-  cmp DWORD [ecx], 0
+  cmp DWORD [stage], 0
   jne platform_panic
 
 fix_symbol_placeholder_after_second_assert:
   ;; Call get_symbol_idx
-  push DWORD [ebp+8]
+  mov edx, [ebp+8]
   call get_symbol_idx
-  add esp, 4
 
   ;; Assert the index is valid
-  mov ecx, symbol_num
-  cmp [ecx], eax
+  cmp [symbol_num], ecx
   je platform_panic
 
   ;; Fix the location value
-  shl eax, 2
-  mov ecx, symbol_locs_ptr
-  add eax, [ecx]
+  shl ecx, 2
+  add ecx, [symbol_locs_ptr]
   mov edx, [ebp+12]
-  mov [eax], edx
+  mov [ecx], edx
 
 fix_symbol_placeholder_end:
   pop ebx
