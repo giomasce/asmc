@@ -312,6 +312,27 @@ find_symbol_ret:
   ret
 
 
+  ;; Input in EDX
+  ;; Destroys: ECX
+  ;; Returns: EAX (loc), EDX (arity)
+find_symbol_or_panic:
+  call find_symbol
+  cmp eax, 0
+  je platform_panic
+  mov eax, ecx
+  ret
+
+
+  ;; Input in EDX
+  ;; Destroys: ECX, EDX
+  ;; Return EAX (loc or zero)
+find_symbol_or_zero:
+  cmp DWORD [stage], 1
+  jne ret_zero
+  call find_symbol_or_panic
+  ret
+
+
 add_symbol:
   push ebp
   mov ebp, esp

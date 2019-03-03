@@ -126,36 +126,6 @@ write_label_loop:
   ret
 
 
-get_symbol:
-  ;; If stage is not 1 and no arity is requested, just return 0
-  cmp DWORD [stage], 1
-  je get_symbol_find
-  cmp DWORD [esp+8], 0
-  jne get_symbol_find
-  xor eax, eax
-  ret
-
-get_symbol_find:
-  ;; Call find_symbol
-  mov edx, [esp+4]
-  call find_symbol
-
-  ;; Panic if it does not exist
-  cmp eax, 0
-  je platform_panic
-
-  ;; Save arity if required
-  mov eax, [esp+8]
-  cmp eax, 0
-  je get_symbol_ret
-  mov [eax], edx
-
-get_symbol_ret:
-  ;; Return the symbol location
-  mov eax, ecx
-  ret
-
-
 push_var:
   ;; Check the var name length
   mov eax, [esp+4]
@@ -285,12 +255,6 @@ get_char:
   cmp eax, [read_ptr_end]
   je get_char_end
   mov al, [eax]
-
-  ;; pusha
-  ;; mov cl, al
-  ;; call write
-  ;; popa
-
   inc DWORD [read_ptr]
   ret
 
@@ -622,14 +586,9 @@ push_expr_stack_addr:
 
 push_expr_symbol:
   ;; Get symbol data
-  push 0
-  mov edx, esp
-  push edx
-  push DWORD [ebp+8]
-  call get_symbol
-  add esp, 8
+  mov edx, [ebp+8]
+  call find_symbol_or_panic
   mov ebx, eax
-  pop edx
 
   ;; If arity is -2, check we do not want the address
   cmp edx, 0xfffffffe
@@ -757,12 +716,10 @@ push_expr_until_brace_string:
   ;; Emit code to jump to the jump label
   mov cl, 0xe9                  ; jmp ??
   call emit
-  push 0
   mov edx, esi
   call write_label
-  push eax
-  call get_symbol
-  add esp, 8
+  mov edx, eax
+  call find_symbol_or_zero
   call compute_rel
   mov ecx, eax
   call emit32
@@ -798,12 +755,10 @@ push_expr_until_brace_string:
   add esp, 8
   mov cl, 0x68                  ; push ??
   call emit
-  push 0
   mov edx, edi
   call write_label
-  push eax
-  call get_symbol
-  add esp, 8
+  mov edx, eax
+  call find_symbol_or_zero
   mov ecx, eax
   call emit32
 
@@ -971,12 +926,10 @@ parse_block_if:
   call emit32
   mov ecx, 0x840f               ; je ??
   call emit16
-  push 0
   mov edx, ebx
   call write_label
-  push eax
-  call get_symbol
-  add esp, 8
+  mov edx, eax
+  call find_symbol_or_zero
   call compute_rel
   mov ecx, eax
   call emit32
@@ -1015,12 +968,10 @@ parse_block_else:
   ;; Emit code to jump to fi
   mov cl, 0xe9                  ; jmp ??
   call emit
-  push 0
   mov edx, edi
   call write_label
-  push eax
-  call get_symbol
-  add esp, 8
+  mov edx, eax
+  call find_symbol_or_zero
   call compute_rel
   mov ecx, eax
   call emit32
@@ -1075,12 +1026,10 @@ parse_block_while:
   call emit32
   mov ecx, 0x840f               ; je ??
   call emit16
-  push 0
   mov edx, edi
   call write_label
-  push eax
-  call get_symbol
-  add esp, 8
+  mov edx, eax
+  call find_symbol_or_zero
   call compute_rel
   mov ecx, eax
   call emit32
@@ -1091,12 +1040,10 @@ parse_block_while:
   ;; Emit code to restart the loop
   mov cl, 0xe9                  ; jmp ??
   call emit
-  push 0
   mov edx, esi
   call write_label
-  push eax
-  call get_symbol
-  add esp, 8
+  mov edx, eax
+  call find_symbol_or_zero
   call compute_rel
   mov ecx, eax
   call emit32
@@ -1194,12 +1141,10 @@ parse_block_string:
   ;; Emit code to jump to the jump label
   mov cl, 0xe9                  ; jmp ??
   call emit
-  push 0
   mov edx, esi
   call write_label
-  push eax
-  call get_symbol
-  add esp, 8
+  mov edx, eax
+  call find_symbol_or_zero
   call compute_rel
   mov ecx, eax
   call emit32
@@ -1235,12 +1180,10 @@ parse_block_string:
   add esp, 8
   mov cl, 0x68                  ; push ??
   call emit
-  push 0
   mov edx, edi
   call write_label
-  push eax
-  call get_symbol
-  add esp, 8
+  mov edx, eax
+  call find_symbol_or_zero
   mov ecx, eax
   call emit32
 
@@ -1306,14 +1249,10 @@ decode_number_or_symbol:
   ret
 
 decode_number_or_symbol_symbol:
-  ;; Call get_symbol and return
+  ;; Get symbol address
   mov eax, [esp+4]
-  push 0
-  mov edx, esp
-  push edx
-  push eax
-  call get_symbol
-  add esp, 8
+  mov edx, eax
+  call find_symbol_or_zero
   add esp, 4
   ret
 
