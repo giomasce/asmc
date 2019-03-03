@@ -126,32 +126,31 @@ write_label_loop:
 
 get_symbol:
   ;; If stage is not 1 and no arity is requested, just return 0
-  mov eax, stage
-  cmp DWORD [eax], 1
+  cmp DWORD [stage], 1
   je get_symbol_find
   cmp DWORD [esp+8], 0
   jne get_symbol_find
-  mov eax, 0
+  xor eax, eax
   ret
 
 get_symbol_find:
   ;; Call find_symbol
-  mov ecx, [esp+8]
-  mov eax, [esp+4]
-  push 0
-  mov edx, esp
-  push ecx
-  push edx
-  push eax
+  mov edx, [esp+4]
   call find_symbol
-  add esp, 12
 
-  ;; Check for validity
+  ;; Panic if it does not exist
   cmp eax, 0
   je platform_panic
 
-  ;; Return the location
-  pop eax
+  ;; Save arity if required
+  mov eax, [esp+8]
+  cmp eax, 0
+  je get_symbol_ret
+  mov [eax], edx
+
+get_symbol_ret:
+  ;; Return the symbol location
+  mov eax, ecx
   ret
 
 

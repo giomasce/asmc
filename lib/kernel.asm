@@ -224,6 +224,13 @@ platform_get_symbol:
   cmp eax, 0
   je platform_panic
 
+  ;; Save arity if required
+  mov eax, [esp+8]
+  cmp eax, 0
+  je platform_get_symbol_ret
+  mov [eax], edx
+
+platform_get_symbol_ret:
   ;; Return the symbol location
   mov eax, ecx
 
