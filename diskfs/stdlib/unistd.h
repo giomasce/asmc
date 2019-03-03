@@ -28,7 +28,7 @@ ssize_t read(int fildes, void *buf, size_t nbyte) {
     }
     int c;
     if (fildes == 0) {
-        c = __handles->kbd_getc();
+        c = __handles->input_getc();
         // Loop back character to console
         __handles->write(c);
     } else {

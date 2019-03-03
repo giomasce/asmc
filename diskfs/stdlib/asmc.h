@@ -19,7 +19,7 @@ struct __handles_t {
     void (*vfs_write)(int c, int fd);
     void (*vfs_truncate)(int fd);
     int (*vfs_seek)(int whence, int offset, int fd);
-    int (*kbd_getc)();
+    int (*input_getc)();
 };
 
 struct __handles_t *__handles;

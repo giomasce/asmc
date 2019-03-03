@@ -24,7 +24,7 @@ const KBD_CTRL 2
 const KBD_CAPS 4
 
 fun kbd_get_scancode 0 {
-  if 0x64 inb 1 & ! {
+  if 0x64 inb 0x01 & ! {
     0 ret ;
   }
 
@@ -98,5 +98,16 @@ fun kbd_getc 0 {
    if c {
       c ret ;
     }
+  }
+}
+
+# Take input from either serial or keyboard
+fun input_getc 0 {
+  while 1 {
+    $c
+    @c kbd_maybe_getc = ;
+    if c { c ret ; }
+    @c serial_maybe_read = ;
+    if c { c ret ; }
   }
 }

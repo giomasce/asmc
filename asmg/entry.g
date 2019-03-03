@@ -111,6 +111,27 @@ fun serial_write 1 {
   SERIAL_PORT c outb ;
 }
 
+fun serial_maybe_read 0 {
+  if SERIAL_PORT 5 + inb 0x01 & ! {
+    0 ret ;
+  }
+
+  $c
+  @c SERIAL_PORT inb = ;
+  c ret ;
+}
+
+fun serial_read 0 {
+  while 1 {
+    $c
+    @c serial_maybe_read = ;
+
+    if c {
+      c ret ;
+    }
+  }
+}
+
 fun write 1 {
   $c
   @c 0 param = ;
