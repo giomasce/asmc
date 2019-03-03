@@ -100,9 +100,11 @@ gen_label:
   ret
 
 
+  ;; Input in EDX
+  ;; Destroys: ECX, EDX
+  ;; Return: EAX
 write_label:
   ;; Write the initial dot
-  mov edx, [esp+4]
   mov ecx, [write_label_buf_ptr]
   mov BYTE [ecx], DOT
 
@@ -166,15 +168,13 @@ push_var:
   jnb platform_panic
 
   ;; Check we are not overflowing the stack
-  mov eax, stack_depth
-  mov eax, [eax]
+  mov eax, [stack_depth]
   cmp eax, STACK_VARS_LEN
   jnb platform_panic
 
   ;; Copy the variable name in the stack
   shl eax, MAX_SYMBOL_NAME_LEN_LOG
-  mov ecx, stack_vars_ptr
-  add eax, [ecx]
+  add eax, [stack_vars_ptr]
   mov edx, eax
   mov eax, [esp+4]
   push eax
@@ -183,30 +183,26 @@ push_var:
   add esp, 8
 
   ;; Increment the stack depth
-  mov eax, stack_depth
-  add DWORD [eax], 1
+  add DWORD [stack_depth], 1
 
   ;; If this is a temp var, increment also temp_depth
   cmp DWORD [esp+8], 0
   je push_var_non_temp
-  mov eax, temp_depth
-  add DWORD [eax], 1
+  add DWORD [temp_depth], 1
   ret
 
   ;; If this is not a temp var, check temp_depth is zero
 push_var_non_temp:
-  mov eax, temp_depth
-  cmp DWORD [eax], 0
+  cmp DWORD [temp_depth], 0
   jne platform_panic
   ret
 
 
 pop_var:
   ;; Check stack depth is positive and decrement it
-  mov eax, stack_depth
-  cmp DWORD [eax], 0
+  cmp DWORD [stack_depth], 0
   jna platform_panic
-  sub DWORD [eax], 1
+  sub DWORD [stack_depth], 1
 
   ;; If this is a temp var...
   cmp DWORD [esp+4], 0
@@ -215,10 +211,9 @@ pop_var:
 
   ;; ...check and decrement temp_depth
 pop_var_temp:
-  mov eax, temp_depth
-  cmp DWORD [eax], 0
+  cmp DWORD [temp_depth], 0
   jna platform_panic
-  sub DWORD [eax], 1
+  sub DWORD [temp_depth], 1
   ret
 
 
@@ -247,18 +242,16 @@ find_in_stack:
 
 find_in_stack_loop:
   ;; Check for termination
-  mov edx, stack_depth
-  cmp ebx, [edx]
+  cmp ebx, [stack_depth]
   mov eax, 1
   je find_in_stack_not_found
 
   ;; Compute the pointer to be checked
-  mov eax, [edx]
+  mov eax, [stack_depth]
   sub eax, 1
   sub eax, ebx
   shl eax, MAX_SYMBOL_NAME_LEN_LOG
-  mov ecx, stack_vars_ptr
-  add eax, [ecx]
+  add eax, [stack_vars_ptr]
 
   ;; Call strcmp and return if it matches
   push eax
@@ -765,9 +758,8 @@ push_expr_until_brace_string:
   mov cl, 0xe9                  ; jmp ??
   call emit
   push 0
-  push esi
+  mov edx, esi
   call write_label
-  add esp, 4
   push eax
   call get_symbol
   add esp, 8
@@ -777,11 +769,9 @@ push_expr_until_brace_string:
 
   ;; Add a symbol for the string label
   push 0xffffffff
-  mov eax, current_loc
-  push DWORD [eax]
-  push edi
+  push DWORD [current_loc]
+  mov edx, edi
   call write_label
-  add esp, 4
   push eax
   call add_symbol_wrapper
   add esp, 12
@@ -794,11 +784,9 @@ push_expr_until_brace_string:
 
   ;; Add a symbol for the jump label
   push 0xffffffff
-  mov eax, current_loc
-  push DWORD [eax]
-  push esi
+  push DWORD [current_loc]
+  mov edx, esi
   call write_label
-  add esp, 4
   push eax
   call add_symbol_wrapper
   add esp, 12
@@ -811,9 +799,8 @@ push_expr_until_brace_string:
   mov cl, 0x68                  ; push ??
   call emit
   push 0
-  push edi
+  mov edx, edi
   call write_label
-  add esp, 4
   push eax
   call get_symbol
   add esp, 8
@@ -844,8 +831,7 @@ push_expr_until_brace_end:
   call give_back_token
 
   ;; Check that temp depth is positive
-  mov eax, temp_depth
-  cmp DWORD [eax], 0
+  cmp DWORD [temp_depth], 0
   jna platform_panic
 
   pop edi
@@ -863,12 +849,10 @@ parse_block:
   push edi
 
   ;; Increment block depth
-  mov eax, block_depth
-  add DWORD [eax], 1
+  inc DWORD [block_depth]
 
   ;; Save stack depth
-  mov eax, stack_depth
-  mov eax, [eax]
+  mov eax, [stack_depth]
   mov [ebp+0xfffffffc], eax
 
   ;; Expect and discard an open curly brace token
@@ -951,8 +935,7 @@ parse_block_semicolon:
 
 parse_block_ret:
   ;; If there are temp vars, emit code to pop one
-  mov eax, temp_depth
-  cmp DWORD [eax], 0
+  cmp DWORD [temp_depth], 0
   jna parse_block_ret_emit
   mov cl, 0x58                  ; pop eax
   call emit
@@ -989,9 +972,8 @@ parse_block_if:
   mov ecx, 0x840f               ; je ??
   call emit16
   push 0
-  push ebx
+  mov edx, ebx
   call write_label
-  add esp, 4
   push eax
   call get_symbol
   add esp, 8
@@ -1013,11 +995,9 @@ parse_block_if:
 
   ;; Not an else: add a symbol for the else label
   push 0xffffffff
-  mov eax, current_loc
-  push DWORD [eax]
-  push ebx
+  push DWORD [current_loc]
+  mov edx, ebx
   call write_label
-  add esp, 4
   push eax
   call add_symbol_wrapper
   add esp, 12
@@ -1036,9 +1016,8 @@ parse_block_else:
   mov cl, 0xe9                  ; jmp ??
   call emit
   push 0
-  push edi
+  mov edx, edi
   call write_label
-  add esp, 4
   push eax
   call get_symbol
   add esp, 8
@@ -1048,11 +1027,9 @@ parse_block_else:
 
   ;; Add the symbol for the else label
   push 0xffffffff
-  mov eax, current_loc
-  push DWORD [eax]
-  push ebx
+  push DWORD [current_loc]
+  mov edx, ebx
   call write_label
-  add esp, 4
   push eax
   call add_symbol_wrapper
   add esp, 12
@@ -1062,11 +1039,9 @@ parse_block_else:
 
   ;; Add the symbol for the fi label
   push 0xffffffff
-  mov eax, current_loc
-  push DWORD [eax]
-  push edi
+  push DWORD [current_loc]
+  mov edx, edi
   call write_label
-  add esp, 4
   push eax
   call add_symbol_wrapper
   add esp, 12
@@ -1082,11 +1057,9 @@ parse_block_while:
 
   ;; Add a symbol for the restart label
   push 0xffffffff
-  mov eax, current_loc
-  push DWORD [eax]
-  push esi
+  push DWORD [current_loc]
+  mov edx, esi
   call write_label
-  add esp, 4
   push eax
   call add_symbol_wrapper
   add esp, 12
@@ -1103,9 +1076,8 @@ parse_block_while:
   mov ecx, 0x840f               ; je ??
   call emit16
   push 0
-  push edi
+  mov edx, edi
   call write_label
-  add esp, 4
   push eax
   call get_symbol
   add esp, 8
@@ -1120,9 +1092,8 @@ parse_block_while:
   mov cl, 0xe9                  ; jmp ??
   call emit
   push 0
-  push esi
+  mov edx, esi
   call write_label
-  add esp, 4
   push eax
   call get_symbol
   add esp, 8
@@ -1132,11 +1103,9 @@ parse_block_while:
 
   ;; Add a symbol for the end label
   push 0xffffffff
-  mov eax, current_loc
-  push DWORD [eax]
-  push edi
+  push DWORD [current_loc]
+  mov edx, edi
   call write_label
-  add esp, 4
   push eax
   call add_symbol_wrapper
   add esp, 12
@@ -1226,9 +1195,8 @@ parse_block_string:
   mov cl, 0xe9                  ; jmp ??
   call emit
   push 0
-  push esi
+  mov edx, esi
   call write_label
-  add esp, 4
   push eax
   call get_symbol
   add esp, 8
@@ -1238,11 +1206,9 @@ parse_block_string:
 
   ;; Add a symbol for the string label
   push 0xffffffff
-  mov eax, current_loc
-  push DWORD [eax]
-  push edi
+  push DWORD [current_loc]
+  mov edx, edi
   call write_label
-  add esp, 4
   push eax
   call add_symbol_wrapper
   add esp, 12
@@ -1255,11 +1221,9 @@ parse_block_string:
 
   ;; Add a symbol for the jump label
   push 0xffffffff
-  mov eax, current_loc
-  push DWORD [eax]
-  push esi
+  push DWORD [current_loc]
+  mov edx, esi
   call write_label
-  add esp, 4
   push eax
   call add_symbol_wrapper
   add esp, 12
@@ -1272,9 +1236,8 @@ parse_block_string:
   mov cl, 0x68                  ; push ??
   call emit
   push 0
-  push edi
+  mov edx, edi
   call write_label
-  add esp, 4
   push eax
   call get_symbol
   add esp, 8
@@ -1306,8 +1269,7 @@ parse_block_break:
   call emit16
 
   ;; Sanity check: stack depth must not have increased
-  mov eax, stack_depth
-  mov eax, [eax]
+  mov eax, [stack_depth]
   mov esi, [ebp+0xfffffffc]
   cmp eax, esi
   jnge platform_panic
@@ -1398,8 +1360,7 @@ parse_loop:
 
 parse_fun:
   ;; Get a token and copy it in buf2 (pointed by ebx)
-  mov eax, buf2_ptr
-  mov ebx, [eax]
+  mov ebx, [buf2_ptr]
   call get_token
   push eax
   push ebx
@@ -1412,8 +1373,7 @@ parse_fun:
 
   ;; Add a symbol for the function
   push eax
-  mov eax, current_loc
-  push DWORD [eax]
+  push DWORD [current_loc]
   push ebx
   call fix_symbol_placeholder
   add esp, 12
@@ -1455,8 +1415,7 @@ parse_ifun:
 
 parse_const:
   ;; Get a token and copy it in buf2 (pointed by ebx)
-  mov eax, buf2_ptr
-  mov ebx, [eax]
+  mov ebx, [buf2_ptr]
   call get_token
   push eax
   push ebx
@@ -1486,8 +1445,7 @@ parse_var:
 
   ;; Add a symbol
   push 0xffffffff
-  mov eax, current_loc
-  push DWORD [eax]
+  push DWORD [current_loc]
   push ebx
   call add_symbol_wrapper
   add esp, 12
