@@ -177,9 +177,6 @@ start:
   push ebp
   mov ebp, 0
 
-  ;; Enable PMC
-  call enable_pmc
-
   ;; Call entry
   push 0
   push str_entry
@@ -631,14 +628,6 @@ symbol_arities_func:
   mov eax, [eax]
   ret
 
-str_ret_instr:
-  db '__ret_instr'
-  db 0
-ret_instr:
-  call read_ret_instr
-  ret
-
-
 init_g_operations:
   push 2
   push equal
@@ -919,12 +908,6 @@ init_g_operations:
   push 0
   push symbol_arities_func
   push str_symbol_arities
-  call add_symbol
-  add esp, 12
-
-  push 0
-  push ret_instr
-  push str_ret_instr
   call add_symbol
   add esp, 12
 

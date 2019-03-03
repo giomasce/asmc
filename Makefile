@@ -46,7 +46,7 @@ build/diskfs.img: build/diskfs.list
 	./create_diskfs.py < $< > $@
 
 # Asmg kernel
-build/full-asmg.asm: lib/mb_header.asm lib/kernel.asm lib/no_io.asm lib/shutdown.asm lib/initrd.asm lib/library.asm lib/setjmp.asm lib/pmc.asm asmg/asmg.asm asmg/kernel-asmg.asm lib/top.asm
+build/full-asmg.asm: lib/mb_header.asm lib/kernel.asm lib/no_io.asm lib/shutdown.asm lib/initrd.asm lib/library.asm lib/setjmp.asm asmg/asmg.asm asmg/kernel-asmg.asm lib/top.asm
 	cat $^ | grep -v "^ *section " > $@
 
 build/initrd-asmg.list: asmg/*.g

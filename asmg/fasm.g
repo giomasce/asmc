@@ -15,6 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+fun read_ret_instr 0 {
+  0 ret ;
+}
+
 fun fasm_open 1 {
   $filename
   @filename 0 param = ;

@@ -89,10 +89,6 @@ fun dump_stacktrace 0 {
   frame_ptr dump_frame ;
 }
 
-fun read_ret_instr 0 {
-  __ret_instr ret ;
-}
-
 fun assert 1 {
   if 0 param ! {
     "\nASSERTION FAILED\n" log ;
