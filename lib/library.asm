@@ -407,32 +407,32 @@ add_symbol_already_defined:
   call platform_panic
 
 
+  ;; Input in EAX (name), ECX (loc) and EDX (arity)
+  ;; Destroys: EAX, ECX, EDX
 add_symbol_wrapper:
   push ebp
   mov ebp, esp
 
   ;; Branch to appropriate stage
-  mov edx, stage
-  mov eax, [edx]
-  cmp eax, 0
-  je add_symbol_wrapper_stage0
-  cmp eax, 1
-  je add_symbol_wrapper_stage1
-  jmp platform_panic
+  cmp DWORD [stage], 0
+  jne add_symbol_wrapper_stage1
 
-add_symbol_wrapper_stage0:
-  ;; Call actual add_symbol
-  push DWORD [ebp+16]
-  push DWORD [ebp+12]
-  push DWORD [ebp+8]
+  ;; Stage 0: call actual add_symbol
+  push edx
+  push ecx
+  push eax
   call add_symbol
   add esp, 12
 
   jmp add_symbol_wrapper_ret
 
 add_symbol_wrapper_stage1:
+  ;; Save parameters
+  push edx
+  push ecx
+
   ;; Call find_symbol
-  mov edx, [ebp+8]
+  mov edx, eax
   call find_symbol
 
   ;; Check the symbol was found
@@ -440,14 +440,14 @@ add_symbol_wrapper_stage1:
   je platform_panic
 
   ;; Check the location matches
-  cmp ecx, [ebp+12]
+  pop eax
+  cmp ecx, eax
   jne platform_panic
 
   ;; Check the arity matches
-  cmp edx, [ebp+16]
+  pop eax
+  cmp edx, eax
   jne platform_panic
-
-  jmp add_symbol_wrapper_ret
 
 add_symbol_wrapper_ret:
   pop ebp

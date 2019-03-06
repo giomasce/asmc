@@ -512,6 +512,16 @@ compute_rel:
   ret
 
 
+  ;; Input in EDX (label number)
+  ;; Destroys: EAX, ECX, EDX
+add_symbol_label:
+  call write_label
+  mov edx, 0xffffffff
+  mov ecx, [current_loc]
+  call add_symbol_wrapper
+  ret
+
+
 push_expr:
   push ebp
   mov ebp, esp
@@ -725,13 +735,8 @@ push_expr_until_brace_string:
   call emit32
 
   ;; Add a symbol for the string label
-  push 0xffffffff
-  push DWORD [current_loc]
   mov edx, edi
-  call write_label
-  push eax
-  call add_symbol_wrapper
-  add esp, 12
+  call add_symbol_label
 
   ;; Emit escaped string and a terminator
   mov ecx, ebx
@@ -740,13 +745,8 @@ push_expr_until_brace_string:
   call emit
 
   ;; Add a symbol for the jump label
-  push 0xffffffff
-  push DWORD [current_loc]
   mov edx, esi
-  call write_label
-  push eax
-  call add_symbol_wrapper
-  add esp, 12
+  call add_symbol_label
 
   ;; Emit code to push the string label
   push 1
@@ -947,13 +947,8 @@ parse_block_if:
   je parse_block_else
 
   ;; Not an else: add a symbol for the else label
-  push 0xffffffff
-  push DWORD [current_loc]
   mov edx, ebx
-  call write_label
-  push eax
-  call add_symbol_wrapper
-  add esp, 12
+  call add_symbol_label
 
   ;; Give the token back
   call give_back_token
@@ -977,25 +972,15 @@ parse_block_else:
   call emit32
 
   ;; Add the symbol for the else label
-  push 0xffffffff
-  push DWORD [current_loc]
   mov edx, ebx
-  call write_label
-  push eax
-  call add_symbol_wrapper
-  add esp, 12
+  call add_symbol_label
 
   ;; Recursively parse the inner block
   call parse_block
 
   ;; Add the symbol for the fi label
-  push 0xffffffff
-  push DWORD [current_loc]
   mov edx, edi
-  call write_label
-  push eax
-  call add_symbol_wrapper
-  add esp, 12
+  call add_symbol_label
 
   jmp parse_block_loop
 
@@ -1007,13 +992,8 @@ parse_block_while:
   mov edi, eax
 
   ;; Add a symbol for the restart label
-  push 0xffffffff
-  push DWORD [current_loc]
   mov edx, esi
-  call write_label
-  push eax
-  call add_symbol_wrapper
-  add esp, 12
+  call add_symbol_label
 
   ;; Call push_expr_until_brace
   call push_expr_until_brace
@@ -1049,13 +1029,8 @@ parse_block_while:
   call emit32
 
   ;; Add a symbol for the end label
-  push 0xffffffff
-  push DWORD [current_loc]
   mov edx, edi
-  call write_label
-  push eax
-  call add_symbol_wrapper
-  add esp, 12
+  call add_symbol_label
 
   jmp parse_block_loop
 
@@ -1150,13 +1125,8 @@ parse_block_string:
   call emit32
 
   ;; Add a symbol for the string label
-  push 0xffffffff
-  push DWORD [current_loc]
   mov edx, edi
-  call write_label
-  push eax
-  call add_symbol_wrapper
-  add esp, 12
+  call add_symbol_label
 
   ;; Emit escaped string and a terminator
   mov ecx, ebx
@@ -1165,13 +1135,8 @@ parse_block_string:
   call emit
 
   ;; Add a symbol for the jump label
-  push 0xffffffff
-  push DWORD [current_loc]
   mov edx, esi
-  call write_label
-  push eax
-  call add_symbol_wrapper
-  add esp, 12
+  call add_symbol_label
 
   ;; Emit code to push the string label
   push 1
@@ -1332,8 +1297,7 @@ parse_fun:
 
 parse_ifun:
   ;; Get a token and copy it in buf2 (pointed by ebx)
-  mov eax, buf2_ptr
-  mov ebx, [eax]
+  mov ebx, [buf2_ptr]
   call get_token
   push eax
   push ebx
@@ -1368,11 +1332,10 @@ parse_const:
   add esp, 4
 
   ;; Add a symbol
-  push 0xfffffffe
-  push eax
-  push ebx
+  mov edx, 0xfffffffe
+  mov ecx, eax
+  mov eax, ebx
   call add_symbol_wrapper
-  add esp, 12
 
   jmp parse_loop
 
@@ -1383,11 +1346,10 @@ parse_var:
   je platform_panic
 
   ;; Add a symbol
-  push 0xffffffff
-  push DWORD [current_loc]
-  push ebx
+  mov edx, 0xffffffff
+  mov ecx, [current_loc]
+  mov eax, ebx
   call add_symbol_wrapper
-  add esp, 12
 
   ;; Emit a zero to allocate space for the variable
   xor ecx, ecx
