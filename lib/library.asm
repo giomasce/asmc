@@ -410,9 +410,6 @@ add_symbol_already_defined:
   ;; Input in EAX (name), ECX (loc) and EDX (arity)
   ;; Destroys: EAX, ECX, EDX
 add_symbol_wrapper:
-  push ebp
-  mov ebp, esp
-
   ;; Branch to appropriate stage
   cmp DWORD [stage], 0
   jne add_symbol_wrapper_stage1
@@ -450,16 +447,15 @@ add_symbol_wrapper_stage1:
   jne platform_panic
 
 add_symbol_wrapper_ret:
-  pop ebp
   ret
 
 
+  ;; Input in EAX (symbol name), EDX (arity)
 add_symbol_placeholder:
-  push ebp
-  mov ebp, esp
-
   ;; Call find_symbol
-  mov edx, [ebp+8]
+  push eax
+  push edx
+  mov edx, eax
   call find_symbol
 
   ;; Check that the symbol exists if we are not in stage 0
@@ -474,20 +470,23 @@ add_symbol_placeholder_after_assert:
   jne add_symbol_placeholder_found
 
   ;; ...add it, with a fake location
-  push DWORD [ebp+12]
+  pop edx
+  pop eax
+  push edx
   push 0xffffffff
-  push DWORD [ebp+8]
+  push eax
   call add_symbol
   add esp, 12
   jmp add_symbol_placeholder_end
 
 add_symbol_placeholder_found:
   ;; If it was found, check that arity matches
-  cmp [ebp+12], edx
+  pop eax
+  cmp edx, eax
   jne platform_panic
+  add esp, 4
 
 add_symbol_placeholder_end:
-  pop ebp
   ret
 
 

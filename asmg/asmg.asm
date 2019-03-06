@@ -1309,10 +1309,9 @@ parse_ifun:
   call atoi
 
   ;; Add a symbol placeholder for the function
-  push eax
-  push ebx
+  mov edx, eax
+  mov eax, ebx
   call add_symbol_placeholder
-  add esp, 8
 
   jmp parse_loop
 
