@@ -1,5 +1,5 @@
 
-all: build build/boot_asmg.x86 build/boot_asmg0.x86
+all: build build/boot_asmg.x86 build/boot_asmg_dbg.x86 build/boot_asmg0.x86
 
 # Trivial things
 build:
@@ -58,7 +58,13 @@ build/initrd-asmg.diskfs: build/initrd-asmg.list
 build/asmg.x86.exe: build/full-asmg.asm
 	nasm -f bin -o $@ $<
 
+build/asmg_dbg.x86.exe: build/full-asmg.asm
+	nasm -D DEBUG -f bin -o $@ $<
+
 build/asmg.x86: build/asmg.x86.exe build/initrd-asmg.diskfs
+	cat $^ > $@
+
+build/asmg_dbg.x86: build/asmg_dbg.x86.exe build/initrd-asmg.diskfs
 	cat $^ > $@
 
 build/debugfs.img:
@@ -66,6 +72,9 @@ build/debugfs.img:
 	dd if=/dev/zero of=$@ bs=1048576 count=10 oflag=append conv=notrunc
 
 build/boot_asmg.x86: build/bootloader.x86.mbr build/bootloader.x86.stage2 build/asmg.x86 build/diskfs.img build/debugfs.img
+	./create_partition.py $^ > $@
+
+build/boot_asmg_dbg.x86: build/bootloader.x86.mbr build/bootloader.x86.stage2 build/asmg_dbg.x86 build/diskfs.img build/debugfs.img
 	./create_partition.py $^ > $@
 
 # Asmg0 kernel

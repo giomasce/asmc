@@ -25,15 +25,18 @@
 heap_ptr:
   resd 1
 
+%ifdef DEBUG
 str_exit:
   db 'The execution has finished, bye bye...'
   db NEWLINE
   db 0
+%endif
 str_panic:
   db 'PANIC!'
   db NEWLINE
   db 0
 
+%ifdef DEBUG
 str_hello_asmc:
   db 'Hello, asmc!'
   db NEWLINE
@@ -46,6 +49,7 @@ str_done:
   db 'done!'
   db NEWLINE
   db 0
+%endif
 
 str_empty:
   db 0
@@ -73,6 +77,7 @@ entry:
   ;; Initialize stdout
   call stdout_setup
 
+%ifdef DEBUG
   ;; Log
   mov esi, str_hello_asmc
   call log
@@ -80,6 +85,7 @@ entry:
   ;; Log
   mov esi, str_init_asm_symbols_table
   call log
+%endif
 
   ;; Init symbol table
   call init_symbols
@@ -87,15 +93,19 @@ entry:
   ;; Expose some kernel symbols
   call init_kernel_api
 
+%ifdef DEBUG
   ;; Log
   mov esi, str_done
   call log
+%endif
 
   ;; Call start
   call start
 
+%ifdef DEBUG
   mov esi, str_exit
   call log
+%endif
 
   mov eax, 0
   jmp shutdown
