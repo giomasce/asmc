@@ -82,6 +82,35 @@ fun mm0tok_destroy 1 {
   tok free ;
 }
 
+fun mm0tok_cmp_value 3 {
+  $tok
+  $type
+  $value
+  @tok 2 param = ;
+  @type 1 param = ;
+  @value 0 param = ;
+
+  if tok MM0TOK_TYPE take type != { 0 ret ; }
+
+  if type MM0TOK_TYPE_SYMBOL == {
+    tok MM0TOK_VALUE take value == ret ;
+  }
+
+  if type MM0TOK_TYPE_IDENT == {
+    tok MM0TOK_VALUE take value strcmp 0 == ret ;
+  }
+
+  if type MM0TOK_TYPE_NUMBER == {
+    tok MM0TOK_VALUE take value == ret ;
+  }
+
+  if type MM0TOK_TYPE_MATH == {
+    tok MM0TOK_VALUE take value strcmp 0 == ret ;
+  }
+
+  0 "mm0tok_expect_type_value: illegal token type" assert_msg ;
+}
+
 fun mm0tok_dump 1 {
   $tok
   @tok 0 param = ;
@@ -343,22 +372,90 @@ fun mm0lexer_get_token 1 {
   token ret ;
 }
 
+fun mm0lexer_get_token_type 2 {
+  $lexer
+  $type
+  @lexer 1 param = ;
+  @type 0 param = ;
+
+  $tok
+  @tok lexer mm0lexer_get_token = ;
+  tok MM0TOK_TYPE take type == "mm0lexer_get_token_type: wrong token type" assert_msg ;
+
+  tok ret ;
+}
+
+fun mm0lexer_expect 3 {
+  $lexer
+  $type
+  $value
+  @lexer 2 param = ;
+  @type 1 param = ;
+  @value 0 param = ;
+
+  $tok
+  @tok lexer mm0lexer_get_token = ;
+  tok type value mm0tok_cmp_value "mm0lexer_expect: illegal token" assert_msg ;
+  tok mm0tok_destroy ;
+}
+
+const MM0SORT_PURE 0
+const MM0SORT_STRICT 4
+const MM0SORT_PROVABLE 8
+const MM0SORT_NONEMPTY 12
+const SIZEOF_MM0SORT 16
+
+fun mm0sort_init 0 {
+  $sort
+  @sort SIZEOF_MM0SORT malloc = ;
+
+  sort MM0SORT_PURE take_addr 0 = ;
+  sort MM0SORT_STRICT take_addr 0 = ;
+  sort MM0SORT_PROVABLE take_addr 0 = ;
+  sort MM0SORT_NONEMPTY take_addr 0 = ;
+
+  sort ret ;
+}
+
+fun mm0sort_destroy 1 {
+  $sort
+  @sort 0 param = ;
+
+  sort free ;
+}
+
 const MM0TH_LEXER 0
 const MM0TH_LEVEL 4
-const SIZEOF_MM0TH 8
+const MM0TH_SORTS 8
+const SIZEOF_MM0TH 12
 
 fun mm0th_init 0 {
   $theory
   @theory SIZEOF_MM0TH malloc = ;
 
   theory MM0TH_LEVEL take_addr 0 = ;
+  theory MM0TH_SORTS take_addr map_init = ;
 
   theory ret ;
+}
+
+fun mm0th_sorts_destroy_closure 3 {
+  $ctx
+  $key
+  $value
+  @ctx 2 param = ;
+  @key 1 param = ;
+  @value 0 param = ;
+
+  value mm0sort_destroy ;
 }
 
 fun mm0th_destroy 1 {
   $theory
   @theory 0 param = ;
+
+  theory MM0TH_SORTS take @mm0th_sorts_destroy_closure 0 map_foreach ;
+  theory MM0TH_SORTS take map_destroy ;
 
   theory free ;
 }
@@ -374,17 +471,36 @@ fun mm0_parse_sort 2 {
 
   "(sort-stmt) " log ;
 
-  # Discard tokens up to the semicolon
+  $sort
+  @sort mm0sort_init = ;
+
+  # Read sort properties
   $cont
   @cont 1 = ;
   while cont {
-    @tok lexer mm0lexer_get_token = ;
-    if tok MM0TOK_TYPE take MM0TOK_TYPE_SYMBOL ==
-       tok MM0TOK_VALUE take MM0TOK_SYMB_SEMICOLON == && {
-      @cont 0 = ;
-    }
+    $ok
+    @ok 0 = ;
+    if tok MM0TOK_TYPE_IDENT "pure" mm0tok_cmp_value { @ok 1 = ; sort MM0SORT_PURE take_addr 1 = ; }
+    if tok MM0TOK_TYPE_IDENT "strict" mm0tok_cmp_value { @ok 1 = ; sort MM0SORT_STRICT take_addr 1 = ; }
+    if tok MM0TOK_TYPE_IDENT "provable" mm0tok_cmp_value { @ok 1 = ; sort MM0SORT_PROVABLE take_addr 1 = ; }
+    if tok MM0TOK_TYPE_IDENT "nonempty" mm0tok_cmp_value { @ok 1 = ; sort MM0SORT_NONEMPTY take_addr 1 = ; }
+    if tok MM0TOK_TYPE_IDENT "sort" mm0tok_cmp_value { @ok 1 = ; @cont 0 = ; }
+    ok "mm0_parse_sort: parsing failed" assert_msg ;
     tok mm0tok_destroy ;
+    @tok lexer MM0TOK_TYPE_IDENT mm0lexer_get_token_type = ;
   }
+
+  # Register the sort
+  $sorts
+  @sorts theory MM0TH_SORTS take = ;
+  $value
+  @value tok MM0TOK_VALUE take = ;
+  sorts value map_has ! "mm0_parse_sort: sort already exists" assert_msg ;
+  sorts value sort map_set ;
+  tok mm0tok_destroy ;
+
+  # Expect semicolon
+  lexer MM0TOK_TYPE_SYMBOL MM0TOK_SYMB_SEMICOLON mm0lexer_expect ;
 }
 
 fun mm0_parse_var 2 {
@@ -401,6 +517,7 @@ fun mm0_parse_var 2 {
   # Discard tokens up to the semicolon
   $cont
   @cont 1 = ;
+  tok mm0tok_destroy ;
   while cont {
     @tok lexer mm0lexer_get_token = ;
     if tok MM0TOK_TYPE take MM0TOK_TYPE_SYMBOL ==
@@ -425,6 +542,7 @@ fun mm0_parse_term 2 {
   # Discard tokens up to the semicolon
   $cont
   @cont 1 = ;
+  tok mm0tok_destroy ;
   while cont {
     @tok lexer mm0lexer_get_token = ;
     if tok MM0TOK_TYPE take MM0TOK_TYPE_SYMBOL ==
@@ -449,6 +567,7 @@ fun mm0_parse_assert 2 {
   # Discard tokens up to the semicolon
   $cont
   @cont 1 = ;
+  tok mm0tok_destroy ;
   while cont {
     @tok lexer mm0lexer_get_token = ;
     if tok MM0TOK_TYPE take MM0TOK_TYPE_SYMBOL ==
@@ -473,6 +592,7 @@ fun mm0_parse_def 2 {
   # Discard tokens up to the open brace
   $cont
   @cont 1 = ;
+  tok mm0tok_destroy ;
   while cont {
     @tok lexer mm0lexer_get_token = ;
     if tok MM0TOK_TYPE take MM0TOK_TYPE_SYMBOL ==
@@ -498,6 +618,7 @@ fun mm0_parse_notation 2 {
   # Discard tokens up to the semicolon
   $cont
   @cont 1 = ;
+  tok mm0tok_destroy ;
   while cont {
     @tok lexer mm0lexer_get_token = ;
     if tok MM0TOK_TYPE take MM0TOK_TYPE_SYMBOL ==
@@ -522,6 +643,7 @@ fun mm0_parse_output 2 {
   # Discard tokens up to the semicolon
   $cont
   @cont 1 = ;
+  tok mm0tok_destroy ;
   while cont {
     @tok lexer mm0lexer_get_token = ;
     if tok MM0TOK_TYPE take MM0TOK_TYPE_SYMBOL ==
@@ -530,6 +652,56 @@ fun mm0_parse_output 2 {
     }
     tok mm0tok_destroy ;
   }
+}
+
+fun mm0_parse_statement 2 {
+  $theory
+  $tok
+  @theory 1 param = ;
+  @tok 0 param = ;
+
+  $value
+  @value tok MM0TOK_VALUE take = ;
+
+  if value "pure" strcmp 0 ==
+     value "strict" strcmp 0 == ||
+     value "provable" strcmp 0 == ||
+     value "nonempty" strcmp 0 == ||
+     value "sort" strcmp 0 == || {
+    theory tok mm0_parse_sort ;
+    ret ;
+  }
+  if value "var" strcmp 0 == {
+    theory tok mm0_parse_var ;
+    ret ;
+  }
+  if value "term" strcmp 0 == {
+    theory tok mm0_parse_term ;
+    ret ;
+  }
+  if value "axiom" strcmp 0 ==
+     value "theorem" strcmp 0 == || {
+    theory tok mm0_parse_assert ;
+    ret ;
+  }
+  if value "def" strcmp 0 == {
+    theory tok mm0_parse_def ;
+    ret ;
+  }
+  if value "infixl" strcmp 0 ==
+     value "infixr" strcmp 0 == ||
+     value "prefix" strcmp 0 == ||
+     value "coercion" strcmp 0 == ||
+     value "notation" strcmp 0 == || {
+    theory tok mm0_parse_notation ;
+    ret ;
+  }
+  if value "output" strcmp 0 == {
+    theory tok mm0_parse_output ;
+    ret ;
+  }
+
+  0 "mm0_parse_statement: invalid statement" assert_msg ;
 }
 
 fun mm0_parse 1 {
@@ -561,41 +733,11 @@ fun mm0_parse 1 {
         theory MM0TH_LEVEL take 0 > "mm0_parse: invalid block closing" assert_msg ;
         theory MM0TH_LEVEL take_addr theory MM0TH_LEVEL take 1 - = ;
       }
+      tok mm0tok_destroy ;
     } else {
       type MM0TOK_TYPE_IDENT == "mm0_parse: invalid token type" assert_msg ;
-      if value "pure" strcmp 0 ==
-         value "strict" strcmp 0 == ||
-         value "provable" strcmp 0 == ||
-         value "nonempty" strcmp 0 == ||
-         value "sort" strcmp 0 == || {
-        theory tok mm0_parse_sort ;
-      }
-      if value "var" strcmp 0 == {
-        theory tok mm0_parse_var ;
-      }
-      if value "term" strcmp 0 == {
-        theory tok mm0_parse_term ;
-      }
-      if value "axiom" strcmp 0 ==
-         value "theorem" strcmp 0 == || {
-        theory tok mm0_parse_assert ;
-      }
-      if value "def" strcmp 0 == {
-        theory tok mm0_parse_def ;
-      }
-      if value "infixl" strcmp 0 ==
-         value "infixr" strcmp 0 == ||
-         value "prefix" strcmp 0 == ||
-         value "coercion" strcmp 0 == ||
-         value "notation" strcmp 0 == || {
-        theory tok mm0_parse_notation ;
-      }
-      if value "output" strcmp 0 == {
-        theory tok mm0_parse_output ;
-      }
+      theory tok mm0_parse_statement ;
     }
-
-    tok mm0tok_destroy ;
   }
 }
 
