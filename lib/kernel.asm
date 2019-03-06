@@ -25,12 +25,6 @@
 heap_ptr:
   resd 1
 
-open_files:
-  resd 1
-
-open_file_num:
-  resd 1
-
 str_exit:
   db 'The execution has finished, bye bye...'
   db NEWLINE
@@ -45,12 +39,6 @@ str_hello_asmc:
   db NEWLINE
   db 0
 
-str_init_heap_stack:
-  db 'Initializing heap and stack... '
-  db 0
-str_init_files:
-  db 'Initializing files table... '
-  db 0
 str_init_asm_symbols_table:
   db 'Initializing symbols table... '
   db 0
@@ -87,28 +75,6 @@ entry:
 
   ;; Log
   mov esi, str_hello_asmc
-  call log
-
-  ;; Log
-  mov esi, str_init_heap_stack
-  call log
-
-  ;; Log
-  mov esi, str_done
-  call log
-
-  ;; Log
-  mov esi, str_init_files
-  call log
-
-  ;; Initialize file table
-  mov DWORD [open_file_num], 0
-  mov eax, FILE_RECORD_SIZE * MAX_OPEN_FILE_NUM
-  call allocate
-  mov [open_files], eax
-
-  ;; Log
-  mov esi, str_done
   call log
 
   ;; Log
