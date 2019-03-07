@@ -19,19 +19,25 @@ A Sort object is characterized by the following properties:
  * `provable` (boolean)
  * `nonempty` (boolean)
 
+## Type object
+
+A Type objects is characterized by the following properties:
+
+ * `sort` (identifier which appears as `name` of a previously defined Sort object)
+ * `dep_vars` (collection of identifiers which appear as `name` of previously defined Var objects)
+ * `starred` (boolean, which must be false if `dep_bars` is non empty)
+
 ## Var object
 
 A Var object is characterized by the following properties:
 
  * `name` (identifier)
- * `sort` (identifier which appears as `name` of a previously defined Sort object)
- * `dep_vars` (collection of identifiers which appear as `name` of previously defined Var objects)
- * `starred` (boolean, which must be false if `dep_bars` is non empty)
+ * `type` (a Type object)
 
 ## Term object
 
 A Term object is characterized by the following properties:
 
  * `name` (identifier)
- * `in_types` (list of identifiers which appear as `name` of previously defined Sort objects)
- * `out_type` (identifier which appears as `name` of a previously defined Sort object)
+ * `in_types` (list of Type objects)
+ * `out_type` (a Type object)
