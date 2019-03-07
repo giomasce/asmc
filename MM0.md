@@ -7,8 +7,9 @@ properties:
 
  * `sorts` (collection of Sort objects with different names)
  * `vars` (collection of Var objects with different names)
+ * `terms` (collection of Term objects with different names)
 
-# Sort object
+## Sort object
 
 A Sort object is characterized by the following properties:
 
@@ -18,7 +19,7 @@ A Sort object is characterized by the following properties:
  * `provable` (boolean)
  * `nonempty` (boolean)
 
-# Var object
+## Var object
 
 A Var object is characterized by the following properties:
 
@@ -26,3 +27,11 @@ A Var object is characterized by the following properties:
  * `sort` (identifier which appears as `name` of a previously defined Sort object)
  * `dep_vars` (collection of identifiers which appear as `name` of previously defined Var objects)
  * `starred` (boolean, which must be false if `dep_bars` is non empty)
+
+## Term object
+
+A Term object is characterized by the following properties:
+
+ * `name` (identifier)
+ * `in_types` (list of identifiers which appear as `name` of previously defined Sort objects)
+ * `out_type` (identifier which appears as `name` of a previously defined Sort object)
