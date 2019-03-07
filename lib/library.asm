@@ -460,11 +460,11 @@ add_symbol_placeholder:
 
   ;; Check that the symbol exists if we are not in stage 0
   cmp DWORD [stage], 0
-  je add_symbol_placeholder_after_assert
+  je add_symbol_placeholder_stage0
   cmp eax, 0
   je platform_panic
 
-add_symbol_placeholder_after_assert:
+add_symbol_placeholder_stage0:
   ;; If the symbol was not found...
   cmp eax, 0
   jne add_symbol_placeholder_found
@@ -472,8 +472,9 @@ add_symbol_placeholder_after_assert:
   ;; ...add it, with a fake location
   pop edx
   pop eax
+  mov ecx, 0xffffffff
   push edx
-  push 0xffffffff
+  push ecx
   push eax
   call add_symbol
   add esp, 12
@@ -490,68 +491,66 @@ add_symbol_placeholder_end:
   ret
 
 
+  ;; Input in EAX (name), ECX (loc) and EDX (arity)
+  ;; Destroys: EAX, ECX, EDX
 fix_symbol_placeholder:
-  push ebp
-  mov ebp, esp
-  push ebx
-
   ;; Call find_symbol
-  mov edx, [ebp+8]
+  push eax
+  push ecx
+  push edx
+  mov edx, eax
   call find_symbol
-  mov ebx, ecx
 
   ;; Check that the symbol exists if we are not in stage 0
-  mov ecx, stage
-  cmp DWORD [ecx], 0
-  je fix_symbol_placeholder_after_assert
+  cmp DWORD [stage], 0
+  je fix_symbol_placeholder_stage0
   cmp eax, 0
   je platform_panic
 
-fix_symbol_placeholder_after_assert:
+fix_symbol_placeholder_stage0:
   ;; If the symbol was not found...
   cmp eax, 0
   jne fix_symbol_placeholder_found
 
-  ;; ...add it, with a fake location
-  push DWORD [ebp+16]
-  push DWORD [ebp+12]
-  push DWORD [ebp+8]
+  ;; ..add it
+  pop edx
+  pop ecx
+  pop eax
+  push edx
+  push ecx
+  push eax
   call add_symbol
   add esp, 12
-  jmp fix_symbol_placeholder_end
+  jmp add_symbol_placeholder_end
 
 fix_symbol_placeholder_found:
-  ;; Check that arity matches
-  cmp [ebp+16], edx
+  ;; If it was found, check that arity matches
+  pop eax
+  cmp eax, edx
   jne platform_panic
 
-  ;; Check that location matches, or that we are in stage 0 and
-  ;; location is -1
-  cmp [ebp+12], ebx
-  je fix_symbol_placeholder_after_second_assert
-  cmp ebx, 0xffffffff
+  ;; And check that loc either matches...
+  pop eax
+  cmp eax, ecx
+  pop edx
+  je fix_symbol_placeholder_end
+
+  ;; ...or is -1 at stage 0...
+  cmp ecx, 0xffffffff
   jne platform_panic
   cmp DWORD [stage], 0
   jne platform_panic
 
-fix_symbol_placeholder_after_second_assert:
-  ;; Call get_symbol_idx
-  mov edx, [ebp+8]
+  ;; ...in which case update it
+  push eax
   call get_symbol_idx
-
-  ;; Assert the index is valid
-  cmp [symbol_num], ecx
+  cmp ecx, [symbol_num]
   je platform_panic
-
-  ;; Fix the location value
-  shl ecx, 2
-  add ecx, [symbol_locs_ptr]
-  mov edx, [ebp+12]
-  mov [ecx], edx
+  mov eax, [symbol_locs_ptr]
+  pop edx
+  mov [eax+4*ecx], edx
 
 fix_symbol_placeholder_end:
-  pop ebx
-  pop ebp
   ret
 
 

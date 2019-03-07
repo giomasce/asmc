@@ -1276,11 +1276,10 @@ parse_fun:
   call atoi
 
   ;; Add a symbol for the function
-  push eax
-  push DWORD [current_loc]
-  push ebx
+  mov edx, eax
+  mov ecx, [current_loc]
+  mov eax, ebx
   call fix_symbol_placeholder
-  add esp, 12
 
   ;; Emit the prologue
   mov ecx, 0xe58955             ; push ebp; mov ebp, esp
