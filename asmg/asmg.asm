@@ -24,37 +24,6 @@ TEMP_VAR:
   db '__temp'
   db 0
 
-str_cu_open:
-  db '{'
-  db 0
-str_cu_closed:
-  db '}'
-  db 0
-str_semicolon:
-  db SEMICOLON
-  db 0
-str_ret:
-  db 'ret'
-  db 0
-str_if:
-  db 'if'
-  db 0
-str_while:
-  db 'while'
-  db 0
-str_else:
-  db 'else'
-  db 0
-str_ifun:
-  db 'ifun'
-  db 0
-str_fun:
-  db 'fun'
-  db 0
-str_const:
-  db 'const'
-  db 0
-
   section .bss
 
 label_num:
@@ -158,12 +127,12 @@ push_var:
   add esp, 8
 
   ;; Increment the stack depth
-  add DWORD [stack_depth], 1
+  inc DWORD [stack_depth]
 
   ;; If this is a temp var, increment also temp_depth
   cmp DWORD [esp+8], 0
   je push_var_non_temp
-  add DWORD [temp_depth], 1
+  inc DWORD [temp_depth]
   ret
 
   ;; If this is not a temp var, check temp_depth is zero
@@ -177,7 +146,7 @@ pop_var:
   ;; Check stack depth is positive and decrement it
   cmp DWORD [stack_depth], 0
   jna platform_panic
-  sub DWORD [stack_depth], 1
+  dec DWORD [stack_depth]
 
   ;; If this is a temp var...
   cmp DWORD [esp+4], 0
@@ -188,7 +157,7 @@ pop_var:
 pop_var_temp:
   cmp DWORD [temp_depth], 0
   jna platform_panic
-  sub DWORD [temp_depth], 1
+  dec DWORD [temp_depth]
   ret
 
 
@@ -709,11 +678,7 @@ push_expr_until_brace_loop:
   mov ebx, eax
 
   ;; If it is an open brace, exit loop
-  push eax
-  push str_cu_open
-  call strcmp
-  add esp, 8
-  cmp eax, 0
+  cmp WORD [eax], '{'
   je push_expr_until_brace_end
 
   ;; If not, branch depending on whether it is a string or not
@@ -817,11 +782,7 @@ parse_block:
 
   ;; Expect and discard an open curly brace token
   call get_token
-  push eax
-  push str_cu_open
-  call strcmp
-  add esp, 8
-  cmp eax, 0
+  cmp WORD [eax], '{'
   jne platform_panic
 
   ;; Main parsing loop
@@ -835,40 +796,27 @@ parse_block_loop:
   je platform_panic
 
   ;; If it is a closed curly brace, then break
-  push ebx
-  push str_cu_closed
-  call strcmp
-  add esp, 8
-  cmp eax, 0
+  cmp WORD [ebx], '}'
   je parse_block_break
 
   ;; Jump to the appropriate handler
-  push ebx
-  push str_semicolon
-  call strcmp
-  add esp, 8
-  cmp eax, 0
+  cmp WORD [ebx], ';'
   je parse_block_semicolon
 
-  push ebx
-  push str_ret
-  call strcmp
-  add esp, 8
-  cmp eax, 0
+  cmp DWORD [ebx], 'ret'
   je parse_block_ret
 
-  push ebx
-  push str_if
-  call strcmp
-  add esp, 8
-  cmp eax, 0
+  mov eax, [ebx]
+  and eax, 0xffffff
+  sub eax, 'if'
   je parse_block_if
 
-  push ebx
-  push str_while
-  call strcmp
-  add esp, 8
-  cmp eax, 0
+  mov eax, [ebx]
+  sub eax, 'whil'
+  mov cx, [ebx+4]
+  sub cx, 'e'
+  or ax, cx
+  test eax, eax
   je parse_block_while
 
   cmp BYTE [ebx], DOLLAR
@@ -944,11 +892,10 @@ parse_block_if:
 
   ;; Get another token and check if it is an else
   call get_token
-  push eax
-  push str_else
-  call strcmp
-  add esp, 8
-  cmp eax, 0
+  mov ecx, [eax]
+  sub ecx, 'else'
+  or cl, [eax+4]
+  test ecx, ecx
   je parse_block_else
 
   ;; Not an else: add a symbol for the else label
@@ -1241,25 +1188,21 @@ parse_loop:
   je parse_ret
 
   ;; Jump to the appropriate handler
-  push ebx
-  push str_fun
-  call strcmp
-  add esp, 8
-  cmp eax, 0
+  cmp DWORD [ebx], 'fun'
   je parse_fun
 
-  push ebx
-  push str_ifun
-  call strcmp
-  add esp, 8
-  cmp eax, 0
+  mov eax, [ebx]
+  sub eax, 'ifun'
+  or al, [ebx+4]
+  test eax, eax
   je parse_ifun
 
-  push ebx
-  push str_const
-  call strcmp
-  add esp, 8
-  cmp eax, 0
+  mov eax, [ebx]
+  sub eax, 'cons'
+  mov cx, [ebx+4]
+  sub cx, 't'
+  or ax, cx
+  test eax, eax
   je parse_const
 
   cmp BYTE [ebx], DOLLAR
