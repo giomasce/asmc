@@ -19,11 +19,17 @@
   TERM_COL_NUM equ 80
   TERM_BASE_ADDR equ 0xb8000
 
+%ifdef DEBUG
+
+  section .bss
+
 term_row:
   resd 1
 
 term_col:
   resd 1
+
+  section .text
 
   ;; Fill the VGA framebuffer with spaces char, with color light grey
   ;; 	on black
@@ -194,3 +200,13 @@ stdout_setup:
   call term_setup
   call serial_setup
   ret
+
+%else
+
+write_console:
+  ret
+
+stdout_setup:
+  ret
+
+%endif

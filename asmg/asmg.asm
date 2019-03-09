@@ -18,6 +18,8 @@
   WRITE_LABEL_BUF_LEN equ 128
   STACK_VARS_LEN equ 1024
 
+  section .data
+
 TEMP_VAR:
   db '__temp'
   db 0
@@ -52,6 +54,8 @@ str_fun:
 str_const:
   db 'const'
   db 0
+
+  section .bss
 
 label_num:
   resd 1
@@ -92,6 +96,7 @@ read_ptr_begin:
 read_ptr_end:
   resd 1
 
+  section .text
 
 gen_label:
   ;; Increment by 1 gen_label and return its original value

@@ -15,10 +15,11 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+  section .data
+
 str_platform_g_compile:
   db 'platform_g_compile'
   db 0
-
 str_platform_setjmp:
   db 'platform_setjmp'
   db 0
@@ -50,6 +51,7 @@ str_entry:
   db 'entry'
   db 0
 
+  section .text
 
   ;; void platform_g_compile(char *filename)
 platform_g_compile:

@@ -74,15 +74,6 @@ current_loc:
 stage:
   resd 1
 
-  section .data
-
-str_symbol_already_defined:
-  db 'Symbol already defined: '
-  db 0
-str_newline:
-  db NEWLINE
-  db 0
-
   section .text
 
   ;; Input number in AL

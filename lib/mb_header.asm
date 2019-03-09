@@ -23,9 +23,13 @@
   MBFLAGS equ 0x10003
   MBCHECKSUM equ 0x100000000 - MBMAGIC - MBFLAGS
 
-  jmp entry
+  section .text
 
-  align 4
+  ;; Manually jump to after_header, to avoid depending on instruction encoding length
+  db 0xeb, after_header - 2, 0x00, 0x00
+
+  dd begin_bss
+  dd end_bss
 
   MBBEGIN equ $
 
@@ -40,4 +44,11 @@
   dd 0x0
   dd 0x100000
 
+after_header:
+  jmp entry
+
 temp_stack_top:
+
+  section .bss
+
+begin_bss:

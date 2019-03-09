@@ -22,8 +22,12 @@
   FILE_RECORD_SIZE equ 16
   FILE_RECORD_SIZE_LOG equ 4
 
+  section .bss
+
 heap_ptr:
   resd 1
+
+  section .data
 
 %ifdef DEBUG
 str_exit:
@@ -34,6 +38,7 @@ str_exit:
 
 str_panic:
   db 'PANIC!'
+str_newline:
   db NEWLINE
 str_empty:
   db 0
@@ -53,6 +58,18 @@ str_done:
   db 0
 %endif
 
+str_platform_panic:
+  db 'platform_panic'
+  db 0
+str_platform_allocate:
+  db 'platform_allocate'
+  db 0
+str_platform_get_symbol:
+  db 'platform_get_symbol'
+  db 0
+
+  section .text
+
 entry:
   ;; Make it double sure that we do not have interrupts around
   cli
@@ -60,6 +77,15 @@ entry:
   ;; Use the multiboot header as temporary stack
   mov esp, temp_stack_top
   and esp, 0xfffffff0
+
+  ;; Initialize the BSS
+;;   mov ecx, begin_bss
+;;   xor eax, eax
+;; entry_bss_loop:
+;;   mov [ecx], al
+;;   inc ecx
+;;   cmp ecx, end_bss
+;;   jne entry_bss_loop
 
   ;; Find the end of the ar initrd
   mov ecx, str_empty
@@ -112,7 +138,6 @@ entry:
 
 platform_panic:
 panic:
-  cpuid
   jmp shutdown
 %ifdef DEBUG
   ;; Write an exit string
@@ -157,16 +182,6 @@ allocate:
   mov [heap_ptr], ecx
   ret
 
-
-str_platform_panic:
-  db 'platform_panic'
-  db 0
-str_platform_allocate:
-  db 'platform_allocate'
-  db 0
-str_platform_get_symbol:
-  db 'platform_get_symbol'
-  db 0
 
   ;; Initialize the symbols table with the "kernel API"
 init_kernel_api:
