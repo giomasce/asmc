@@ -333,78 +333,61 @@ find_symbol_or_zero:
   ret
 
 
+  ;; Input in EAX (name), ECX (loc) and EDX (arity)
+  ;; Destroys: EAX, ECX, EDX
 add_symbol:
-  push ebp
-  mov ebp, esp
-  push ebx
+  push esi
+  push edi
 
   ;; Call strlen
-  mov eax, [ebp+8]
+  push edx
+  push ecx
   push eax
-  call strlen
-  add esp, 4
+  mov esi, eax
+  call strlen2
 
   ;; Check input length
   cmp eax, 0
   jna platform_panic
-  cmp eax, MAX_SYMBOL_NAME_LEN
+  cmp eax, MAX_SYMBOL_NAME_LEN-1
   jnb platform_panic
 
   ;; Call find_symbol and check the symbol does not exist yet
-  mov edx, [ebp+8]
-  call find_symbol
-  cmp eax, 0
-  jne add_symbol_already_defined
+  pop edx
+  call get_symbol_idx
+  cmp ecx, [symbol_num]
+  jne platform_panic
 
   ;; Put the current symbol number in ebx and check it is not
   ;; overflowing
-  mov ebx, [symbol_num]
-  cmp ebx, SYMBOL_TABLE_LEN
+  cmp ecx, SYMBOL_TABLE_LEN
   jnb platform_panic
 
+  ;; Save the name
+  mov esi, edx
+  mov edi, [symbol_num]
+  shl edi, MAX_SYMBOL_NAME_LEN_LOG
+  add edi, [symbol_names_ptr]
+  call strcpy2
+
   ;; Save the location for the new symbol
-  mov eax, ebx
+  mov eax, [symbol_num]
   shl eax, 2
   add eax, [symbol_locs_ptr]
-  mov ecx, [ebp+12]
-  mov [eax], ecx
+  pop DWORD [eax]
 
   ;; Save the arity for the new symbol
-  mov eax, ebx
+  mov eax, [symbol_num]
   shl eax, 2
   add eax, [symbol_arities_ptr]
-  mov ecx, [ebp+16]
-  mov [eax], ecx
-
-  ;; Save the name for the new symbol
-  mov eax, [ebp+8]
-  push eax
-  mov eax, ebx
-  shl eax, MAX_SYMBOL_NAME_LEN_LOG
-  add eax, [symbol_names_ptr]
-  push eax
-  call strcpy
-  add esp, 8
+  pop DWORD [eax]
 
   ;; Increment and store the new symbol number
-  add ebx, 1
-  mov [symbol_num], ebx
+  inc DWORD [symbol_num]
 
-  pop ebx
-  pop ebp
+  pop edi
+  pop esi
   ret
-
-add_symbol_already_defined:
-  ;; Log
-  mov esi, str_symbol_already_defined
-  call log
-  mov esi, [ebp+8]
-  call log
-  mov esi, str_newline
-  call log
-
-  ;; Then panic
-  call platform_panic
 
 
   ;; Input in EAX (name), ECX (loc) and EDX (arity)
@@ -415,11 +398,7 @@ add_symbol_wrapper:
   jne add_symbol_wrapper_stage1
 
   ;; Stage 0: call actual add_symbol
-  push edx
-  push ecx
-  push eax
   call add_symbol
-  add esp, 12
 
   jmp add_symbol_wrapper_ret
 
@@ -473,11 +452,7 @@ add_symbol_placeholder_stage0:
   pop edx
   pop eax
   mov ecx, 0xffffffff
-  push edx
-  push ecx
-  push eax
   call add_symbol
-  add esp, 12
   jmp add_symbol_placeholder_end
 
 add_symbol_placeholder_found:
@@ -516,11 +491,7 @@ fix_symbol_placeholder_stage0:
   pop edx
   pop ecx
   pop eax
-  push edx
-  push ecx
-  push eax
   call add_symbol
-  add esp, 12
   jmp add_symbol_placeholder_end
 
 fix_symbol_placeholder_found:

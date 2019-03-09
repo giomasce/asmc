@@ -31,9 +31,11 @@ str_exit:
   db NEWLINE
   db 0
 %endif
+
 str_panic:
   db 'PANIC!'
   db NEWLINE
+str_empty:
   db 0
 
 %ifdef DEBUG
@@ -50,9 +52,6 @@ str_done:
   db NEWLINE
   db 0
 %endif
-
-str_empty:
-  db 0
 
 entry:
   ;; Make it double sure that we do not have interrupts around
@@ -113,9 +112,13 @@ entry:
 
 platform_panic:
 panic:
+  cpuid
+  jmp shutdown
+%ifdef DEBUG
   ;; Write an exit string
   mov esi, str_panic
   call log
+%endif
 
   mov eax, 1
   jmp shutdown
@@ -167,23 +170,20 @@ str_platform_get_symbol:
 
   ;; Initialize the symbols table with the "kernel API"
 init_kernel_api:
-  push 0
-  push platform_panic
-  push str_platform_panic
+  mov edx, 0
+  mov ecx, platform_panic
+  mov eax, str_platform_panic
   call add_symbol
-  add esp, 12
 
-  push 1
-  push platform_allocate
-  push str_platform_allocate
+  mov edx, 1
+  mov ecx, platform_allocate
+  mov eax, str_platform_allocate
   call add_symbol
-  add esp, 12
 
-  push 2
-  push platform_get_symbol
-  push str_platform_get_symbol
+  mov edx, 2
+  mov ecx, platform_get_symbol
+  mov eax, str_platform_get_symbol
   call add_symbol
-  add esp, 12
 
   ret
 

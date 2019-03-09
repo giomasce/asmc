@@ -26,6 +26,13 @@ str_platform_longjmp:
   db 'platform_longjmp'
   db 0
 
+%ifdef DEBUG
+str_init_g_compiler:
+  db 'Initializing G compiler... '
+  db 0
+str_init_g_operations:
+  db 'Initializing G operations... '
+  db 0
 str_init_compile_entry:
   db 'Will now compile entry.g...'
   db NEWLINE
@@ -34,6 +41,7 @@ str_init_launch_entry:
   db 'Will now call entry!'
   db NEWLINE
   db 0
+%endif
 
 str_entry_g:
   db 'entry.g'
@@ -139,38 +147,50 @@ discard_temp_labels_end:
 
 
 start:
+%ifdef DEBUG
+  ;; Log
+  mov esi, str_init_g_compiler
+  call log
+%endif
+
   ;; Init compiler
   call init_g_compiler
+
+%ifdef DEBUG
+  ;; Log
+  mov esi, str_done
+  call log
+%endif
+
+  %ifdef DEBUG
+  ;; Log
+  mov esi, str_init_g_operations
+  call log
+%endif
+
   call init_g_operations
 
-  ;; Add some asmg-specific platform_* calls
-  push 1
-  push platform_g_compile
-  push str_platform_g_compile
-  call add_symbol
-  add esp, 12
-  push 1
-  push platform_setjmp
-  push str_platform_setjmp
-  call add_symbol
-  add esp, 12
-  push 2
-  push platform_longjmp
-  push str_platform_longjmp
-  call add_symbol
-  add esp, 12
+%ifdef DEBUG
+  ;; Log
+  mov esi, str_done
+  call log
+%endif
 
+%ifdef DEBUG
   ;; Log
   mov esi, str_init_compile_entry
   call log
+%endif
 
   ;; Compile entry.g
   mov eax, str_entry_g
   call g_compile
 
+%ifdef DEBUG
   ;; Log
   mov esi, str_init_launch_entry
   call log
+%endif
 
   ;; Set EBP to zero, so that stack traces originating from the G code
   ;; are cut
@@ -629,286 +649,254 @@ symbol_arities_func:
   ret
 
 init_g_operations:
-  push 2
-  push equal
-  push str_equal
+  mov edx, 2
+  mov ecx, equal
+  mov eax, str_equal
   call add_symbol
-  add esp, 12
 
-  push 2
-  push equalc
-  push str_equalc
+  mov edx, 2
+  mov ecx, equalc
+  mov eax, str_equalc
   call add_symbol
-  add esp, 12
 
-  push 1
-  push param
-  push str_param
+  mov edx, 1
+  mov ecx, param
+  mov eax, str_param
   call add_symbol
-  add esp, 12
 
-  push 2
-  push plus
-  push str_plus
+  mov edx, 2
+  mov ecx, plus
+  mov eax, str_plus
   call add_symbol
-  add esp, 12
 
-  push 2
-  push minus
-  push str_minus
+  mov edx, 2
+  mov ecx, minus
+  mov eax, str_minus
   call add_symbol
-  add esp, 12
 
-  push 1
-  push un_minus
-  push str_un_minus
+  mov edx, 1
+  mov ecx, un_minus
+  mov eax, str_un_minus
   call add_symbol
-  add esp, 12
 
-  push 2
-  push times_op
-  push str_times
+  mov edx, 2
+  mov ecx, times_op
+  mov eax, str_times
   call add_symbol
-  add esp, 12
 
-  push 2
-  push over
-  push str_over
+  mov edx, 2
+  mov ecx, over
+  mov eax, str_over
   call add_symbol
-  add esp, 12
 
-  push 2
-  push mod
-  push str_mod
+  mov edx, 2
+  mov ecx, mod
+  mov eax, str_mod
   call add_symbol
-  add esp, 12
 
-  push 2
-  push uover
-  push str_uover
+  mov edx, 2
+  mov ecx, uover
+  mov eax, str_uover
   call add_symbol
-  add esp, 12
 
-  push 2
-  push umod
-  push str_umod
+  mov edx, 2
+  mov ecx, umod
+  mov eax, str_umod
   call add_symbol
-  add esp, 12
 
-  push 2
-  push eq
-  push str_eq
+  mov edx, 2
+  mov ecx, eq
+  mov eax, str_eq
   call add_symbol
-  add esp, 12
 
-  push 2
-  push neq
-  push str_neq
+  mov edx, 2
+  mov ecx, neq
+  mov eax, str_neq
   call add_symbol
-  add esp, 12
 
-  push 2
-  push l
-  push str_l
+  mov edx, 2
+  mov ecx, l
+  mov eax, str_l
   call add_symbol
-  add esp, 12
 
-  push 2
-  push le
-  push str_le
+  mov edx, 2
+  mov ecx, le
+  mov eax, str_le
   call add_symbol
-  add esp, 12
 
-  push 2
-  push g
-  push str_g
+  mov edx, 2
+  mov ecx, g
+  mov eax, str_g
   call add_symbol
-  add esp, 12
 
-  push 2
-  push ge
-  push str_ge
+  mov edx, 2
+  mov ecx, ge
+  mov eax, str_ge
   call add_symbol
-  add esp, 12
 
-  push 2
-  push lu
-  push str_lu
+  mov edx, 2
+  mov ecx, lu
+  mov eax, str_lu
   call add_symbol
-  add esp, 12
 
-  push 2
-  push leu
-  push str_leu
+  mov edx, 2
+  mov ecx, leu
+  mov eax, str_leu
   call add_symbol
-  add esp, 12
 
-  push 2
-  push gu
-  push str_gu
+  mov edx, 2
+  mov ecx, gu
+  mov eax, str_gu
   call add_symbol
-  add esp, 12
 
-  push 2
-  push geu
-  push str_geu
+  mov edx, 2
+  mov ecx, geu
+  mov eax, str_geu
   call add_symbol
-  add esp, 12
 
-  push 2
-  push shl
-  push str_shl
+  mov edx, 2
+  mov ecx, shl
+  mov eax, str_shl
   call add_symbol
-  add esp, 12
 
-  push 2
-  push shr
-  push str_shr
+  mov edx, 2
+  mov ecx, shr
+  mov eax, str_shr
   call add_symbol
-  add esp, 12
 
-  push 2
-  push shlu
-  push str_shlu
+  mov edx, 2
+  mov ecx, shlu
+  mov eax, str_shlu
   call add_symbol
-  add esp, 12
 
-  push 2
-  push shru
-  push str_shru
+  mov edx, 2
+  mov ecx, shru
+  mov eax, str_shru
   call add_symbol
-  add esp, 12
 
-  push 2
-  push and
-  push str_and
+  mov edx, 2
+  mov ecx, and
+  mov eax, str_and
   call add_symbol
-  add esp, 12
 
-  push 2
-  push or
-  push str_or
+  mov edx, 2
+  mov ecx, or
+  mov eax, str_or
   call add_symbol
-  add esp, 12
 
-  push 2
-  push xor
-  push str_xor
+  mov edx, 2
+  mov ecx, xor
+  mov eax, str_xor
   call add_symbol
-  add esp, 12
 
-  push 1
-  push not
-  push str_not
+  mov edx, 1
+  mov ecx, not
+  mov eax, str_not
   call add_symbol
-  add esp, 12
 
-  push 2
-  push land
-  push str_land
+  mov edx, 2
+  mov ecx, land
+  mov eax, str_land
   call add_symbol
-  add esp, 12
 
-  push 2
-  push lor
-  push str_lor
+  mov edx, 2
+  mov ecx, lor
+  mov eax, str_lor
   call add_symbol
-  add esp, 12
 
-  push 1
-  push lnot
-  push str_lnot
+  mov edx, 1
+  mov ecx, lnot
+  mov eax, str_lnot
   call add_symbol
-  add esp, 12
 
-  push 1
-  push inb
-  push str_inb
+  mov edx, 1
+  mov ecx, inb
+  mov eax, str_inb
   call add_symbol
-  add esp, 12
 
-  push 1
-  push inw
-  push str_inw
+  mov edx, 1
+  mov ecx, inw
+  mov eax, str_inw
   call add_symbol
-  add esp, 12
 
-  push 1
-  push ind
-  push str_ind
+  mov edx, 1
+  mov ecx, ind
+  mov eax, str_ind
   call add_symbol
-  add esp, 12
 
-  push 2
-  push outb
-  push str_outb
+  mov edx, 2
+  mov ecx, outb
+  mov eax, str_outb
   call add_symbol
-  add esp, 12
 
-  push 2
-  push outw
-  push str_outw
+  mov edx, 2
+  mov ecx, outw
+  mov eax, str_outw
   call add_symbol
-  add esp, 12
 
-  push 2
-  push outd
-  push str_outd
+  mov edx, 2
+  mov ecx, outd
+  mov eax, str_outd
   call add_symbol
-  add esp, 12
 
-  push 1
-  push deref
-  push str_deref
+  mov edx, 1
+  mov ecx, deref
+  mov eax, str_deref
   call add_symbol
-  add esp, 12
 
-  push 1
-  push derefc
-  push str_derefc
+  mov edx, 1
+  mov ecx, derefc
+  mov eax, str_derefc
   call add_symbol
-  add esp, 12
 
-  push 0
-  push frame_ptr
-  push str_frame_ptr
+  mov edx, 0
+  mov ecx, frame_ptr
+  mov eax, str_frame_ptr
   call add_symbol
-  add esp, 12
 
-  push 0
-  push max_symbol_name_len
-  push str_max_symbol_name_len
+  mov edx, 0
+  mov ecx, max_symbol_name_len
+  mov eax, str_max_symbol_name_len
   call add_symbol
-  add esp, 12
 
-  push 0
-  push symbol_table_len
-  push str_symbol_table_len
+  mov edx, 0
+  mov ecx, symbol_table_len
+  mov eax, str_symbol_table_len
   call add_symbol
-  add esp, 12
 
-  push 0
-  push symbol_num_func
-  push str_symbol_num
+  mov edx, 0
+  mov ecx, symbol_num_func
+  mov eax, str_symbol_num
   call add_symbol
-  add esp, 12
 
-  push 0
-  push symbol_names_func
-  push str_symbol_names
+  mov edx, 0
+  mov ecx, symbol_names_func
+  mov eax, str_symbol_names
   call add_symbol
-  add esp, 12
 
-  push 0
-  push symbol_locs_func
-  push str_symbol_locs
+  mov edx, 0
+  mov ecx, symbol_locs_func
+  mov eax, str_symbol_locs
   call add_symbol
-  add esp, 12
 
-  push 0
-  push symbol_arities_func
-  push str_symbol_arities
+  mov edx, 0
+  mov ecx, symbol_arities_func
+  mov eax, str_symbol_arities
   call add_symbol
-  add esp, 12
+
+  mov edx, 1
+  mov ecx, platform_g_compile
+  mov eax, str_platform_g_compile
+  call add_symbol
+
+  mov edx, 1
+  mov ecx, platform_setjmp
+  mov eax, str_platform_setjmp
+  call add_symbol
+
+  mov edx, 2
+  mov ecx, platform_longjmp
+  mov eax, str_platform_longjmp
+  call add_symbol
 
   ret
