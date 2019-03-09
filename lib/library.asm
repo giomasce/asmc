@@ -190,35 +190,6 @@ atoi:
   ret
 
 
-  ;; void *memcpy(void *dest, const void *src, int n)
-memcpy:
-  ;; Load registers
-  mov eax, [esp+4]
-  mov ecx, [esp+8]
-  mov edx, [esp+12]
-  push ebx
-
-memcpy_loop:
-  ;; Test for termination
-  cmp edx, 0
-  je memcpy_end
-
-  ;; Copy one character
-  mov bl, [ecx]
-  mov [eax], bl
-
-  ;; Decrease the counter and increase the pointers
-  sub edx, 1
-  add eax, 1
-  add ecx, 1
-
-  jmp memcpy_loop
-
-memcpy_end:
-  pop ebx
-  ret
-
-
 init_symbols:
   ;; Allocate symbol names table
   mov eax, SYMBOL_TABLE_LEN * MAX_SYMBOL_NAME_LEN
