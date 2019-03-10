@@ -201,12 +201,4 @@ stdout_setup:
   call serial_setup
   ret
 
-%else
-
-write_console:
-  ret
-
-stdout_setup:
-  ret
-
 %endif

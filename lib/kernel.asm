@@ -34,16 +34,13 @@ str_exit:
   db 'The execution has finished, bye bye...'
   db NEWLINE
   db 0
-%endif
 
 str_panic:
   db 'PANIC!'
 str_newline:
   db NEWLINE
-str_empty:
   db 0
 
-%ifdef DEBUG
 str_hello_asmc:
   db 'Hello, asmc!'
   db NEWLINE
@@ -60,6 +57,7 @@ str_done:
 
 str_platform_panic:
   db 'platform_panic'
+str_empty:
   db 0
 str_platform_allocate:
   db 'platform_allocate'
@@ -99,8 +97,10 @@ entry:
   mov esp, edx
   mov [heap_ptr], edx
 
+%ifdef DEBUG
   ;; Initialize stdout
   call stdout_setup
+%endif
 
 %ifdef DEBUG
   ;; Log
@@ -149,6 +149,7 @@ panic:
   jmp shutdown
 
 
+%ifdef DEBUG
   ;; Input character in CL
   ;; Destroys: EAX, EDX
 write:
@@ -164,6 +165,7 @@ log:
   call write
   inc esi
   jmp log
+%endif
 
 
 platform_allocate:
