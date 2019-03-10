@@ -610,7 +610,7 @@ push_expr_symbol_loop:
   call pop_var
 
   ;; Decrement arity and reloop
-  sub esi, 1
+  dec esi
   jmp push_expr_symbol_loop
 
 push_expr_symbol_loop_end:
@@ -1014,7 +1014,7 @@ parse_block_call_loop:
   call pop_var
 
   ;; Decrement counter and reloop
-  sub ebx, 1
+  dec ebx
   jmp parse_block_call_loop
 
 parse_block_call_end:
@@ -1074,7 +1074,7 @@ parse_block_string:
 
 parse_block_push:
   ;; Check if we want the address
-  mov esi, 0
+  xor esi, esi
   cmp BYTE [ebx], AT_SIGN
   jne parse_block_push_after_if
   mov esi, 1
@@ -1110,7 +1110,7 @@ parse_block_break:
   mov eax, stack_depth
   mov [eax], esi
   mov eax, block_depth
-  sub DWORD [eax], 1
+  dec DWORD [eax]
 
   pop edi
   pop esi
@@ -1154,15 +1154,19 @@ parse_loop:
   je parse_ret
 
   ;; Jump to the appropriate handler
+
+  ;; fun
   cmp DWORD [ebx], 'fun'
   je parse_fun
 
+  ;; ifun
   mov eax, [ebx]
   sub eax, 'ifun'
   or al, [ebx+4]
   test eax, eax
   je parse_ifun
 
+  ;; const
   mov eax, [ebx]
   sub eax, 'cons'
   mov cx, [ebx+4]
@@ -1171,6 +1175,7 @@ parse_loop:
   test eax, eax
   je parse_const
 
+  ;; global declaration
   cmp BYTE [ebx], DOLLAR
   je parse_var
 
@@ -1253,7 +1258,7 @@ parse_const:
 
 parse_var:
   ;; Increment the pointer and check the string continues
-  add ebx, 1
+  inc ebx
   cmp BYTE [ebx], 0
   je platform_panic
 
