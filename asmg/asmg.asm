@@ -177,35 +177,34 @@ pop_temps_ret:
   ret
 
 
+  ;; Input in EDX
+  ;; Destroys: ECX
+  ;; Returns: EAX
 find_in_stack:
-  push ebp
-  mov ebp, esp
-  push ebx
-  mov ebx, 0
+  push esi
+  push edi
 
+  xor ecx, ecx
 find_in_stack_loop:
   ;; Check for termination
-  cmp ebx, [stack_depth]
-  mov eax, 1
+  cmp ecx, [stack_depth]
   je find_in_stack_not_found
 
   ;; Compute the pointer to be checked
-  mov eax, [stack_depth]
-  sub eax, 1
-  sub eax, ebx
-  shl eax, MAX_SYMBOL_NAME_LEN_LOG
-  add eax, [stack_vars_ptr]
+  mov esi, [stack_depth]
+  dec esi
+  sub esi, ecx
+  shl esi, MAX_SYMBOL_NAME_LEN_LOG
+  add esi, [stack_vars_ptr]
 
   ;; Call strcmp and return if it matches
-  push eax
-  push DWORD [ebp+8]
-  call strcmp
-  add esp, 8
+  mov edi, edx
+  call strcmp2
   cmp eax, 0
   je find_in_stack_found
 
   ;; Increment index and restart
-  add ebx, 1
+  inc ecx
   jmp find_in_stack_loop
 
 find_in_stack_not_found:
@@ -213,12 +212,12 @@ find_in_stack_not_found:
   jmp find_in_stack_end
 
 find_in_stack_found:
-  mov eax, ebx
+  mov eax, ecx
   jmp find_in_stack_end
 
 find_in_stack_end:
-  pop ebx
-  pop ebp
+  pop edi
+  pop esi
   ret
 
 
@@ -523,9 +522,8 @@ push_expr:
 
 push_expr_stack:
   ;; Call find_in_stack
-  push DWORD [ebp+8]
+  mov edx, [ebp+8]
   call find_in_stack
-  add esp, 4
   cmp eax, -1
   je push_expr_symbol
 
@@ -1080,7 +1078,7 @@ parse_block_push:
   cmp BYTE [ebx], AT_SIGN
   jne parse_block_push_after_if
   mov esi, 1
-  add ebx, 1
+  inc ebx
 
 parse_block_push_after_if:
   ;; Call push_expr
