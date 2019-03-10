@@ -418,7 +418,7 @@ add_symbol_placeholder_stage0:
   ;; ...add it, with a fake location
   pop edx
   pop eax
-  mov ecx, 0xffffffff
+  mov ecx, -1
   call add_symbol
   jmp add_symbol_placeholder_end
 
@@ -474,7 +474,7 @@ fix_symbol_placeholder_found:
   je fix_symbol_placeholder_end
 
   ;; ...or is -1 at stage 0...
-  cmp ecx, 0xffffffff
+  cmp ecx, -1
   jne platform_panic
   cmp DWORD [stage], 0
   jne platform_panic

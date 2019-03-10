@@ -209,7 +209,7 @@ find_in_stack_loop:
   jmp find_in_stack_loop
 
 find_in_stack_not_found:
-  mov eax, 0xffffffff
+  mov eax, -1
   jmp find_in_stack_end
 
 find_in_stack_found:
@@ -232,7 +232,7 @@ get_char:
   ret
 
 get_char_end:
-  mov eax, 0xffffffff
+  mov eax, -1
   ret
 
 
@@ -266,7 +266,7 @@ get_token_not_gb:
 get_token_skip:
   ;; Get a char and check EOF
   call get_char
-  cmp eax, 0xffffffff
+  cmp eax, -1
   je get_token_ret
 
   ;; Skip whitespace
@@ -279,7 +279,7 @@ get_token_skip:
   jne get_token_skipped
 get_token_skip_comment:
   call get_char
-  cmp eax, 0xffffffff
+  cmp eax, -1
   je get_token_ret
   cmp al, NEWLINE
   je get_token_skip
@@ -298,7 +298,7 @@ get_token_plain:
   mov [ecx], al
   inc ecx
   call get_char
-  cmp eax, 0xffffffff
+  cmp eax, -1
   je get_token_ret
   call is_whitespace
   cmp dl, 0
@@ -310,7 +310,7 @@ get_token_string:
   mov [ecx], al
   inc ecx
   call get_char
-  cmp eax, 0xffffffff
+  cmp eax, -1
   je platform_panic
 
   ;; If escaped, restart loop immediately
@@ -488,7 +488,7 @@ compute_rel:
   ;; Destroys: EAX, ECX, EDX
 add_symbol_label:
   call write_label
-  mov edx, 0xffffffff
+  mov edx, -1
   mov ecx, [current_loc]
   call add_symbol_wrapper
   ret
@@ -526,7 +526,7 @@ push_expr_stack:
   push DWORD [ebp+8]
   call find_in_stack
   add esp, 4
-  cmp eax, 0xffffffff
+  cmp eax, -1
   je push_expr_symbol
 
   ;; Multiply the position by 4
@@ -567,20 +567,20 @@ push_expr_symbol:
   mov ebx, eax
 
   ;; If arity is -2, check we do not want the address
-  cmp edx, 0xfffffffe
+  cmp edx, -2
   jne push_expr_after_assert
   cmp DWORD [ebp+12], 0
   jne platform_panic
 
 push_expr_after_assert:
   ;; Check if we want the address or arity is -2
-  cmp edx, 0xfffffffe
+  cmp edx, -2
   je push_expr_addr
   cmp DWORD [ebp+12], 0
   jne push_expr_addr
 
   ;; Check if arity is -1
-  cmp edx, 0xffffffff
+  cmp edx, -1
   je push_expr_val
   mov esi, edx
 
@@ -761,7 +761,7 @@ parse_block:
 
   ;; Save stack depth
   mov eax, [stack_depth]
-  mov [ebp+0xfffffffc], eax
+  mov [ebp-4], eax
 
   ;; Expect and discard an open curly brace token
   call get_token
@@ -1098,7 +1098,7 @@ parse_block_break:
 
   ;; Sanity check: stack depth must not have increased
   mov eax, [stack_depth]
-  mov esi, [ebp+0xfffffffc]
+  mov esi, [ebp-4]
   cmp eax, esi
   jnge platform_panic
 
@@ -1246,7 +1246,7 @@ parse_const:
   add esp, 4
 
   ;; Add a symbol
-  mov edx, 0xfffffffe
+  mov edx, -2
   mov ecx, eax
   mov eax, ebx
   call add_symbol_wrapper
@@ -1260,7 +1260,7 @@ parse_var:
   je platform_panic
 
   ;; Add a symbol
-  mov edx, 0xffffffff
+  mov edx, -1
   mov ecx, [current_loc]
   mov eax, ebx
   call add_symbol_wrapper
