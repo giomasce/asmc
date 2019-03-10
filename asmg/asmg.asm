@@ -140,6 +140,7 @@ push_var_non_temp:
   ret
 
 
+  ;; Input in EAX (is temporary)
 pop_var:
   ;; Check stack depth is positive and decrement it
   cmp DWORD [stack_depth], 0
@@ -147,7 +148,7 @@ pop_var:
   dec DWORD [stack_depth]
 
   ;; If this is a temp var...
-  cmp DWORD [esp+4], 0
+  cmp eax, 0
   jne pop_var_temp
   ret
 
@@ -159,16 +160,16 @@ pop_var_temp:
   ret
 
 
+  ;; No input
+  ;; Destroys: EAX
 pop_temps:
   ;; Check for termination
-  mov eax, temp_depth
-  cmp DWORD [eax], 0
+  cmp DWORD [temp_depth], 0
   jna pop_temps_ret
 
   ;; Call pop_var
-  push 1
+  mov eax, 1
   call pop_var
-  add esp, 4
 
   jmp pop_temps
 
@@ -610,9 +611,8 @@ push_expr_symbol_loop:
   je push_expr_symbol_loop_end
 
   ;; Call pop_var
-  push 1
+  mov eax, 1
   call pop_var
-  add esp, 4
 
   ;; Decrement arity and reloop
   sub esi, 1
@@ -837,9 +837,8 @@ parse_block_ret:
   jna parse_block_ret_emit
   mov cl, 0x58                  ; pop eax
   call emit
-  push 1
+  mov eax, 1
   call pop_var
-  add esp, 4
 
 parse_block_ret_emit:
   ;; Emit code to unwind stack end return
@@ -862,9 +861,8 @@ parse_block_if:
   mov ebx, eax
 
   ;; Emit code to pop and possibly jump to else label
-  push 1
+  mov eax, 1
   call pop_var
-  add esp, 4
   mov ecx, 0x00f88358           ; pop eax; cmp eax, 0
   call emit32
   mov ecx, 0x840f               ; je ??
@@ -941,9 +939,8 @@ parse_block_while:
   call push_expr_until_brace
 
   ;; Emit code to pop and possibly jump to end label
-  push 1
+  mov eax, 1
   call pop_var
-  add esp, 4
   mov ecx, 0x00f88358           ; pop eax; cmp eax, 0
   call emit32
   mov ecx, 0x840f               ; je ??
@@ -1002,9 +999,8 @@ parse_block_call:
   mov ebx, eax
 
   ;; Call pop_var
-  push 1
+  mov eax, 1
   call pop_var
-  add esp, 4
 
   ;; Emit code to do the indirect call
   mov ecx, 0xd0ff58             ; pop eax; call eax
@@ -1024,9 +1020,8 @@ parse_block_call_loop:
   je parse_block_call_end
 
   ;; Pop a var
-  push 1
+  mov eax, 1
   call pop_var
-  add esp, 4
 
   ;; Decrement counter and reloop
   sub ebx, 1
