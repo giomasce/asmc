@@ -295,24 +295,29 @@ find_symbol_or_zero:
   ret
 
 
+  ;; Input in ESI
+  ;; Destroys: EAX
+check_symbol_length:
+  call strlen2
+  cmp eax, 0
+  jna platform_panic
+  cmp eax, MAX_SYMBOL_NAME_LEN-1
+  jnb platform_panic
+  ret
+
+
   ;; Input in EAX (name), ECX (loc) and EDX (arity)
   ;; Destroys: EAX, ECX, EDX
 add_symbol:
   push esi
   push edi
-
-  ;; Call strlen
   push edx
   push ecx
   push eax
-  mov esi, eax
-  call strlen2
 
   ;; Check input length
-  cmp eax, 0
-  jna platform_panic
-  cmp eax, MAX_SYMBOL_NAME_LEN-1
-  jnb platform_panic
+  mov esi, eax
+  call check_symbol_length
 
   ;; Call find_symbol and check the symbol does not exist yet
   pop edx

@@ -21,7 +21,7 @@
   section .data
 
 TEMP_VAR:
-  db '__temp'
+  db '_'
   db 0
 
   section .bss
@@ -100,37 +100,35 @@ write_label_loop:
   ret
 
 
+  ;; Input in EDX (variable name) and ECX (is temporary)
+  ;; Destroys: EAX
 push_var:
-  ;; Check the var name length
-  mov eax, [esp+4]
-  push eax
-  call strlen
-  add esp, 4
-  cmp eax, 0
-  jna platform_panic
-  cmp eax, MAX_SYMBOL_NAME_LEN
-  jnb platform_panic
+  push esi
+  push edi
+
+  ;; Check input length
+  mov esi, edx
+  call check_symbol_length
 
   ;; Check we are not overflowing the stack
-  mov eax, [stack_depth]
-  cmp eax, STACK_VARS_LEN
+  mov edi, [stack_depth]
+  cmp edi, STACK_VARS_LEN
   jnb platform_panic
 
   ;; Copy the variable name in the stack
-  shl eax, MAX_SYMBOL_NAME_LEN_LOG
-  add eax, [stack_vars_ptr]
-  mov edx, eax
-  mov eax, [esp+4]
-  push eax
-  push edx
-  call strcpy
-  add esp, 8
+  shl edi, MAX_SYMBOL_NAME_LEN_LOG
+  add edi, [stack_vars_ptr]
+  mov esi, edx
+  call strcpy2
 
   ;; Increment the stack depth
   inc DWORD [stack_depth]
 
+  pop edi
+  pop esi
+
   ;; If this is a temp var, increment also temp_depth
-  cmp DWORD [esp+8], 0
+  test ecx, ecx
   je push_var_non_temp
   inc DWORD [temp_depth]
   ret
@@ -333,7 +331,6 @@ get_token_string_end:
   ;; Put the closing apex or quote and return
   mov [ecx], al
   inc ecx
-  jmp get_token_ret
 
 get_token_ret:
   ;; Put the terminator and return the buffer's address
@@ -514,10 +511,9 @@ push_expr:
   jne platform_panic
 
   ;; Emit the code
-  push 1
-  push TEMP_VAR
+  mov ecx, 1
+  mov edx, TEMP_VAR
   call push_var
-  add esp, 8
   mov cl, 0x68                  ; push ??
   call emit
   mov ecx, ebx
@@ -542,10 +538,9 @@ push_expr_stack:
   jne push_expr_stack_addr
 
   ;; We want the value, emit the code
-  push 1
-  push TEMP_VAR
+  mov ecx, 1
+  mov edx, TEMP_VAR
   call push_var
-  add esp, 8
   mov ecx, 0x24b4ff             ; push [esp+??]
   call emit24
   mov ecx, ebx
@@ -555,10 +550,9 @@ push_expr_stack:
 
 push_expr_stack_addr:
   ;; We want the address, emit the code
-  push 1
-  push TEMP_VAR
+  mov ecx, 1
+  mov edx, TEMP_VAR
   call push_var
-  add esp, 8
   mov ecx, 0x24848d             ; lea eax, [esp+??]
   call emit24
   mov ecx, ebx
@@ -625,19 +619,17 @@ push_expr_symbol_loop:
   jmp push_expr_symbol_loop
 
 push_expr_symbol_loop_end:
-  push 1
-  push TEMP_VAR
+  mov ecx, 1
+  mov edx, TEMP_VAR
   call push_var
-  add esp, 8
 
   jmp push_expr_ret
 
 push_expr_addr:
   ;; We want the address, emit the code
-  push 1
-  push TEMP_VAR
+  mov ecx, 1
+  mov edx, TEMP_VAR
   call push_var
-  add esp, 8
   mov cl, 0x68                  ; push ??
   call emit
   mov ecx, ebx
@@ -647,10 +639,9 @@ push_expr_addr:
 
 push_expr_val:
   ;; We want the value, emit the code
-  push 1
-  push TEMP_VAR
+  mov ecx, 1
+  mov edx, TEMP_VAR
   call push_var
-  add esp, 8
   mov cl, 0xb8                  ; mov eax, ??
   call emit
   mov ecx, ebx
@@ -719,10 +710,9 @@ push_expr_until_brace_string:
   call add_symbol_label
 
   ;; Emit code to push the string label
-  push 1
-  push TEMP_VAR
+  mov ecx, 1
+  mov edx, TEMP_VAR
   call push_var
-  add esp, 8
   mov cl, 0x68                  ; push ??
   call emit
   mov edx, edi
@@ -987,16 +977,11 @@ parse_block_while:
   jmp parse_block_loop
 
 parse_block_alloc:
-  ;; Skip to following char and check it is not a terminator
-  add ebx, 1
-  cmp BYTE [ebx], 0
-  je platform_panic
-
   ;; Call push_var
-  push 0
-  push ebx
+  inc ebx
+  mov ecx, 0
+  mov edx, ebx
   call push_var
-  add esp, 8
 
   ;; Emit code
   mov ecx, 0x04ec83             ; sub esp, 4
@@ -1049,10 +1034,9 @@ parse_block_call_loop:
 
 parse_block_call_end:
   ;; Emit code to push the return value
-  push 1
-  push TEMP_VAR
+  mov ecx, 1
+  mov edx, TEMP_VAR
   call push_var
-  add esp, 8
   mov cl, 0x50                  ; push eax
   call emit
 
@@ -1091,10 +1075,9 @@ parse_block_string:
   call add_symbol_label
 
   ;; Emit code to push the string label
-  push 1
-  push TEMP_VAR
+  mov ecx, 1
+  mov edx, TEMP_VAR
   call push_var
-  add esp, 8
   mov cl, 0x68                  ; push ??
   call emit
   mov edx, edi
