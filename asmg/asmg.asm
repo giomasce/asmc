@@ -20,7 +20,7 @@
 
   section .data
 
-TEMP_VAR:
+temp_var:
   db '_'
   db 0
 
@@ -100,7 +100,7 @@ write_label_loop:
   ret
 
 
-  ;; Input in EDX (variable name) and ECX (is temporary)
+  ;; Input in EDX (variable name)
   ;; Destroys: EAX
 push_var:
   push esi
@@ -128,8 +128,8 @@ push_var:
   pop esi
 
   ;; If this is a temp var, increment also temp_depth
-  test ecx, ecx
-  je push_var_non_temp
+  cmp edx, temp_var
+  jne push_var_non_temp
   inc DWORD [temp_depth]
   ret
 
@@ -512,8 +512,7 @@ push_expr:
   jne platform_panic
 
   ;; Emit the code
-  mov ecx, 1
-  mov edx, TEMP_VAR
+  mov edx, temp_var
   call push_var
   mov cl, 0x68                  ; push ??
   call emit
@@ -539,8 +538,7 @@ push_expr_stack:
   jne push_expr_stack_addr
 
   ;; We want the value, emit the code
-  mov ecx, 1
-  mov edx, TEMP_VAR
+  mov edx, temp_var
   call push_var
   mov ecx, 0x24b4ff             ; push [esp+??]
   call emit24
@@ -551,8 +549,7 @@ push_expr_stack:
 
 push_expr_stack_addr:
   ;; We want the address, emit the code
-  mov ecx, 1
-  mov edx, TEMP_VAR
+  mov edx, temp_var
   call push_var
   mov ecx, 0x24848d             ; lea eax, [esp+??]
   call emit24
@@ -619,16 +616,14 @@ push_expr_symbol_loop:
   jmp push_expr_symbol_loop
 
 push_expr_symbol_loop_end:
-  mov ecx, 1
-  mov edx, TEMP_VAR
+  mov edx, temp_var
   call push_var
 
   jmp push_expr_ret
 
 push_expr_addr:
   ;; We want the address, emit the code
-  mov ecx, 1
-  mov edx, TEMP_VAR
+  mov edx, temp_var
   call push_var
   mov cl, 0x68                  ; push ??
   call emit
@@ -639,8 +634,7 @@ push_expr_addr:
 
 push_expr_val:
   ;; We want the value, emit the code
-  mov ecx, 1
-  mov edx, TEMP_VAR
+  mov edx, temp_var
   call push_var
   mov cl, 0xb8                  ; mov eax, ??
   call emit
@@ -710,8 +704,7 @@ push_expr_until_brace_string:
   call add_symbol_label
 
   ;; Emit code to push the string label
-  mov ecx, 1
-  mov edx, TEMP_VAR
+  mov edx, temp_var
   call push_var
   mov cl, 0x68                  ; push ??
   call emit
@@ -976,7 +969,6 @@ parse_block_while:
 parse_block_alloc:
   ;; Call push_var
   inc ebx
-  mov ecx, 0
   mov edx, ebx
   call push_var
 
@@ -1029,8 +1021,7 @@ parse_block_call_loop:
 
 parse_block_call_end:
   ;; Emit code to push the return value
-  mov ecx, 1
-  mov edx, TEMP_VAR
+  mov edx, temp_var
   call push_var
   mov cl, 0x50                  ; push eax
   call emit
@@ -1070,8 +1061,7 @@ parse_block_string:
   call add_symbol_label
 
   ;; Emit code to push the string label
-  mov ecx, 1
-  mov edx, TEMP_VAR
+  mov edx, temp_var
   call push_var
   mov cl, 0x68                  ; push ??
   call emit
