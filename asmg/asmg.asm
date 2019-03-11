@@ -778,7 +778,7 @@ parse_block_loop:
 
   ;; If it is a closed curly brace, then break
   cmp WORD [ebx], '}'
-  je parse_block_break
+  je parse_block_end
 
   ;; Jump to the appropriate handler
   cmp WORD [ebx], ';'
@@ -832,14 +832,9 @@ parse_block_ret:
   call pop_var
 
 parse_block_ret_emit:
-  ;; Emit code to unwind stack end return
-  mov ecx, 0xc481               ; add esp, ??
-  call emit16
-  mov ecx, [stack_depth]
-  shl ecx, 2
+  ;; Emit code to unwind stack and return
+  mov ecx, 0xc35dec89              ; mov esp, ebp; pop ebp; ret
   call emit32
-  mov ecx, 0xc35d               ; pop ebp; ret
-  call emit16
 
   jmp parse_block_loop
 
@@ -1089,7 +1084,7 @@ parse_block_push_after_if:
 
   jmp parse_block_loop
 
-parse_block_break:
+parse_block_end:
   ;; Emit stack unwinding code
   mov ecx, 0xc481               ; add esp, ??
   call emit16
