@@ -15,6 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+const TEST_ALL 1
+const TEST_MAP TEST_ALL
+const TEST_INT64 TEST_ALL
+const TEST_C TEST_ALL
+
 const RUN_MM0 1
 const RUN_ASM 0
 const RUN_FASM 0
@@ -22,9 +27,6 @@ const RUN_C 0
 const RUN_MESCC 0
 const RUN_MCPP 0
 const RUN_TINYCC 1
-const TEST_MAP 1
-const TEST_INT64 1
-const TEST_C 1
 
 const USE_TRIVIAL_MALLOC 0
 const USE_SIMPLE_MALLOC 0

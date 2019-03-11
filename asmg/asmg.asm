@@ -431,6 +431,7 @@ emit_escaped_string_end:
 
 
   ;; Input in EAX
+  ;; Destroys: ECX
   ;; Returns: EAX (valid), EDX (number value)
 decode_number_or_char:
   ;; The first argument does not begin with an apex, call
@@ -976,9 +977,8 @@ parse_block_call:
   je platform_panic
 
   ;; Call decode_number_or_symbol
-  push ebx
+  mov eax, ebx
   call decode_number_or_symbol
-  add esp, 4
   mov ebx, eax
 
   ;; Call pop_var
@@ -1109,9 +1109,12 @@ parse_block_end:
   ret
 
 
+  ;; Input in EAX
+  ;; Destroys: EBX, ECX, EDX
+  ;; Returns: EAX
 decode_number_or_symbol:
-  ;; Call decode_number_or_char
-  mov eax, [esp+4]
+  ;; Try to decode as number
+  mov ebx, eax
   call decode_number_or_char
 
   ;; If it returned true, return
@@ -1122,10 +1125,8 @@ decode_number_or_symbol:
 
 decode_number_or_symbol_symbol:
   ;; Get symbol address
-  mov eax, [esp+4]
-  mov edx, eax
-  call find_symbol_or_zero
-  add esp, 4
+  mov edx, ebx
+  call find_symbol_or_panic
   ret
 
 
@@ -1233,14 +1234,12 @@ parse_const:
 
   ;; Get another token and interpret it as a number or symbol
   call get_token
-  push eax
   call decode_number_or_symbol
-  add esp, 4
 
   ;; Add a symbol
   mov edx, -2
   mov ecx, eax
-  mov eax, ebx
+  mov eax, [buf2_ptr]
   call add_symbol_wrapper
 
   jmp parse_loop
