@@ -721,7 +721,7 @@ push_expr_until_brace_push:
   cmp BYTE [ebx], AT_SIGN
   jne push_expr_until_brace_push_after_if
   mov esi, 1
-  add ebx, 1
+  inc ebx
 
 push_expr_until_brace_push_after_if:
   ;; Call push_expr
@@ -971,7 +971,7 @@ parse_block_alloc:
 
 parse_block_call:
   ;; Skip to following char and check it is not a terminator
-  add ebx, 1
+  inc ebx
   cmp BYTE [ebx], 0
   je platform_panic
 
