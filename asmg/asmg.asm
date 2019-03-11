@@ -749,7 +749,6 @@ push_expr_until_brace_end:
 parse_block:
   push ebp
   mov ebp, esp
-  sub esp, 4
   push ebx
   push esi
   push edi
@@ -758,8 +757,7 @@ parse_block:
   inc DWORD [block_depth]
 
   ;; Save stack depth
-  mov eax, [stack_depth]
-  mov [ebp-4], eax
+  push DWORD [stack_depth]
 
   ;; Expect and discard an open curly brace token
   call get_token
@@ -1089,28 +1087,24 @@ parse_block_end:
   mov ecx, 0xc481               ; add esp, ??
   call emit16
 
-  ;; Sanity check: stack depth must not have increased
+  ;; Sanity check: stack depth must not have decreased
   mov eax, [stack_depth]
-  mov esi, [ebp-4]
-  cmp eax, esi
+  pop ecx
+  sub eax, ecx
   jnge platform_panic
 
-  ;; Emit stack depth different, multiplied by 4
-  sub eax, esi
+  ;; Reset stack depth to saved value and decrease block depth
+  mov [stack_depth], ecx
+  dec DWORD [block_depth]
+
+  ;; Emit stack depth difference, multiplied by 4
   mov ecx, eax
   shl ecx, 2
   call emit32
 
-  ;; Reset stack depth to saved value and decrease block depth
-  mov eax, stack_depth
-  mov [eax], esi
-  mov eax, block_depth
-  dec DWORD [eax]
-
   pop edi
   pop esi
   pop ebx
-  add esp, 4
   pop ebp
   ret
 
