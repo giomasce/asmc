@@ -138,7 +138,6 @@ entry:
 
 platform_panic:
 panic:
-  jmp shutdown
 %ifdef DEBUG
   ;; Write an exit string
   mov esi, str_panic

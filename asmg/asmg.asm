@@ -256,7 +256,7 @@ get_token:
   cmp DWORD [token_given_back], 0
   je get_token_not_gb
   mov DWORD [token_given_back], 0
-  jmp get_token_ret
+  jmp get_token_ret_no_term
 
 get_token_not_gb:
   ;; Use ECX for the buffer pointer
@@ -335,8 +335,10 @@ get_token_string_end:
 get_token_ret:
   ;; Put the terminator and return the buffer's address
   mov BYTE [ecx], 0
+get_token_ret_no_term:
   mov eax, [token_buf_ptr]
   ret
+
 
 give_back_token:
   ;; Check another token was not already given back
@@ -662,7 +664,9 @@ push_expr_until_brace_loop:
   mov ebx, eax
 
   ;; If it is an open brace, exit loop
-  cmp WORD [eax], '{'
+  mov ecx, [eax]
+  and ecx, 0xffff
+  cmp ecx, '{'
   je push_expr_until_brace_end
 
   ;; If not, branch depending on whether it is a string or not
@@ -720,11 +724,11 @@ push_expr_until_brace_push:
   ;; Check if we want the address
   mov esi, 0
   cmp BYTE [ebx], AT_SIGN
-  jne push_expr_until_brace_push_after_if
+  jne push_expr_until_brace_push_value
   mov esi, 1
   inc ebx
 
-push_expr_until_brace_push_after_if:
+push_expr_until_brace_push_value:
   ;; Call push_expr
   push esi
   push ebx
@@ -762,7 +766,9 @@ parse_block:
 
   ;; Expect and discard an open curly brace token
   call get_token
-  cmp WORD [eax], '{'
+  mov ecx, [eax]
+  and ecx, 0xffff
+  cmp ecx, '{'
   jne platform_panic
 
   ;; Main parsing loop
@@ -776,11 +782,13 @@ parse_block_loop:
   je platform_panic
 
   ;; If it is a closed curly brace, then break
-  cmp WORD [ebx], '}'
+  mov ecx, [ebx]
+  and ecx, 0xffff
+  cmp ecx, '}'
   je parse_block_end
 
   ;; Jump to the appropriate handler
-  cmp WORD [ebx], ';'
+  cmp ecx, ';'
   je parse_block_semicolon
 
   cmp DWORD [ebx], 'ret'
@@ -793,10 +801,10 @@ parse_block_loop:
 
   mov eax, [ebx]
   sub eax, 'whil'
-  mov cx, [ebx+4]
-  sub cx, 'e'
-  or ax, cx
-  test eax, eax
+  mov ecx, [ebx+4]
+  and ecx, 0xffff
+  sub ecx, 'e'
+  or eax, ecx
   je parse_block_while
 
   cmp BYTE [ebx], DOLLAR
@@ -1069,11 +1077,11 @@ parse_block_push:
   ;; Check if we want the address
   xor esi, esi
   cmp BYTE [ebx], AT_SIGN
-  jne parse_block_push_after_if
+  jne parse_block_push_value
   mov esi, 1
   inc ebx
 
-parse_block_push_after_if:
+parse_block_push_value:
   ;; Call push_expr
   push esi
   push ebx
@@ -1159,10 +1167,10 @@ parse_loop:
   ;; const
   mov eax, [ebx]
   sub eax, 'cons'
-  mov cx, [ebx+4]
-  sub cx, 't'
-  or ax, cx
-  test eax, eax
+  mov ecx, [ebx+4]
+  and ecx, 0xffff
+  sub ecx, 't'
+  or eax, ecx
   je parse_const
 
   ;; global declaration

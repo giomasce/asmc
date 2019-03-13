@@ -127,7 +127,9 @@ decode_number:
   xor edx, edx
 
   ;; Check hex string
-  cmp WORD [eax], '0x'
+  mov ecx, [eax]
+  and ecx, 0xffff
+  cmp ecx, '0x'
   jne decode_number_dec
 
   ;; Check bad hex string

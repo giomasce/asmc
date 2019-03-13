@@ -178,7 +178,8 @@ serial_setup:
   ;; Destroys: EAX, EDX
 serial_write_char:
   ;; Test until the serial is available for transmit
-  in al, SERIAL_PORT + 5
+  mov edx, SERIAL_PORT + 5
+  in al, dx
   and eax, 0x20
   je serial_write_char
 
