@@ -202,4 +202,143 @@ stdout_setup:
   call serial_setup
   ret
 
+
+  ;; Input number in AL
+  ;; Returns: AL (hex digit corresponding to input)
+num2hex:
+  and al, 0xf
+  add al, '0'
+  cmp al, '9'
+  jbe ret_simple
+  add al, 'a' - '0' - 10
+  ret
+
+
+  ;; Input in EDX
+  ;; Destroys: EAX, ECX
+write_hex:
+  push edx
+  mov eax, [esp]
+  shr eax, 28
+  call num2hex
+  mov cl, al
+  call write
+  mov eax, [esp]
+  shr eax, 24
+  call num2hex
+  mov cl, al
+  call write
+  mov eax, [esp]
+  shr eax, 20
+  call num2hex
+  mov cl, al
+  call write
+  mov eax, [esp]
+  shr eax, 16
+  call num2hex
+  mov cl, al
+  call write
+  mov eax, [esp]
+  shr eax, 12
+  call num2hex
+  mov cl, al
+  call write
+  mov eax, [esp]
+  shr eax, 8
+  call num2hex
+  mov cl, al
+  call write
+  mov eax, [esp]
+  shr eax, 4
+  call num2hex
+  mov cl, al
+  call write
+  mov eax, [esp]
+  shr eax, 0
+  call num2hex
+  mov cl, al
+  call write
+  pop edx
+  ret
+
+
+single_stepping_handler:
+  ;; cmp DWORD [instr_num], 0x3129
+  ;; jne single_stepping_handler_end
+
+  mov ebx, [esp+4]
+  mov esi, str_instr_num
+  call log
+  mov edx, [instr_num]
+  call write_hex
+  mov esi, str_eip
+  call log
+  mov edx, [ebx+0x20]
+  call write_hex
+  mov esi, str_eax
+  call log
+  mov edx, [ebx+0x1c]
+  call write_hex
+  mov esi, str_ecx
+  call log
+  mov edx, [ebx+0x18]
+  call write_hex
+  mov esi, str_edx
+  call log
+  mov edx, [ebx+0x14]
+  call write_hex
+  mov esi, str_ebx
+  call log
+  mov edx, [ebx+0x10]
+  call write_hex
+  mov esi, str_esp
+  call log
+  mov edx, [ebx+0x0c]
+  call write_hex
+  mov esi, str_ebp
+  call log
+  mov edx, [ebx+0x08]
+  call write_hex
+  mov esi, str_esi
+  call log
+  mov edx, [ebx+0x04]
+  call write_hex
+  mov esi, str_edi
+  call log
+  mov edx, [ebx+0x00]
+  call write_hex
+  mov cl, NEWLINE
+  call write
+
+single_stepping_handler_end:
+  inc DWORD [instr_num]
+  ret
+
+
+enable_single_stepping:
+  mov DWORD [instr_num], 0x3126
+  mov DWORD [0x10010], single_stepping_handler
+  call [0x1001c]
+  cmp DWORD [term_row], 0
+  jne platform_panic
+  ret
+
+
+  section .bss
+
+instr_num resd 1
+
+  section .data
+
+str_instr_num db 'instr_num=', 0
+str_eip db ' EIP=', 0
+str_eax db ' EAX=', 0
+str_ecx db ' ECX=', 0
+str_edx db ' EDX=', 0
+str_ebx db ' EBX=', 0
+str_esp db ' ESP=', 0
+str_ebp db ' EBP=', 0
+str_esi db ' ESI=', 0
+str_edi db ' EDI=', 0
+
 %endif

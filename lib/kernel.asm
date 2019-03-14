@@ -74,7 +74,6 @@ entry:
 
   ;; Use the multiboot header as temporary stack
   mov esp, temp_stack_top
-  and esp, 0xfffffff0
 
   ;; Initialize the BSS
 ;;   mov ecx, begin_bss
@@ -100,6 +99,7 @@ entry:
 %ifdef DEBUG
   ;; Initialize stdout
   call stdout_setup
+  ;; call enable_single_stepping
 %endif
 
 %ifdef DEBUG
@@ -138,6 +138,7 @@ entry:
 
 platform_panic:
 panic:
+  jmp shutdown
 %ifdef DEBUG
   ;; Write an exit string
   mov esi, str_panic

@@ -227,10 +227,13 @@ single_step_handler_restart:
 single_step_handler_disable:
 
   popa
+empty_handler:
   iret
 
 
 enable_single_step:
+  pusha
+
   ;; Remember single step is enabled
   mov DWORD [SINGLE_STEP_ENABLED], 1
 
@@ -238,6 +241,8 @@ enable_single_step:
   mov eax, 1
   mov edx, single_step_handler
   call fill_idt_entry
+
+  popa
 
   ;; Actually set flag
   pushf

@@ -28,9 +28,6 @@
   ;; Manually jump to after_header, to avoid depending on instruction encoding length
   db 0xeb, after_header - 2, 0x00, 0x00
 
-  dd begin_bss
-  dd end_bss
-
   MBBEGIN equ $
 
   ;; Multiboot header
@@ -46,6 +43,8 @@
 
 after_header:
   jmp entry
+
+  align 4
 
 temp_stack_top:
 

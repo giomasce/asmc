@@ -15,6 +15,7 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+  section .text
 
   ;; Try to shutdown a qemu host invoked with "-device isa-debug-exit"
 qemu_shutdown:

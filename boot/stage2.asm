@@ -316,11 +316,21 @@ load_payload_loop:
 
 payload_loaded:
   ;; The payload is finally loaded and we can jump into it!
-	mov esi, str_newline
-	call print_string
+  mov esi, str_newline
+  call print_string
 
-	mov esi, str_chainloading
-	call print_string
+  mov esi, str_chainloading
+  call print_string
+
+  ;; Clear all registers
+  xor eax, eax
+  xor ebx, ebx
+  xor ecx, ecx
+  xor edx, edx
+  xor esp, esp
+  xor ebp, ebp
+  xor esi, esi
+  xor edi, edi
 
   jmp 0x100000
 
