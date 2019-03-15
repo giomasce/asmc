@@ -206,6 +206,9 @@ single_step_handler:
   pusha
   mov ebp, esp
 
+  ;; Fix ESP, because EFLAGS, CS and EIP have been pushed in the meantime
+  add DWORD [ebp+0x0c], 12
+
   ;; Possibly call the user defined handler
   mov eax, [SINGLE_STEP_HANDLER]
   test eax, eax

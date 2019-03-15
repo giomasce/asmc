@@ -263,8 +263,12 @@ write_hex:
 
 
 single_stepping_handler:
-  ;; cmp DWORD [instr_num], 0x3129
-  ;; jne single_stepping_handler_end
+  mov ebx, [instr_num]
+  sub ebx, 0x15000
+  cmp ebx, 0
+  jl single_stepping_handler_end
+  cmp ebx, 0x2000
+  jge shutdown
 
   mov ebx, [esp+4]
   mov esi, str_instr_num
@@ -319,8 +323,6 @@ enable_single_stepping:
   mov DWORD [instr_num], 0x3126
   mov DWORD [0x10010], single_stepping_handler
   call [0x1001c]
-  cmp DWORD [term_row], 0
-  jne platform_panic
   ret
 
 
