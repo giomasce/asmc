@@ -747,6 +747,7 @@ fun mm0_process 1 {
 
   $lexer
   @lexer filename mm0lexer_init = ;
+  lexer "mm0_process: cannot open file" assert_msg ;
 
   $theory
   "Parsing MM0 theory: " log ;

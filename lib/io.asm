@@ -264,10 +264,12 @@ write_hex:
 
 single_stepping_handler:
   mov ebx, [instr_num]
-  sub ebx, 0x15000
+  sub ebx, 0x036c7600
+  test ebx, 0x0
+  jnz single_stepping_handler_end
   cmp ebx, 0
   jl single_stepping_handler_end
-  cmp ebx, 0x2000
+  cmp ebx, 0x100000
   jge shutdown
 
   mov ebx, [esp+4]
@@ -320,7 +322,7 @@ single_stepping_handler_end:
 
 
 enable_single_stepping:
-  mov DWORD [instr_num], 0x3126
+  mov DWORD [instr_num], 0x3180
   mov DWORD [0x10010], single_stepping_handler
   call [0x1001c]
   ret

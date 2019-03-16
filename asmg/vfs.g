@@ -28,6 +28,113 @@ const FD_SEEK 16
 const MOUNT_DESTROY 0
 const MOUNT_OPEN 4
 
+const INITFD_DESTROY 0
+const INITFD_READ 4
+const INITFD_WRITE 8
+const INITFD_TRUNCATE 12
+const INITFD_SEEK 16
+const INITFD_START 20
+const INITFD_CUR 24
+const INITFD_END 28
+const SIZEOF_INITFD 32
+
+fun initfd_destroy 1 {
+  $fd
+  @fd 0 param = ;
+
+  fd free ;
+}
+
+fun initfd_read 1 {
+  $fd
+  @fd 0 param = ;
+
+  if fd INITFD_CUR take fd INITFD_END take == {
+    0xffffffff ret ;
+  } else {
+    $c
+    @c fd INITFD_CUR take **c = ;
+    fd INITFD_CUR take_addr fd INITFD_CUR take 1 + = ;
+    c ret ;
+  }
+}
+
+fun initfd_write 2 {
+  0 "initfd_write: not supported" assert_msg ;
+}
+
+fun initfd_truncate 1 {
+  0 "initfd_truncate: not supported" assert_msg ;
+}
+
+fun initfd_seek 3 {
+  $fd
+  $off
+  $whence
+  @fd 2 param = ;
+  @off 1 param = ;
+  @whence 0 param = ;
+
+  if whence SEEK_SET == off 0 == && {
+    fd INITFD_CUR take_addr fd INITFD_START take = ;
+    0 ret ;
+  }
+
+  0 "initfd_seek: unsupported seek" assert_msg ;
+}
+
+fun initfd_init 1 {
+  $name
+  @name 0 param = ;
+
+  $begin
+  $end
+  @begin @end name platform_walk_initrd ;
+  if begin 0 == {
+    0 ret ;
+  }
+
+  $fd
+  @fd SIZEOF_INITFD malloc = ;
+  fd INITFD_DESTROY take_addr @initfd_destroy = ;
+  fd INITFD_READ take_addr @initfd_read = ;
+  fd INITFD_WRITE take_addr @initfd_write = ;
+  fd INITFD_TRUNCATE take_addr @initfd_truncate = ;
+  fd INITFD_SEEK take_addr @initfd_seek = ;
+  fd INITFD_START take_addr begin = ;
+  fd INITFD_CUR take_addr begin = ;
+  fd INITFD_END take_addr end = ;
+  fd ret ;
+}
+
+const INITMOUNT_DESTROY 0
+const INITMOUNT_OPEN 4
+const SIZEOF_INITMOUNT 8
+
+fun initmount_destroy 1 {
+  $mount
+  @mount 0 param = ;
+
+  mount free ;
+}
+
+fun initmount_open 2 {
+  $mount
+  $name
+  @mount 1 param = ;
+  @name 0 param = ;
+
+  name initfd_init ret ;
+}
+
+fun initmount_init 0 {
+  $mount
+  @mount SIZEOF_INITMOUNT malloc = ;
+  mount INITMOUNT_DESTROY take_addr @initmount_destroy = ;
+  mount INITMOUNT_OPEN take_addr @initmount_open = ;
+  mount ret ;
+}
+
 const VFSINST_MOUNTS 0
 const SIZEOF_VFSINST 4
 
@@ -124,9 +231,17 @@ fun vfsinst_open 2 {
 $vfs
 
 fun vfs_init 0 {
+  $compile_disk
+  @compile_disk 0 param = ;
+
   @vfs vfsinst_init = ;
   vfs "ram" rammount_init vfsinst_mount ;
-  vfs mbr_vfs_scan ;
+  vfs "init" initmount_init vfsinst_mount ;
+  if compile_disk {
+    # Symbol has to be retrieved indirectly, because it is not
+    # available if compile_disk is false
+    vfs 0 "mbr_vfs_scan" platform_get_symbol \1 ;
+  }
 }
 
 fun vfs_destroy 0 {

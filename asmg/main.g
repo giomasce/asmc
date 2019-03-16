@@ -46,10 +46,12 @@ fun main 0 {
   $compile_asm
   $compile_int64
   $compile_c
+  $compile_disk
   @compile_mm0 0 = ;
   @compile_asm 0 = ;
   @compile_int64 0 = ;
   @compile_c 0 = ;
+  @compile_disk 0 = ;
   if RUN_MM0 {
     @compile_mm0 1 = ;
   }
@@ -64,9 +66,14 @@ fun main 0 {
   }
   if compile_c {
     @compile_int64 1 = ;
+    @compile_disk 1 = ;
   }
   if compile_int64 {
     @compile_asm 1 = ;
+    @compile_disk 1 = ;
+  }
+  if compile_asm {
+    @compile_disk 1 = ;
   }
 
   "Compiling utils.g... " log ;
@@ -137,24 +144,26 @@ fun main 0 {
   "utils2.g" platform_g_compile ;
   "done!\n" log ;
 
-  "Compiling atapio.g... " log ;
-  "atapio.g" platform_g_compile ;
-  "done!\n" log ;
+  if compile_disk {
+     "Compiling atapio.g... " log ;
+    "atapio.g" platform_g_compile ;
+    "done!\n" log ;
 
-  "Compiling diskfs.g... " log ;
-  "diskfs.g" platform_g_compile ;
-  "done!\n" log ;
+    "Compiling diskfs.g... " log ;
+    "diskfs.g" platform_g_compile ;
+    "done!\n" log ;
 
-  "Compiling debugfs.g... " log ;
-  "debugfs.g" platform_g_compile ;
-  "done!\n" log ;
+    "Compiling debugfs.g... " log ;
+    "debugfs.g" platform_g_compile ;
+    "done!\n" log ;
+
+    "Compiling mbr.g... " log ;
+    "mbr.g" platform_g_compile ;
+    "done!\n" log ;
+  }
 
   "Compiling ramfs.g... " log ;
   "ramfs.g" platform_g_compile ;
-  "done!\n" log ;
-
-  "Compiling mbr.g... " log ;
-  "mbr.g" platform_g_compile ;
   "done!\n" log ;
 
   "Compiling vfs.g... " log ;
@@ -252,7 +261,7 @@ fun main 0 {
   }
 
   "Initializing Virtual File System...\n" log ;
-  0 "vfs_init" platform_get_symbol \0 ;
+  compile_disk 0 "vfs_init" platform_get_symbol \1 ;
   "Virtual File System initialized!\n" log ;
 
   if compile_int64 {
@@ -266,7 +275,7 @@ fun main 0 {
   "done!\n" log ;
 
   if RUN_MM0 {
-    "/disk1/mm0/set.mm0" 0 "mm0_process" platform_get_symbol \1 ;
+    "/init/set.mm0" 0 "mm0_process" platform_get_symbol \1 ;
   }
 
   if RUN_ASM {
@@ -331,9 +340,18 @@ fun main 0 {
   0 "vfs_destroy" platform_get_symbol \0 ;
   "done!\n" log ;
 
-  "Destroying debugfs... " log ;
-  0 "debugfs_deinit" platform_get_symbol \0 ;
-  "done!\n" log ;
+  if compile_disk {
+    "Destroying debugfs... " log ;
+    0 "debugfs_deinit" platform_get_symbol \0 ;
+    "done!\n" log ;
+  }
+
+  "Top of initrd: " log ;
+  $begin
+  $end
+  @begin @end "" platform_walk_initrd ;
+  end itoa log ;
+  "\n" log ;
 
   "Memory break before exiting main: " log ;
   0 platform_allocate itoa log ;

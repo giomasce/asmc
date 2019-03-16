@@ -65,6 +65,9 @@ str_platform_allocate:
 str_platform_get_symbol:
   db 'platform_get_symbol'
   db 0
+str_platform_walk_initrd:
+  db 'platform_walk_initrd'
+  db 0
 
   section .text
 
@@ -185,6 +188,26 @@ allocate:
   ret
 
 
+platform_walk_initrd:
+  ;; Decode argument
+  mov ecx, [esp+4]
+
+  ;; Call walk_initrd protecting registers
+  push esi
+  push edi
+  call walk_initrd
+  pop edi
+  pop esi
+
+  ;; Save result in the pointers indicated in the stack
+  mov ecx, [esp+8]
+  mov [ecx], edx
+  mov ecx, [esp+12]
+  mov [ecx], eax
+
+  ret
+
+
   ;; Initialize the symbols table with the "kernel API"
 init_kernel_api:
   mov edx, 0
@@ -200,6 +223,11 @@ init_kernel_api:
   mov edx, 2
   mov ecx, platform_get_symbol
   mov eax, str_platform_get_symbol
+  call add_symbol
+
+  mov edx, 3
+  mov ecx, platform_walk_initrd
+  mov eax, str_platform_walk_initrd
   call add_symbol
 
   ret

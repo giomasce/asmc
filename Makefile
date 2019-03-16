@@ -51,7 +51,7 @@ build/full-asmg.asm: lib/mb_header.asm lib/kernel.asm lib/io.asm lib/shutdown.as
 	cat $^ | sed -e 's|section .bss|section .data|' > $@
 	#cat $^ > $@
 
-build/initrd-asmg.list: asmg/*.g
+build/initrd-asmg.list: asmg/*.g diskfs/mm0/set.mm0
 	ls $^ | sed -e 's|\(.*\)/\([^/]*\)|\2 \1/\2|g' > $@
 
 build/initrd-asmg.diskfs: build/initrd-asmg.list
