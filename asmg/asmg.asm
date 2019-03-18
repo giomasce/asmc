@@ -67,6 +67,7 @@ read_ptr_end:
 
   section .text
 
+  ;; Return: EAX
 gen_label:
   ;; Increment by 1 gen_label and return its original value
   mov eax, [label_num]
@@ -641,28 +642,36 @@ push_expr_ret:
   ret
 
 
-push_expr_until_brace:
-  push ebx
+  ;; Input in EAX
+  ;; Destroys: EAX, ECX, EDX
+push_token:
+  ;; Check if it is a string
+  cmp BYTE [eax], QUOTE
+  je push_token_str
+
+  ;; Check if we want the address
+  xor edx, edx
+  cmp BYTE [eax], AT_SIGN
+  jne push_token_value
+  inc eax
+  inc edx
+
+push_token_value:
+  ;; Call push_expr
+  push edx
+  push eax
+  call push_expr
+  add esp, 8
+
+  ret
+
+push_token_str:
   push esi
   push edi
+  push ebx
 
-push_expr_until_brace_loop:
-  ;; Get a token
-  call get_token
   mov ebx, eax
 
-  ;; If it is an open brace, exit loop
-  mov ecx, [eax]
-  and ecx, 0xffff
-  cmp ecx, '{'
-  je push_expr_until_brace_end
-
-  ;; If not, branch depending on whether it is a string or not
-  cmp BYTE [ebx], QUOTE
-  je push_expr_until_brace_string
-  jmp push_expr_until_brace_push
-
-push_expr_until_brace_string:
   ;; Generate a jump (in esi) and a string (in edi) label
   call gen_label
   mov esi, eax
@@ -695,8 +704,6 @@ push_expr_until_brace_string:
   call add_symbol_label
 
   ;; Emit code to push the string label
-  mov edx, temp_var
-  call push_var
   mov cl, 0x68                  ; push ??
   call emit
   mov edx, edi
@@ -706,26 +713,32 @@ push_expr_until_brace_string:
   mov ecx, eax
   call emit32
 
-  jmp push_expr_until_brace_loop
+  ;; Keep note of the new variable
+  mov edx, temp_var
+  call push_var
 
-push_expr_until_brace_push:
-  ;; Check if we want the address
-  mov esi, 0
-  cmp BYTE [ebx], AT_SIGN
-  jne push_expr_until_brace_push_value
-  mov esi, 1
-  inc ebx
+  pop ebx
+  pop edi
+  pop esi
+  ret
 
-push_expr_until_brace_push_value:
-  ;; Call push_expr
-  push esi
-  push ebx
-  call push_expr
-  add esp, 8
 
-  jmp push_expr_until_brace_loop
+  ;; Destroys: EAX, ECX, EDX
+push_token_until_brace:
+  ;; Get a token
+  call get_token
 
-push_expr_until_brace_end:
+  ;; If it is an open brace, exit loop
+  mov ecx, [eax]
+  and ecx, 0xffff
+  cmp ecx, '{'
+  je push_token_until_brace_end
+
+  call push_token
+
+  jmp push_token_until_brace
+
+push_token_until_brace_end:
   ;; Given the token back
   call give_back_token
 
@@ -733,9 +746,6 @@ push_expr_until_brace_end:
   cmp DWORD [temp_depth], 0
   jna platform_panic
 
-  pop edi
-  pop esi
-  pop ebx
   ret
 
 
@@ -801,10 +811,9 @@ parse_block_loop:
   cmp BYTE [ebx], BACKSLASH
   je parse_block_call
 
-  cmp BYTE [ebx], QUOTE
-  je parse_block_string
-
-  jmp parse_block_push
+  mov eax, ebx
+  call push_token
+  jmp parse_block_loop
 
 parse_block_semicolon:
   ;; Emit code to rewind temp stack
@@ -834,8 +843,8 @@ parse_block_ret_emit:
   jmp parse_block_loop
 
 parse_block_if:
-  ;; Call push_expr_until_brace
-  call push_expr_until_brace
+  ;; Call push_token_until_brace
+  call push_token_until_brace
 
   ;; Generate the else label
   call gen_label
@@ -916,8 +925,8 @@ parse_block_while:
   mov edx, esi
   call add_symbol_label
 
-  ;; Call push_expr_until_brace
-  call push_expr_until_brace
+  ;; Call push_token_until_brace
+  call push_token_until_brace
 
   ;; Emit code to pop and possibly jump to end label
   mov eax, 1
@@ -1012,69 +1021,6 @@ parse_block_call_end:
   call push_var
   mov cl, 0x50                  ; push eax
   call emit
-
-  jmp parse_block_loop
-
-parse_block_string:
-  ;; Generate a jump (in esi) and a string (in edi) label
-  call gen_label
-  mov esi, eax
-  call gen_label
-  mov edi, eax
-
-  ;; Emit code to jump to the jump label
-  mov cl, 0xe9                  ; jmp ??
-  call emit
-  mov edx, esi
-  call write_label
-  mov edx, eax
-  call find_symbol_or_zero
-  call compute_rel
-  mov ecx, eax
-  call emit32
-
-  ;; Add a symbol for the string label
-  mov edx, edi
-  call add_symbol_label
-
-  ;; Emit escaped string and a terminator
-  mov ecx, ebx
-  call emit_escaped_string
-  mov cl, 0
-  call emit
-
-  ;; Add a symbol for the jump label
-  mov edx, esi
-  call add_symbol_label
-
-  ;; Emit code to push the string label
-  mov edx, temp_var
-  call push_var
-  mov cl, 0x68                  ; push ??
-  call emit
-  mov edx, edi
-  call write_label
-  mov edx, eax
-  call find_symbol_or_zero
-  mov ecx, eax
-  call emit32
-
-  jmp parse_block_loop
-
-parse_block_push:
-  ;; Check if we want the address
-  xor esi, esi
-  cmp BYTE [ebx], AT_SIGN
-  jne parse_block_push_value
-  mov esi, 1
-  inc ebx
-
-parse_block_push_value:
-  ;; Call push_expr
-  push esi
-  push ebx
-  call push_expr
-  add esp, 8
 
   jmp parse_block_loop
 
