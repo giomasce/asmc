@@ -749,9 +749,8 @@ push_token_until_brace_end:
   ret
 
 
+  ;; Destroys: EAX, ECX, EDX
 parse_block:
-  push ebp
-  mov ebp, esp
   push ebx
   push esi
   push edi
@@ -786,17 +785,22 @@ parse_block_loop:
   je parse_block_end
 
   ;; Jump to the appropriate handler
+
+  ;; semicolon
   cmp ecx, ';'
   je parse_block_semicolon
 
+  ;; ret
   cmp DWORD [ebx], 'ret'
   je parse_block_ret
 
+  ;; if
   mov eax, [ebx]
   and eax, 0xffffff
   sub eax, 'if'
   je parse_block_if
 
+  ;; while
   mov eax, [ebx]
   sub eax, 'whil'
   mov ecx, [ebx+4]
@@ -805,12 +809,15 @@ parse_block_loop:
   or eax, ecx
   je parse_block_while
 
+  ;; dollar
   cmp BYTE [ebx], DOLLAR
   je parse_block_alloc
 
+  ;; backslash
   cmp BYTE [ebx], BACKSLASH
   je parse_block_call
 
+  ;; Usual token push
   mov eax, ebx
   call push_token
   jmp parse_block_loop
@@ -1047,7 +1054,6 @@ parse_block_end:
   pop edi
   pop esi
   pop ebx
-  pop ebp
   ret
 
 
@@ -1072,9 +1078,8 @@ decode_number_or_symbol_symbol:
   ret
 
 
+  ;; Destroys: EAX, ECX, EDX
 parse:
-  push ebp
-  mov ebp, esp
   push ebx
 
   ;; Main loop
@@ -1206,10 +1211,10 @@ parse_var:
 
 parse_ret:
   pop ebx
-  pop ebp
   ret
 
 
+  ;; Destroys: EAX, ECX
 init_g_compiler:
   ;; Allocate stack variables list
   mov eax, STACK_VARS_LEN * MAX_SYMBOL_NAME_LEN
@@ -1237,6 +1242,7 @@ init_g_compiler:
   ret
 
 
+  ;; Destroys: EAX, ECX, EDX
 compile:
   ;; Reset depths and stage
   mov DWORD [block_depth], 0

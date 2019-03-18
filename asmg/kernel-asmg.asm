@@ -51,12 +51,14 @@ str_entry:
   db 'entry'
   db 0
 
+
   section .text
 
-  ;; void platform_g_compile(char *filename)
 platform_g_compile:
   mov eax, [esp+4]
 
+  ;; Input in EAX (filename)
+  ;; Destroys: EAX, ECX, EDX
 g_compile:
   ;; Prepare to write in memory
   mov edx, [heap_ptr]
@@ -83,6 +85,7 @@ g_compile:
   ret
 
 
+  ;; Destroys: EAX, ECX, EDX
 discard_temp_labels:
   push esi
   push edi
