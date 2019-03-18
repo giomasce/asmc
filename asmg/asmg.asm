@@ -496,6 +496,8 @@ add_symbol_label:
   ret
 
 
+  ;; Input in [ESP+4] (name) and [ESP+8] (want_address)
+  ;; Destroys: EAX, ECX, EDX
 push_expr:
   push ebp
   mov ebp, esp
@@ -505,7 +507,6 @@ push_expr:
   ;; Try to interpret argument as number
   mov eax, [ebp+8]
   call decode_number_or_char
-  mov ebx, edx
   cmp eax, 0
   je push_expr_stack
 
@@ -514,8 +515,7 @@ push_expr:
   jne platform_panic
 
   ;; Emit the code
-  mov edx, temp_var
-  call push_var
+  mov ebx, edx
   mov cl, 0x68                  ; push ??
   call emit
   mov ecx, ebx
@@ -539,8 +539,6 @@ push_expr_stack:
   jne push_expr_stack_addr
 
   ;; We want the value, emit the code
-  mov edx, temp_var
-  call push_var
   mov ecx, 0x24b4ff             ; push [esp+??]
   call emit24
   mov ecx, ebx
@@ -550,8 +548,6 @@ push_expr_stack:
 
 push_expr_stack_addr:
   ;; We want the address, emit the code
-  mov edx, temp_var
-  call push_var
   mov ecx, 0x24848d             ; lea eax, [esp+??]
   call emit24
   mov ecx, ebx
@@ -567,35 +563,27 @@ push_expr_symbol:
   call find_symbol_or_panic
   mov ebx, eax
 
-  ;; If arity is -2, check we do not want the address
+  ;; Handle (in this order) global constants, cases when we want the
+  ;; address and global variables
   cmp edx, -2
-  jne push_expr_after_assert
+  je push_expr_symbol_const
   cmp DWORD [ebp+12], 0
-  jne platform_panic
-
-push_expr_after_assert:
-  ;; Check if we want the address or arity is -2
-  cmp edx, -2
-  je push_expr_addr
-  cmp DWORD [ebp+12], 0
-  jne push_expr_addr
-
-  ;; Check if arity is -1
+  jne push_expr_symbol_addr
   cmp edx, -1
-  je push_expr_val
-  mov esi, edx
+  je push_expr_symbol_var
 
-  ;; This is a real function call, emit the code (part 1)
+  ;; This is a real function call, save arity and emit the call
+  mov esi, edx
   mov cl, 0xe8                  ; call ??
   call emit
   mov eax, ebx
   call compute_rel
   mov ecx, eax
   call emit32
+
+  ;; Multiply the arity by 4 and emit stack unwinding
   mov ecx, 0xc481               ; add esp, ??
   call emit16
-
-  ;; Multiply the arity by 4 and continue emitting code
   mov ecx, esi
   shl ecx, 2
   call emit32
@@ -603,10 +591,10 @@ push_expr_after_assert:
   call emit
 
   ;; Update stack variables
-push_expr_symbol_loop:
+push_expr_symbol_call_loop:
   ;; Check for termination
   cmp esi, 0
-  je push_expr_symbol_loop_end
+  je push_expr_ret
 
   ;; Call pop_var
   mov eax, 1
@@ -614,18 +602,18 @@ push_expr_symbol_loop:
 
   ;; Decrement arity and reloop
   dec esi
-  jmp push_expr_symbol_loop
+  jmp push_expr_symbol_call_loop
 
-push_expr_symbol_loop_end:
-  mov edx, temp_var
-  call push_var
+push_expr_symbol_const:
+  ;; Check we do not want the address
+  cmp DWORD [ebp+12], 0
+  jne platform_panic
 
-  jmp push_expr_ret
+  ;; But we actually emit the address, because there is where the
+  ;; constant value is stored
 
-push_expr_addr:
+push_expr_symbol_addr:
   ;; We want the address, emit the code
-  mov edx, temp_var
-  call push_var
   mov cl, 0x68                  ; push ??
   call emit
   mov ecx, ebx
@@ -633,20 +621,20 @@ push_expr_addr:
 
   jmp push_expr_ret
 
-push_expr_val:
+push_expr_symbol_var:
   ;; We want the value, emit the code
-  mov edx, temp_var
-  call push_var
-  mov cl, 0xb8                  ; mov eax, ??
-  call emit
+  mov ecx, 0x35ff               ; push [??]
+  call emit16
   mov ecx, ebx
   call emit32
-  mov ecx, 0x30ff               ; push [eax]
-  call emit16
 
   jmp push_expr_ret
 
 push_expr_ret:
+  ;; Keep note of the new temporary
+  mov edx, temp_var
+  call push_var
+
   pop esi
   pop ebx
   pop ebp
