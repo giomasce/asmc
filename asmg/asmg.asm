@@ -102,11 +102,8 @@ write_label_loop:
 
 
   ;; Input in EDX (variable name)
-  ;; Destroys: EAX
+  ;; Destroys: EAX, ESI, EDI
 push_var:
-  push esi
-  push edi
-
   ;; Check input length
   mov esi, edx
   call check_symbol_length
@@ -124,9 +121,6 @@ push_var:
 
   ;; Increment the stack depth
   inc DWORD [stack_depth]
-
-  pop edi
-  pop esi
 
   ;; If this is a temp var, increment also temp_depth
   cmp edx, temp_var
@@ -179,12 +173,9 @@ pop_temps_ret:
 
 
   ;; Input in EDX
-  ;; Destroys: ECX
+  ;; Destroys: ECX, ESI, EDI
   ;; Returns: EAX
 find_in_stack:
-  push esi
-  push edi
-
   xor ecx, ecx
 find_in_stack_loop:
   ;; Check for termination
@@ -217,8 +208,6 @@ find_in_stack_found:
   jmp find_in_stack_end
 
 find_in_stack_end:
-  pop edi
-  pop esi
   ret
 
 
@@ -504,6 +493,7 @@ push_expr:
   mov ebp, esp
   push ebx
   push esi
+  push edi
 
   ;; Try to interpret argument as number
   mov eax, [ebp+8]
@@ -636,6 +626,7 @@ push_expr_ret:
   mov edx, temp_var
   call push_var
 
+  pop edi
   pop esi
   pop ebx
   pop ebp
@@ -1024,10 +1015,12 @@ parse_block_call_loop:
 
 parse_block_call_end:
   ;; Emit code to push the return value
-  mov edx, temp_var
-  call push_var
   mov cl, 0x50                  ; push eax
   call emit
+
+  ;; Keep not of the new pushed value
+  mov edx, temp_var
+  call push_var
 
   jmp parse_block_loop
 
