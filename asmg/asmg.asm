@@ -487,22 +487,16 @@ add_symbol_label:
 
 
   ;; Input in [ESP+4] (name) and [ESP+8] (want_address)
-  ;; Destroys: EAX, ECX, EDX
+  ;; Destroys: EAX, ECX, EDX, EBX, ESI, EDI
 push_expr:
-  push ebp
-  mov ebp, esp
-  push ebx
-  push esi
-  push edi
-
   ;; Try to interpret argument as number
-  mov eax, [ebp+8]
+  mov eax, [esp+4]
   call decode_number_or_char
   cmp eax, 0
   je push_expr_stack
 
   ;; It is a number, check that we do not want the address
-  cmp DWORD [ebp+12], 0
+  cmp DWORD [esp+8], 0
   jne platform_panic
 
   ;; Emit the code
@@ -516,7 +510,7 @@ push_expr:
 
 push_expr_stack:
   ;; Call find_in_stack
-  mov edx, [ebp+8]
+  mov edx, [esp+4]
   call find_in_stack
   cmp eax, -1
   je push_expr_symbol
@@ -526,7 +520,7 @@ push_expr_stack:
   shl ebx, 2
 
   ;; It is on the stack: check if we want the address or not
-  cmp DWORD [ebp+12], 0
+  cmp DWORD [esp+8], 0
   jne push_expr_stack_addr
 
   ;; We want the value, emit the code
@@ -550,7 +544,7 @@ push_expr_stack_addr:
 
 push_expr_symbol:
   ;; Get symbol data
-  mov edx, [ebp+8]
+  mov edx, [esp+4]
   call find_symbol_or_panic
   mov ebx, eax
 
@@ -558,7 +552,7 @@ push_expr_symbol:
   ;; address and global variables
   cmp edx, -2
   je push_expr_symbol_const
-  cmp DWORD [ebp+12], 0
+  cmp DWORD [esp+8], 0
   jne push_expr_symbol_addr
   cmp edx, -1
   je push_expr_symbol_var
@@ -597,7 +591,7 @@ push_expr_symbol_call_loop:
 
 push_expr_symbol_const:
   ;; Check we do not want the address
-  cmp DWORD [ebp+12], 0
+  cmp DWORD [esp+8], 0
   jne platform_panic
 
   ;; But we actually emit the address, because there is where the
@@ -626,15 +620,11 @@ push_expr_ret:
   mov edx, temp_var
   call push_var
 
-  pop edi
-  pop esi
-  pop ebx
-  pop ebp
   ret
 
 
   ;; Input in EAX
-  ;; Destroys: EAX, ECX, EDX
+  ;; Destroys: EAX, ECX, EDX, EBX, ESI, EDI
 push_token:
   ;; Check if it is a string
   cmp BYTE [eax], QUOTE
@@ -657,10 +647,6 @@ push_token_value:
   ret
 
 push_token_str:
-  push esi
-  push edi
-  push ebx
-
   mov ebx, eax
 
   ;; Generate a jump (in esi) and a string (in edi) label
@@ -708,13 +694,10 @@ push_token_str:
   mov edx, temp_var
   call push_var
 
-  pop ebx
-  pop edi
-  pop esi
   ret
 
 
-  ;; Destroys: EAX, ECX, EDX
+  ;; Destroys: EAX, ECX, EDX, EBX, ESI, EDI
 push_token_until_brace:
   ;; Get a token
   call get_token
@@ -740,11 +723,10 @@ push_token_until_brace_end:
   ret
 
 
-  ;; Destroys: EAX, ECX, EDX
+  ;; Destroys: EAX, ECX, EDX, ESI, EDI
 parse_block:
+  push ebp
   push ebx
-  push esi
-  push edi
 
   ;; Increment block depth
   inc DWORD [block_depth]
@@ -884,14 +866,14 @@ parse_block_if:
   jmp parse_block_loop
 
 parse_block_else:
-  ;; There is an else: generate the fi label (load in edi)
+  ;; There is an else: generate the fi label (load in EBP)
   call gen_label
-  mov edi, eax
+  mov ebp, eax
 
   ;; Emit code to jump to fi
   mov cl, 0xe9                  ; jmp ??
   call emit
-  mov edx, edi
+  mov edx, ebp
   call write_label
   mov edx, eax
   call find_symbol_or_zero
@@ -907,24 +889,26 @@ parse_block_else:
   call parse_block
 
   ;; Add the symbol for the fi label
-  mov edx, edi
+  mov edx, ebp
   call add_symbol_label
 
   jmp parse_block_loop
 
 parse_block_while:
-  ;; Generate the restart label (in esi) and the end label (in edi)
+  ;; Generate the restart label (in EBP)
   call gen_label
-  mov esi, eax
-  call gen_label
-  mov edi, eax
+  mov ebp, eax
 
   ;; Add a symbol for the restart label
-  mov edx, esi
+  mov edx, ebp
   call add_symbol_label
 
   ;; Call push_token_until_brace
   call push_token_until_brace
+
+  ;; Generate the end label (in EBX)
+  call gen_label
+  mov ebx, eax
 
   ;; Emit code to pop and possibly jump to end label
   mov eax, 1
@@ -933,7 +917,7 @@ parse_block_while:
   call emit32
   mov ecx, 0x840f               ; je ??
   call emit16
-  mov edx, edi
+  mov edx, ebx
   call write_label
   mov edx, eax
   call find_symbol_or_zero
@@ -947,7 +931,7 @@ parse_block_while:
   ;; Emit code to restart the loop
   mov cl, 0xe9                  ; jmp ??
   call emit
-  mov edx, esi
+  mov edx, ebp
   call write_label
   mov edx, eax
   call find_symbol_or_zero
@@ -956,7 +940,7 @@ parse_block_while:
   call emit32
 
   ;; Add a symbol for the end label
-  mov edx, edi
+  mov edx, ebx
   call add_symbol_label
 
   jmp parse_block_loop
@@ -1044,9 +1028,8 @@ parse_block_end:
   shl ecx, 2
   call emit32
 
-  pop edi
-  pop esi
   pop ebx
+  pop ebp
   ret
 
 
@@ -1071,9 +1054,8 @@ decode_number_or_symbol_symbol:
   ret
 
 
-  ;; Destroys: EAX, ECX, EDX
+  ;; Destroys: EAX, ECX, EDX, EBX, ESI, EDI
 parse:
-  push ebx
 
   ;; Main loop
 parse_loop:
@@ -1203,7 +1185,6 @@ parse_var:
   jmp parse_loop
 
 parse_ret:
-  pop ebx
   ret
 
 
@@ -1235,7 +1216,7 @@ init_g_compiler:
   ret
 
 
-  ;; Destroys: EAX, ECX, EDX
+  ;; Destroys: EAX, ECX, EDX, EBX, ESI, EDI
 compile:
   ;; Reset depths and stage
   mov DWORD [block_depth], 0
@@ -1272,4 +1253,3 @@ compile_stage_loop:
   add DWORD [stage], 1
 
   jmp compile_stage_loop
-

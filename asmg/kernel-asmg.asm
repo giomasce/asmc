@@ -56,9 +56,18 @@ str_entry:
 
 platform_g_compile:
   mov eax, [esp+4]
+  push ebx
+  push esi
+  push edi
+  call g_compile
+  pop edi
+  pop esi
+  pop ebx
+  ret
+
 
   ;; Input in EAX (filename)
-  ;; Destroys: EAX, ECX, EDX
+  ;; Destroys: EAX, ECX, EDX, EBX, ESI, EDI
 g_compile:
   ;; Prepare to write in memory
   mov edx, [heap_ptr]
