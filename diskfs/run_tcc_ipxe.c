@@ -6,6 +6,8 @@
 #include <string.h>
 #include <assert.h>
 
+#include "coros.h"
+
 #define USE_SOFTFLOAT 1
 #define ONE_SOURCE 1
 #include "tcc.h"
@@ -20,6 +22,7 @@
 #define IPXE_TEMP "/ram/ipxe"
 
 const char *includes[] = {
+    ASMC_PREFIX,
     IPXE_PREFIX,
     IPXE_PREFIX "/include",
     IPXE_PREFIX "/arch/x86/include",
@@ -132,6 +135,16 @@ const char *sources[][2] = {
     /* {IPXE_PREFIX "/core/blockdev.c", IPXE_TEMP "/blockdev.o"}, */
     /* {IPXE_PREFIX "/core/edd.c", IPXE_TEMP "/edd.o"}, */
     /* {IPXE_PREFIX "/core/quiesce.c", IPXE_TEMP "/quiesce.o"}, */
+    {IPXE_PREFIX "/net/tcp/http.c", IPXE_TEMP "/http.o"},
+    {IPXE_PREFIX "/net/tcp/httpcore.c", IPXE_TEMP "/httpcore.o"},
+    {IPXE_PREFIX "/net/tcp/httpconn.c", IPXE_TEMP "/httpconn.o"},
+    {IPXE_PREFIX "/core/pool.c", IPXE_TEMP "/pool.o"},
+    {IPXE_PREFIX "/core/blockdev.c", IPXE_TEMP "/blockdev.o"},
+    {IPXE_PREFIX "/core/linebuf.c", IPXE_TEMP "/linebuf.o"},
+    {IPXE_PREFIX "/core/xferbuf.c", IPXE_TEMP "/xferbuf.o"},
+    {IPXE_PREFIX "/usr/imgmgmt.c", IPXE_TEMP "/imgmgmt.o"},
+    {IPXE_PREFIX "/core/image.c", IPXE_TEMP "/image.o"},
+    {IPXE_PREFIX "/core/downloader.c", IPXE_TEMP "/downloader.o"},
 };
 
 #include "ipxe_handover.h"
@@ -235,6 +248,7 @@ int main(int argc, char *argv[]) {
 
     // First compile all files
     for (int j = 0; j < sizeof(sources) / sizeof(sources[0]); j++) {
+        printf("Compiling %s to %s...", sources[j][0], sources[j][1]);
         state = tcc_new();
         tcc_set_options(state, "-nostdinc -nostdlib -include " IPXE_PREFIX "/include/compiler.h");
         tcc_set_output_type(state, TCC_OUTPUT_OBJ);
@@ -262,9 +276,11 @@ int main(int argc, char *argv[]) {
             return 1;
         }
         tcc_delete(state);
+        printf(" done!\n");
     }
 
     // Then link everything together
+    printf("Linking IPXE...");
     state = tcc_new();
     tcc_set_options(state, "-nostdinc -nostdlib");
     tcc_set_output_type(state, TCC_OUTPUT_MEMORY);
@@ -281,6 +297,7 @@ int main(int argc, char *argv[]) {
         printf("tcc_relocate() failed...\n");
         return 1;
     }
+    printf(" done!\n");
     int (*main_symb)(ipxe_handover*) = tcc_get_symbol(state, "pre_main");
     if (!main_symb) {
         printf("tcc_get_symbol() failed...\n");
@@ -288,6 +305,11 @@ int main(int argc, char *argv[]) {
     }
     ipxe_handover ih;
     prepare_tables(state, &ih);
+    ipxe_list_reset(&ih.to_ipxe);
+    ipxe_list_reset(&ih.from_ipxe);
+    ih.coro_yield = coro_yield;
+    ih.malloc = malloc;
+    ih.free = free;
 
     printf("Jumping into iPXE!\n");
     res = main_symb(&ih);

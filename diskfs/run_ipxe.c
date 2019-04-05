@@ -6,9 +6,8 @@
    type definitions in this file must be manually kept in sync with
    their original versions. */
 
+#include "ipxe_asmc.h"
 #include "ipxe_handover.h"
-
-int main();
 
 ipxe_handover *ih;
 
@@ -47,4 +46,24 @@ void *get_table_end(const char *name) {
     table_sect *sect = find_section(name);
     if (!sect) return EMPTY_LIST;
     return sect->data + sect->len;
+}
+
+void *asmc_malloc(size_t size) {
+    return ih->malloc(size);
+}
+
+void asmc_free(void *ptr) {
+    ih->free(ptr);
+}
+
+void push_to_asmc(void *msg) {
+    ipxe_list_push(ih, &ih->from_ipxe, msg);
+}
+
+void *pop_from_asmc(void) {
+    return ipxe_list_pop(ih, &ih->to_ipxe);
+}
+
+void coro_yield(void) {
+    ih->coro_yield();
 }

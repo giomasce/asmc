@@ -2,15 +2,15 @@
 #define __SETJMP_H
 
 typedef struct {
-  unsigned int eax;
-  unsigned int ebx;
-  unsigned int ecx;
-  unsigned int edx;
-  unsigned int esi;
-  unsigned int edi;
-  unsigned int ebp;
-  unsigned int esp;
-  unsigned int eip;
+  unsigned long eax;
+  unsigned long ebx;
+  unsigned long ecx;
+  unsigned long edx;
+  unsigned long esi;
+  unsigned long edi;
+  unsigned long ebp;
+  unsigned long esp;
+  unsigned long eip;
 } jmp_buf;
 
 #define setjmp(env) (__handles->platform_setjmp(&(env)))
