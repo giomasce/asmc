@@ -145,9 +145,11 @@ const char *sources[][2] = {
     {IPXE_PREFIX "/usr/imgmgmt.c", IPXE_TEMP "/imgmgmt.o"},
     {IPXE_PREFIX "/core/image.c", IPXE_TEMP "/image.o"},
     {IPXE_PREFIX "/core/downloader.c", IPXE_TEMP "/downloader.o"},
+    {IPXE_PREFIX "/net/udp/dns.c", IPXE_TEMP "/dns.o"},
 };
 
 #include "ipxe_handover.h"
+#include "ipxe_asmc_structs.h"
 
 int table_comp(void *t1, void *t2) {
     table_sect *s1 = t1;
@@ -240,6 +242,16 @@ void free_handover(ipxe_handover *ih) {
     free(ih->sects);
 }
 
+ipxe_handover ih;
+
+void push_to_ipxe(void *msg) {
+    ipxe_list_push(&ih, &ih.to_ipxe, msg);
+}
+
+void *pop_from_ipxe() {
+    return ipxe_list_pop(&ih, &ih.from_ipxe);
+}
+
 int main(int argc, char *argv[]) {
     printf("Here is where we compile iPXE!\n");
 
@@ -298,12 +310,11 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     printf(" done!\n");
-    int (*main_symb)(ipxe_handover*) = tcc_get_symbol(state, "pre_main");
+    void (*main_symb)(void*) = tcc_get_symbol(state, "pre_main");
     if (!main_symb) {
         printf("tcc_get_symbol() failed...\n");
         return 1;
     }
-    ipxe_handover ih;
     prepare_tables(state, &ih);
     ipxe_list_reset(&ih.to_ipxe);
     ipxe_list_reset(&ih.from_ipxe);
@@ -311,8 +322,34 @@ int main(int argc, char *argv[]) {
     ih.malloc = malloc;
     ih.free = free;
 
-    printf("Jumping into iPXE!\n");
-    res = main_symb(&ih);
+    printf("Starting iPXE coroutine!\n");
+    coro_t *coro_ipxe = coro_init(main_symb, &ih);
+    coro_enter(coro_ipxe);
+
+    const char *url = "http://www.example.com/";
+    printf("Request to download %s\n", url);
+    push_to_ipxe(strdup("download"));
+    push_to_ipxe(strdup(url));
+    coro_enter(coro_ipxe);
+    downloaded_file *df = pop_from_ipxe();
+    assert(df->size > 0);
+    printf("Received document of %d bytes!\n", df->size);
+    printf("---\n");
+    for (size_t i = 0; i < df->size; i++) {
+        putchar(df->data[i]);
+    }
+    printf("---\n");
+    free(df->data);
+    free(df);
+
+    printf("Request to exit iPXE\n");
+    push_to_ipxe(strdup("exit"));
+    coro_enter(coro_ipxe);
+
+    //res = main_symb(&ih);
+
+    printf("Returning from iPXE!\n");
+    coro_destroy(coro_ipxe);
     free_handover(&ih);
     tcc_delete(state);
 

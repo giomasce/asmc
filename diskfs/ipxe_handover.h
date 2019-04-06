@@ -1,10 +1,6 @@
 #ifndef __IPXE_HANDOVER_H
 #define __IPXE_HANDOVER_H
 
-#ifndef __ASMC_TYPES_H
-typedef unsigned int size_t;
-#endif
-
 typedef struct {
     char *name;
     char *data;

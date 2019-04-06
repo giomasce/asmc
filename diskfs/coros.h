@@ -61,6 +61,7 @@ coro_t *coro_init(void (*target)(void*), void *ctx) {
 }
 
 void coro_destroy(coro_t *coro) {
+    _force_assert(!coro->runnable);
     free(coro->stack);
     free(coro);
 }
