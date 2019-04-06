@@ -326,7 +326,7 @@ int main(int argc, char *argv[]) {
     coro_t *coro_ipxe = coro_init(main_symb, &ih);
     coro_enter(coro_ipxe);
 
-    const char *url = "http://www.example.com/";
+    const char *url = "http://10.0.2.2:8080/continue.c";
     printf("Request to download %s\n", url);
     push_to_ipxe(strdup("download"));
     push_to_ipxe(strdup(url));

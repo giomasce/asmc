@@ -14,6 +14,9 @@ addons:
     - python3
     - gcc-multilib
 
+before_script:
+- cd http && python3 -m http.server 8080 &
+
 script:
 - make
 - qemu-system-i386 -hda build/boot_asmg.x86 -serial stdio -device isa-debug-exit -display none -m 256M | ./test/decode_tests.py
