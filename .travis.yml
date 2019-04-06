@@ -2,6 +2,8 @@
 # language is Ruby!
 language: c
 
+sudo: true
+
 notifications:
   email: false
 
@@ -18,6 +20,8 @@ before_script:
 - cd http && python3 -m http.server 8080 &
 
 script:
+- sudo cat /proc/cpuinfo
+- sudo modprobe kvm
 - make
-- qemu-system-i386 -hda build/boot_asmg.x86 -serial stdio -device isa-debug-exit -display none -m 256M | ./test/decode_tests.py
+- sudo qemu-system-i386 -hda build/boot_asmg.x86 -serial stdio -device isa-debug-exit -display none -m 256M -enable-kvm | ./test/decode_tests.py
 - ls -l build/asmg.x86.exe build/asmg_dbg.x86.exe
